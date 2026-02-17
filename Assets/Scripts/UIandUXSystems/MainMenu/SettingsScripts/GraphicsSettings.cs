@@ -204,6 +204,8 @@ public class GraphicsSettings : MonoBehaviour
         PlayerPrefs.SetInt("masterCameraShake", (isCameraShake ? 1 : 0));
 
         PlayerPrefs.SetInt("masterResolution", (isResolution1920x1080 ? 0 : 1));
+
+        PlayerPrefs.Save();
     }
 
     //Resets graphics settings

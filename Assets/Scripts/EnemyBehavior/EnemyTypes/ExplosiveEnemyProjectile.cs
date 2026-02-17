@@ -26,7 +26,7 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
         // If we directly hit the player, log it explicitly
         if (collision.collider != null && collision.collider.CompareTag("Player"))
         {
-            Debug.Log("[ExplosiveEnemyProjectile] Player directly hit by explosive projectile");
+            EnemyBehaviorDebugLogBools.Log(nameof(ExplosiveEnemyProjectile), "[ExplosiveEnemyProjectile] Player directly hit by explosive projectile");
         }
         Explode();
     }
@@ -54,7 +54,7 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
 
         if (playerHit)
         {
-            Debug.Log("[ExplosiveEnemyProjectile] Player within explosive splash radius");
+            EnemyBehaviorDebugLogBools.Log(nameof(ExplosiveEnemyProjectile), "[ExplosiveEnemyProjectile] Player within explosive splash radius");
         }
 
         // Pool-friendly: reparent BEFORE deactivation if used by turrets

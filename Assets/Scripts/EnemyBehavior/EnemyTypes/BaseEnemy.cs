@@ -62,6 +62,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     [SerializeField, Tooltip("Determines whether their attack can be parried")]
     public bool canBeParried = true;
 
+    [SerializeField, Tooltip("When true, hitbox enable/disable is controlled by animation events (Attack, AttackEnd). When false, uses timer-based hitbox duration.")]
+    public bool useAnimationEventAttacks = false;
+
     [Header("Enemy Health Bar")]
     [SerializeField, Tooltip("Prefab for the enemy's health bar UI.")]
     public GameObject healthBarPrefab;
@@ -232,7 +235,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             if (healthBarInstance == null)
             {
 #if UNITY_EDITOR
-                Debug.LogWarning($"[{name}] Health bar prefab is missing the EnemyHealthBar component.");
+                EnemyBehaviorDebugLogBools.LogWarning("BaseEnemy", $"[{name}] Health bar prefab is missing the EnemyHealthBar component.");
 #endif
                 Destroy(instance);
             }
@@ -245,7 +248,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         else if (healthBarPrefab == null)
         {
 #if UNITY_EDITOR
-            Debug.LogWarning($"[{name}] No healthBarPrefab assigned; enemy health will not be displayed.");
+            EnemyBehaviorDebugLogBools.LogWarning("BaseEnemy", $"[{name}] No healthBarPrefab assigned; enemy health will not be displayed.");
 #endif
         }
     }
@@ -289,7 +292,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         agent.avoidancePriority = behaviorProfile.AvoidancePriority;
         
 #if UNITY_EDITOR
-        Debug.Log($"[{name}] Applied behavior profile: speed={agent.speed:F1}, accel={behaviorProfile.Acceleration}, angular={behaviorProfile.AngularSpeed}, priority={behaviorProfile.AvoidancePriority}");
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Applied behavior profile: speed={agent.speed:F1}, accel={behaviorProfile.Acceleration}, angular={behaviorProfile.AngularSpeed}, priority={behaviorProfile.AvoidancePriority}");
 #endif
     }
 
@@ -636,6 +639,121 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         PlayAttackAnim();
     }
 
+    #region Animation Event Receivers
+    // Buffer for physics overlap checks in animation events
+    private static readonly Collider[] animEventHitBuffer = new Collider[16];
+    private bool animEventDamageDealtThisAttack = false;
+
+    /// <summary>
+    /// Animation Event receiver: Called by animation to enable the attack hitbox.
+    /// Add an Animation Event named "Attack" at the frame where the attack should deal damage.
+    /// </summary>
+    public virtual void Attack()
+    {
+        if (!useAnimationEventAttacks) return;
+        
+        EnableAttackHitbox();
+        DealDamageOnAnimationEvent();
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Animation Event: Attack - Hitbox ENABLED");
+#endif
+    }
+
+    /// <summary>
+    /// Animation Event receiver: Called by animation to disable the attack hitbox.
+    /// Add an Animation Event named "AttackEnd" at the frame where the attack should stop dealing damage.
+    /// </summary>
+    public virtual void AttackEnd()
+    {
+        if (!useAnimationEventAttacks) return;
+        
+        DisableAttackHitbox();
+        animEventDamageDealtThisAttack = false; // Reset for next attack
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Animation Event: AttackEnd - Hitbox DISABLED");
+#endif
+    }
+
+    /// <summary>
+    /// Deals damage to player if they are in the attack box when animation event fires.
+    /// Only deals damage once per attack cycle.
+    /// </summary>
+    protected virtual void DealDamageOnAnimationEvent()
+    {
+        if (animEventDamageDealtThisAttack) return;
+
+        Vector3 boxCenter = transform.position + transform.forward * attackBoxDistance;
+        boxCenter += Vector3.up * attackBoxHeightOffset;
+        Vector3 boxHalfExtents = attackBoxSize * 0.5f;
+
+        int hitCount = Physics.OverlapBoxNonAlloc(boxCenter, boxHalfExtents, animEventHitBuffer, transform.rotation);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            var hit = animEventHitBuffer[i];
+            if (hit.CompareTag("Player"))
+            {
+                // Check for parry
+                if (Utilities.Combat.CombatManager.isParrying && canBeParried)
+                {
+                    Utilities.Combat.CombatManager.ParrySuccessful();
+#if UNITY_EDITOR
+                    EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Attack parried by player.");
+#endif
+                    animEventDamageDealtThisAttack = true;
+                    return;
+                }
+
+                // Get health system and apply damage
+                if (hit.TryGetComponent<IHealthSystem>(out var healthSystem))
+                {
+                    float dmg = damage;
+                    
+                    // Check for guard
+                    if (Utilities.Combat.CombatManager.isGuarding)
+                    {
+                        dmg *= 0.25f;
+#if UNITY_EDITOR
+                        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Attack guarded. Applying reduced damage {dmg}.");
+#endif
+                    }
+
+                    healthSystem.LoseHP(dmg);
+                    animEventDamageDealtThisAttack = true;
+#if UNITY_EDITOR
+                    EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Animation event attack dealt {dmg} damage to player.");
+#endif
+                }
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Enables the attack hitbox collider and sets the active flag.
+    /// Can be called directly or via animation events.
+    /// </summary>
+    public void EnableAttackHitbox()
+    {
+        isAttackBoxActive = true;
+        if (attackCollider != null)
+            attackCollider.enabled = true;
+        SetEnemyColor(hitboxActiveColor);
+    }
+
+    /// <summary>
+    /// Disables the attack hitbox collider and clears the active flag.
+    /// Can be called directly or via animation events.
+    /// </summary>
+    public void DisableAttackHitbox()
+    {
+        isAttackBoxActive = false;
+        if (attackCollider != null)
+            attackCollider.enabled = false;
+        SetEnemyColor(attackColor);
+    }
+    #endregion
+
     protected virtual void OnDamageTaken(float amount)
     {
         if (currentHealth > 0f)
@@ -648,7 +766,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     public virtual void UpdateCurrentZone()
     {
 #if UNITY_EDITOR
-        Debug.Log($"{gameObject.name} Updating current zone.");
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"{gameObject.name} Updating current zone.");
 #endif
         // Use ZoneManager if available for cached zones (avoids FindObjectsByType allocation)
         Zone[] zones = ZoneManager.Instance != null 
@@ -730,7 +848,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
                 // Fire the OnDeath event for any listeners
                 InvokeOnDeath();
 
-                Debug.Log("Health reached 0, triggering death sequence.");
+                EnemyBehaviorDebugLogBools.Log("BaseEnemy", "Health reached 0, triggering death sequence.");
                 
                 bool fired = TryFireTriggerByName("Die");
                 if (!fired)
@@ -765,7 +883,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         
         // Derived classes can override to play spawn animations, enable AI, etc.
 #if UNITY_EDITOR
-        Debug.Log($"[{name}] Spawn() called. Override in derived class for custom spawn animation.");
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Spawn() called. Override in derived class for custom spawn animation.");
 #endif
     }
 
@@ -816,7 +934,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         InvokeOnReset();
         
 #if UNITY_EDITOR
-        Debug.Log($"[{name}] ResetEnemy() called. Health restored to {maxHealth}.");
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] ResetEnemy() called. Health restored to {maxHealth}.");
 #endif
     }
 
@@ -831,7 +949,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         else
         {
 #if UNITY_EDITOR
-            Debug.LogWarning($"Cannot fire trigger {trigger} from state {enemyAI.State}");
+            EnemyBehaviorDebugLogBools.LogWarning("BaseEnemy", $"Cannot fire trigger {trigger} from state {enemyAI.State}");
 #endif
             return false;
         }
@@ -847,7 +965,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         else
         {
 #if UNITY_EDITOR
-            Debug.LogWarning($"{typeof(TTrigger).Name} does not contain a '{triggerName}' trigger. Check your enum definition.");
+            EnemyBehaviorDebugLogBools.LogWarning("BaseEnemy", $"{typeof(TTrigger).Name} does not contain a '{triggerName}' trigger. Check your enum definition.");
 #endif
             return false;
         }

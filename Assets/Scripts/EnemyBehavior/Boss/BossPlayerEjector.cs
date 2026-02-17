@@ -174,7 +174,7 @@ namespace EnemyBehavior.Boss
                 {
                     // During grace period, just apply gentle repulsion, not full ejection
 #if UNITY_EDITOR
-                    Debug.Log($"[BossPlayerEjector] Skipping strong ejection during grace period (ends in {graceEndTime - Time.time:F1}s)");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossPlayerEjector), $"[BossPlayerEjector] Skipping strong ejection during grace period (ends in {graceEndTime - Time.time:F1}s)");
 #endif
                 }
                 else
@@ -194,7 +194,7 @@ namespace EnemyBehavior.Boss
             graceEndTime = Time.time + PostAttackGracePeriod;
             isInGracePeriod = true;
 #if UNITY_EDITOR
-            Debug.Log($"[BossPlayerEjector] Grace period STARTED - no strong ejection for {PostAttackGracePeriod}s");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossPlayerEjector), $"[BossPlayerEjector] Grace period STARTED - no strong ejection for {PostAttackGracePeriod}s");
 #endif
         }
 
@@ -226,7 +226,7 @@ namespace EnemyBehavior.Boss
             // Only log occasionally to avoid spam
             if (Time.frameCount % 30 == 0 && distance2D < RepulsionInnerRadius * 1.5f)
             {
-                Debug.Log($"[BossPlayerEjector] Repulsion active: distance={distance2D:F2}, force={forceStrength:F1}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossPlayerEjector), $"[BossPlayerEjector] Repulsion active: distance={distance2D:F2}, force={forceStrength:F1}");
             }
 #endif
         }
@@ -256,7 +256,7 @@ namespace EnemyBehavior.Boss
             targetPos.y = playerPos.y;
 
 #if UNITY_EDITOR
-            Debug.LogWarning($"[BossPlayerEjector] EMERGENCY EJECTION! Player inside boss - ejecting toward arena center at {targetPos}");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossPlayerEjector), $"[BossPlayerEjector] EMERGENCY EJECTION! Player inside boss - ejecting toward arena center at {targetPos}");
 #endif
 
             // Teleport player to safe position

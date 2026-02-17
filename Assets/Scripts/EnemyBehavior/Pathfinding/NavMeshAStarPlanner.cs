@@ -74,7 +74,7 @@ public sealed class NavMeshAStarPlanner : IPathPlanner
  }
  catch (Exception ex)
  {
- Debug.LogWarning("NavMeshAStarPlanner: failed to build triangle graph: " + ex.Message);
+ EnemyBehaviorDebugLogBools.LogWarning(nameof(NavMeshAStarPlanner), "NavMeshAStarPlanner: failed to build triangle graph: " + ex.Message);
  _graphBuilt = false;
  }
  }
@@ -122,7 +122,7 @@ public sealed class NavMeshAStarPlanner : IPathPlanner
  expansions++;
  if (expansions > MaxExpansions)
  {
- Debug.LogWarning($"NavMeshAStarPlanner: expansion budget exceeded ({MaxExpansions}), falling back to NavMesh.CalculatePath");
+ EnemyBehaviorDebugLogBools.LogWarning(nameof(NavMeshAStarPlanner), $"NavMeshAStarPlanner: expansion budget exceeded ({MaxExpansions}), falling back to NavMesh.CalculatePath");
  return FallbackCalculate(query);
  }
 

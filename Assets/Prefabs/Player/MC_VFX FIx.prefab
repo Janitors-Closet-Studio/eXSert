@@ -1526,9 +1526,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4360433577188796707}
   - component: {fileID: 5480205498155007657}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: -Cameras-
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3672,9 +3672,9 @@ GameObject:
   - component: {fileID: 3657163976880928063}
   - component: {fileID: 3439018001167033462}
   - component: {fileID: 797948608421711896}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: MainCamera
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3687,8 +3687,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.07862169, y: -0.0019005621, z: 0.00014988966, w: -0.9969027}
-  m_LocalPosition: {x: 0.020454478, y: 1.9714823, z: -3.442392}
+  m_LocalRotation: {x: -0.07862126, y: -0.0019005656, z: 0.00014988909, w: -0.99690276}
+  m_LocalPosition: {x: 0.020454597, y: 1.9714823, z: -3.442392}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4408,17 +4408,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -1.7079964, y: 1.4613862, z: -13.732997}
-  - {x: -1.7587384, y: 1.3672704, z: -13.732038}
-  - {x: -1.8094804, y: 1.2927066, z: -13.731081}
-  - {x: -1.8602222, y: 1.2376945, z: -13.730122}
-  - {x: -1.9109645, y: 1.2022345, z: -13.729162}
-  - {x: -1.9617062, y: 1.1863264, z: -13.728203}
-  - {x: -2.0124483, y: 1.1899703, z: -13.727244}
-  - {x: -2.0631902, y: 1.213166, z: -13.726286}
-  - {x: -2.1139324, y: 1.2559137, z: -13.7253275}
-  - {x: -2.1646743, y: 1.3182132, z: -13.724368}
-  - {x: -2.2154162, y: 1.4000648, z: -13.72341}
+  - {x: -1.1508403, y: 0.5383862, z: -2.7386515}
+  - {x: -1.2015823, y: 0.44427037, z: -2.7376926}
+  - {x: -1.2523243, y: 0.3697065, z: -2.7367342}
+  - {x: -1.3030663, y: 0.3146945, z: -2.7357752}
+  - {x: -1.3538083, y: 0.27923447, z: -2.7348166}
+  - {x: -1.4045502, y: 0.26332635, z: -2.7338576}
+  - {x: -1.4552922, y: 0.26697016, z: -2.732899}
+  - {x: -1.5060341, y: 0.29016593, z: -2.7319403}
+  - {x: -1.5567763, y: 0.33291364, z: -2.7309816}
+  - {x: -1.6075181, y: 0.39521325, z: -2.7300227}
+  - {x: -1.6582601, y: 0.47706485, z: -2.729064}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -5065,17 +5065,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -1.2619648, y: 1.4358983, z: -13.828564}
-  - {x: -1.2460116, y: 1.4355531, z: -13.819008}
-  - {x: -1.2300586, y: 1.4357268, z: -13.809452}
-  - {x: -1.2141052, y: 1.4364194, z: -13.799895}
-  - {x: -1.1981522, y: 1.4376311, z: -13.79034}
-  - {x: -1.1821989, y: 1.4393618, z: -13.780783}
-  - {x: -1.1662457, y: 1.4416114, z: -13.771227}
-  - {x: -1.1502925, y: 1.44438, z: -13.76167}
-  - {x: -1.1343393, y: 1.4476678, z: -13.752115}
-  - {x: -1.1183861, y: 1.4514743, z: -13.7425585}
-  - {x: -1.102433, y: 1.4558, z: -13.733003}
+  - {x: -0.70480865, y: 0.5128983, z: -2.8342183}
+  - {x: -0.68885547, y: 0.51255304, z: -2.8246622}
+  - {x: -0.67290235, y: 0.51272666, z: -2.8151064}
+  - {x: -0.65694916, y: 0.51341933, z: -2.80555}
+  - {x: -0.64099604, y: 0.51463103, z: -2.7959943}
+  - {x: -0.6250428, y: 0.5163617, z: -2.786438}
+  - {x: -0.6090896, y: 0.5186114, z: -2.7768817}
+  - {x: -0.5931364, y: 0.52138007, z: -2.7673256}
+  - {x: -0.57718325, y: 0.52466774, z: -2.7577696}
+  - {x: -0.56123006, y: 0.5284744, z: -2.7482138}
+  - {x: -0.5452769, y: 0.5328001, z: -2.7386575}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -5396,6 +5396,7 @@ GameObject:
   - component: {fileID: 5206229162919500938}
   - component: {fileID: 359929981503245092}
   - component: {fileID: 5058666932746763221}
+  - component: {fileID: 1001267735247796350}
   m_Layer: 6
   m_Name: CombatManager
   m_TagString: Untagged
@@ -5516,7 +5517,7 @@ MonoBehaviour:
   animationController: {fileID: 5311890396266669227}
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
-  attackLockSystem: {fileID: 3007275964402751658}
+  attackLockSystem: {fileID: 1001267735247796350}
 --- !u!114 &5058666932746763221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5535,6 +5536,38 @@ MonoBehaviour:
   pauseTimeOnParry: 1
   parryPauseDuration: 0.3
   howSlowTimeScales: 0.5
+--- !u!114 &1001267735247796350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2452212790660438460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b19dc608cef71d4da470f1474716616, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AttackLockSystem
+  lockOnAngle: 30
+  lockOnDistance: 10
+  player: {fileID: 3646038222488559394}
+  playerMovement: {fileID: 6150044602222399215}
+  enemyLayers:
+    serializedVersion: 2
+    m_Bits: 256
+  enforceLayerMask: 1
+  softLockRadius: 4
+  softLockMoveDistance: 0.75
+  softLockStopBuffer: 0.5
+  softLockNoMoveRadius: 1.5
+  softLockMoveDuration: 0.1
+  onlySoftLockSingleTarget: 0
+  steerCamera: 1
+  rotatePlayerDuringHardLock: 1
+  hardLockRotateSpeed: 360
+  cameraSnapTime: 0.1
+  cameraManager: {fileID: 5480205498155007657}
+  rotatePlayerIfCameraDisabled: 0
 --- !u!1 &2525516429101545011
 GameObject:
   m_ObjectHideFlags: 0
@@ -7707,7 +7740,6 @@ GameObject:
   - component: {fileID: 2289477533837267770}
   - component: {fileID: 3564156978703942357}
   - component: {fileID: 6150044602222399215}
-  - component: {fileID: 3007275964402751658}
   - component: {fileID: 8127531854480134888}
   - component: {fileID: 2026860560813373367}
   m_Layer: 6
@@ -7856,38 +7888,6 @@ MonoBehaviour:
   invertYAxis: 0
   highFallHeightThreshold: 6
   highFallGroundProbeDistance: 25
---- !u!114 &3007275964402751658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3646038222488559394}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b19dc608cef71d4da470f1474716616, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AttackLockSystem
-  lockOnAngle: 30
-  lockOnDistance: 10
-  player: {fileID: 3646038222488559394}
-  playerMovement: {fileID: 6150044602222399215}
-  enemyLayers:
-    serializedVersion: 2
-    m_Bits: 256
-  enforceLayerMask: 1
-  softLockRadius: 4
-  softLockMoveDistance: 0.75
-  softLockStopBuffer: 0.5
-  softLockNoMoveRadius: 0.3
-  softLockMoveDuration: 0.1
-  onlySoftLockSingleTarget: 0
-  steerCamera: 1
-  rotatePlayerDuringHardLock: 1
-  hardLockRotateSpeed: 360
-  cameraSnapTime: 0.1
-  cameraManager: {fileID: 5480205498155007657}
-  rotatePlayerIfCameraDisabled: 0
 --- !u!114 &8127531854480134888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7903,7 +7903,7 @@ MonoBehaviour:
   maxHealth: 1000
   currentHealth: 1000
   startingHealthPercent: 1
-  invulnerable: 1
+  invulnerable: 0
   restartFromCheckpointOnDeath: 1
   destroyPlayerOnDeath: 0
   deathFadeDelaySeconds: 3.5
@@ -11986,17 +11986,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -1.5540372, y: 1.4385, z: -13.828546}
-  - {x: -1.5685332, y: 1.4356344, z: -13.81899}
-  - {x: -1.5830292, y: 1.4337893, z: -13.809432}
-  - {x: -1.5975249, y: 1.4329647, z: -13.799875}
-  - {x: -1.612021, y: 1.433161, z: -13.790319}
-  - {x: -1.6265168, y: 1.4343778, z: -13.780762}
-  - {x: -1.6410127, y: 1.4366153, z: -13.771205}
-  - {x: -1.6555086, y: 1.4398735, z: -13.761648}
-  - {x: -1.6700046, y: 1.4441524, z: -13.752092}
-  - {x: -1.6845005, y: 1.4494518, z: -13.742535}
-  - {x: -1.6989964, y: 1.455772, z: -13.732979}
+  - {x: -0.9968811, y: 0.51550007, z: -2.8342}
+  - {x: -1.0113771, y: 0.5126343, z: -2.8246434}
+  - {x: -1.0258731, y: 0.5107891, z: -2.8150868}
+  - {x: -1.0403689, y: 0.50996464, z: -2.80553}
+  - {x: -1.0548649, y: 0.51016086, z: -2.7959733}
+  - {x: -1.0693607, y: 0.5113777, z: -2.786417}
+  - {x: -1.0838566, y: 0.51361525, z: -2.7768602}
+  - {x: -1.0983527, y: 0.5168734, z: -2.7673035}
+  - {x: -1.1128485, y: 0.5211523, z: -2.757747}
+  - {x: -1.1273444, y: 0.5264518, z: -2.7481904}
+  - {x: -1.1418403, y: 0.53277206, z: -2.7386336}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -15012,7 +15012,7 @@ GameObject:
   - component: {fileID: 897994802152428115}
   m_Layer: 17
   m_Name: MoveCamera
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -15025,7 +15025,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6626823234369765875}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.078621686, y: -0.0019005621, z: 0.00014989063, w: -0.9969027}
+  m_LocalRotation: {x: -0.07862158, y: -0.0019005653, z: 0.0001498897, w: -0.9969027}
   m_LocalPosition: {x: 0.020454597, y: 1.9714823, z: -3.442392}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -18183,17 +18183,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -1.100233, y: 1.4588846, z: -13.733328}
-  - {x: -1.0491428, y: 1.3664123, z: -13.732494}
-  - {x: -0.9980525, y: 1.293409, z: -13.731662}
-  - {x: -0.9469622, y: 1.2398741, z: -13.730827}
-  - {x: -0.895872, y: 1.2058085, z: -13.729995}
-  - {x: -0.8447817, y: 1.1912115, z: -13.72916}
-  - {x: -0.7936914, y: 1.1960834, z: -13.728326}
-  - {x: -0.74260116, y: 1.220424, z: -13.727492}
-  - {x: -0.6915109, y: 1.2642338, z: -13.72666}
-  - {x: -0.6404206, y: 1.327512, z: -13.725825}
-  - {x: -0.5893304, y: 1.4102594, z: -13.724992}
+  - {x: -0.5430769, y: 0.5358846, z: -2.7389824}
+  - {x: -0.4919866, y: 0.4434123, z: -2.7381492}
+  - {x: -0.4408964, y: 0.3704089, z: -2.7373152}
+  - {x: -0.38980606, y: 0.31687424, z: -2.7364814}
+  - {x: -0.33871585, y: 0.28280848, z: -2.7356482}
+  - {x: -0.2876256, y: 0.2682115, z: -2.7348142}
+  - {x: -0.23653531, y: 0.2730834, z: -2.7339807}
+  - {x: -0.18544507, y: 0.29742414, z: -2.7331471}
+  - {x: -0.1343548, y: 0.34123373, z: -2.7323134}
+  - {x: -0.08326455, y: 0.4045121, z: -2.7314796}
+  - {x: -0.03217429, y: 0.4872594, z: -2.7306461}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -19530,7 +19530,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4196343275464527414}
-  - component: {fileID: 3969716249651941483}
   m_Layer: 6
   m_Name: -Audio-
   m_TagString: Untagged
@@ -19556,25 +19555,6 @@ Transform:
   - {fileID: 607169572089459144}
   m_Father: {fileID: 5378940107489749497}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3969716249651941483
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8674996563826889607}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48a59423629965842855da33d772a75a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
-  masterSource: {fileID: 0}
-  musicSource: {fileID: 0}
-  sfxSource: {fileID: 6637576537600715596}
-  voiceSource: {fileID: 460243241577124123}
-  ambienceSource: {fileID: 0}
-  uiSource: {fileID: 0}
-  puzzleSource: {fileID: 0}
 --- !u!1 &8707353537431604314
 GameObject:
   m_ObjectHideFlags: 0
@@ -20264,9 +20244,9 @@ GameObject:
   - component: {fileID: 7838498483116243344}
   - component: {fileID: 6789831858660127544}
   - component: {fileID: 2847159133351051580}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: GuardCamera
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -20279,7 +20259,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8983900087774367925}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.080855094, y: -0.0024223754, z: 0.00019650566, w: -0.99672294}
+  m_LocalRotation: {x: -0.08089331, y: -0.0024217444, z: 0.00019654696, w: -0.9967198}
   m_LocalPosition: {x: 0.018365428, y: 2.058, z: -3.8722029}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

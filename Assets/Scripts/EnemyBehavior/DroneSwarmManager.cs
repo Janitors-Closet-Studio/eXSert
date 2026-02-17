@@ -38,7 +38,7 @@ public class DroneSwarmManager : MonoBehaviour
         if (!spawningEnabled)
         {
 #if UNITY_EDITOR
-            Debug.Log("[DroneSwarmManager] Spawning is disabled. No clusters will be created.");
+            EnemyBehaviorDebugLogBools.Log(nameof(DroneSwarmManager), "[DroneSwarmManager] Spawning is disabled. No clusters will be created.");
 #endif
             return;
         }
@@ -46,7 +46,7 @@ public class DroneSwarmManager : MonoBehaviour
         if (clusterSpawnPoints == null || clusterSpawnPoints.Count == 0)
         {
 #if UNITY_EDITOR
-            Debug.LogWarning("[DroneSwarmManager] No cluster spawn points assigned.");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(DroneSwarmManager), "[DroneSwarmManager] No cluster spawn points assigned.");
 #endif
             return;
         }
@@ -107,7 +107,7 @@ public class DroneSwarmManager : MonoBehaviour
                 if (!foundNavMesh)
                 {
 #if UNITY_EDITOR
-                    Debug.LogWarning($"[DroneSwarmManager] No NavMesh found near {spawnPos} even with extended search. Drone may not function correctly.");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(DroneSwarmManager), $"[DroneSwarmManager] No NavMesh found near {spawnPos} even with extended search. Drone may not function correctly.");
 #endif
                 }
 
@@ -121,7 +121,7 @@ public class DroneSwarmManager : MonoBehaviour
                 else
                 {
 #if UNITY_EDITOR
-                    Debug.LogWarning("[DroneSwarmManager] Spawned prefab does not contain a DroneEnemy component.");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(DroneSwarmManager), "[DroneSwarmManager] Spawned prefab does not contain a DroneEnemy component.");
 #endif
                 }
             }

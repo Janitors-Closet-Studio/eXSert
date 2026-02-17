@@ -8,7 +8,6 @@ using System.Collections;
 using System.Linq;
 using Behaviors;
 using UnityEngine.AI;
-using System.Net.NetworkInformation;
 
 public enum AlarmCarrierState
 {
@@ -38,6 +37,15 @@ internal sealed class AlarmCarrierDetectionTrigger : MonoBehaviour
 
         sphere.isTrigger = true;
         SetRadius(radius);
+
+        // Ensure a Rigidbody exists for trigger detection to work
+        var rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
 
         if (transform.parent != owner.transform)
         {
@@ -95,10 +103,10 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
     private float playerChaseRadius = 20f;
 
     [Header("Crawler Prefabs")]
-    [SerializeField, Tooltip("Prefab for the base crawler enemy.")]
-    private BaseCrawlerEnemy baseCrawlerPrefab;
-    [SerializeField, Tooltip("Prefab for the bomb carrier enemy.")]
-    private BombCarrierEnemy bombCrawlerPrefab;
+    [SerializeField, Tooltip("Prefab for the base crawler enemy (can be root GameObject - component will be found on root or children).")]
+    private GameObject baseCrawlerPrefab;
+    [SerializeField, Tooltip("Prefab for the bomb carrier enemy (can be root GameObject - component will be found on root or children).")]
+    private GameObject bombCrawlerPrefab;
 
     [Header("Alarm Debug")]
     [ReadOnly, SerializeField]
@@ -140,7 +148,7 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
         {
             currentZone = FindNearestZone();
 #if UNITY_EDITOR
-            Debug.Log($"{gameObject.name} assigned to zone: {currentZone?.gameObject.name}");
+            EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"{gameObject.name} assigned to zone: {currentZone?.gameObject.name}");
 #endif
         }
     }
@@ -150,12 +158,12 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
         InitializeStateMachine(AlarmCarrierState.Idle);
         ConfigureStateMachine();
 #if UNITY_EDITOR
-        Debug.Log($"{gameObject.name} State machine initialized");
+        EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"{gameObject.name} State machine initialized");
 #endif
         if (enemyAI.State.Equals(AlarmCarrierState.Idle))
         {
 #if UNITY_EDITOR
-            Debug.Log($"{gameObject.name} Manually calling OnEnterIdle for initial Idle state");
+            EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"{gameObject.name} Manually calling OnEnterIdle for initial Idle state");
 #endif
             idleBehavior.OnEnter(this);
         }
@@ -228,7 +236,7 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
                 if (alarmFleeCoroutine != null)
                     StopCoroutine(alarmFleeCoroutine);
                 alarmFleeCoroutine = StartCoroutine(AlarmFleeBehavior());
-                Debug.Log($"{gameObject.name} Entered AlarmTriggered state");
+                EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"{gameObject.name} Entered AlarmTriggered state");
             })
             .Permit(AlarmCarrierTrigger.AlarmEnd, AlarmCarrierState.Summoning)
             .Permit(AlarmCarrierTrigger.Die, AlarmCarrierState.Death);
@@ -246,7 +254,7 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
                     agent.ResetPath();
                     agent.isStopped = false;
                 }
-                Debug.Log($"{gameObject.name} agent.enabled={agent.enabled}, isOnNavMesh={agent.isOnNavMesh}, isStopped={agent.isStopped}, speed={agent.speed}, acceleration={agent.acceleration}");
+                EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"{gameObject.name} agent.enabled={agent.enabled}, isOnNavMesh={agent.isOnNavMesh}, isStopped={agent.isStopped}, speed={agent.speed}, acceleration={agent.acceleration}");
                 StartSummoning();
             })
             .Permit(AlarmCarrierTrigger.Die, AlarmCarrierState.Death);
@@ -281,11 +289,11 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
     private IEnumerator AlarmCountdown()
     {
 #if UNITY_EDITOR
-        Debug.Log($"{gameObject.name} AlarmCountdown started for {alarmDuration} seconds");
+        EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"{gameObject.name} AlarmCountdown started for {alarmDuration} seconds");
 #endif
         yield return WaitForSecondsCache.Get(alarmDuration);
 #if UNITY_EDITOR
-        Debug.Log($"{gameObject.name} AlarmCountdown finished, firing AlarmEnd");
+        EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"{gameObject.name} AlarmCountdown finished, firing AlarmEnd");
 #endif
         enemyAI.Fire(AlarmCarrierTrigger.AlarmEnd);
         alarmCountdownCoroutine = null;
@@ -343,16 +351,33 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
 
     private void SpawnBaseCrawlerAtPocket(CrawlerPocket pocket)
     {
+        if (baseCrawlerPrefab == null)
+        {
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(AlarmCarrierEnemy), $"[{name}] baseCrawlerPrefab is not assigned!");
+#endif
+            return;
+        }
+
         float clusterRadius = pocket.ClusterRadius;
         Vector3 spawnPos = pocket.transform.position + Random.insideUnitSphere * 0.5f * clusterRadius;
         spawnPos.y = pocket.transform.position.y;
 
-        var crawler = Instantiate(baseCrawlerPrefab, spawnPos, Quaternion.identity);
+        var spawnedObj = Instantiate(baseCrawlerPrefab, spawnPos, Quaternion.identity);
+        
+        // Get the BaseCrawlerEnemy component from root or children
+        var crawler = spawnedObj.GetComponent<BaseCrawlerEnemy>();
+        if (crawler == null)
+            crawler = spawnedObj.GetComponentInChildren<BaseCrawlerEnemy>();
+
         if (crawler != null)
         {
             crawler.Pocket = pocket;
             crawler.AlarmSource = this;
-            SwarmManager.Instance.AddToSwarm(crawler);
+            
+            // Register with SwarmManager if available
+            if (SwarmManager.Instance != null)
+                SwarmManager.Instance.AddToSwarm(crawler);
 
             // Use PlayerPresenceManager if available
             if (PlayerPresenceManager.IsPlayerPresent)
@@ -367,19 +392,76 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
             // Track alarm-spawned crawlers
             activeAlarmSpawnedCrawlers++;
             crawler.OnDestroyCallback = () => { activeAlarmSpawnedCrawlers--; };
+
+            // Force the crawler to immediately start chasing/swarming the player
+            // Alarm-spawned crawlers should skip the ambush phase
+            StartCoroutine(ForceChaseAfterFrame(crawler));
+        }
+        else
+        {
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(AlarmCarrierEnemy), $"[{name}] baseCrawlerPrefab does not contain a BaseCrawlerEnemy component!");
+#endif
+            Destroy(spawnedObj);
+        }
+    }
+
+    private IEnumerator ForceChaseAfterFrame(BaseCrawlerEnemy crawler)
+    {
+        // Wait one frame for the crawler's state machine to initialize
+        yield return null;
+        
+        if (crawler != null && crawler.enemyAI != null)
+        {
+            // Try to transition to Chase or Swarm state
+            if (crawler.enemyAI.CanFire(CrawlerEnemyTrigger.AmbushReady))
+            {
+                crawler.enemyAI.Fire(CrawlerEnemyTrigger.AmbushReady);
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"[{crawler.name}] Alarm-spawned crawler forced to Swarm state");
+#endif
+            }
+            else if (crawler.enemyAI.CanFire(CrawlerEnemyTrigger.LosePlayer))
+            {
+                crawler.enemyAI.Fire(CrawlerEnemyTrigger.LosePlayer);
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(nameof(AlarmCarrierEnemy), $"[{crawler.name}] Alarm-spawned crawler forced to Chase state");
+#endif
+            }
         }
     }
 
     private void SpawnBombCrawlerAtPocket(CrawlerPocket pocket)
     {
+        if (bombCrawlerPrefab == null)
+        {
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(AlarmCarrierEnemy), $"[{name}] bombCrawlerPrefab is not assigned!");
+#endif
+            return;
+        }
+
         Vector3 spawnPos = pocket.transform.position + Random.insideUnitSphere * 0.5f * pocket.ClusterRadius;
         spawnPos.y = pocket.transform.position.y;
 
-        var bomb = Instantiate(bombCrawlerPrefab, spawnPos, Quaternion.identity);
+        var spawnedObj = Instantiate(bombCrawlerPrefab, spawnPos, Quaternion.identity);
+        
+        // Get the BombCarrierEnemy component from root or children
+        var bomb = spawnedObj.GetComponent<BombCarrierEnemy>();
+        if (bomb == null)
+            bomb = spawnedObj.GetComponentInChildren<BombCarrierEnemy>();
+
         if (bomb != null)
         {
             bomb.Pocket = pocket;
             bomb.SetSpawnSource(true, this, pocket); // spawnedByAlarm = true, alarm = this, pocket = pocket
+        }
+        else
+        {
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(AlarmCarrierEnemy), $"[{name}] bombCrawlerPrefab does not contain a BombCarrierEnemy component!");
+#endif
+            Destroy(spawnedObj);
         }
     }
 

@@ -60,7 +60,7 @@ public class DroneIdleBehavior<TState, TTrigger> : IdleBehavior<TState, TTrigger
         if (drone.currentZone == null)
         {
 #if UNITY_EDITOR
-            Debug.LogWarning($"[DroneIdleBehavior] Drone {drone.name} has no currentZone assigned! Cannot move.");
+            EnemyBehaviorDebugLogBools.LogWarning("DroneIdleBehavior", $"[DroneIdleBehavior] Drone {drone.name} has no currentZone assigned! Cannot move.");
 #endif
             return;
         }
@@ -72,7 +72,7 @@ public class DroneIdleBehavior<TState, TTrigger> : IdleBehavior<TState, TTrigger
             drone.Cluster.target.position = newTarget;
             drone.lastZoneMoveTime = Time.time;
 #if UNITY_EDITOR
-            Debug.Log($"[DroneIdleBehavior] Cluster moving to new target: {newTarget}");
+            EnemyBehaviorDebugLogBools.Log("DroneIdleBehavior", $"[DroneIdleBehavior] Cluster moving to new target: {newTarget}");
 #endif
         }
         drone.Cluster.UpdateClusterMovement();

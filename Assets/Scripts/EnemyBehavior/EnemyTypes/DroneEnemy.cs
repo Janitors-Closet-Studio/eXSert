@@ -469,7 +469,7 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
         if (agent == null || !agent.enabled)
         {
 #if UNITY_EDITOR
-            Debug.LogWarning($"[DroneEnemy] {name}: MoveTo failed - agent null or disabled");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(DroneEnemy), $"[DroneEnemy] {name}: MoveTo failed - agent null or disabled");
 #endif
             return;
         }
@@ -488,7 +488,7 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
                     agent.Warp(selfHit.position);
                     warped = true;
 #if UNITY_EDITOR
-                    Debug.Log($"[DroneEnemy] {name}: Warped to NavMesh at {selfHit.position} (radius: {radius})");
+                    EnemyBehaviorDebugLogBools.Log(nameof(DroneEnemy), $"[DroneEnemy] {name}: Warped to NavMesh at {selfHit.position} (radius: {radius})");
 #endif
                     break;
                 }
@@ -497,7 +497,7 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
             if (!warped)
             {
 #if UNITY_EDITOR
-                Debug.LogWarning($"[DroneEnemy] {name}: MoveTo failed - not on NavMesh and couldn't find one within 50m");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(DroneEnemy), $"[DroneEnemy] {name}: MoveTo failed - not on NavMesh and couldn't find one within 50m");
 #endif
                 return;
             }
@@ -528,7 +528,7 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
             // Fallback: just try to move toward the desired position
             // The NavMeshAgent will handle pathfinding
 #if UNITY_EDITOR
-            Debug.LogWarning($"[DroneEnemy] {name}: No NavMesh near desired position {desired}, using direct destination");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(DroneEnemy), $"[DroneEnemy] {name}: No NavMesh near desired position {desired}, using direct destination");
 #endif
         }
 
@@ -541,13 +541,13 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
         {
 #if UNITY_EDITOR
             if (Time.frameCount % 300 == 0) // Log every ~5 seconds at 60fps
-                Debug.Log($"[DroneEnemy] {name}: SetDestination to {finalDestination}");
+                EnemyBehaviorDebugLogBools.Log(nameof(DroneEnemy), $"[DroneEnemy] {name}: SetDestination to {finalDestination}");
 #endif
         }
         else
         {
 #if UNITY_EDITOR
-            Debug.LogWarning($"[DroneEnemy] {name}: SetDestination FAILED for {finalDestination}");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(DroneEnemy), $"[DroneEnemy] {name}: SetDestination FAILED for {finalDestination}");
 #endif
         }
     }

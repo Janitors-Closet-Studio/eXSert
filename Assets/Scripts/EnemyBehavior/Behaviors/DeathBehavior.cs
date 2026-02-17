@@ -71,7 +71,7 @@ namespace Behaviors
         {
             // Placeholder for SFX logic
 #if UNITY_EDITOR
-            Debug.Log($"{enemy.gameObject.name} death SFX played.");
+            EnemyBehaviorDebugLogBools.Log("DeathBehavior", $"{enemy.gameObject.name} death SFX played.");
 #endif
         }
         public void Tick(BaseEnemy<TState, TTrigger> enemy)

@@ -43,7 +43,7 @@ public class AutomatedPathTestRunner : MonoBehaviour
  }
  if (PathRequestManager.Instance == null)
  {
- Debug.LogError("AutomatedPathTestRunner: PathRequestManager not found in scene.");
+ EnemyBehaviorDebugLogBools.LogError("AutomatedPathTestRunner: PathRequestManager not found in scene.");
  yield break;
  }
 
@@ -73,8 +73,8 @@ public class AutomatedPathTestRunner : MonoBehaviour
  yield return null;
 
  // Summary
- Debug.Log($"AutomatedPathTestRunner: Tests completed. Passed {passed}, Failed {failed}.");
- foreach (var s in logs) Debug.Log(s);
+ EnemyBehaviorDebugLogBools.Log(nameof(AutomatedPathTestRunner), $"AutomatedPathTestRunner: Tests completed. Passed {passed}, Failed {failed}.");
+ foreach (var s in logs) EnemyBehaviorDebugLogBools.Log(nameof(AutomatedPathTestRunner), s);
  }
 
  bool TestOpenArea(out string log)

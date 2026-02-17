@@ -36,6 +36,105 @@ public class AudioSettings : MonoBehaviour
 
     [SerializeField] private InputActionReference _applyAction;
 
+    // Raw slider values (0-1) used to apply master scaling consistently.
+    private float _masterVolumeRaw;
+    private float _musicVolumeRaw;
+    private float _sfxVolumeRaw;
+    private float _voiceVolumeRaw;
+
+    void Awake()
+    {
+        if (HasSavedVolumes())
+        {
+            CacheRawVolumesFromSources();
+        }
+        else
+        {
+            _masterVolumeRaw = defaultVolume;
+            _musicVolumeRaw = defaultVolume;
+            _sfxVolumeRaw = defaultVolume;
+            _voiceVolumeRaw = defaultVolume;
+            ApplyScaledVolumes();
+        }
+        SetStaticSlidersToCurrentValues();
+        SetCurrentValuesOnSliders();
+    }
+
+    private bool HasSavedVolumes()
+    {
+        return PlayerPrefs.HasKey("masterVolume")
+            || PlayerPrefs.HasKey("musicVolume")
+            || PlayerPrefs.HasKey("sfxVolume")
+            || PlayerPrefs.HasKey("voiceVolume");
+    }
+
+    private void CacheRawVolumesFromSources()
+    {
+        _masterVolumeRaw = SoundManager.Instance.masterSource.volume;
+        _musicVolumeRaw = GetRawVolume(SoundManager.Instance.musicSource.volume, _masterVolumeRaw);
+        _sfxVolumeRaw = GetRawVolume(SoundManager.Instance.sfxSource.volume, _masterVolumeRaw);
+        _voiceVolumeRaw = GetRawVolume(SoundManager.Instance.voiceSource.volume, _masterVolumeRaw);
+    }
+
+    private float GetRawVolume(float scaledVolume, float masterVolume)
+    {
+        if (masterVolume <= 0f)
+            return 0f;
+
+        return Mathf.Clamp01(scaledVolume / masterVolume);
+    }
+
+    private void ApplyScaledVolumes()
+    {
+        SoundManager.Instance.masterSource.volume = _masterVolumeRaw;
+        SoundManager.Instance.musicSource.volume = _musicVolumeRaw * _masterVolumeRaw;
+        SoundManager.Instance.sfxSource.volume = _sfxVolumeRaw * _masterVolumeRaw;
+        SoundManager.Instance.voiceSource.volume = _voiceVolumeRaw * _masterVolumeRaw;
+
+        if (SoundManager.Instance.ambienceSource != null)
+            SoundManager.Instance.ambienceSource.volume = _musicVolumeRaw * _masterVolumeRaw * 0.2f; // Ambience is typically quieter than music
+
+        if (SoundManager.Instance.levelMusicSource != null)
+            SoundManager.Instance.levelMusicSource.volume = _musicVolumeRaw * _masterVolumeRaw;
+
+        if (SoundManager.Instance.uiSource != null)
+            SoundManager.Instance.uiSource.volume = _sfxVolumeRaw * _masterVolumeRaw;
+
+        if (SoundManager.Instance.puzzleSource != null)
+            SoundManager.Instance.puzzleSource.volume = _sfxVolumeRaw * _masterVolumeRaw;
+    }
+
+    private void SetStaticSlidersToCurrentValues()
+    {
+        if (staticMasterVolumeSlider != null)
+            staticMasterVolumeSlider.value = SoundManager.Instance.masterSource.volume;
+
+        if (staticMusicVolumeSlider != null)
+            staticMusicVolumeSlider.value = _musicVolumeRaw;;
+
+        if (staticSfxVolumeSlider != null)
+            staticSfxVolumeSlider.value = _sfxVolumeRaw;
+
+        if (staticVoiceVolumeSlider != null)
+            staticVoiceVolumeSlider.value = _voiceVolumeRaw;
+    }
+
+    private void SetCurrentValuesOnSliders()
+    {
+        if (masterVolumeSlider != null)
+            masterVolumeSlider.value = _masterVolumeRaw;
+
+        if (musicVolumeSlider != null)
+            musicVolumeSlider.value = _musicVolumeRaw;
+
+        if (sfxVolumeSlider != null)
+            sfxVolumeSlider.value = _sfxVolumeRaw;
+
+        if (voiceVolumeSlider != null)
+            voiceVolumeSlider.value = _voiceVolumeRaw;
+    }
+
+
     void Update()
     {
         if (_applyAction.action.WasPerformedThisFrame() && volumeSettingsContainer.gameObject.activeSelf)
@@ -52,66 +151,58 @@ public class AudioSettings : MonoBehaviour
     //all functions below sets the volumes for each mixer depending on the slider
     public void SetSFXVolume(float volume)
     {
-        // Apply live preview immediately to the audio source, but defer updating the
-        // read-only/static slider until the user presses Apply.
-        SoundManager.Instance.sfxSource.volume = volume * SoundManager.Instance.masterSource.volume;
+        _sfxVolumeRaw = volume;
+        ApplyScaledVolumes();
     }
 
     public void SetMusicVolume(float volume)
     {
-        SoundManager.Instance.musicSource.volume = volume * SoundManager.Instance.masterSource.volume;
+        _musicVolumeRaw = volume;
+        ApplyScaledVolumes();
     }
 
     public void SetVoiceVolume(float volume)
     {
-        SoundManager.Instance.voiceSource.volume = volume * SoundManager.Instance.masterSource.volume;
+        _voiceVolumeRaw = volume;
+        ApplyScaledVolumes();
     }
 
 
     public void SetMasterVolume(float volume)
     {
-        SoundManager.Instance.masterSource.volume = volume;
+        _masterVolumeRaw = volume;
+        ApplyScaledVolumes();
     }
 
     //Applies volume levels
     public void VolumeApply()
     {
         // Persist current live values
-        PlayerPrefs.SetFloat("masterVolume", SoundManager.Instance.masterSource.volume);
-        PlayerPrefs.SetFloat("sfxVolume", SoundManager.Instance.sfxSource.volume);
-        PlayerPrefs.SetFloat("musicVolume", SoundManager.Instance.musicSource.volume);
-        PlayerPrefs.SetFloat("voiceVolume", SoundManager.Instance.voiceSource.volume);
+        PlayerPrefs.SetFloat("masterVolume", _masterVolumeRaw);
+        PlayerPrefs.SetFloat("sfxVolume", _sfxVolumeRaw);
+        PlayerPrefs.SetFloat("musicVolume", _musicVolumeRaw);
+        PlayerPrefs.SetFloat("voiceVolume", _voiceVolumeRaw);
 
-        // Update the read-only/static sliders to reflect the applied values.
-        if (staticMasterVolumeSlider != null)
-            staticMasterVolumeSlider.value = masterVolumeSlider != null ? masterVolumeSlider.value : SoundManager.Instance.masterSource.volume;
+        SetStaticSlidersToCurrentValues();
 
-        if (staticMusicVolumeSlider != null)
-            staticMusicVolumeSlider.value = musicVolumeSlider != null ? musicVolumeSlider.value : SoundManager.Instance.musicSource.volume;
-
-        if (staticSfxVolumeSlider != null)
-            staticSfxVolumeSlider.value = sfxVolumeSlider != null ? sfxVolumeSlider.value : SoundManager.Instance.sfxSource.volume;
-
-        if (staticVoiceVolumeSlider != null)
-            staticVoiceVolumeSlider.value = voiceVolumeSlider != null ? voiceVolumeSlider.value : SoundManager.Instance.voiceSource.volume;
+        PlayerPrefs.Save();
 
     }
 
     //Resets settings
     public void ResetButton()
     {
-        SoundManager.Instance.masterSource.volume = defaultVolume;
+        _masterVolumeRaw = defaultVolume;
+        _musicVolumeRaw = defaultVolume;
+        _sfxVolumeRaw = defaultVolume;
+        _voiceVolumeRaw = defaultVolume;
+
         masterVolumeSlider.value = defaultVolume;
-
-        SoundManager.Instance.musicSource.volume = defaultVolume;
         musicVolumeSlider.value = defaultVolume;
-
-        SoundManager.Instance.sfxSource.volume = defaultVolume;
         sfxVolumeSlider.value = defaultVolume;
-
-        SoundManager.Instance.voiceSource.volume = defaultVolume;
         voiceVolumeSlider.value = defaultVolume;
 
+        ApplyScaledVolumes();
 
         VolumeApply();
     }

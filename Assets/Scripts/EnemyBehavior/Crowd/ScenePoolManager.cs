@@ -34,7 +34,7 @@ namespace EnemyBehavior.Crowd
             // Duplicate guard for additive scenes
             if (Instance != null && Instance != this)
             {
-                Debug.LogWarning("ScenePoolManager duplicate detected, destroying this instance.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(ScenePoolManager), "ScenePoolManager duplicate detected, destroying this instance.");
                 Destroy(gameObject);
                 return;
             }

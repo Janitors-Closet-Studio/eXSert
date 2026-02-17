@@ -19,7 +19,7 @@ namespace EnemyBehavior.Boss
             
             if (mediator == null)
             {
-                Debug.LogError("[BossAnimationEventRelay] No BossAnimationEventMediator found on parent! Animation Events will fail.");
+                EnemyBehaviorDebugLogBools.LogError("[BossAnimationEventRelay] No BossAnimationEventMediator found on parent! Animation Events will fail.");
             }
         }
 
