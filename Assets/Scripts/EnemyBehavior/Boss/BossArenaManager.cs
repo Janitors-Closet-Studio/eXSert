@@ -179,7 +179,7 @@ namespace EnemyBehavior.Boss
             }
 
             OnWallsStateChanged?.Invoke(up);
-            Debug.Log($"[BossArenaManager] Walls {(up ? "RAISED" : "LOWERED")}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Walls {(up ? "RAISED" : "LOWERED")}");
         }
 
         private void DisableAgentsOutsideCage()
@@ -202,7 +202,7 @@ namespace EnemyBehavior.Boss
                     {
                         agent.enabled = false;
                         disabledAgentsOutsideCage.Add(agent);
-                        Debug.Log($"[BossArenaManager] Disabled agent outside cage: {enemy.name}");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Disabled agent outside cage: {enemy.name}");
                     }
                 }
             }
@@ -215,7 +215,7 @@ namespace EnemyBehavior.Boss
                 if (agent != null)
                 {
                     agent.enabled = true;
-                    Debug.Log($"[BossArenaManager] Re-enabled agent: {agent.name}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Re-enabled agent: {agent.name}");
                 }
             }
             disabledAgentsOutsideCage.Clear();
@@ -252,7 +252,7 @@ namespace EnemyBehavior.Boss
                     obstacle.size = new Vector3(3f, 3f, 3f);
                 }
                 
-                Debug.Log($"[BossArenaManager] Added NavMeshObstacle to wall: {wall.name} (size: {obstacle.size})");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Added NavMeshObstacle to wall: {wall.name} (size: {obstacle.size})");
             }
             
             // Enable/disable carving based on wall state
@@ -261,7 +261,7 @@ namespace EnemyBehavior.Boss
             
             if (enableCarving)
             {
-                Debug.Log($"[BossArenaManager] Wall '{wall.name}' NavMesh carving ENABLED - boss cannot pass");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Wall '{wall.name}' NavMesh carving ENABLED - boss cannot pass");
             }
         }
 
@@ -393,7 +393,7 @@ namespace EnemyBehavior.Boss
 
             if (destroyedPillars.Contains(pillarIndex))
             {
-                Debug.Log($"[BossArenaManager] Pillar {pillarIndex} already deactivated, ignoring collision");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Pillar {pillarIndex} already deactivated, ignoring collision");
                 return;
             }
 
@@ -414,7 +414,7 @@ namespace EnemyBehavior.Boss
                     TurnOffPillarVisuals(Pillars[pillarIndex]);
                 }
                 
-                Debug.Log($"[BossArenaManager] Pillar {pillarIndex} DEACTIVATED by boss collision! Cage match ending...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Pillar {pillarIndex} DEACTIVATED by boss collision! Cage match ending...");
                 
                 // Lower the walls - the pillar collision breaks the power to the walls
                 RaiseWalls(false);
@@ -458,7 +458,7 @@ namespace EnemyBehavior.Boss
                 }
             }
             
-            Debug.Log($"[BossArenaManager] Applied fallback visual turn-off for pillar: {pillar.name}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Applied fallback visual turn-off for pillar: {pillar.name}");
         }
         
         /// <summary>
@@ -482,7 +482,7 @@ namespace EnemyBehavior.Boss
             
             // Note: We can't easily restore original emission colors without caching them first
             // For now, just log that the pillar visual should implement IPillarVisual for proper reset
-            Debug.Log($"[BossArenaManager] Applied fallback visual turn-on for pillar: {pillar.name} (implement IPillarVisual for full control)");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Applied fallback visual turn-on for pillar: {pillar.name} (implement IPillarVisual for full control)");
         }
 
         /// <summary>
@@ -510,7 +510,7 @@ namespace EnemyBehavior.Boss
                     }
                 }
             }
-            Debug.Log($"[BossArenaManager] All {Pillars.Count} pillars reset and powered on");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] All {Pillars.Count} pillars reset and powered on");
         }
 
         /// <summary>
@@ -537,7 +537,7 @@ namespace EnemyBehavior.Boss
     {
         ResetAllPillars();
         RaiseWalls(true);
-        Debug.Log($"[BossArenaManager] Cage match started - walls raised, pillars powered on");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Cage match started - walls raised, pillars powered on");
     }
 }
 

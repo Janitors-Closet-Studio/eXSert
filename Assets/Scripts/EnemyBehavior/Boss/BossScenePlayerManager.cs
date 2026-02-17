@@ -52,7 +52,7 @@ namespace EnemyBehavior.Boss
             
             if (player == null)
             {
-                Debug.LogError($"[BossScenePlayerManager] Could not find player with tag '{playerTag}'!");
+                EnemyBehaviorDebugLogBools.LogError($"[BossScenePlayerManager] Could not find player with tag '{playerTag}'!");
                 return;
             }
 
@@ -77,7 +77,7 @@ namespace EnemyBehavior.Boss
 
             if (player == null)
             {
-                Debug.LogWarning("[BossScenePlayerManager] Player reference is null, cannot release.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossScenePlayerManager), "[BossScenePlayerManager] Player reference is null, cannot release.");
                 return;
             }
 
@@ -126,7 +126,7 @@ namespace EnemyBehavior.Boss
         {
             if (showDebugLogs)
             {
-                Debug.Log($"[BossScenePlayerManager] {message}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossScenePlayerManager), $"[BossScenePlayerManager] {message}");
             }
         }
 

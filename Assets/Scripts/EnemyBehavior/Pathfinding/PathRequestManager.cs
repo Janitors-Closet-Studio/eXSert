@@ -48,7 +48,7 @@ namespace EnemyBehavior.Pathfinding
  // Duplicate guard for additive scenes
  if (Instance != null && Instance != this)
  {
- Debug.LogWarning("PathRequestManager duplicate detected, destroying this instance (additive scene overlap).");
+ EnemyBehaviorDebugLogBools.LogWarning(nameof(PathRequestManager), "PathRequestManager duplicate detected, destroying this instance (additive scene overlap).");
  Destroy(gameObject);
  return;
  }

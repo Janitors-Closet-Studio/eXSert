@@ -119,4 +119,119 @@ void AdditionalLights_half(half3 SpecColor, half Smoothness, half3 WorldPosition
     Specular = specularColor;
 }
 
+// Merged helper: main directional light + additional realtime lights (point/spot in URP).
+// Useful when building a custom lit/toon Shader Graph so you only wire up one node.
+void AllRealtimeLights_float(
+    float3 SpecColor,
+    float Smoothness,
+    float3 WorldPosition,
+    float3 WorldNormal,
+    float3 WorldView,
+    out float3 Diffuse,
+    out float3 Specular)
+{
+    float3 diffuseColor = 0;
+    float3 specularColor = 0;
+
+#ifndef SHADERGRAPH_PREVIEW
+    // Match URP's perceptual smoothness -> spec power convention used elsewhere in this file.
+    Smoothness = exp2(10 * Smoothness + 1);
+    WorldNormal = normalize(WorldNormal);
+    WorldView = SafeNormalize(WorldView);
+
+    // Main light (typically directional)
+    {
+#if SHADOWS_SCREEN
+        float4 clipPos = TransformWorldToHClip(WorldPosition);
+        float4 shadowCoord = ComputeScreenPos(clipPos);
+#else
+        float4 shadowCoord = TransformWorldToShadowCoord(WorldPosition);
+#endif
+        Light mainLight = GetMainLight(shadowCoord);
+        ShadowSamplingData shadowSamplingData = GetMainLightShadowSamplingData();
+        float shadowStrength = GetMainLightShadowStrength();
+        float shadowAtten = SampleShadowmap(
+            shadowCoord,
+            TEXTURE2D_ARGS(_MainLightShadowmapTexture, sampler_MainLightShadowmapTexture),
+            shadowSamplingData,
+            shadowStrength,
+            false);
+
+        float3 attenuatedLightColor = mainLight.color * (mainLight.distanceAttenuation * shadowAtten);
+        diffuseColor += LightingLambert(attenuatedLightColor, mainLight.direction, WorldNormal);
+        specularColor += LightingSpecular(attenuatedLightColor, mainLight.direction, WorldNormal, WorldView, float4(SpecColor, 0), Smoothness);
+    }
+
+    // Additional lights (realtime point/spot depending on URP settings)
+    {
+        int pixelLightCount = GetAdditionalLightsCount();
+        for (int i = 0; i < pixelLightCount; ++i)
+        {
+            Light light = GetAdditionalLight(i, WorldPosition);
+            float3 attenuatedLightColor = light.color * (light.distanceAttenuation * light.shadowAttenuation);
+            diffuseColor += LightingLambert(attenuatedLightColor, light.direction, WorldNormal);
+            specularColor += LightingSpecular(attenuatedLightColor, light.direction, WorldNormal, WorldView, float4(SpecColor, 0), Smoothness);
+        }
+    }
+#endif
+
+    Diffuse = diffuseColor;
+    Specular = specularColor;
+}
+
+void AllRealtimeLights_half(
+    half3 SpecColor,
+    half Smoothness,
+    half3 WorldPosition,
+    half3 WorldNormal,
+    half3 WorldView,
+    out half3 Diffuse,
+    out half3 Specular)
+{
+    half3 diffuseColor = 0;
+    half3 specularColor = 0;
+
+#ifndef SHADERGRAPH_PREVIEW
+    Smoothness = exp2(10 * Smoothness + 1);
+    WorldNormal = normalize(WorldNormal);
+    WorldView = SafeNormalize(WorldView);
+
+    {
+#if SHADOWS_SCREEN
+        half4 clipPos = TransformWorldToHClip(WorldPosition);
+        half4 shadowCoord = ComputeScreenPos(clipPos);
+#else
+        half4 shadowCoord = TransformWorldToShadowCoord(WorldPosition);
+#endif
+        Light mainLight = GetMainLight(shadowCoord);
+        ShadowSamplingData shadowSamplingData = GetMainLightShadowSamplingData();
+        float shadowStrength = GetMainLightShadowStrength();
+        half shadowAtten = SampleShadowmap(
+            shadowCoord,
+            TEXTURE2D_ARGS(_MainLightShadowmapTexture, sampler_MainLightShadowmapTexture),
+            shadowSamplingData,
+            shadowStrength,
+            false);
+
+        half3 attenuatedLightColor = mainLight.color * (mainLight.distanceAttenuation * shadowAtten);
+        diffuseColor += LightingLambert(attenuatedLightColor, mainLight.direction, WorldNormal);
+        specularColor += LightingSpecular(attenuatedLightColor, mainLight.direction, WorldNormal, WorldView, half4(SpecColor, 0), Smoothness);
+    }
+
+    {
+        int pixelLightCount = GetAdditionalLightsCount();
+        for (int i = 0; i < pixelLightCount; ++i)
+        {
+            Light light = GetAdditionalLight(i, WorldPosition);
+            half3 attenuatedLightColor = light.color * (light.distanceAttenuation * light.shadowAttenuation);
+            diffuseColor += LightingLambert(attenuatedLightColor, light.direction, WorldNormal);
+            specularColor += LightingSpecular(attenuatedLightColor, light.direction, WorldNormal, WorldView, half4(SpecColor, 0), Smoothness);
+        }
+    }
+#endif
+
+    Diffuse = diffuseColor;
+    Specular = specularColor;
+}
+
 #endif

@@ -13,26 +13,26 @@ public class BossAnimatorDebugger : MonoBehaviour
         animator = GetComponentInChildren<Animator>();
         if (animator == null)
         {
-            Debug.LogError("[BossAnimatorDebugger] No Animator found!");
+            EnemyBehaviorDebugLogBools.LogError("[BossAnimatorDebugger] No Animator found!");
             return;
         }
         
-        Debug.Log($"[BossAnimatorDebugger] Monitoring animator on '{animator.gameObject.name}'");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"[BossAnimatorDebugger] Monitoring animator on '{animator.gameObject.name}'");
         
         // CRITICAL DIAGNOSTICS
-        Debug.Log($"[BossAnimatorDebugger] ===== ANIMATOR CONFIGURATION =====");
-        Debug.Log($"  Animator Enabled: {animator.enabled}");
-        Debug.Log($"  Animator Speed: {animator.speed}");
-        Debug.Log($"  Controller Assigned: {(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "NONE - THIS IS THE PROBLEM!")}");
-        Debug.Log($"  Update Mode: {animator.updateMode}");
-        Debug.Log($"  Culling Mode: {animator.cullingMode}");
-        Debug.Log($"  Layer Count: {animator.layerCount}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"[BossAnimatorDebugger] ===== ANIMATOR CONFIGURATION =====");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Animator Enabled: {animator.enabled}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Animator Speed: {animator.speed}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Controller Assigned: {(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "NONE - THIS IS THE PROBLEM!")}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Update Mode: {animator.updateMode}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Culling Mode: {animator.cullingMode}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Layer Count: {animator.layerCount}");
         
         for (int i = 0; i < animator.layerCount; i++)
         {
-            Debug.Log($"    Layer {i}: {animator.GetLayerName(i)}, Weight: {animator.GetLayerWeight(i)}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"    Layer {i}: {animator.GetLayerName(i)}, Weight: {animator.GetLayerWeight(i)}");
         }
-        Debug.Log($"==========================================");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"==========================================");
         
         LogAnimatorParameters();
     }
@@ -47,27 +47,27 @@ public class BossAnimatorDebugger : MonoBehaviour
         
         if (Input.GetKeyDown(KeyCode.F5))
         {
-            Debug.Log($"[BossAnimatorDebugger] ===== CURRENT STATE =====");
-            Debug.Log($"  State: {stateName}");
-            Debug.Log($"  State Hash: {stateInfo.shortNameHash}");
-            Debug.Log($"  Normalized Time: {stateInfo.normalizedTime:F2}");
-            Debug.Log($"  Speed Param: {animator.GetFloat("Speed"):F2}");
-            Debug.Log($"  IsMoving Param: {animator.GetBool("IsMoving")}");
-            Debug.Log($"  Animator.speed: {animator.speed}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"[BossAnimatorDebugger] ===== CURRENT STATE =====");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  State: {stateName}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  State Hash: {stateInfo.shortNameHash}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Normalized Time: {stateInfo.normalizedTime:F2}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Speed Param: {animator.GetFloat("Speed"):F2}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  IsMoving Param: {animator.GetBool("IsMoving")}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Animator.speed: {animator.speed}");
             
             // Check if any transitions are active
             if (animator.IsInTransition(0))
             {
                 var transInfo = animator.GetAnimatorTransitionInfo(0);
-                Debug.Log($"  IN TRANSITION - Progress: {transInfo.normalizedTime:F2}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  IN TRANSITION - Progress: {transInfo.normalizedTime:F2}");
             }
             else
             {
-                Debug.Log($"  Not in transition");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Not in transition");
             }
             
             // Check for triggers that are set
-            Debug.Log($"  Checking trigger states...");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Checking trigger states...");
             foreach (var param in animator.parameters)
             {
                 if (param.type == AnimatorControllerParameterType.Trigger)
@@ -75,26 +75,26 @@ public class BossAnimatorDebugger : MonoBehaviour
                     bool isSet = animator.GetBool(param.nameHash); // Triggers are stored as bools internally
                     if (isSet)
                     {
-                        Debug.Log($"    TRIGGER SET: {param.name}");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"    TRIGGER SET: {param.name}");
                     }
                 }
             }
             
-            Debug.Log($"=============================");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"=============================");
             LogAnimatorParameters();
             
             // Check next state info
             var nextInfo = animator.GetNextAnimatorStateInfo(0);
             if (nextInfo.fullPathHash != 0)
             {
-                Debug.Log($"  Next State Hash: {nextInfo.shortNameHash}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Next State Hash: {nextInfo.shortNameHash}");
             }
         }
         
         // Auto-log every 2 seconds to catch state changes
         if (Time.frameCount % 120 == 0) // Every 2 seconds at 60fps
         {
-            Debug.Log($"[BossAnimatorDebugger] Current state: {stateName}, Normalized time: {stateInfo.normalizedTime:F2}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"[BossAnimatorDebugger] Current state: {stateName}, Normalized time: {stateInfo.normalizedTime:F2}");
         }
     }
     
@@ -126,7 +126,7 @@ public class BossAnimatorDebugger : MonoBehaviour
     {
         if (animator == null) return;
         
-        Debug.Log("[BossAnimatorDebugger] ===== ANIMATOR PARAMETERS =====");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), "[BossAnimatorDebugger] ===== ANIMATOR PARAMETERS =====");
         foreach (var param in animator.parameters)
         {
             string value = param.type switch
@@ -138,8 +138,8 @@ public class BossAnimatorDebugger : MonoBehaviour
                 _ => "Unknown"
             };
             
-            Debug.Log($"  {param.type} '{param.name}' = {value}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  {param.type} '{param.name}' = {value}");
         }
-        Debug.Log("==========================================");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), "==========================================");
     }
 }

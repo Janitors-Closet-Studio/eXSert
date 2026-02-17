@@ -134,6 +134,8 @@ public class GeneralSettings : MonoBehaviour
         PlayerPrefs.SetInt("masterInvertY", (isInvertYOn ? 1 : 0));
 
         PlayerPrefs.SetInt("masterCombo", (isComboProgressionOn ? 1 : 0));
+
+        PlayerPrefs.Save();
     }
 
     //Resets the settings

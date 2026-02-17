@@ -78,7 +78,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
         deathBehavior = new DeathBehavior<CrawlerEnemyState, CrawlerEnemyTrigger>();
 
 #if UNITY_EDITOR
-        Debug.Log($"{gameObject.name} Awake called");
+        EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name} Awake called");
 #endif
 
         // Find the player - use PlayerPresenceManager if available
@@ -106,7 +106,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
         bombAvoidanceBurstCoroutine = StartCoroutine(BombAvoidanceBurst());
 
         ensureChaseCoroutine = StartCoroutine(EnsureChaseIfNoPocket());
-        TryAutoRegisterWithSwarmManager();
+        // Note: SwarmManager registration is handled in OnEnable() to avoid spam during pool prewarming
     }
 
     private IEnumerator BombAvoidanceBurst()
@@ -206,7 +206,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
                         {
                             agent.SetDestination(safePos);
                             bombAvoided = true;
-                            Debug.Log($"{gameObject.name} (alarm-based avoid) is fleeing attacking bomb {bomb.gameObject.name} away from player");
+                            EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name} (alarm-based avoid) is fleeing attacking bomb {bomb.gameObject.name} away from player");
                             if (horseshoeReturnCoroutine != null)
                             {
                                 StopCoroutine(horseshoeReturnCoroutine);
@@ -499,7 +499,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
         if (PlayerTarget == null || agent == null || !agent.enabled || !agent.isOnNavMesh)
             yield break;
 
-        Debug.Log($"{gameObject.name} starting horseshoe (arc) return!");
+        EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name} starting horseshoe (arc) return!");
 
         Vector3 start = transform.position;
         Vector3 toPlayer = (PlayerTarget.position - start).normalized;
@@ -539,7 +539,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
         // After arc, head directly to the player
         if (PlayerTarget != null && agent.enabled && agent.isOnNavMesh)
         {
-            Debug.Log($"{gameObject.name} returning to player after horseshoe arc.");
+            EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name} returning to player after horseshoe arc.");
             agent.SetDestination(PlayerTarget.position);
         }
         horseshoeReturnCoroutine = null;
@@ -632,25 +632,25 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
     {
         if (_isRegisteredWithSwarmManager || !enableSwarmBehavior || SwarmManager.Instance == null)
         {
-            //Debug.Log($"{gameObject.name}: RegisterWithSwarmManager skipped (already registered: {_isRegisteredWithSwarmManager}, enableSwarmBehavior: {enableSwarmBehavior}, SwarmManager.Instance null: {SwarmManager.Instance == null})", this);
+            //EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name}: RegisterWithSwarmManager skipped (already registered: {_isRegisteredWithSwarmManager}, enableSwarmBehavior: {enableSwarmBehavior}, SwarmManager.Instance null: {SwarmManager.Instance == null})");
             return;
         }
 
         SwarmManager.Instance.AddToSwarm(this);
         _isRegisteredWithSwarmManager = true;
-        //Debug.Log($"{gameObject.name}: Registered with SwarmManager", this);
+        //EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name}: Registered with SwarmManager");
     }
 
     public void UnregisterFromSwarmManager()
     {
         if (!_isRegisteredWithSwarmManager || SwarmManager.Instance == null)
         {
-            //Debug.Log($"{gameObject.name}: UnregisterFromSwarmManager skipped (not registered: {!_isRegisteredWithSwarmManager}, SwarmManager.Instance null: {SwarmManager.Instance == null})", this);
+            //EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name}: UnregisterFromSwarmManager skipped (not registered: {!_isRegisteredWithSwarmManager}, SwarmManager.Instance null: {SwarmManager.Instance == null})");
             return;
         }
 
         SwarmManager.Instance.RemoveFromSwarm(this);
         _isRegisteredWithSwarmManager = false;
-        //Debug.Log($"{gameObject.name}: Unregistered from SwarmManager", this);
+        //EnemyBehaviorDebugLogBools.Log(nameof(BaseCrawlerEnemy), $"{gameObject.name}: Unregistered from SwarmManager");
     }
 }

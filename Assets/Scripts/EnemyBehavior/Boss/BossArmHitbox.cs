@@ -47,7 +47,7 @@ namespace EnemyBehavior.Boss
             
             if (hitboxColliders.Length == 0)
             {
-                Debug.LogWarning($"[BossArmHitbox] No colliders found under '{root.name}'! Hitbox will not work. Make sure colliders exist as children of the specified root.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossArmHitbox), $"[BossArmHitbox] No colliders found under '{root.name}'! Hitbox will not work. Make sure colliders exist as children of the specified root.");
             }
             
             foreach (var col in hitboxColliders)
@@ -73,7 +73,7 @@ namespace EnemyBehavior.Boss
             hasHitThisActivation = false;
             dashModeKnockback = false; // Reset dash mode
             dashModeForceOverride = 0f;
-            Debug.Log($"[BossArmHitbox] {armSide} arm hitbox ENABLED ({hitboxColliders.Length} segments)");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox ENABLED ({hitboxColliders.Length} segments)");
         }
         
         /// <summary>
@@ -90,7 +90,7 @@ namespace EnemyBehavior.Boss
             hasHitThisActivation = false;
             dashModeKnockback = true;
             dashModeForceOverride = forceOverride;
-            Debug.Log($"[BossArmHitbox] {armSide} arm hitbox ENABLED with DASH KNOCKBACK ({hitboxColliders.Length} segments, force override: {forceOverride})");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox ENABLED with DASH KNOCKBACK ({hitboxColliders.Length} segments, force override: {forceOverride})");
         }
 
         public void DisableHitbox()
@@ -103,7 +103,7 @@ namespace EnemyBehavior.Boss
             hasHitThisActivation = false;
             dashModeKnockback = false; // Clear dash mode
             dashModeForceOverride = 0f;
-            Debug.Log($"[BossArmHitbox] {armSide} arm hitbox DISABLED");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox DISABLED");
         }
 
         private void OnTriggerEnter(Collider other)
@@ -120,7 +120,7 @@ namespace EnemyBehavior.Boss
 
         private void ApplyDamageToPlayer(GameObject player)
         {
-            Debug.Log($"[BossArmHitbox] {armSide} ATTEMPTING TO HIT PLAYER");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} ATTEMPTING TO HIT PLAYER");
             
             var healthSystem = player.GetComponent<IHealthSystem>();
             if (healthSystem != null)
@@ -131,7 +131,7 @@ namespace EnemyBehavior.Boss
                     if (currentAttack != null && currentAttack.Parryable)
                     {
                         CombatManager.ParrySuccessful();
-                        Debug.Log($"[BossArmHitbox] Player PARRIED {currentAttack.Id}");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Player PARRIED {currentAttack.Id}");
                         DisableHitbox();
                         return;
                     }
@@ -141,11 +141,11 @@ namespace EnemyBehavior.Boss
                 if (CombatManager.isGuarding)
                 {
                     finalDamage *= 0.5f;
-                    Debug.Log($"[BossArmHitbox] Player GUARDED - damage reduced to {finalDamage}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Player GUARDED - damage reduced to {finalDamage}");
                 }
 
                 healthSystem.LoseHP(finalDamage);
-                Debug.Log($"[BossArmHitbox] {armSide} HIT PLAYER for {finalDamage} damage!");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} HIT PLAYER for {finalDamage} damage!");
                 
                 // Apply knockback if enabled (either via Inspector setting OR dash mode)
                 if ((applyKnockback || dashModeKnockback) && bossBrain != null)
@@ -157,7 +157,7 @@ namespace EnemyBehavior.Boss
             }
             else
             {
-                Debug.LogWarning($"[BossArmHitbox] Player has no IHealthSystem component!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossArmHitbox), $"[BossArmHitbox] Player has no IHealthSystem component!");
             }
         }
         
@@ -167,7 +167,7 @@ namespace EnemyBehavior.Boss
             // This prevents double-knockback during dashes
             if (dashModeKnockback && bossBrain != null && bossBrain.HasDashHitBeenApplied)
             {
-                Debug.Log($"[BossArmHitbox] Skipping knockback - dash hit already applied by manual check");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Skipping knockback - dash hit already applied by manual check");
                 return;
             }
             
@@ -186,12 +186,12 @@ namespace EnemyBehavior.Boss
             {
                 float weight = bossBrain.KnockbackAttackDirectionWeight;
                 knockbackDir = Vector3.Lerp(radialDir, attackDir, weight).normalized;
-                Debug.Log($"[BossArmHitbox] Knockback blend: radial={radialDir}, attack={attackDir}, weight={weight}, result={knockbackDir}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Knockback blend: radial={radialDir}, attack={attackDir}, weight={weight}, result={knockbackDir}");
             }
             else
             {
                 knockbackDir = radialDir;
-                Debug.Log($"[BossArmHitbox] Knockback using radial only: {knockbackDir}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Knockback using radial only: {knockbackDir}");
             }
             
             
@@ -210,7 +210,7 @@ namespace EnemyBehavior.Boss
                 // Dash mode - use dash knockback force (or override if set)
                 force = dashModeForceOverride > 0 ? dashModeForceOverride : bossBrain.DashKnockbackForce;
                 upwardForce = bossBrain.DashKnockbackUpwardForce;
-                Debug.Log($"[BossArmHitbox] Using dash mode knockback - force: {force}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Using dash mode knockback - force: {force}");
             }
             else
             {
@@ -233,13 +233,13 @@ namespace EnemyBehavior.Boss
             if (playerMovement != null)
             {
                 playerMovement.ApplyKnockback(knockbackImpulse);
-                Debug.Log($"[BossArmHitbox] Applied knockback via PlayerMovement.ApplyKnockback: impulse={knockbackImpulse}, magnitude={knockbackImpulse.magnitude:F1}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via PlayerMovement.ApplyKnockback: impulse={knockbackImpulse}, magnitude={knockbackImpulse.magnitude:F1}");
                 
                 // Notify the brain that a dash hit was applied (if in dash mode)
                 if (dashModeKnockback && bossBrain != null)
                 {
                     bossBrain.NotifyDashHitApplied();
-                    Debug.Log($"[BossArmHitbox] Notified brain - dash hit applied");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Notified brain - dash hit applied");
                 }
                 return;
             }
@@ -249,7 +249,7 @@ namespace EnemyBehavior.Boss
             if (rb != null && !rb.isKinematic)
             {
                 rb.AddForce(knockbackImpulse, ForceMode.Impulse);
-                Debug.Log($"[BossArmHitbox] Applied knockback via Rigidbody: dir={knockbackDir}, force={force}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via Rigidbody: dir={knockbackDir}, force={force}");
                 
                 // Notify the brain that a dash hit was applied (if in dash mode)
                 if (dashModeKnockback && bossBrain != null)
@@ -265,11 +265,11 @@ namespace EnemyBehavior.Boss
             if (cc != null)
             {
                 cc.Move(knockbackDir * force * Time.deltaTime);
-                Debug.Log($"[BossArmHitbox] Applied knockback via CharacterController.Move (single frame)");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via CharacterController.Move (single frame)");
                 return;
             }
             
-            Debug.LogWarning($"[BossArmHitbox] Could not apply knockback - no PlayerMovement, Rigidbody, or CharacterController found on {player.name}");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossArmHitbox), $"[BossArmHitbox] Could not apply knockback - no PlayerMovement, Rigidbody, or CharacterController found on {player.name}");
         }
 
         private void OnDisable()

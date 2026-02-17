@@ -14241,6 +14241,9 @@ MonoBehaviour:
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   requiredItemID: loadC
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls: []
   doorHandlers:
   - {fileID: 872644021}
 --- !u!65 &389852969
@@ -43363,6 +43366,92 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: aec6a4438e1a1a941abcf78091f4f4eb, type: 3}
   m_PrefabInstance: {fileID: 1210015842}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1211404476
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1211404478}
+  - component: {fileID: 1211404477}
+  m_Layer: 0
+  m_Name: GameObject (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1211404477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1211404476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27c7e7aa1fe6e5242aa1e87d29f8890d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehaviorDebugLogBools
+  BaseEnemy: 1
+  BaseCrawlerEnemy: 1
+  BoxerEnemy: 1
+  DroneEnemy: 1
+  AlarmCarrierEnemy: 1
+  BombCarrierEnemy: 1
+  TestingEnemy: 1
+  AttackBehavior: 1
+  DeathBehavior: 1
+  IdleBehavior: 1
+  FleeBehavior: 1
+  DroneIdleBehavior: 1
+  DroneRelocateBehavior: 1
+  SwarmManager: 1
+  DroneSwarmManager: 1
+  EnemyAttackQueueManager: 1
+  EnemyHealthManager: 1
+  CrowdController: 1
+  ScenePoolManager: 1
+  BossRoombaController: 1
+  BossRoombaBrain: 1
+  BossArenaManager: 1
+  BossHealth: 1
+  BossTopZone: 1
+  BossSidePanelCollider: 1
+  BossPillarCollider: 1
+  BossPlayerEjector: 1
+  BossScenePlayerManager: 1
+  VacuumSuctionEffect: 1
+  ArenaWallCollider: 1
+  BossAnimationEventMediator: 1
+  BossAnimationEventRelay: 1
+  BossAnimatorDebugger: 1
+  BossArmHitbox: 1
+  BossAlarmDamageReceiver: 1
+  NavMeshAStarPlanner: 1
+  PathRequestManager: 1
+  AutomatedPathTestRunner: 1
+  EnemyProjectile: 1
+  ExplosiveEnemyProjectile: 1
+  EnemyDeathSoundConfig: 1
+  EnableAllLogs: 1
+--- !u!4 &1211404478
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1211404476}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -9.71516, y: 13.49566, z: 418.04388}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1212480551
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -78939,3 +79028,4 @@ SceneRoots:
   - {fileID: 1789049215}
   - {fileID: 932951639}
   - {fileID: 968268076}
+  - {fileID: 1211404478}
