@@ -5,7 +5,7 @@ using Singletons;
 public class NavigationMenu : Singleton<NavigationMenu>
 {
     [SerializeField] private InputActionReference _navigationMenu;
-    [SerializeField] private GameObject navigationMenuGO;
+    [SerializeField] internal GameObject navigationMenuGO;
 
     void FixedUpdate()
     {

@@ -20,7 +20,9 @@ public class NavigationEntryInteraction : InteractionManager
 
     private void OnEnable()
     {
+        AssignId();
         SubscribeBasedOnDataType();
+        
     }
 
     private void OnDisable()
@@ -63,21 +65,46 @@ public class NavigationEntryInteraction : InteractionManager
         if (isDiary)
         {
             var diarySO = entryData as DiarySO;
-            EventsManager.Instance.diaryEvents.onDiaryStateChange -= OnDiaryStateChange;
+            if (EventsManager.Instance != null && EventsManager.Instance.diaryEvents != null)
+                EventsManager.Instance.diaryEvents.onDiaryStateChange -= OnDiaryStateChange;
         }
         else if (isLog)
         {
             var logSO = entryData as NavigationLogSO;
-            EventsManager.Instance.logEvents.onLogStateChange -= OnLogStateChange;
+            if (EventsManager.Instance != null && EventsManager.Instance.logEvents != null)
+                EventsManager.Instance.logEvents.onLogStateChange -= OnLogStateChange;
+        }
+    }
+
+    private void AssignId()
+    {
+        if(isDiary)
+        {
+            var diarySO = entryData as DiarySO;
+            this.interactId = diarySO.diaryID;
+        }
+        else if(isLog)
+        {
+            var logSO = entryData as NavigationLogSO;
+            this.interactId = logSO.logID;
         }
     }
 
     protected override void Interact()
     {
+        if (string.IsNullOrEmpty(this.interactId))
+        {
+            Debug.LogError($"{gameObject.name}: interactId is not set! Cannot process interaction.");
+            return;
+        }
         if(isLog)
         {
             var logSO = entryData as NavigationLogSO;
+            
             logSO.isFound = true;
+            
+            if(LogManager.Instance.foundLogs.Count == 0 && NavigationMenu.Instance.navigationMenuGO != null)
+                StartCoroutine(LogManager.Instance.ShowLogScreenIfFirstLog());
 
             EventsManager.Instance.logEvents.FoundLog(this.interactId);
             DeactivateInteractable(this);
@@ -85,6 +112,7 @@ public class NavigationEntryInteraction : InteractionManager
         else if(isDiary)
         {
             var diarySO = entryData as DiarySO;
+            this.interactId = diarySO.diaryID;
             diarySO.isFound = true;
 
             EventsManager.Instance.diaryEvents.FoundDiary(this.interactId);
