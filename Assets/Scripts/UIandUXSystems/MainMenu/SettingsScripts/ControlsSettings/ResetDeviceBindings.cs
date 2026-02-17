@@ -1,3 +1,4 @@
+    
 /*
     Written by Brandon
     
@@ -12,6 +13,12 @@ public class ResetDeviceBindings : MonoBehaviour
 
     //Assign this string in the editor to the control scheme name you wish to reset
     private string _targetControlScheme;
+
+    [ContextMenu("Reset All Bindings (Inspector)")]
+    public void InspectorResetAllBindings()
+    {
+        ResetControlSchemeBinding();
+    }
 
     public void WhichControlSchemeIsOpen(int schemeIndex)
     {

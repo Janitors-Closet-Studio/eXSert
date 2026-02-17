@@ -225,6 +225,10 @@ public class SceneLoader : Singleton<SceneLoader>
         }
 
         Log("Main menu loaded successfully");
+        // Load binding overrides from PlayerPrefs
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+            InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
+        KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
     }
 
@@ -344,6 +348,10 @@ public class SceneLoader : Singleton<SceneLoader>
             Time.timeScale = previousTimeScale;
         }
 
+        // Load binding overrides from PlayerPrefs
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+            InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
+        KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
     }
 
@@ -376,6 +384,10 @@ public class SceneLoader : Singleton<SceneLoader>
             CheckpointSystem.Instance.SetCheckpoint(sceneName, "default");
         }
         
+        // Load binding overrides from PlayerPrefs
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+            InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
+        KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
     }
 

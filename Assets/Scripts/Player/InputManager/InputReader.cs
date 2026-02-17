@@ -1,3 +1,4 @@
+  
 /*
  * Written by Brandon Wahl
  * 
@@ -277,6 +278,25 @@ public class InputReader : Singleton<InputReader>
         EnsureCursorManager(PlayerInput);
     }
 
+      /// <summary>
+    /// Static method to assign a new PlayerInput instance.
+    /// For compatibility with existing code that calls InputReader.AssignPlayerInput().
+    /// </summary>
+    /// <param name="newPlayerInput">The PlayerInput to assign.</param>
+    public static void AssignPlayerInput(PlayerInput newPlayerInput)
+    {
+        if (Instance == null)
+            CreateInstance();
+
+        if (newPlayerInput == null)
+        {
+            Debug.LogWarning("InputReader: Cannot assign null PlayerInput!");
+            return;
+        }
+
+        Instance.RebindTo(newPlayerInput, switchToGameplay: true);
+    }
+
     private void OnDestroy()
     {
         SceneManager.sceneLoaded -= HandleSceneLoaded;
@@ -412,25 +432,6 @@ public class InputReader : Singleton<InputReader>
     private void OnDisable()
     {
         SetAllActionsEnabled(false);
-    }
-
-    /// <summary>
-    /// Static method to assign a new PlayerInput instance.
-    /// For compatibility with existing code that calls InputReader.AssignPlayerInput().
-    /// </summary>
-    /// <param name="newPlayerInput">The PlayerInput to assign.</param>
-    public static void AssignPlayerInput(PlayerInput newPlayerInput)
-    {
-        if (Instance == null)
-            CreateInstance();
-
-        if (newPlayerInput == null)
-        {
-            Debug.LogWarning("InputReader: Cannot assign null PlayerInput!");
-            return;
-        }
-
-        Instance.RebindTo(newPlayerInput, switchToGameplay: true);
     }
 
     /// <summary>
