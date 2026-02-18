@@ -60,6 +60,7 @@ public class WarningButtonFunctionality : MonoBehaviour
     public void OnConfirmPressed()
     {
         var actionToRun = ResolvePendingAction();
+        Debug.Log($"[WarningButtonFunctionality] Confirm pressed. Resolved action: {actionToRun}");
         if (actionToRun == WarningAction.None)
             return;
 
