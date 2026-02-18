@@ -239,6 +239,10 @@ public class InputReader : Singleton<InputReader>
     {
         base.Awake(); // Ensure singleton behavior
 
+        // If this component was a duplicate (Singleton destroys the component only), do not continue initialization.
+        if (Instance != this)
+            return;
+
         SceneManager.sceneLoaded += HandleSceneLoaded;
 
         // Prefer a project asset if available, but do not require Resources/.
