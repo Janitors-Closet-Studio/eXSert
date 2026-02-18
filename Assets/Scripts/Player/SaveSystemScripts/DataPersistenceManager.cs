@@ -26,10 +26,14 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
 
     private GameData gameData;
 
-    [SerializeField] private string fileName;
+    // Defaults to the value set on the DataPersistenceManager prefab.
+    // Keeping this non-empty ensures the singleton can safely auto-create if the prefab is missing from a scene.
+    [SerializeField] private string fileName = "save.game";
 
     private string selectedProfileId = "";
-    public static DataPersistenceManager instance { get; private set; }
+    // Backwards-compatible accessor used throughout the project.
+    // Uses the base Singleton Instance so it can't be null just because the prefab wasn't placed in a scene.
+    public static DataPersistenceManager instance => Instance;
 
     public List<IDataPersistenceManager> dataPersistenceObjects;
 
@@ -50,8 +54,6 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         {
             Debug.LogWarning("Data persistence is disabled.");
         }
-
-        instance = this;
 
         //Defines the save file
         this.fileDataHandler = new FileDataHandler(Application.persistentDataPath, fileName);
