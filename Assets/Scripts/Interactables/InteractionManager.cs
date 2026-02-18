@@ -48,10 +48,10 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     }
     public void OnInteractButtonPressed()
     {
-        if (!isPlayerNearby || !_interactInputAction.action.triggered)
+        if (!isPlayerNearby || !InputReader.InteractTriggered)
             return;
 
-        Debug.Log($"Player interacted with {gameObject.name} using input action {_interactInputAction.action.name}");
+        Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         Interact();
         var ui = ResolveInteractionUI();
         ui?._interactEffect?.Play();

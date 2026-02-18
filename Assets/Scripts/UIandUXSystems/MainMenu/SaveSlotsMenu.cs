@@ -28,6 +28,7 @@ public class SaveSlotsMenu : Menu
     [SerializeField] private string DefaultSceneName = "VS_Elevator";
 
     private bool isLoadingGame = false;
+    private bool hasStartedSceneTransition = false;
 
     private void Awake()
     {
@@ -40,6 +41,10 @@ public class SaveSlotsMenu : Menu
     /// </summary>
     public void OnSaveSlotClicked()
     {
+        if (hasStartedSceneTransition)
+            return;
+
+        hasStartedSceneTransition = true;
         playButton.interactable = false; // Prevent multiple clicks
 
         DisableMenuButtons();
@@ -48,6 +53,7 @@ public class SaveSlotsMenu : Menu
         if (SceneLoader.Instance == null)
         {
             Debug.LogError("[SaveSlotsMenu] SceneLoader not found! Please add SceneLoader GameObject to the Main Menu scene.");
+            hasStartedSceneTransition = false;
             return;
         }
 
@@ -83,6 +89,7 @@ public class SaveSlotsMenu : Menu
             else
             {
                 Debug.LogError("[SaveSlotsMenu] No save slots available to select.");
+                hasStartedSceneTransition = false;
                 return;
             }
         }

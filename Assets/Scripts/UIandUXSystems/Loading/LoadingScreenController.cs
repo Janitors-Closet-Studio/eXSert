@@ -34,6 +34,7 @@ namespace UI.Loading
         private bool usingFallbackControls;
         private PlayerControls fallbackLoadingControls;
         private Coroutine activeRoutine;
+        private bool isLoadingSequenceRunning;
         private float resumeTimeScale = 1f;
 
         private void Awake()
@@ -87,8 +88,14 @@ namespace UI.Loading
                 return;
             }
 
-            if (activeRoutine != null)
-                StopCoroutine(activeRoutine);
+            if (isLoadingSequenceRunning)
+            {
+                Debug.LogWarning($"[LoadingScreen] BeginLoading called while a loading sequence is already running. Ignoring to prevent duplicate loading overlays.\nStack:\n{Environment.StackTrace}");
+                return;
+            }
+
+            // Defensive: if a previous coroutine reference remained for any reason, clear it now.
+            activeRoutine = null;
 
             float targetMinimumDisplay = minimumDisplayOverride ?? minimumDisplaySeconds;
             activeRoutine = StartCoroutine(RunLoadingSequence(loadSteps, pauseGame, targetMinimumDisplay));
@@ -96,52 +103,70 @@ namespace UI.Loading
 
         private IEnumerator RunLoadingSequence(IEnumerator loadSteps, bool pauseGame, float minimumDisplayDuration)
         {
-            resumeTimeScale = Mathf.Approximately(Time.timeScale, 0f) ? 1f : Time.timeScale;
-            if (pauseGame)
-                Time.timeScale = 0f;
+            isLoadingSequenceRunning = true;
 
-            // Loading input (spin/zoom) disabled – we only show the prefab now.
-            // EnableLoadingInput();
+            bool didPause = false;
 
-            bool enforceMinimum = minimumDisplayDuration > 0f;
-            float minDisplayEndTime = 0f;
-
-            yield return FadeBlack(0f, 1f);
-
-            if (loadingCanvasRoot != null)
-                loadingCanvasRoot.SetActive(true);
-
-            CursorBySchemeAndMap.SetForceHidden(true);
-
-            propManager?.ShowRandomProp();
-
-            yield return FadeBlack(1f, 0f);
-            if (enforceMinimum)
-                minDisplayEndTime = Time.unscaledTime + minimumDisplayDuration;
-
-            if (loadSteps != null)
-                yield return StartCoroutine(loadSteps);
-
-            if (enforceMinimum)
+            try
             {
-                float remaining = minDisplayEndTime - Time.unscaledTime;
-                if (remaining > 0f)
-                    yield return new WaitForSecondsRealtime(remaining);
+                resumeTimeScale = Mathf.Approximately(Time.timeScale, 0f) ? 1f : Time.timeScale;
+                if (pauseGame)
+                {
+                    Time.timeScale = 0f;
+                    didPause = true;
+                }
+
+                // Loading input (spin/zoom) disabled – we only show the prefab now.
+                // EnableLoadingInput();
+
+                bool enforceMinimum = minimumDisplayDuration > 0f;
+                float minDisplayEndTime = 0f;
+
+                yield return FadeBlack(0f, 1f);
+
+                if (loadingCanvasRoot != null)
+                    loadingCanvasRoot.SetActive(true);
+
+                CursorBySchemeAndMap.SetForceHidden(true);
+
+                propManager?.ShowRandomProp();
+
+                yield return FadeBlack(1f, 0f);
+                if (enforceMinimum)
+                    minDisplayEndTime = Time.unscaledTime + minimumDisplayDuration;
+
+                if (loadSteps != null)
+                    yield return StartCoroutine(loadSteps);
+
+                if (enforceMinimum)
+                {
+                    float remaining = minDisplayEndTime - Time.unscaledTime;
+                    if (remaining > 0f)
+                        yield return new WaitForSecondsRealtime(remaining);
+                }
+
+                yield return FadeBlack(0f, 1f);
+
+                propManager?.ClearProp();
+                if (loadingCanvasRoot != null)
+                    loadingCanvasRoot.SetActive(false);
+
+                yield return FadeOutAndResume(pauseGame);
+
+                CursorBySchemeAndMap.SetForceHidden(false);
+
+                // Loading input (spin/zoom) disabled – we only show the prefab now.
+                // DisableLoadingInput();
             }
+            finally
+            {
+                // If anything goes wrong mid-load (exception, interrupted coroutine), avoid leaving the game frozen.
+                if (didPause && Mathf.Approximately(Time.timeScale, 0f))
+                    Time.timeScale = resumeTimeScale;
 
-            yield return FadeBlack(0f, 1f);
-
-            propManager?.ClearProp();
-            if (loadingCanvasRoot != null)
-                loadingCanvasRoot.SetActive(false);
-
-            yield return FadeOutAndResume(pauseGame);
-
-            CursorBySchemeAndMap.SetForceHidden(false);
-
-            // Loading input (spin/zoom) disabled – we only show the prefab now.
-            // DisableLoadingInput();
-            activeRoutine = null;
+                isLoadingSequenceRunning = false;
+                activeRoutine = null;
+            }
         }
 
         private IEnumerator FadeBlack(float from, float to)
