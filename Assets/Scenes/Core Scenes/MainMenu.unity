@@ -649,6 +649,17 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &152299553 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3979303703383663157, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
+  m_PrefabInstance: {fileID: 1336962337}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1 &157294138
 GameObject:
   m_ObjectHideFlags: 0
@@ -1310,6 +1321,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2775766508472265987, guid: 19bccafaa791be849859fb18885c1021, type: 3}
+      propertyPath: profileId
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2775766508472265987, guid: 19bccafaa791be849859fb18885c1021, type: 3}
+      propertyPath: saveSlotsMenu
+      value: 
+      objectReference: {fileID: 1298613728}
     - target: {fileID: 3602805796631423457, guid: 19bccafaa791be849859fb18885c1021, type: 3}
       propertyPath: m_text
       value: SAVE FILE #003
@@ -3221,7 +3240,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1041919914}
         m_TargetAssemblyTypeName: MenuListManager, Assembly-CSharp
-        m_MethodName: GoBackToPreviousMenu
+        m_MethodName: RemoveFirstItemInMenuList
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4306,7 +4325,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SaveSlotsMenu
   firstSelected: {fileID: 1950452764}
   mainMenu: {fileID: 891868599}
-  backButton: {fileID: 0}
+  backButton: {fileID: 152299553}
   playButton: {fileID: 1169016658}
   currentSaveSlotSelected: {fileID: 0}
   SceneName: PlayerScene
@@ -4568,6 +4587,84 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1407991588}
   m_CullTransparentMesh: 1
+--- !u!1 &1442885214
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1442885217}
+  - component: {fileID: 1442885216}
+  - component: {fileID: 1442885215}
+  m_Layer: 0
+  m_Name: InputReader (Singleton)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1442885215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1442885214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
+  m_Actions: {fileID: -944628639613478452, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 0
+  m_DefaultControlScheme: 
+  m_DefaultActionMap: 
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}
+--- !u!114 &1442885216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1442885214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 262193d21bb2a3f4f81184d9d147cd4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InputReader
+  lockOnDashSuppressionWindow: 0.18
+  leftStickDeadzoneValue: 0.15
+  rightStickDeadzoneValue: 0.15
+--- !u!4 &1442885217
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1442885214}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1464200906 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3438576467879367863, guid: 2134fa2bf068dae49a032a722faa8529, type: 3}
@@ -5098,7 +5195,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b66dea7fe0ad3b4388b71f18325bb1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneLoader
-  mainMenuSceneName: VS_MainMenu
+  mainMenuSceneName: MainMenu
   playerSceneName: PlayerScene
   loadingSceneName: LoadingScene
   preloadLoadingScene: 1
@@ -5765,6 +5862,10 @@ PrefabInstance:
     - target: {fileID: 143161864853520315, guid: 6a196b8e271611941beac9c28ed451cd, type: 3}
       propertyPath: m_text
       value: LS
+      objectReference: {fileID: 0}
+    - target: {fileID: 2577776389894844121, guid: 6a196b8e271611941beac9c28ed451cd, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -0.028808594
       objectReference: {fileID: 0}
     - target: {fileID: 4056878563625216447, guid: 6a196b8e271611941beac9c28ed451cd, type: 3}
       propertyPath: m_Name
@@ -6505,6 +6606,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2775766508472265987, guid: 19bccafaa791be849859fb18885c1021, type: 3}
+      propertyPath: profileId
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2775766508472265987, guid: 19bccafaa791be849859fb18885c1021, type: 3}
       propertyPath: saveSlotsMenu
       value: 
       objectReference: {fileID: 1298613728}
@@ -6533,6 +6638,7 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1442885217}
   - {fileID: 229584384}
   - {fileID: 1819486695}
   - {fileID: 360202563}
