@@ -21,8 +21,6 @@ public class LogManager : Singleton<LogManager>
     [SerializeField] private GameObject logUi = null;
     [SerializeField] private GameObject playerHud = null;
 
-    internal List<Logs> foundLogs = new List<Logs>();
-
     private Dictionary<string, Logs> logMap;
 
     // Button function placeholder
@@ -65,25 +63,7 @@ public class LogManager : Singleton<LogManager>
         }
     }
 
-    public IEnumerator ShowLogScreenIfFirstLog()
-    {
-        var navigationMenuGO = NavigationMenu.Instance != null ? NavigationMenu.Instance.navigationMenuGO : null;
-        if (navigationMenuGO == null)
-        {
-            Debug.LogError("NavigationMenu.Instance or navigationMenuGO is null in ShowLogScreenIfFirstLog");
-            yield break;
-        }
-        var childOne = navigationMenuGO.transform.GetChild(0).gameObject;
-
-        childOne.SetActive(true);
-        logUi.SetActive(true);
-        playerHud.SetActive(false);
-        yield return new WaitForSeconds(1f);
-        playerHud.SetActive(true);
-        childOne.SetActive(false);
-        logUi.SetActive(false);
-        
-    }
+   
 
     /// <summary>
     /// Re-broadcasts all log states. Call this when UI becomes active to populate buttons.

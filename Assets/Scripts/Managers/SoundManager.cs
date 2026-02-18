@@ -116,6 +116,14 @@ public class SoundManager : Singleton<SoundManager>
             levelMusicSource.volume = musicSource.volume;
     }
 
+    public void PauseUnPauseAudio(AudioSource source)
+    {
+        if (source != null && source.isPlaying)
+            source.Pause();
+        else if (source != null)
+            source.UnPause();
+    }
+
     private float GetRawVolume(float scaledVolume, float masterVolume)
     {
         if (masterVolume <= 0f)

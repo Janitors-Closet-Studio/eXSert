@@ -11,6 +11,8 @@ public class DiaryManager : Singleton<DiaryManager>
 
     private Dictionary<string, Diaries> diaryMap;
 
+    internal int foundDiaryCount = 0;
+
     protected override void Awake()
     {
 

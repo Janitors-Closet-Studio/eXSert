@@ -22,7 +22,7 @@ public class DiaryScrollingList : MonoBehaviour
 
     [Header("Rect Transforms")]
     [SerializeField] private RectTransform scrollRectTransform;
-    [SerializeField] private RectTransform contentRectTransform;
+    [SerializeField] internal RectTransform contentRectTransform;
     private Dictionary<string, DiaryButton> idToButtonMap = new Dictionary<string, DiaryButton>(); //Dict to hold id of buttons
 
     void Update()

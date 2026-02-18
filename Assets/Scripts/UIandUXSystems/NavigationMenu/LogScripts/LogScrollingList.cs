@@ -21,7 +21,7 @@ public class LogScrollingList : MonoBehaviour
 
     [Header("Rect Transforms")]
     [SerializeField] private RectTransform scrollRectTransform;
-    [SerializeField] private RectTransform contentRectTransform;
+    [SerializeField] internal RectTransform contentRectTransform;
     private Dictionary<string, LogButton> idToButtonMap = new Dictionary<string, LogButton>(); //Dict to hold id of buttons
     //If the button for a log doesn't already exist, this function will make it
     public LogButton CreateButtonIfNotExists(Logs log, UnityAction selectAction)
