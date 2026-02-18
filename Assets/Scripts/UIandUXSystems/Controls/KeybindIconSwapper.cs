@@ -1,9 +1,12 @@
+using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Image))]
 public class KeybindIconSwapper : MonoBehaviour
+
 {
     public enum DeviceMode
     {
@@ -20,8 +23,9 @@ public class KeybindIconSwapper : MonoBehaviour
         Right
     }
 
+
     [Header("References")]
-    [SerializeField] private KeybindIconSet iconSet;
+    private static KeybindIconSet sharedIconSet;
     [SerializeField] internal Image targetImage;
 
     [Header("Binding")]
@@ -39,10 +43,38 @@ public class KeybindIconSwapper : MonoBehaviour
     private bool isSubscribed;
     private string lastBindingPath = string.Empty;
 
+    #if UNITY_EDITOR
+    [UnityEditor.MenuItem("Tools/Refresh All Keybind Icons")]
+    private static void EditorRefreshAllIconsMenu() => RefreshAllIcons();
+#endif
+
+    /// <summary>
+    /// Refreshes all KeybindIconSwapper instances in the current scene.
+    /// Call this after loading binding overrides or when changing scenes.
+    /// </summary>
+    public static void RefreshAllIcons()
+    {
+        var swappers = FindObjectsOfType<KeybindIconSwapper>(true);
+        foreach (var swapper in swappers)
+        {
+            swapper.RefreshIcon();
+        }
+    }
+
     private void Awake()
     {
         if (targetImage == null)
             targetImage = GetComponent<Image>();
+
+        // Ensure all swappers use the same KeybindIconSet from Resources
+        if (sharedIconSet == null)
+        {
+            sharedIconSet = Resources.Load<KeybindIconSet>("KeybindIconSet");
+            if (sharedIconSet == null)
+            {
+                Debug.LogError("[KeybindIconSwapper] Could not find KeybindIconSet asset in Resources! Please place your KeybindIconSet.asset in a Resources folder.");
+            }
+        }
     }
 
     private void OnEnable()
@@ -50,24 +82,27 @@ public class KeybindIconSwapper : MonoBehaviour
         InputSystem.onActionChange += HandleActionChange;
         SubscribeToPlayerInput();
         RefreshIcon();
+        StartCoroutine(RefreshCoroutine());
     }
 
     private void OnDisable()
     {
         InputSystem.onActionChange -= HandleActionChange;
         UnsubscribeFromPlayerInput();
+        StopAllCoroutines();
     }
 
-    private void Update()
+    private IEnumerator RefreshCoroutine()
     {
-        if (deviceMode != DeviceMode.Auto)
-            return;
-
-        string scheme = GetCurrentScheme();
-        if (!string.Equals(scheme, lastScheme))
+        while (deviceMode == DeviceMode.Auto)
         {
-            lastScheme = scheme;
-            RefreshIcon();
+            string scheme = GetCurrentScheme();
+            if (!string.Equals(scheme, lastScheme))
+            {
+                lastScheme = scheme;
+                RefreshIcon();
+            }
+            yield return null;
         }
     }
 
@@ -120,17 +155,17 @@ public class KeybindIconSwapper : MonoBehaviour
 
     private void RefreshIcon()
     {
-        if (iconSet == null || targetImage == null)
+        if (sharedIconSet == null || targetImage == null)
             return;
 
         bool useGamepad = deviceMode == DeviceMode.Gamepad;
         if (deviceMode == DeviceMode.Auto)
-            useGamepad = iconSet.IsGamepadScheme(GetCurrentScheme());
+            useGamepad = sharedIconSet.IsGamepadScheme(GetCurrentScheme());
 
         if (useCraneMoveIcon)
         {
             string partName = GetCranePartName(craneDirection);
-            if (iconSet.TryGetCompositePartIcon(action, useGamepad, partName, out Sprite craneIcon, out _))
+            if (sharedIconSet.TryGetCompositePartIcon(action, useGamepad, partName, out Sprite craneIcon, out _))
             {
                 targetImage.sprite = craneIcon;
                 targetImage.enabled = true;
@@ -143,9 +178,10 @@ public class KeybindIconSwapper : MonoBehaviour
             return;
         }
 
-        if (iconSet.TryGetIcon(action, useGamepad, out Sprite icon, out _))
+        if (sharedIconSet.TryGetIcon(action, useGamepad, out Sprite icon, out _))
         {
             targetImage.sprite = icon;
+            Debug.Log($"Found icon for action {action}: {icon.name}");
             targetImage.enabled = true;
         }
         else if (hideWhenMissing)

@@ -67,7 +67,12 @@ namespace Singletons {
             T newInstance = singletonObject.AddComponent<T>();
             singletonObject.name = typeof(T).ToString() + " (Singleton)";
             if (newInstance is Singleton<T> singleton && singleton.ShouldPersistAcrossScenes)
-                DontDestroyOnLoad(singletonObject);
+            {
+                if (Application.isPlaying)
+                {
+                    DontDestroyOnLoad(singletonObject);
+                }
+            }
             return newInstance;
         }
 
@@ -85,7 +90,10 @@ namespace Singletons {
                 _instance = this as T;
                 if (ShouldPersistAcrossScenes)
                 {
-                    DontDestroyOnLoad(gameObject);
+                    if (Application.isPlaying)
+                    {
+                        DontDestroyOnLoad(gameObject);
+                    }
                 }
             }
             else if (_instance != this)
