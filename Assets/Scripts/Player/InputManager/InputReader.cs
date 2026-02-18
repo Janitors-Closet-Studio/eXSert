@@ -239,13 +239,27 @@ public class InputReader : Singleton<InputReader>
     {
         base.Awake(); // Ensure singleton behavior
 
+        // If this component was a duplicate (Singleton destroys the component only), do not continue initialization.
+        if (Instance != this)
+            return;
+
         SceneManager.sceneLoaded += HandleSceneLoaded;
 
+        // Prefer a project asset if available, but do not require Resources/.
+        // If the asset isn't located under a Resources folder, fall back to a runtime-generated wrapper.
         playerControls = Resources.Load<InputActionAsset>("PlayerControls");
         if (playerControls == null)
         {
-            Debug.LogError("player controls still null. Darn");
-            return;
+            runtimeGeneratedControls = new PlayerControls();
+            playerControls = runtimeGeneratedControls.asset;
+
+            if (playerControls == null)
+            {
+                Debug.LogError("[InputReader] Failed to load PlayerControls from Resources and failed to generate runtime controls.");
+                return;
+            }
+
+            Debug.LogWarning("[InputReader] PlayerControls asset not found in Resources. Using runtime-generated controls instead.");
         }
 
         // Try to bind to an existing PlayerInput found in loaded scenes first; if none found,
@@ -315,9 +329,27 @@ public class InputReader : Singleton<InputReader>
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // If we already have a PlayerInput, only early-out when it's a real scene/player binding.
+        // When starting from MainMenu, InputReader may create a fallback PlayerInput on itself;
+        // once gameplay scenes load we must rebind to the actual player PlayerInput.
         if (_playerInput != null)
-            return;
-        else Debug.Log("[InputReader] _playerInput is null in HandleSceneLoaded.");
+        {
+            // Unity's fake-null for destroyed objects
+            if (_playerInput == null)
+            {
+                _playerInput = null;
+            }
+            else
+            {
+                bool isFallbackOnSingleton = _playerInput.gameObject == gameObject
+                    || _playerInput.gameObject.scene.name == "DontDestroyOnLoad";
+
+                if (!isFallbackOnSingleton)
+                    return;
+            }
+        }
+
+        Debug.Log("[InputReader] Attempting to bind PlayerInput after scene load.");
 
         if (scene.isLoaded && TryBindFromScene(scene))
             return;

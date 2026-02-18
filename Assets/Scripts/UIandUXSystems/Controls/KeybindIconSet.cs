@@ -738,20 +738,28 @@ public class KeybindIconSet : ScriptableObject
 
 public enum KeybindAction
 {
-    Dash,
-    Guard,
-    TargetLock,
-    NavigationMenu,
-    ChangeTarget,
-    PauseMenu,
-    HeavyAttackAoe,
-    FastAttackSingle,
-    Interact,
-    Jump,
-    Select,
-    CraneExit,
-    CraneConfirm,
-    CraneMove,
-    Confirm,
-    Cancel
+    // NOTE: Explicit values preserve Unity serialization.
+    GP_Dash = 0,
+    GP_Guard = 1,
+    GP_TargetLock = 2,
+    GP_NavigationMenu = 3,
+    GP_ChangeTarget = 4,
+    GP_ChangeTarget_L = 16,
+    GP_ChangeTarget_R = 17,
+    GP_PauseMenu = 5,
+    GP_HeavyAttackAoe = 6,
+    GP_FastAttackSingle = 7,
+    GP_Interact = 8,
+    GP_Jump = 9,
+
+    UI_Navigate = 10,
+    UI_Swap = 18,
+    UI_RestoreDefault = 19,
+    UI_Confirm = 14,
+    UI_Cancel = 15,
+
+    // Crane actions moved to the bottom for inspector readability.
+    CraneExit = 11,
+    CraneConfirm = 12,
+    CraneMove = 13
 }
