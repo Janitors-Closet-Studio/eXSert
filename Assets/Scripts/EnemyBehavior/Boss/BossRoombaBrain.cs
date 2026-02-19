@@ -557,16 +557,16 @@ namespace EnemyBehavior.Boss
                 if (playerMovement != null)
                 {
                     player = playerMovement.transform;
-                    Debug.Log($"[BossRoombaBrain] Player cached: {player.name} (has PlayerMovement)");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Player cached: {player.name} (has PlayerMovement)");
                 }
                 else
                 {
-                    Debug.LogWarning($"[BossRoombaBrain] Player found ({player.name}) but no PlayerMovement component!");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[BossRoombaBrain] Player found ({player.name}) but no PlayerMovement component!");
                 }
             }
             else
             {
-                Debug.LogWarning("[BossRoombaBrain] No player found in scene during Awake!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] No player found in scene during Awake!");
             }
         }
 
@@ -591,18 +591,18 @@ namespace EnemyBehavior.Boss
             int baseLayerIndex = animator.GetLayerIndex("Base Layer");
             if (baseLayerIndex != 0)
             {
-                Debug.LogError($"[BossRoombaBrain] CRITICAL: Base Layer is at index {baseLayerIndex} instead of 0! Animator Controller layer order is wrong. Applying workaround...");
+                EnemyBehaviorDebugLogBools.LogError($"[BossRoombaBrain] CRITICAL: Base Layer is at index {baseLayerIndex} instead of 0! Animator Controller layer order is wrong. Applying workaround...");
                 
                 // Emergency workaround: Disable the misplaced Base Layer and ensure layer 0 is active
                 if (baseLayerIndex > 0)
                 {
                     animator.SetLayerWeight(baseLayerIndex, 0f); // Disable misplaced base layer
-                    Debug.LogWarning($"[BossRoombaBrain] Disabled Base Layer at index {baseLayerIndex}");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[BossRoombaBrain] Disabled Base Layer at index {baseLayerIndex}");
                 }
                 
                 // Ensure layer 0 (whatever it's called) is enabled
                 animator.SetLayerWeight(0, 1f);
-                Debug.Log($"[BossRoombaBrain] Enabled layer 0: {animator.GetLayerName(0)}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Enabled layer 0: {animator.GetLayerName(0)}");
             }
             
             hitReactLayer = !string.IsNullOrEmpty(LayerNameHitReact) ? animator.GetLayerIndex(LayerNameHitReact) : -1;
@@ -611,7 +611,7 @@ namespace EnemyBehavior.Boss
             idleAdditiveLayer = !string.IsNullOrEmpty(LayerNameIdleAdditive) ? animator.GetLayerIndex(LayerNameIdleAdditive) : -1;
             
             // Log final layer configuration
-            Debug.Log($"[BossRoombaBrain] Layer indices - HitReact: {hitReactLayer}, Stun: {stunLayer}, Attacks: {attacksLayer}, Idle: {idleAdditiveLayer}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Layer indices - HitReact: {hitReactLayer}, Stun: {stunLayer}, Attacks: {attacksLayer}, Idle: {idleAdditiveLayer}");
         }
 
         private void InitializeAttackDescriptors()
@@ -793,7 +793,7 @@ namespace EnemyBehavior.Boss
         {
             if (lastActions.Count == 8) lastActions.Dequeue();
             lastActions.Enqueue(s);
-            Debug.Log($"[Boss] {s}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] {s}");
         }
 
         public IEnumerable<string> GetRecentActions() => lastActions;
@@ -925,7 +925,7 @@ namespace EnemyBehavior.Boss
             // CRITICAL: Stop the controller's follow behavior so it doesn't override our destination
             ctrl.StopFollowing();
 #if UNITY_EDITOR
-            Debug.Log("[Boss] Stopped controller follow behavior for vacuum sequence");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Stopped controller follow behavior for vacuum sequence");
 #endif
 
             // CRITICAL: Deactivate alarm FIRST so no new adds spawn while existing ones flee
@@ -944,7 +944,7 @@ namespace EnemyBehavior.Boss
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[Boss] Failed to order adds to flee (continuing vacuum sequence): {e.Message}\n{e.StackTrace}");
+                EnemyBehaviorDebugLogBools.LogError($"[Boss] Failed to order adds to flee (continuing vacuum sequence): {e.Message}\n{e.StackTrace}");
             }
 
             // Determine the target position for the vacuum attack
@@ -955,20 +955,20 @@ namespace EnemyBehavior.Boss
             {
                 vacuumTargetPosition = VacuumPosition.position;
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Vacuum target: VacuumPosition at {vacuumTargetPosition}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Vacuum target: VacuumPosition at {vacuumTargetPosition}");
 #endif
             }
             else if (ArenaCenterBounds != null)
             {
                 vacuumTargetPosition = ArenaCenterBounds.bounds.center;
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Vacuum target: ArenaCenterBounds center at {vacuumTargetPosition}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Vacuum target: ArenaCenterBounds center at {vacuumTargetPosition}");
 #endif
             }
             else
             {
                 // No valid position - skip pathfinding and do vacuum from current position
-                Debug.LogWarning("[Boss] No VacuumPosition or ArenaCenterBounds assigned! Doing vacuum from current position.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[Boss] No VacuumPosition or ArenaCenterBounds assigned! Doing vacuum from current position.");
                 vacuumTargetPosition = transform.position;
             }
 
@@ -978,7 +978,7 @@ namespace EnemyBehavior.Boss
             // Pathfind to the vacuum position
             float distanceToTarget = Vector3.Distance(transform.position, vacuumTargetPosition);
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] Distance to vacuum position: {distanceToTarget:F1}m (boss at {transform.position}, target at {vacuumTargetPosition})");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Distance to vacuum position: {distanceToTarget:F1}m (boss at {transform.position}, target at {vacuumTargetPosition})");
 #endif
 
             if (distanceToTarget > VacuumPositionThreshold)
@@ -997,7 +997,7 @@ namespace EnemyBehavior.Boss
                 agent.stoppingDistance = 0.5f;
                 
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Vacuum approach: speed {originalSpeed:F1}→{agent.speed:F1}, angularSpeed {originalAngularSpeed:F1}→{agent.angularSpeed:F1}, accel {originalAcceleration:F1}→{agent.acceleration:F1}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Vacuum approach: speed {originalSpeed:F1}→{agent.speed:F1}, angularSpeed {originalAngularSpeed:F1}→{agent.angularSpeed:F1}, accel {originalAcceleration:F1}→{agent.acceleration:F1}");
 #endif
 
                 // Ensure agent is ready to move
@@ -1006,7 +1006,7 @@ namespace EnemyBehavior.Boss
                 bool pathSet = agent.SetDestination(vacuumTargetPosition);
                 
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] SetDestination returned: {pathSet}, agent.pathPending: {agent.pathPending}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] SetDestination returned: {pathSet}, agent.pathPending: {agent.pathPending}");
 #endif
                 PushAction($"Moving to vacuum position ({distanceToTarget:F1}m away)...");
 
@@ -1019,7 +1019,7 @@ namespace EnemyBehavior.Boss
                 }
 
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Path status: {agent.pathStatus}, hasPath: {agent.hasPath}, pathPending: {agent.pathPending}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Path status: {agent.pathStatus}, hasPath: {agent.hasPath}, pathPending: {agent.pathPending}");
 #endif
 
                 // Wait until we reach the position (with timeout)
@@ -1044,7 +1044,7 @@ namespace EnemyBehavior.Boss
                         if (currentDistCheck > VacuumPositionThreshold)
                         {
 #if UNITY_EDITOR
-                            Debug.Log($"[Boss] Agent stopped early at {currentDistCheck:F1}m - forcing re-path");
+                            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Agent stopped early at {currentDistCheck:F1}m - forcing re-path");
 #endif
                             agent.SetDestination(vacuumTargetPosition);
                         }
@@ -1052,7 +1052,7 @@ namespace EnemyBehavior.Boss
                     
                     if (!agent.hasPath && !agent.pathPending)
                     {
-                        Debug.LogWarning("[Boss] Agent has no path and none pending! Retrying SetDestination...");
+                        EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[Boss] Agent has no path and none pending! Retrying SetDestination...");
                         agent.SetDestination(vacuumTargetPosition);
                     }
 
@@ -1062,7 +1062,7 @@ namespace EnemyBehavior.Boss
                     if (logTimer >= 1f)
                     {
                         float currentDist = Vector3.Distance(transform.position, vacuumTargetPosition);
-                        Debug.Log($"[Boss] Moving... dist={currentDist:F1}m, velocity={agent.velocity.magnitude:F1}, remainingDist={agent.remainingDistance:F1}");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Moving... dist={currentDist:F1}m, velocity={agent.velocity.magnitude:F1}, remainingDist={agent.remainingDistance:F1}");
                         logTimer = 0f;
                     }
 #endif
@@ -1077,13 +1077,13 @@ namespace EnemyBehavior.Boss
                 agent.acceleration = originalAcceleration;
                 agent.stoppingDistance = originalStoppingDistance;
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Agent settings RESTORED: speed={agent.speed:F1}, angularSpeed={agent.angularSpeed:F1}, accel={agent.acceleration:F1}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Agent settings RESTORED: speed={agent.speed:F1}, angularSpeed={agent.angularSpeed:F1}, accel={agent.acceleration:F1}");
 #endif
 
                 float finalDist = Vector3.Distance(transform.position, vacuumTargetPosition);
                 if (moveTimer >= moveTimeout)
                 {
-                    Debug.LogWarning($"[Boss] Timed out moving to vacuum position after {moveTimeout}s (still {finalDist:F1}m away)");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[Boss] Timed out moving to vacuum position after {moveTimeout}s (still {finalDist:F1}m away)");
                 }
                 else if (finalDist <= VacuumPositionThreshold)
                 {
@@ -1092,14 +1092,14 @@ namespace EnemyBehavior.Boss
 #if UNITY_EDITOR
                 else
                 {
-                    Debug.Log($"[Boss] Exited movement loop at {finalDist:F1}m (threshold={VacuumPositionThreshold:F1}m)");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Exited movement loop at {finalDist:F1}m (threshold={VacuumPositionThreshold:F1}m)");
                 }
 #endif
             }
             else
             {
 #if UNITY_EDITOR
-                Debug.Log("[Boss] Already at vacuum position, skipping movement");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Already at vacuum position, skipping movement");
 #endif
             }
 
@@ -1119,7 +1119,7 @@ namespace EnemyBehavior.Boss
             }
             
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] Vacuum sequence END - form is {form}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Vacuum sequence END - form is {form}");
 #endif
         }
         
@@ -1155,7 +1155,7 @@ namespace EnemyBehavior.Boss
             // PROPERLY HANDLED: Raise horns BEFORE vacuum attack
             yield return RaiseHornsIfNeeded();
 
-            Debug.Log($"[Boss] Starting vacuum attack animations - Windup trigger: {a.AnimatorTriggerOnWindup}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Starting vacuum attack animations - Windup trigger: {a.AnimatorTriggerOnWindup}");
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnWindup)) animator.SetTrigger(a.AnimatorTriggerOnWindup);
             yield return WaitForSecondsCache.Get(a.WindupSpeedMultiplier * GetClipLength(animator, a.WindupClipName));
             
@@ -1234,7 +1234,7 @@ namespace EnemyBehavior.Boss
 
         private void StartVacuumSuction(float duration)
         {
-            Debug.Log($"[BossRoombaBrain] StartVacuumSuction called - duration={duration}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] StartVacuumSuction called - duration={duration}");
             
             // Ensure player is cached
             if (player == null || playerMovement == null)
@@ -1249,7 +1249,7 @@ namespace EnemyBehavior.Boss
                 if (VacuumSuctionController == null)
                 {
                     VacuumSuctionController = gameObject.AddComponent<VacuumSuctionEffect>();
-                    Debug.Log("[BossRoombaBrain] Created VacuumSuctionEffect component");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Created VacuumSuctionEffect component");
                 }
             }
 
@@ -1274,12 +1274,12 @@ namespace EnemyBehavior.Boss
                     VacuumSuctionController.SuctionTarget = targetObj.transform;
                 }
                 VacuumSuctionController.SuctionTarget.position = ArenaCenterBounds.bounds.center;
-                Debug.Log($"[BossRoombaBrain] Suction target set to ArenaCenterBounds center: {ArenaCenterBounds.bounds.center}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Suction target set to ArenaCenterBounds center: {ArenaCenterBounds.bounds.center}");
             }
             else if (VacuumPosition != null)
             {
                 VacuumSuctionController.SuctionTarget = VacuumPosition;
-                Debug.Log($"[BossRoombaBrain] Suction target set to VacuumPosition: {VacuumPosition.position}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Suction target set to VacuumPosition: {VacuumPosition.position}");
             }
             else
             {
@@ -1479,11 +1479,11 @@ namespace EnemyBehavior.Boss
                     if (Mathf.Approximately(DuelistAcceleration, 8f))
                         DuelistAcceleration = BaseAcceleration;
                     
-                    Debug.Log($"[BossRoombaBrain] Loaded settings from profile: BaseSpeed={BaseSpeed:F1}, BaseAngular={BaseAngularSpeed}, BaseAccel={BaseAcceleration}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Loaded settings from profile: BaseSpeed={BaseSpeed:F1}, BaseAngular={BaseAngularSpeed}, BaseAccel={BaseAcceleration}");
                 }
                 else
                 {
-                    Debug.LogWarning("[BossRoombaBrain] No profile found on BossRoombaController - using serialized Base values");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] No profile found on BossRoombaController - using serialized Base values");
                 }
                 
                 // Cache the base values for use by charge multipliers
@@ -1497,7 +1497,7 @@ namespace EnemyBehavior.Boss
                 agent.acceleration = baseAgentAcceleration;
                 
                 agentSettingsCached = true;
-                Debug.Log($"[BossRoombaBrain] Cached agent settings - Speed: {baseAgentSpeed}, Angular: {baseAgentAngularSpeed}, Accel: {baseAgentAcceleration}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Cached agent settings - Speed: {baseAgentSpeed}, Angular: {baseAgentAngularSpeed}, Accel: {baseAgentAcceleration}");
             }
         }
 
@@ -1536,7 +1536,7 @@ namespace EnemyBehavior.Boss
                 agent.acceleration = DuelistAcceleration;
                 agent.autoBraking = true;
                 agent.updateRotation = true;
-                Debug.Log($"[Boss] Applied Duelist form settings: speed={DuelistFollowSpeed}, angular={DuelistAngularSpeed}, accel={DuelistAcceleration}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Applied Duelist form settings: speed={DuelistFollowSpeed}, angular={DuelistAngularSpeed}, accel={DuelistAcceleration}");
             }
         }
         
@@ -1552,7 +1552,7 @@ namespace EnemyBehavior.Boss
                 agent.acceleration = BaseAcceleration;
                 agent.autoBraking = false;
                 agent.updateRotation = true;
-                Debug.Log($"[Boss] Applied Top Wander settings: speed={TopWanderSpeed}, angular={TopWanderAngularSpeed}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Applied Top Wander settings: speed={TopWanderSpeed}, angular={TopWanderAngularSpeed}");
             }
         }
         
@@ -1636,7 +1636,7 @@ namespace EnemyBehavior.Boss
 
             if (dirToTarget.sqrMagnitude < 0.001f)
             {
-                Debug.Log($"[Boss] TIMING: TurnToFace - already facing target, skipping");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: TurnToFace - already facing target, skipping");
                 yield break;
             }
 
@@ -1654,7 +1654,7 @@ namespace EnemyBehavior.Boss
             float turnTimer = 0f;
             float maxTurnTime = 1f; // Max 1 second to turn
 
-            Debug.Log($"[Boss] TIMING: TurnToFace - initial angle: {initialAngle:F1}°, angular speed: {angularSpeed}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: TurnToFace - initial angle: {initialAngle:F1}°, angular speed: {angularSpeed}");
 
             while (turnTimer < maxTurnTime && !isStunned)
             {
@@ -1674,7 +1674,7 @@ namespace EnemyBehavior.Boss
 
             // Snap to final rotation
             transform.rotation = targetRotation;
-            Debug.Log($"[Boss] TIMING: TurnToFace - completed in {turnTimer:F2}s");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: TurnToFace - completed in {turnTimer:F2}s");
         }
 
         /// <summary>
@@ -1691,7 +1691,7 @@ namespace EnemyBehavior.Boss
             if (playerEjector != null)
             {
                 playerEjector.enabled = false;
-                Debug.Log("[Boss] Player ejector DISABLED for charge");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Player ejector DISABLED for charge");
             }
 
             // Apply appropriate charge settings
@@ -1846,7 +1846,7 @@ namespace EnemyBehavior.Boss
             {
                 playerEjector.enabled = true;
                 playerEjector.StartGracePeriod();
-                Debug.Log("[Boss] Player ejector RE-ENABLED after charge (with grace period)");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Player ejector RE-ENABLED after charge (with grace period)");
             }
 
             // Trigger recovery animation
@@ -2112,7 +2112,7 @@ namespace EnemyBehavior.Boss
                         
                         // Start the lunge using agent.Move (doesn't need path, just moves directly)
                         StartCoroutine(PerformAttackLunge(lungeDir, lungeAmount, lungeStartPos));
-                        Debug.Log($"[Boss] Attack lunge toward player: {lungeAmount:F1}m");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Attack lunge toward player: {lungeAmount:F1}m");
                     }
                 }
             }
@@ -2164,7 +2164,7 @@ namespace EnemyBehavior.Boss
                 if (!NavMesh.SamplePosition(overshootTarget, out var hit, DashNavMeshSampleRadius, NavMesh.AllAreas))
                 {
                     // Dash target is off NavMesh - fall back to a melee attack instead
-                    Debug.Log($"[Boss] Dash target {overshootTarget} is OFF NavMesh - falling back to melee");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash target {overshootTarget} is OFF NavMesh - falling back to melee");
                     PushAction("Dash blocked (off NavMesh) - using melee");
                     
                     // Pick a melee attack instead
@@ -2179,7 +2179,7 @@ namespace EnemyBehavior.Boss
                 {
                     // Adjust target to the valid NavMesh position
                     overshootTarget = hit.position;
-                    Debug.Log($"[Boss] Dash target adjusted to NavMesh position: {overshootTarget}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash target adjusted to NavMesh position: {overshootTarget}");
                 }
             }
 
@@ -2237,7 +2237,7 @@ namespace EnemyBehavior.Boss
                 overshootTarget = navHit.position;
             }
             
-            Debug.Log($"[Boss] Dash: boss at {transform.position}, player at {player.position}, overshoot target at {overshootTarget}, attackDir={currentAttackDirection}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash: boss at {transform.position}, player at {player.position}, overshoot target at {overshootTarget}, attackDir={currentAttackDirection}");
 
             // Store and modify agent settings for dash
             float originalSpeed = agent.speed;
@@ -2253,7 +2253,7 @@ namespace EnemyBehavior.Boss
             if (playerEjector != null)
             {
                 playerEjector.enabled = false;
-                Debug.Log("[Boss] Player ejector DISABLED for dash");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Player ejector DISABLED for dash");
             }
 
             // CRITICAL: Enable dash hitbox (charge hitbox with dash parameters)
@@ -2261,14 +2261,14 @@ namespace EnemyBehavior.Boss
             if (animMediator != null)
             {
                 animMediator.EnableCharge();
-                Debug.Log("[Boss] Dash hitbox ENABLED (using charge hitbox)");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Dash hitbox ENABLED (using charge hitbox)");
                 
                 // Enable arm hitboxes during dashes WITH arms (for frontal contact)
                 // The charge hitbox is at the back/center, but the arms are at the front
                 if (a == DashLungeLeft || a == DashLungeRight || a.RequiresArms)
                 {
                     animMediator.EnableBothArmsWithDashKnockback();
-                    Debug.Log("[Boss] Arm hitboxes ENABLED with DASH KNOCKBACK for frontal contact");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Arm hitboxes ENABLED with DASH KNOCKBACK for frontal contact");
                 }
                 else if (a == DashLungeNoArms)
                 {
@@ -2276,7 +2276,7 @@ namespace EnemyBehavior.Boss
                     // Since arms are retracted, we rely on the charge hitbox for frontal contact
                     // The charge hitbox should be sized/positioned to cover the front of the boss
                     animMediator.EnableChargeWithDashKnockback();
-                    Debug.Log("[Boss] Charge hitbox ENABLED with DASH KNOCKBACK for DashLungeNoArms");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Charge hitbox ENABLED with DASH KNOCKBACK for DashLungeNoArms");
                 }
             }
 
@@ -2308,7 +2308,7 @@ namespace EnemyBehavior.Boss
                         
                         if (dot > 0.2f) // Player is in front-ish
                         {
-                            Debug.Log($"[Boss] DASH MANUAL HIT! Distance: {distToPlayer:F2}, Dot: {dot:F2}");
+                            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] DASH MANUAL HIT! Distance: {distToPlayer:F2}, Dot: {dot:F2}");
                             dashHitAppliedThisAttack = true; // Set shared flag
                             
                             // Disable hitboxes immediately to prevent trigger-based hit from also firing
@@ -2328,7 +2328,7 @@ namespace EnemyBehavior.Boss
                             if (playerMovement != null)
                             {
                                 playerMovement.ApplyKnockback(knockbackVelocity);
-                                Debug.Log($"[Boss] Applied dash knockback: {knockbackVelocity}, magnitude: {knockbackVelocity.magnitude:F1}");
+                                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Applied dash knockback: {knockbackVelocity}, magnitude: {knockbackVelocity.magnitude:F1}");
                             }
                         }
                     }
@@ -2338,7 +2338,7 @@ namespace EnemyBehavior.Boss
                 float distToTarget = Vector3.Distance(transform.position, overshootTarget);
                 if (distToTarget < 1f && elapsed >= dashTime * 0.5f) // At least half animation time
                 {
-                    Debug.Log($"[Boss] Dash arrived at overshoot target");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash arrived at overshoot target");
                     break;
                 }
                 elapsed += Time.deltaTime;
@@ -2351,7 +2351,7 @@ namespace EnemyBehavior.Boss
             {
                 animMediator.DisableCharge();
                 animMediator.DisableBothArms(); // Also disable arm hitboxes
-                Debug.Log("[Boss] Dash hitboxes DISABLED (charge + arms)");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Dash hitboxes DISABLED (charge + arms)");
             }
             
             // Re-enable player ejector after dash completes with grace period
@@ -2360,7 +2360,7 @@ namespace EnemyBehavior.Boss
             {
                 playerEjector.enabled = true;
                 playerEjector.StartGracePeriod(); // Start grace period to prevent immediate strong ejection
-                Debug.Log("[Boss] Player ejector RE-ENABLED after dash (with grace period)");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Player ejector RE-ENABLED after dash (with grace period)");
             }
 
             // Restore agent settings
@@ -2787,13 +2787,13 @@ namespace EnemyBehavior.Boss
                 player = GameObject.FindWithTag("Player")?.transform;
                 if (player == null)
                 {
-                    Debug.LogError("[BossRoombaBrain] DEBUG: Cannot test vacuum - no Player found in scene!");
+                    EnemyBehaviorDebugLogBools.LogError("[BossRoombaBrain] DEBUG: Cannot test vacuum - no Player found in scene!");
                     return;
                 }
             }
             
             float testDuration = VacuumSuctionDuration > 0 ? VacuumSuctionDuration : 4f;
-            Debug.Log($"[BossRoombaBrain] DEBUG: Starting vacuum suction test - duration={testDuration}, player={player.name}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] DEBUG: Starting vacuum suction test - duration={testDuration}, player={player.name}");
             StartVacuumSuction(testDuration);
             PushAction($"DEBUG: Vacuum suction started for {testDuration}s (suction only, no animations)");
         }
@@ -2805,7 +2805,7 @@ namespace EnemyBehavior.Boss
             // Direct execution of the full vacuum sequence (pathfind + animation + suction)
             if (!Application.isPlaying)
             {
-                Debug.LogWarning("[BossRoombaBrain] Debug: Execute Full Vacuum Sequence requires Play Mode!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] Debug: Execute Full Vacuum Sequence requires Play Mode!");
                 return;
             }
             
@@ -2815,7 +2815,7 @@ namespace EnemyBehavior.Boss
                 player = GameObject.FindWithTag("Player")?.transform;
                 if (player == null)
                 {
-                    Debug.LogError("[BossRoombaBrain] DEBUG: Cannot execute vacuum - no Player found in scene!");
+                    EnemyBehaviorDebugLogBools.LogError("[BossRoombaBrain] DEBUG: Cannot execute vacuum - no Player found in scene!");
                     return;
                 }
             }
@@ -2826,7 +2826,7 @@ namespace EnemyBehavior.Boss
                 StopCoroutine(loop);
                 loop = null;
 #if UNITY_EDITOR
-                Debug.Log("[BossRoombaBrain] DEBUG: Stopped main AI loop");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] DEBUG: Stopped main AI loop");
 #endif
             }
             
@@ -2836,7 +2836,7 @@ namespace EnemyBehavior.Boss
                 StopCoroutine(debugVacuumCoroutine);
                 debugVacuumCoroutine = null;
 #if UNITY_EDITOR
-                Debug.Log("[BossRoombaBrain] DEBUG: Stopped previous debug vacuum sequence");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] DEBUG: Stopped previous debug vacuum sequence");
 #endif
             }
             
@@ -2846,7 +2846,7 @@ namespace EnemyBehavior.Boss
                 StopCoroutine(currentAttackRoutine);
                 currentAttackRoutine = null;
 #if UNITY_EDITOR
-                Debug.Log("[BossRoombaBrain] DEBUG: Stopped current attack");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] DEBUG: Stopped current attack");
 #endif
             }
             
@@ -2858,7 +2858,7 @@ namespace EnemyBehavior.Boss
             }
             
 #if UNITY_EDITOR
-            Debug.Log("[BossRoombaBrain] DEBUG: Starting full vacuum sequence (pathfind → animation → suction)");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] DEBUG: Starting full vacuum sequence (pathfind → animation → suction)");
 #endif
             debugVacuumCoroutine = StartCoroutine(DebugVacuumSequenceWrapper());
         }
@@ -2872,7 +2872,7 @@ namespace EnemyBehavior.Boss
             yield return ExecuteVacuumSequence();
             
 #if UNITY_EDITOR
-            Debug.Log("[BossRoombaBrain] DEBUG: Vacuum sequence complete, restarting AI loop and following");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] DEBUG: Vacuum sequence complete, restarting AI loop and following");
 #endif
             
             // Clear the debug coroutine reference
@@ -3164,18 +3164,18 @@ namespace EnemyBehavior.Boss
                 agent.isStopped = false;
                 agent.updateRotation = true;
                 agent.ResetPath(); // Clear any pending path
-                Debug.Log($"[Boss] TIMING: Agent ready - speed: {agent.speed}, isStopped: {agent.isStopped}, hasPath: {agent.hasPath}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Agent ready - speed: {agent.speed}, isStopped: {agent.isStopped}, hasPath: {agent.hasPath}");
             }
             
             PushAction($"DEBUG: Starting combo with base speed {baseAgentSpeed}");
             
             float comboStartTime = Time.time;
-            Debug.Log($"[Boss] TIMING: ===== COMBO EXECUTION STARTING at {comboStartTime:F2} =====");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: ===== COMBO EXECUTION STARTING at {comboStartTime:F2} =====");
             
             // Now execute the combo
             yield return DebugExecuteSpecificComboInternal(comboIndex);
             
-            Debug.Log($"[Boss] TIMING: ===== COMBO EXECUTION COMPLETE - Total time: {Time.time - comboStartTime:F2}s =====");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: ===== COMBO EXECUTION COMPLETE - Total time: {Time.time - comboStartTime:F2}s =====");
             
             // Test complete
             isDebugTestRunning = false;
@@ -3192,7 +3192,7 @@ namespace EnemyBehavior.Boss
             var combo = ArenaManager.GetCombo(comboIndex);
             if (combo == null || !combo.IsValid)
             {
-                Debug.LogError($"[BossRoombaBrain] DEBUG: Combo {comboIndex} became invalid!");
+                EnemyBehaviorDebugLogBools.LogError($"[BossRoombaBrain] DEBUG: Combo {comboIndex} became invalid!");
                 yield break;
             }
 
@@ -3201,7 +3201,7 @@ namespace EnemyBehavior.Boss
             var segments = ArenaManager.GetComboSegments(combo);
             if (segments == null)
             {
-                Debug.LogError("[BossRoombaBrain] DEBUG: Failed to get combo segments!");
+                EnemyBehaviorDebugLogBools.LogError("[BossRoombaBrain] DEBUG: Failed to get combo segments!");
                 yield break;
             }
 
@@ -3213,7 +3213,7 @@ namespace EnemyBehavior.Boss
                 var (start, end) = segments[i];
                 float distToStart = Vector3.Distance(transform.position, start);
                 
-                Debug.Log($"[Boss] TIMING: Segment {i+1} START - dist to start: {distToStart:F2}, threshold: {ChargeArrivalThreshold}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Segment {i+1} START - dist to start: {distToStart:F2}, threshold: {ChargeArrivalThreshold}");
                 float segmentStartTime = Time.time;
 
                 // Move to start if not already there (using FAST approach speed)
@@ -3232,7 +3232,7 @@ namespace EnemyBehavior.Boss
                         // Set destination and verify it worked
                         bool pathSet = agent.SetDestination(start);
                         
-                        Debug.Log($"[Boss] TIMING: Moving to start - speed: {agent.speed}, pathSet: {pathSet}, " +
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Moving to start - speed: {agent.speed}, pathSet: {pathSet}, " +
                                   $"isStopped: {agent.isStopped}, enabled: {agent.enabled}, " +
                                   $"isOnNavMesh: {agent.isOnNavMesh}, hasPath: {agent.hasPath}");
                     }
@@ -3249,7 +3249,7 @@ namespace EnemyBehavior.Boss
                         if (elapsed - lastLogTime > 2f && agent != null)
                         {
                             float currentDist = Vector3.Distance(transform.position, start);
-                            Debug.Log($"[Boss] TIMING: Still moving... elapsed: {elapsed:F1}s, dist: {currentDist:F2}, " +
+                            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Still moving... elapsed: {elapsed:F1}s, dist: {currentDist:F2}, " +
                                       $"velocity: {agent.velocity.magnitude:F2}, pathStatus: {agent.pathStatus}, " +
                                       $"isStopped: {agent.isStopped}, hasPath: {agent.hasPath}, " +
                                       $"remainingDistance: {agent.remainingDistance:F2}");
@@ -3260,18 +3260,18 @@ namespace EnemyBehavior.Boss
                         yield return null;
                     }
                     
-                    Debug.Log($"[Boss] TIMING: Arrived at start in {Time.time - moveStartTime:F2}s (elapsed: {elapsed:F2}s)");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Arrived at start in {Time.time - moveStartTime:F2}s (elapsed: {elapsed:F2}s)");
                     
                     if (elapsed >= timeout)
                     {
-                        Debug.LogWarning($"[BossRoombaBrain] DEBUG: Timeout reaching start position for segment {i + 1}! " +
+                        EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[BossRoombaBrain] DEBUG: Timeout reaching start position for segment {i + 1}! " +
                                          $"Agent state - velocity: {agent?.velocity.magnitude ?? 0:F2}, " +
                                          $"pathStatus: {agent?.pathStatus}, hasPath: {agent?.hasPath}");
                     }
                 }
                 else
                 {
-                    Debug.Log($"[Boss] TIMING: Already at start position, skipping move");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Already at start position, skipping move");
                 }
 
                 if (isStunned || !isDebugTestRunning) break;
@@ -3286,23 +3286,23 @@ namespace EnemyBehavior.Boss
                 // Very brief pause before turning (just 1 frame to let physics settle)
                 yield return null;
 
-                Debug.Log($"[Boss] TIMING: Starting turn at {Time.time - segmentStartTime:F2}s into segment");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Starting turn at {Time.time - segmentStartTime:F2}s into segment");
                 float turnStartTime = Time.time;
 
                 // Turn to face end
                 yield return TurnToFacePosition(end);
 
-                Debug.Log($"[Boss] TIMING: Turn complete in {Time.time - turnStartTime:F2}s");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Turn complete in {Time.time - turnStartTime:F2}s");
 
                 if (isStunned || !isDebugTestRunning) break;
 
-                Debug.Log($"[Boss] TIMING: Starting charge at {Time.time - segmentStartTime:F2}s into segment");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Starting charge at {Time.time - segmentStartTime:F2}s into segment");
                 float chargeStartTime = Time.time;
 
                 // Charge to end
                 yield return ExecuteChargeDash(end, isTargeted: false);
 
-                Debug.Log($"[Boss] TIMING: Charge complete in {Time.time - chargeStartTime:F2}s, segment total: {Time.time - segmentStartTime:F2}s");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] TIMING: Charge complete in {Time.time - chargeStartTime:F2}s, segment total: {Time.time - segmentStartTime:F2}s");
 
                 // Very brief pause between segments (just 1 frame for snappy combos)
                 yield return null;
@@ -3519,11 +3519,11 @@ namespace EnemyBehavior.Boss
             
             if (panel.panelVisualMesh == null)
             {
-                Debug.LogError($"[BossRoombaBrain] Panel {panelIndex} has no visual mesh assigned!");
+                EnemyBehaviorDebugLogBools.LogError($"[BossRoombaBrain] Panel {panelIndex} has no visual mesh assigned!");
                 return;
             }
             
-            Debug.Log($"[BossRoombaBrain] DEBUG: Breaking panel {panelIndex} ({panel.panelVisualMesh.name})");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] DEBUG: Breaking panel {panelIndex} ({panel.panelVisualMesh.name})");
             DestroyPanel(panelIndex);
         }
         
@@ -3539,7 +3539,7 @@ namespace EnemyBehavior.Boss
                 panel.currentHealth = panel.maxHealth;
                 panel.isDestroyed = false;
             }
-            Debug.Log($"[BossRoombaBrain] DEBUG: Reset all {SidePanels.Count} panels to full health. Note: Detached panels cannot be re-attached at runtime.");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] DEBUG: Reset all {SidePanels.Count} panels to full health. Note: Detached panels cannot be re-attached at runtime.");
         }
         
         [ContextMenu("Debug: Break Panel 0")]
@@ -3649,14 +3649,14 @@ namespace EnemyBehavior.Boss
             // Guard: Already deployed
             if (armsDeployed)
             {
-                Debug.Log($"[Boss] DeployArmsIfNeeded() - arms already deployed, skipping");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] DeployArmsIfNeeded() - arms already deployed, skipping");
                 yield break;
             }
 
             // Guard: Deploy already in progress
             if (armsDeployInProgress)
             {
-                Debug.Log($"[Boss] DeployArmsIfNeeded() - deploy already in progress, waiting...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] DeployArmsIfNeeded() - deploy already in progress, waiting...");
                 yield return new WaitUntil(() => !armsDeployInProgress);
                 yield break;
             }
@@ -3664,21 +3664,21 @@ namespace EnemyBehavior.Boss
             // Guard: Wait for any retract in progress to finish first
             if (armsRetractInProgress)
             {
-                Debug.Log($"[Boss] DeployArmsIfNeeded() - retract in progress, waiting for it to finish...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] DeployArmsIfNeeded() - retract in progress, waiting for it to finish...");
                 yield return new WaitUntil(() => !armsRetractInProgress);
             }
 
             armsDeployInProgress = true;
             armsDeployed = true;
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] DeployArms() started - setting armsDeployed=true, triggering animator: {ArmsDeployTrigger}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] DeployArms() started - setting armsDeployed=true, triggering animator: {ArmsDeployTrigger}");
 #endif
             
             if (animator != null && !string.IsNullOrEmpty(ArmsDeployTrigger)) 
             {
                 animator.SetTrigger(ArmsDeployTrigger);
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Animator trigger '{ArmsDeployTrigger}' SET");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{ArmsDeployTrigger}' SET");
 #endif
             }
 
@@ -3687,7 +3687,7 @@ namespace EnemyBehavior.Boss
             
             armsDeployInProgress = false;
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] DeployArms() complete");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] DeployArms() complete");
 #endif
         }
 
@@ -3696,14 +3696,14 @@ namespace EnemyBehavior.Boss
             // Guard: Already retracted
             if (!armsDeployed)
             {
-                Debug.Log($"[Boss] RetractArmsIfNeeded() - arms already retracted, skipping");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RetractArmsIfNeeded() - arms already retracted, skipping");
                 yield break;
             }
 
             // Guard: Retract already in progress
             if (armsRetractInProgress)
             {
-                Debug.Log($"[Boss] RetractArmsIfNeeded() - retract already in progress, waiting...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RetractArmsIfNeeded() - retract already in progress, waiting...");
                 yield return new WaitUntil(() => !armsRetractInProgress);
                 yield break;
             }
@@ -3711,21 +3711,21 @@ namespace EnemyBehavior.Boss
             // Guard: Wait for any deploy in progress to finish first
             if (armsDeployInProgress)
             {
-                Debug.Log($"[Boss] RetractArmsIfNeeded() - deploy in progress, waiting for it to finish...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RetractArmsIfNeeded() - deploy in progress, waiting for it to finish...");
                 yield return new WaitUntil(() => !armsDeployInProgress);
             }
 
             armsRetractInProgress = true;
             armsDeployed = false;
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] RetractArms() started - setting armsDeployed=false, triggering animator: {ArmsRetractTrigger}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RetractArms() started - setting armsDeployed=false, triggering animator: {ArmsRetractTrigger}");
 #endif
             
             if (animator != null && !string.IsNullOrEmpty(ArmsRetractTrigger)) 
             {
                 animator.SetTrigger(ArmsRetractTrigger);
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Animator trigger '{ArmsRetractTrigger}' SET");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{ArmsRetractTrigger}' SET");
 #endif
             }
 
@@ -3733,13 +3733,13 @@ namespace EnemyBehavior.Boss
             // This ensures arms are fully retracted before starting unarmed attacks
             float waitTime = ArmsRetractDuration;
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] RetractArms() - waiting {waitTime}s for animation to complete");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RetractArms() - waiting {waitTime}s for animation to complete");
 #endif
             yield return WaitForSecondsCache.Get(waitTime);
             
             armsRetractInProgress = false;
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] RetractArms() complete");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RetractArms() complete");
 #endif
         }
         
@@ -3801,14 +3801,14 @@ namespace EnemyBehavior.Boss
             // Guard: Already raised
             if (hornsRaised)
             {
-                Debug.Log($"[Boss] RaiseHornsIfNeeded() - horns already raised, skipping");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RaiseHornsIfNeeded() - horns already raised, skipping");
                 yield break;
             }
 
             // Guard: Raise already in progress
             if (hornsRaiseInProgress)
             {
-                Debug.Log($"[Boss] RaiseHornsIfNeeded() - raise already in progress, waiting...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RaiseHornsIfNeeded() - raise already in progress, waiting...");
                 yield return new WaitUntil(() => !hornsRaiseInProgress);
                 yield break;
             }
@@ -3816,7 +3816,7 @@ namespace EnemyBehavior.Boss
             // Guard: Wait for any lower in progress to finish first
             if (hornsLowerInProgress)
             {
-                Debug.Log($"[Boss] RaiseHornsIfNeeded() - lower in progress, waiting for it to finish...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RaiseHornsIfNeeded() - lower in progress, waiting for it to finish...");
                 yield return new WaitUntil(() => !hornsLowerInProgress);
             }
 
@@ -3824,28 +3824,28 @@ namespace EnemyBehavior.Boss
             hornsRaised = true;
             PushAction("Raising horns (lowering faceplate)...");
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] RaiseHorns() started - setting hornsRaised=true, triggering animator: {HornsRaiseTrigger}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RaiseHorns() started - setting hornsRaised=true, triggering animator: {HornsRaiseTrigger}");
 #endif
             
             if (animator != null && !string.IsNullOrEmpty(HornsRaiseTrigger)) 
             {
                 animator.SetTrigger(HornsRaiseTrigger);
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Animator trigger '{HornsRaiseTrigger}' SET");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{HornsRaiseTrigger}' SET");
 #endif
             }
 
             // Wait for horn raise animation to complete
             float waitTime = HornsRaiseDuration;
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] RaiseHorns() - waiting {waitTime}s for animation to complete");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RaiseHorns() - waiting {waitTime}s for animation to complete");
 #endif
             yield return WaitForSecondsCache.Get(waitTime);
             
             hornsRaiseInProgress = false;
             PushAction("Horns raised (faceplate lowered)");
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] RaiseHorns() complete");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] RaiseHorns() complete");
 #endif
         }
 
@@ -3854,14 +3854,14 @@ namespace EnemyBehavior.Boss
             // Guard: Already lowered
             if (!hornsRaised)
             {
-                Debug.Log($"[Boss] LowerHornsIfNeeded() - horns already lowered, skipping");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] LowerHornsIfNeeded() - horns already lowered, skipping");
                 yield break;
             }
 
             // Guard: Lower already in progress
             if (hornsLowerInProgress)
             {
-                Debug.Log($"[Boss] LowerHornsIfNeeded() - lower already in progress, waiting...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] LowerHornsIfNeeded() - lower already in progress, waiting...");
                 yield return new WaitUntil(() => !hornsLowerInProgress);
                 yield break;
             }
@@ -3869,7 +3869,7 @@ namespace EnemyBehavior.Boss
             // Guard: Wait for any raise in progress to finish first
             if (hornsRaiseInProgress)
             {
-                Debug.Log($"[Boss] LowerHornsIfNeeded() - raise in progress, waiting for it to finish...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] LowerHornsIfNeeded() - raise in progress, waiting for it to finish...");
                 yield return new WaitUntil(() => !hornsRaiseInProgress);
             }
 
@@ -3877,28 +3877,28 @@ namespace EnemyBehavior.Boss
             hornsRaised = false;
             PushAction("Lowering horns (raising faceplate)...");
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] LowerHorns() started - setting hornsRaised=false, triggering animator: {HornsLowerTrigger}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] LowerHorns() started - setting hornsRaised=false, triggering animator: {HornsLowerTrigger}");
 #endif
             
             if (animator != null && !string.IsNullOrEmpty(HornsLowerTrigger)) 
             {
                 animator.SetTrigger(HornsLowerTrigger);
 #if UNITY_EDITOR
-                Debug.Log($"[Boss] Animator trigger '{HornsLowerTrigger}' SET");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{HornsLowerTrigger}' SET");
 #endif
             }
 
             // Wait for horn lower animation to complete
             float waitTime = HornsLowerDuration;
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] LowerHorns() - waiting {waitTime}s for animation to complete");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] LowerHorns() - waiting {waitTime}s for animation to complete");
 #endif
             yield return WaitForSecondsCache.Get(waitTime);
             
             hornsLowerInProgress = false;
             PushAction("Horns lowered (faceplate raised)");
 #if UNITY_EDITOR
-            Debug.Log($"[Boss] LowerHorns() complete");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] LowerHorns() complete");
 #endif
         }
 
@@ -3917,7 +3917,7 @@ namespace EnemyBehavior.Boss
 
         private IEnumerator ArmsRetractAfterCooldown()
         {
-            Debug.Log($"[Boss] ArmsRetractAfterCooldown() started - waiting {ArmsAutoRetractCooldown}s");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] ArmsRetractAfterCooldown() started - waiting {ArmsAutoRetractCooldown}s");
             cancelArmsRetract = false; // Reset cancel flag
             float t = 0f;
             while (t < ArmsAutoRetractCooldown)
@@ -3937,7 +3937,7 @@ namespace EnemyBehavior.Boss
             // Final check before actually retracting
             if (cancelArmsRetract)
             {
-                Debug.Log($"[Boss] ArmsRetractAfterCooldown() aborted - cancelArmsRetract={cancelArmsRetract}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] ArmsRetractAfterCooldown() aborted - cancelArmsRetract={cancelArmsRetract}");
                 armsRetractRoutine = null;
                 yield break;
             }
@@ -3945,7 +3945,7 @@ namespace EnemyBehavior.Boss
             // Don't retract if already retracting or deploying
             if (armsRetractInProgress || armsDeployInProgress)
             {
-                Debug.Log($"[Boss] ArmsRetractAfterCooldown() aborted - animation already in progress (retract={armsRetractInProgress}, deploy={armsDeployInProgress})");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] ArmsRetractAfterCooldown() aborted - animation already in progress (retract={armsRetractInProgress}, deploy={armsDeployInProgress})");
                 armsRetractRoutine = null;
                 yield break;
             }
@@ -3960,14 +3960,14 @@ namespace EnemyBehavior.Boss
 
         public void SetPlayerOnTop(bool value)
         {
-            Debug.Log($"[BossRoombaBrain] SetPlayerOnTop called: {value}, playerOnTop was: {playerOnTop}, form: {form}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] SetPlayerOnTop called: {value}, playerOnTop was: {playerOnTop}, form: {form}");
             playerOnTop = value;
             
             // During CageBull form (cage match with charges), ignore top mounting
             // Player shouldn't be able to ride the boss during the charge phase
             if (form == RoombaForm.CageBull)
             {
-                Debug.Log("[BossRoombaBrain] Ignoring top mount during CageBull form - player should be dodging charges!");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Ignoring top mount during CageBull form - player should be dodging charges!");
                 // Still track the mount state, but don't trigger wander behavior
                 return;
             }
@@ -3976,13 +3976,13 @@ namespace EnemyBehavior.Boss
             {
                 lastMountedTime = Time.time;
                 hasEverMounted = true;
-                Debug.Log("[BossRoombaBrain] Player mounted! Starting top wander.");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Player mounted! Starting top wander.");
                 ctrl.StartTopWander();
             }
             else
             {
                 if (hasEverMounted) lastMountedTime = Time.time;
-                Debug.Log("[BossRoombaBrain] Player dismounted! Stopping top wander.");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Player dismounted! Stopping top wander.");
                 ctrl.StopTopWander();
             }
         }
@@ -4075,7 +4075,7 @@ namespace EnemyBehavior.Boss
                 // Now try to trigger death animation
                 animator.SetTrigger("Die");
                 
-                Debug.Log("[BossRoombaBrain] Death animations stopped, Die trigger set");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Death animations stopped, Die trigger set");
             }
             
             // Disable all hitboxes
@@ -4091,7 +4091,7 @@ namespace EnemyBehavior.Boss
             }
             else
             {
-                Debug.LogWarning("[BossRoombaBrain] PlayerManager not assigned! Player will not be released to DontDestroyOnLoad.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] PlayerManager not assigned! Player will not be released to DontDestroyOnLoad.");
             }
             
             // Unregister from attack queue
@@ -4112,7 +4112,7 @@ namespace EnemyBehavior.Boss
             yield return WaitForSecondsCache.Get(3f);
             
             // Log final state
-            Debug.Log("[BossRoombaBrain] Death sequence complete - destroying boss");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Death sequence complete - destroying boss");
             
             // Destroy the boss GameObject
             Destroy(gameObject);
@@ -4127,28 +4127,28 @@ namespace EnemyBehavior.Boss
         {
             armsDeployInProgress = false;
             PushAction("Arms deployment complete (via animation event)");
-            Debug.Log($"[Boss] OnArmsDeployComplete() - armsDeployInProgress cleared");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] OnArmsDeployComplete() - armsDeployInProgress cleared");
         }
 
         public void OnArmsRetractComplete()
         {
             armsRetractInProgress = false;
             PushAction("Arms retraction complete (via animation event)");
-            Debug.Log($"[Boss] OnArmsRetractComplete() - armsRetractInProgress cleared");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] OnArmsRetractComplete() - armsRetractInProgress cleared");
         }
 
         public void OnHornsRaiseComplete()
         {
             hornsRaiseInProgress = false;
             PushAction("Horns raise complete (via animation event)");
-            Debug.Log($"[Boss] OnHornsRaiseComplete() - hornsRaiseInProgress cleared");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] OnHornsRaiseComplete() - hornsRaiseInProgress cleared");
         }
 
         public void OnHornsLowerComplete()
         {
             hornsLowerInProgress = false;
             PushAction("Horns lower complete (via animation event)");
-            Debug.Log($"[Boss] OnHornsLowerComplete() - hornsLowerInProgress cleared");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] OnHornsLowerComplete() - hornsLowerInProgress cleared");
         }
 
         private void ApplyBossDamageIfPlayerPresent(float damage)
@@ -4157,7 +4157,7 @@ namespace EnemyBehavior.Boss
             if (CombatManager.isParrying && currentAttack != null && currentAttack.Parryable)
             {
                 CombatManager.ParrySuccessful();
-                Debug.Log($"Boss attack {currentAttack?.Id} parried.");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"Boss attack {currentAttack?.Id} parried.");
                 return;
             }
             var hs = player.GetComponent<IHealthSystem>();
@@ -4166,7 +4166,7 @@ namespace EnemyBehavior.Boss
             {
                 float reduced = damage * 0.5f;
                 hs.LoseHP(reduced);
-                Debug.Log($"Boss attack {currentAttack?.Id} guarded. Damage reduced to {reduced}.");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"Boss attack {currentAttack?.Id} guarded. Damage reduced to {reduced}.");
             }
             else
             {

@@ -1,143 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace Progression.Encounters
 {
-    /// <summary>
-    /// Subclass Wave to hold the data for the individual waves for encounters.
-    /// Additionally holds wave specific functionality.
-    /// </summary>
-    internal class Wave
-    {
-        private readonly GameObject waveRoot;
-
-        // Holds all the enemy game objects in this wave, and whether they are alive
-        private readonly List<GameObject> enemyGameObjects = new();
-        private readonly List<BaseEnemyCore> enemies = new();
-
-        private bool waveCompleted = false;
-
-        public event Action<Wave> OnWaveComplete;
-        public event Action<Vector3> UpdateLastEnemyPosition;
-
-        // class constructor
-        public Wave(GameObject _waveRoot, List<GameObject> _enemies)
-        {
-            waveRoot = _waveRoot;
-            enemyGameObjects = _enemies;
-            waveCompleted = false;
-
-            InitializeEnemies();
-        }
-
-        private void InitializeEnemies()
-        {
-            enemies.Clear();
-            foreach (var enemy in enemyGameObjects)
-                if (enemy.TryGetComponent<BaseEnemyCore>(out var enemyCore))
-                {
-                    enemies.Add(enemyCore);
-                    enemyCore.OnDeath -= OnEnemyDefeated; // Prevent double-subscription
-                    enemyCore.OnDeath += OnEnemyDefeated;
-                }
-        }
-
-        public override string ToString()
-        {
-            return $"{waveRoot.name} with {enemies.Count} enemies";
-        }
-
-        public void Cleanup()
-        {
-            UnsubscribeAllEnemies();
-        }
-
-        private void UnsubscribeAllEnemies()
-        {
-            foreach (var enemy in enemies)
-            {
-                if (enemy != null)
-                    enemy.OnDeath -= OnEnemyDefeated;
-            }
-        }
-
-        /// <summary>
-        /// Function to spawn all enemies in this wave
-        /// Currently only activates the gameobjects but eventially should trigger spawn behavior in base enemy script
-        /// </summary>
-        public void SpawnEnemies()
-        {
-            if (waveRoot != null && !waveRoot.activeSelf)
-                waveRoot.SetActive(true);
-
-            foreach (BaseEnemyCore enemy in enemies)
-            {
-                enemy.Spawn();
-            }
-        }
-
-        /// <summary>
-        /// Function to reset all enemies in this wave
-        /// Currently only deactivates the gameobjects but eventially should trigger reset behavior in base enemy script
-        /// </summary>
-        public void ResetEnemies()
-        {
-            if (waveRoot != null && waveRoot.activeSelf)
-                waveRoot.SetActive(false);
-
-            foreach (BaseEnemyCore enemy in enemies)
-            {
-                enemy.ResetEnemy();
-            }
-
-            waveCompleted = false;
-        }
-
-        /// <summary>
-        /// Handles the logic for when an enemy is defeated
-        /// Function should be subscribed to the enemy's OnDefeated event
-        /// </summary>
-        /// <param name="enemy"></param>
-        private void OnEnemyDefeated(BaseEnemyCore enemy)
-        {
-            Debug.Log($"[CombatEncounter] Enemy defeated: {enemy.name}");
-
-#if UNITY_EDITOR
-            // Short diagnostic log to show who invoked the event (stack trace)
-            Debug.Log($"[CombatEncounter] OnEnemyDefeated invoked from:\n{System.Environment.StackTrace}");
-#endif
-
-            if (!enemies.Contains(enemy))
-                return;
-
-            UpdateLastEnemyPosition?.Invoke(enemy.transform.position);
-
-            enemy.OnDeath -= OnEnemyDefeated; // Unsubscribe from the enemy's death event to prevent memory leaks
-            enemies.Remove(enemy);
-
-            if (!RemainingEnemiesCheck() && !waveCompleted)
-                OnWaveComplete?.Invoke(this); // trigger next wave or end encounter
-        }
-
-        private bool RemainingEnemiesCheck()
-        {
-            if (enemies == null || enemies.Count == 0)
-                return false;
-
-            foreach (var enemy in enemies)
-                if (enemy != null && enemy.isAlive)
-                    return true;
-
-            return false;
-        }
-    }
-
     public class CombatEncounter : BasicEncounter
     {
+        #region Inspector Setup
         [Header("Combat Encounter Settings")]
 
         [SerializeField] private bool tempIsCompleted;
@@ -154,15 +25,15 @@ namespace Progression.Encounters
         [SerializeField] private bool dropObjectOnClear = false;
         [SerializeField] private GameObject objectToDrop;
         private bool dropAtLastEnemyPosition = true;
+        #endregion
 
         private Vector3 lastEnemyPosition;
 
-        public override bool isCompleted
-        {
-            get
-            {
-                return tempIsCompleted;
-            }
+        public override bool isCompleted { get => tempIsCompleted; }
+
+        public override string ObjectiveText 
+        { 
+            get => wavesQueue.Count > 0 ? wavesQueue.Peek().WaveObjectiveText : "Encounter Completed!";
         }
 
         protected override Color DebugColor { get => Color.red; }
@@ -177,32 +48,27 @@ namespace Progression.Encounters
         /// </summary>
         private readonly Queue<Wave> wavesQueue = new();
 
-        private bool encounterStarted;
-        private bool encounterSetUp; // Prevents double setup
+        private bool encounterStarted = false;
         private Coroutine waveAdvanceRoutine;
+
+        private void OnUpdateLastEnemyPosition(Vector3 position) => lastEnemyPosition = position;
 
         protected override void SetupEncounter()
         {
-            // Prevent double setup (ManualEncounterStart and Start can both call this)
-            if (encounterSetUp)
-            {
-                Debug.LogWarning($"[CombatEncounter] SetupEncounter called twice on {gameObject.name} - ignoring duplicate call.");
-                return;
-            }
-            encounterSetUp = true;
+            base.SetupEncounter();
 
             // iterates through each child object under this encounter
-            foreach(Transform child in transform)
+            foreach (Transform child in transform)
             {
                 // if the child object doesn't have "wave" in the name, skip it.
                 // This allows for organization of the encounter gameobject without breaking functionality
                 if (!child.name.ToLower().Contains("wave")) continue;
 
-                // Create a new wave using the child object as the parent for the wave's enemies
+                // Create or get a Wave component on the child object (wave root)
                 Wave newWave = CreateWave(child);
 
                 newWave.OnWaveComplete += WaveComplete;
-                newWave.UpdateLastEnemyPosition += (position) => lastEnemyPosition = position;
+                newWave.UpdateLastEnemyPosition += OnUpdateLastEnemyPosition;
 
                 allWaves.Add(newWave);
             }
@@ -211,21 +77,34 @@ namespace Progression.Encounters
 
             // SyncNextEncounterDelay();
 
-            // sub function to create a new wave of enemies using all the gameobjects childed to an empty gameobject
-            static Wave CreateWave(Transform parentObject)
+            // local function to create a new wave component and initialize it
+            Wave CreateWave(Transform parentObject)
             {
-                List<GameObject> enemiesToAdd = new List<GameObject>();
+                if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Setting up wave: {parentObject.name} for encounter: {name}");
+
+                Wave waveComponent;
+                if(parentObject.TryGetComponent<Wave>(out var existingWave)) waveComponent = existingWave;
+                else waveComponent = parentObject.gameObject.AddComponent<Wave>();
+
+                List < GameObject > enemiesToAdd = new();
                 foreach (Transform waveChild in parentObject)
                     enemiesToAdd.Add(waveChild.gameObject);
 
-                return new Wave(parentObject.gameObject, enemiesToAdd);
+                waveComponent.Initialize(enemiesToAdd);
+                return waveComponent;
             }
         }
 
+        protected override void PlayerEnteredZone() => BeginEncounter();
         private void BeginEncounter()
         {
             if (encounterStarted)
+            {
+                Debug.LogWarning($"[CombatEncounter] Player entered encounter zone for {name}, but the encounter has already started. Ignoring.");
                 return;
+            }
+
+            if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter started: {name} with {wavesQueue.Count} number of waves");
 
             encounterStarted = true;
             SpawnNextWave();
@@ -233,7 +112,7 @@ namespace Progression.Encounters
 
         private void CompleteEncounter()
         {
-            Debug.Log($"[CombatEncounter] Encounter completed: {name}");
+            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter completed: {name}");
 
             DropItem();
         }
@@ -272,32 +151,35 @@ namespace Progression.Encounters
         private void CleanupWave(Wave wave)
         {
             wave.Cleanup();
-            wave.UpdateLastEnemyPosition -= (position) => lastEnemyPosition = position;
+            wave.UpdateLastEnemyPosition -= OnUpdateLastEnemyPosition;
             wave.OnWaveComplete -= WaveComplete;
         }
 
-        private void SpawnNextWave()
-        {
-            // Ejects from the function early if there are no more waves to spawn
-            if (wavesQueue.Count == 0) return;
-
-            Wave currentWave = wavesQueue.Peek();
-            Debug.Log($"[CombatEncounter] Spawning next wave: {currentWave}");
-            currentWave.SpawnEnemies();
-        }
-
-        private async void SpawnNextWave(float delay)
+        private async void SpawnNextWave(float delay = 0f)
         {
             if (delay > 0f)
             {
                 await Task.Delay(TimeSpan.FromSeconds(delay));
             }
 
-            SpawnNextWave();
+            // Ejects from the function early if there are no more waves to spawn
+            if (wavesQueue.Count == 0) 
+            { 
+                Debug.LogError($"[CombatEncounter] No more waves to spawn for encounter {name}. This should not happen if the encounter is properly completed. Please check the encounter setup.");
+                return; 
+            }
+
+            Wave currentWave = wavesQueue.Peek();
+
+            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Spawning next wave: {currentWave}");
+            InvokeUpdateObjective(currentWave.WaveObjectiveText);
+            currentWave.SpawnEnemies();
         }
 
         private void ResetWaves()
         {
+            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Resetting waves for encounter: {name}");
+
             wavesQueue.Clear();
             encounterStarted = false;
 
@@ -312,13 +194,6 @@ namespace Progression.Encounters
                 wavesQueue.Enqueue(wave);
                 wave.ResetEnemies();
             }
-        }
-        #endregion
-
-        #region Trigger Events
-        protected override void PlayerEnteredZone()
-        {
-            BeginEncounter();
         }
         #endregion
     }

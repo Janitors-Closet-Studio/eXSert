@@ -26,23 +26,23 @@ namespace EnemyBehavior
 #if UNITY_EDITOR
             if (RequirePathRequestManager && FindObjectOfType<EnemyBehavior.Pathfinding.PathRequestManager>() == null)
             {
-                Debug.LogWarning("[Bootstrap] PathRequestManager not found in scene.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(SceneBootstrap), "[Bootstrap] PathRequestManager not found in scene.");
             }
             if (RequireDensityGrid && EnemyBehavior.Density.DensityGrid.Instance == null)
             {
-                Debug.LogWarning("[Bootstrap] DensityGrid not found or not initialized in scene.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(SceneBootstrap), "[Bootstrap] DensityGrid not found or not initialized in scene.");
             }
             if (RequireCrowdController && EnemyBehavior.Crowd.CrowdController.Instance == null)
             {
-                Debug.LogWarning("[Bootstrap] CrowdController not found in scene.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(SceneBootstrap), "[Bootstrap] CrowdController not found in scene.");
             }
             if (RequirePlayerTag && !PlayerPresenceManager.IsPlayerPresent && GameObject.FindGameObjectWithTag("Player") == null)
             {
-                Debug.LogWarning("[Bootstrap] No GameObject tagged 'Player' found in scene.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(SceneBootstrap), "[Bootstrap] No GameObject tagged 'Player' found in scene.");
             }
             if (SuggestScenePoolManager && EnemyBehavior.Crowd.ScenePoolManager.Instance == null)
             {
-                Debug.Log("[Bootstrap] ScenePoolManager is not present. That's fine unless this is the boss scene with add spawns.");
+                EnemyBehaviorDebugLogBools.Log(nameof(SceneBootstrap), "[Bootstrap] ScenePoolManager is not present. That's fine unless this is the boss scene with add spawns.");
             }
 #endif
         }

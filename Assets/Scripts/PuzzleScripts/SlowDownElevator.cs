@@ -49,6 +49,21 @@ public class SlowDownElevator : MonoBehaviour
 
     [SerializeField] private float _pointToSwitchWallsY;
 
+    public void Debug_RunFullSequence()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("[SlowDownElevator] Debug_RunFullSequence can only run in Play Mode.");
+            return;
+        }
+
+        StopAllCoroutines();
+        _decelerationCoroutine = null;
+        _isDecelerating = false;
+
+        SetUpStateToSlowWalls();
+    }
+
     private void Awake()
     {
         // Ensure the puzzle starts idle until explicitly triggered

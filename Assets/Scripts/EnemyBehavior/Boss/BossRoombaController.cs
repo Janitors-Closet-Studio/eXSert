@@ -162,31 +162,43 @@ public class BossRoombaController : MonoBehaviour
                         physicalCollider.radius = 1.5f; // Adjust to match boss size
                         physicalCollider.height = 2f;   // Adjust to match boss height
                         physicalCollider.center = new Vector3(0, 1f, 0); // Center at half-height
-                        Debug.Log("[BossRoombaController] Added physical CapsuleCollider for player collision/standing");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Added physical CapsuleCollider for player collision/standing");
                     }
                 }
             }
         }
 
+
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponentInChildren<Animator>();
         
-        // Prewarm pools
+        // Prewarm pools - use inactive parent to prevent OnEnable spam during instantiation
+        // Objects instantiated under an inactive parent are also inactive, preventing
+        // SwarmManager registration/unregistration churn during pool prewarming
+        var poolParent = new GameObject("_TempPoolParent");
+        poolParent.SetActive(false);
+        
         for (int i = 0; i < initialPoolSize; i++)
         {
             if (dronePrefab != null)
             {
-                var g = Instantiate(dronePrefab);
+                var g = Instantiate(dronePrefab, poolParent.transform);
+                // CRITICAL: Deactivate BEFORE unparenting to prevent OnEnable from firing
                 g.SetActive(false);
+                g.transform.SetParent(null);
                 dronePool.Enqueue(g);
             }
             if (crawlerPrefab != null)
             {
-                var c = Instantiate(crawlerPrefab);
+                var c = Instantiate(crawlerPrefab, poolParent.transform);
+                // CRITICAL: Deactivate BEFORE unparenting to prevent OnEnable from firing
                 c.SetActive(false);
+                c.transform.SetParent(null);
                 crawlerPool.Enqueue(c);
             }
         }
+        
+        Destroy(poolParent);
         
         // Initialize alarm health
         InitializeAlarmHealth();
@@ -426,7 +438,7 @@ public class BossRoombaController : MonoBehaviour
         alarmActivated = true;
         if (alarm != null) alarm.SetActive(true);
         
-        Debug.Log("Alarm ACTIVATED - Starting spawn management");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "Alarm ACTIVATED - Starting spawn management");
         
         // Start spawn management routine
         if (spawnManagementRoutine != null) StopCoroutine(spawnManagementRoutine);
@@ -441,17 +453,16 @@ public class BossRoombaController : MonoBehaviour
         if (alarmDestroyed) return;
         if (alarmActivated) return;
         
-        if (alarmActivationDelayRoutine != null)
-        {
-            StopCoroutine(alarmActivationDelayRoutine);
-        }
+        // Don't restart if already waiting for activation
+        if (alarmActivationDelayRoutine != null) return;
+        
         alarmActivationDelayRoutine = StartCoroutine(AlarmActivationDelayRoutine());
     }
     
     private IEnumerator AlarmActivationDelayRoutine()
     {
         float delay = Random.Range(AlarmActivationDelayRange.x, AlarmActivationDelayRange.y);
-        Debug.Log($"Alarm will activate in {delay:F1} seconds...");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"Alarm will activate in {delay:F1} seconds...");
         yield return WaitForSecondsCache.Get(delay);
         
         if (!alarmDestroyed && !alarmActivated)
@@ -466,7 +477,7 @@ public class BossRoombaController : MonoBehaviour
         alarmActivated = false;
         if (alarm != null && !alarmDestroyed) alarm.SetActive(false);
         
-        Debug.Log("Alarm DEACTIVATED - Stopping spawn management");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "Alarm DEACTIVATED - Stopping spawn management");
         
         // Stop delayed activation if pending
         if (alarmActivationDelayRoutine != null)
@@ -497,7 +508,7 @@ public class BossRoombaController : MonoBehaviour
         float actualDamage = damage * AlarmDamageMultiplier;
         alarmCurrentHealth -= actualDamage;
         
-        Debug.Log($"[BossRoombaController] Alarm took {actualDamage} damage ({alarmCurrentHealth}/{AlarmMaxHealth})");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Alarm took {actualDamage} damage ({alarmCurrentHealth}/{AlarmMaxHealth})");
         
         if (alarmCurrentHealth <= 0f)
         {
@@ -516,7 +527,7 @@ public class BossRoombaController : MonoBehaviour
         alarmDestroyed = true;
         alarmActivated = false;
         
-        Debug.Log("[BossRoombaController] ALARM DESTROYED - No more adds will spawn!");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] ALARM DESTROYED - No more adds will spawn!");
         
         // Stop spawn management
         if (spawnManagementRoutine != null)
@@ -601,7 +612,7 @@ public class BossRoombaController : MonoBehaviour
         
         if (allAdds.Count == 0)
         {
-            Debug.Log("[Boss DEBUG] No active adds to kill!");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[Boss DEBUG] No active adds to kill!");
             return;
         }
         
@@ -609,7 +620,7 @@ public class BossRoombaController : MonoBehaviour
         int index = UnityEngine.Random.Range(0, allAdds.Count);
         GameObject target = allAdds[index];
         
-        Debug.Log($"[Boss DEBUG] Killing add: {target.name}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[Boss DEBUG] Killing add: {target.name}");
         
         // Try to kill it through its health system
         var healthSystem = target.GetComponent<IHealthSystem>();
@@ -667,7 +678,7 @@ public class BossRoombaController : MonoBehaviour
             }
         }
         
-        Debug.Log($"[Boss DEBUG] Killed {killCount} adds!");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[Boss DEBUG] Killed {killCount} adds!");
     }
     
     #endregion
@@ -684,7 +695,7 @@ public class BossRoombaController : MonoBehaviour
     /// </summary>
     public void OrderAddsToFleeToSpawnPoints()
     {
-        Debug.Log("[BossRoombaController] Ordering all adds to flee to nearest spawn points");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Ordering all adds to flee to nearest spawn points");
         
         // Clear previous fleeing tracking
         fleeingAdds.Clear();
@@ -701,8 +712,8 @@ public class BossRoombaController : MonoBehaviour
             : pocketSpawnPoints;
         
         // Log spawn point availability for debugging
-        Debug.Log($"[BossRoombaController] Spawn points - drones: {droneTargets?.Length ?? 0}, crawlers: {crawlerTargets?.Length ?? 0}, legacy: {pocketSpawnPoints?.Length ?? 0}");
-        Debug.Log($"[BossRoombaController] Active adds - drones: {activeDrones.Count}, crawlers: {activeCrawlers.Count}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Spawn points - drones: {droneTargets?.Length ?? 0}, crawlers: {crawlerTargets?.Length ?? 0}, legacy: {pocketSpawnPoints?.Length ?? 0}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Active adds - drones: {activeDrones.Count}, crawlers: {activeCrawlers.Count}");
         
         // Order all active drones to flee to nearest spawn point
         var droneKeys = new List<Transform>(activeDrones.Keys);
@@ -731,17 +742,17 @@ public class BossRoombaController : MonoBehaviour
                         StartCoroutine(MonitorFleeingAddArrival(drone, droneAgent, nearestSpawn.position, true));
                         
                         dronesFleeing++;
-                        Debug.Log($"[BossRoombaController] Drone {drone.name} fleeing to spawn point at {nearestSpawn.position} (speed: {droneAgent.speed})");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Drone {drone.name} fleeing to spawn point at {nearestSpawn.position} (speed: {droneAgent.speed})");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"[BossRoombaController] No spawn point found for drone {drone.name}");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] No spawn point found for drone {drone.name}");
                 }
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning($"[BossRoombaController] Error ordering drone to flee: {e.Message}");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Error ordering drone to flee: {e.Message}");
             }
         }
         
@@ -766,7 +777,7 @@ public class BossRoombaController : MonoBehaviour
                     if (crawlerEnemy != null && crawlerEnemy.agent != null)
                     {
                         crawlerAgent = crawlerEnemy.agent;
-                        Debug.Log($"[BossRoombaController] Crawler {crawlerObj.name} - found via crawlerEnemy.agent");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawlerObj.name} - found via crawlerEnemy.agent");
                     }
                     else
                     {
@@ -779,11 +790,11 @@ public class BossRoombaController : MonoBehaviour
                             // Still null - log what components ARE on the object for debugging
                             var components = crawlerObj.GetComponents<Component>();
                             var componentNames = string.Join(", ", components.Select(c => c?.GetType().Name ?? "null"));
-                            Debug.LogWarning($"[BossRoombaController] BaseCrawlerEnemy component NOT FOUND on {crawlerObj.name}! Components: {componentNames}");
+                            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] BaseCrawlerEnemy component NOT FOUND on {crawlerObj.name}! Components: {componentNames}");
                         }
                         else
                         {
-                            Debug.LogWarning($"[BossRoombaController] Crawler {crawlerObj.name} - crawlerEnemy.agent is null, using fallback NavMeshAgent");
+                            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawlerObj.name} - crawlerEnemy.agent is null, using fallback NavMeshAgent");
                         }
                     }
                     
@@ -794,7 +805,7 @@ public class BossRoombaController : MonoBehaviour
                         fleeingAdds.Add(crawlerObj);
                         
                         // DEBUG: Log the crawler enemy status
-                        Debug.Log($"[BossRoombaController] Crawler {crawlerObj.name} - crawlerEnemy is {(crawlerEnemy != null ? "NOT NULL" : "NULL")}");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawlerObj.name} - crawlerEnemy is {(crawlerEnemy != null ? "NOT NULL" : "NULL")}");
                         
                         // CRITICAL: Stop ALL coroutines and remove from SwarmManager FIRST!
                         // The SwarmManager continuously updates crawler destinations, which will
@@ -804,18 +815,18 @@ public class BossRoombaController : MonoBehaviour
                             // Unregister from SwarmManager FIRST - this is critical!
                             // The SwarmManager overrides destinations every frame.
                             crawlerEnemy.UnregisterFromSwarmManager();
-                            Debug.Log($"[BossRoombaController] Unregistered {crawlerObj.name} from SwarmManager");
+                            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Unregistered {crawlerObj.name} from SwarmManager");
                             
                             // Stop all coroutines (ChaseBehavior, etc.)
                             crawlerEnemy.StopAllCoroutines();
                             
                             // Disable the MonoBehaviour to prevent Update/FixedUpdate
                             crawlerEnemy.enabled = false;
-                            Debug.Log($"[BossRoombaController] Stopped coroutines and disabled state machine for {crawlerObj.name}");
+                            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Stopped coroutines and disabled state machine for {crawlerObj.name}");
                         }
                         else
                         {
-                            Debug.LogWarning($"[BossRoombaController] crawlerEnemy is NULL for {crawlerObj.name} - cannot unregister from SwarmManager!");
+                            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] crawlerEnemy is NULL for {crawlerObj.name} - cannot unregister from SwarmManager!");
                         }
                         
                         // Apply flee speed multiplier
@@ -826,31 +837,31 @@ public class BossRoombaController : MonoBehaviour
                         
                         // Log distance from crawler to chosen spawn vs all spawn points for debugging
                         float chosenDist = Vector3.Distance(crawlerObj.transform.position, nearestSpawn.position);
-                        Debug.Log($"[BossRoombaController] Crawler {crawlerObj.name} at {crawlerObj.transform.position} -> nearest spawn {nearestSpawn.name} at {nearestSpawn.position} (dist: {chosenDist:F1}m)");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawlerObj.name} at {crawlerObj.transform.position} -> nearest spawn {nearestSpawn.name} at {nearestSpawn.position} (dist: {chosenDist:F1}m)");
                         
                         // Start coroutine to monitor arrival (destruction happens when walls raise)
                         StartCoroutine(MonitorFleeingAddArrival(crawlerObj, crawlerAgent, nearestSpawn.position, false));
                         
                         crawlersFleeing++;
-                        Debug.Log($"[BossRoombaController] Crawler {crawlerObj.name} fleeing to spawn point at {nearestSpawn.position} (speed: {crawlerAgent.speed})");
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawlerObj.name} fleeing to spawn point at {nearestSpawn.position} (speed: {crawlerAgent.speed})");
                     }
                     else
                     {
-                        Debug.LogWarning($"[BossRoombaController] Crawler {crawlerObj.name} has no valid NavMeshAgent (crawlerEnemy: {crawlerEnemy != null}, agent: {crawlerAgent}, enabled: {crawlerAgent?.enabled}, onNavMesh: {crawlerAgent?.isOnNavMesh})");
+                        EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawlerObj.name} has no valid NavMeshAgent (crawlerEnemy: {crawlerEnemy != null}, agent: {crawlerAgent}, enabled: {crawlerAgent?.enabled}, onNavMesh: {crawlerAgent?.isOnNavMesh})");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"[BossRoombaController] No spawn point found for crawler {crawlerObj.name} (crawlerTargets: {crawlerTargets?.Length ?? 0})");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] No spawn point found for crawler {crawlerObj.name} (crawlerTargets: {crawlerTargets?.Length ?? 0})");
                 }
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning($"[BossRoombaController] Error ordering crawler to flee: {e.Message}");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Error ordering crawler to flee: {e.Message}");
             }
         }
         
-        Debug.Log($"[BossRoombaController] Ordered {dronesFleeing} drones and {crawlersFleeing} crawlers to flee to spawn points (speed multiplier: {AddFleeSpeedMultiplier}x)");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Ordered {dronesFleeing} drones and {crawlersFleeing} crawlers to flee to spawn points (speed multiplier: {AddFleeSpeedMultiplier}x)");
     }
     
     
@@ -890,7 +901,7 @@ public class BossRoombaController : MonoBehaviour
             
             if (isAtDestination && (hasMovedSignificantly || elapsed > 2f))
             {
-                Debug.Log($"[BossRoombaController] {(isDrone ? "Drone" : "Crawler")} {add.name} arrived at spawn point (moved: {hasMovedSignificantly}, elapsed: {elapsed:F1}s)");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] {(isDrone ? "Drone" : "Crawler")} {add.name} arrived at spawn point (moved: {hasMovedSignificantly}, elapsed: {elapsed:F1}s)");
                 break;
             }
             
@@ -912,7 +923,7 @@ public class BossRoombaController : MonoBehaviour
         {
             addAgent.isStopped = true;
             addAgent.ResetPath();
-            Debug.Log($"[BossRoombaController] {(isDrone ? "Drone" : "Crawler")} {add.name} stopped at spawn point");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] {(isDrone ? "Drone" : "Crawler")} {add.name} stopped at spawn point");
         }
         
         // Wait for destroy delay, then destroy (both drones and crawlers)
@@ -922,7 +933,7 @@ public class BossRoombaController : MonoBehaviour
         
         // Remove from fleeing tracking and destroy
         fleeingAdds.Remove(add);
-        Debug.Log($"[BossRoombaController] Destroying fleeing {(isDrone ? "drone" : "crawler")} {add.name}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Destroying fleeing {(isDrone ? "drone" : "crawler")} {add.name}");
         add.SetActive(false);
         
         if (isDrone)
@@ -995,7 +1006,7 @@ public class BossRoombaController : MonoBehaviour
     /// </summary>
     public void OnCageMatchStart()
     {
-        Debug.Log("[BossRoombaController] OnCageMatchStart - despawning ALL active adds for 1v1 cage match");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] OnCageMatchStart - despawning ALL active adds for 1v1 cage match");
         
         int despawnedDrones = 0;
         int despawnedCrawlers = 0;
@@ -1009,7 +1020,7 @@ public class BossRoombaController : MonoBehaviour
                 kvp.Value.SetActive(false);
                 dronePool.Enqueue(kvp.Value);
                 despawnedDrones++;
-                Debug.Log($"[BossRoombaController] Despawned drone for cage match: {kvp.Value.name}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned drone for cage match: {kvp.Value.name}");
             }
         }
         
@@ -1022,14 +1033,14 @@ public class BossRoombaController : MonoBehaviour
                 kvp.Value.SetActive(false);
                 crawlerPool.Enqueue(kvp.Value);
                 despawnedCrawlers++;
-                Debug.Log($"[BossRoombaController] Despawned crawler for cage match: {kvp.Value.name}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned crawler for cage match: {kvp.Value.name}");
             }
         }
         
         // Clear fleeing tracking since all adds are despawned
         fleeingAdds.Clear();
         
-        Debug.Log($"[BossRoombaController] Cage match started - despawned {despawnedDrones} drones and {despawnedCrawlers} crawlers");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Cage match started - despawned {despawnedDrones} drones and {despawnedCrawlers} crawlers");
     }
     
     /// <summary>
@@ -1044,7 +1055,7 @@ public class BossRoombaController : MonoBehaviour
     private IEnumerator ManageSpawnsRoutine()
     {
         // Initial spawn wave - spawn all enemies immediately when alarm activates
-        Debug.Log("[BossRoombaController] Initial spawn wave starting...");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Initial spawn wave starting...");
         RespawnDeadEnemies(activeDrones, droneSpawnPoints, dronePrefab, maxDrones, dronePool);
         RespawnDeadEnemies(activeCrawlers, crawlerSpawnPoints, crawlerPrefab, maxCrawlers, crawlerPool);
         
@@ -1187,18 +1198,18 @@ public class BossRoombaController : MonoBehaviour
         if (enemy == null)
         {
             enemy = Instantiate(prefab);
-            Debug.Log($"[BossRoombaController] Instantiated new {prefab.name}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Instantiated new {prefab.name}");
         }
         else
         {
-            Debug.Log($"[BossRoombaController] Reused pooled {enemy.name}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Reused pooled {enemy.name}");
         }
 
         enemy.transform.position = position;
         enemy.transform.rotation = Quaternion.identity;
         enemy.SetActive(true);
         
-        Debug.Log($"[BossRoombaController] Spawned {enemy.name} at {position}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Spawned {enemy.name} at {position}");
 
         RegisterSpawned(enemy);
 
@@ -1255,7 +1266,7 @@ public class BossRoombaController : MonoBehaviour
             
         if (crawler != null)
         {
-            Debug.Log($"[BossRoombaController] Found BaseCrawlerEnemy on {g.name}, configuring for boss fight...");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Found BaseCrawlerEnemy on {g.name}, configuring for boss fight...");
             
             // Clear pocket reference - boss-spawned crawlers don't have a pocket to return to
             crawler.Pocket = null;
@@ -1287,11 +1298,11 @@ public class BossRoombaController : MonoBehaviour
                 if (crawlerAgent.isOnNavMesh && player != null)
                 {
                     crawlerAgent.SetDestination(player.position);
-                    Debug.Log($"[BossRoombaController] Set crawler destination to player");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Set crawler destination to player");
                 }
                 else
                 {
-                    Debug.LogWarning($"[BossRoombaController] Crawler agent not on NavMesh: isOnNavMesh={crawlerAgent.isOnNavMesh}");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Crawler agent not on NavMesh: isOnNavMesh={crawlerAgent.isOnNavMesh}");
                 }
             }
             
@@ -1302,7 +1313,7 @@ public class BossRoombaController : MonoBehaviour
         }
         else
         {
-            Debug.Log($"[BossRoombaController] No BaseCrawlerEnemy found on {g.name} - checking for DroneEnemy...");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] No BaseCrawlerEnemy found on {g.name} - checking for DroneEnemy...");
             
             // Try to configure drones to chase the player
             var drone = g.GetComponent<DroneEnemy>();
@@ -1311,7 +1322,7 @@ public class BossRoombaController : MonoBehaviour
                 
             if (drone != null)
             {
-                Debug.Log($"[BossRoombaController] Found DroneEnemy on {g.name}, configuring for boss fight...");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Found DroneEnemy on {g.name}, configuring for boss fight...");
                 
                 // Set the player reference so the drone can track them
                 if (player != null)
@@ -1324,7 +1335,7 @@ public class BossRoombaController : MonoBehaviour
             }
             else
             {
-                Debug.Log($"[BossRoombaController] No DroneEnemy found on {g.name} either");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] No DroneEnemy found on {g.name} either");
             }
         }
     }
@@ -1348,7 +1359,7 @@ public class BossRoombaController : MonoBehaviour
         {
             // Use reflection or a public method to reset state if needed
             // For now, we'll let ForceCrawlerToChase handle the transition
-            Debug.Log($"[BossRoombaController] ResetCrawlerState: {crawler.gameObject.name} current state = {crawler.enemyAI.State}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] ResetCrawlerState: {crawler.gameObject.name} current state = {crawler.enemyAI.State}");
         }
     }
     
@@ -1359,27 +1370,27 @@ public class BossRoombaController : MonoBehaviour
         
         if (crawler == null || crawler.gameObject == null)
         {
-            Debug.LogWarning("[BossRoombaController] ForceCrawlerToChase: crawler is null after frame wait");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), "[BossRoombaController] ForceCrawlerToChase: crawler is null after frame wait");
             yield break;
         }
         
         // Debug current state
-        Debug.Log($"[BossRoombaController] ForceCrawlerToChase: {crawler.gameObject.name} state={crawler.enemyAI?.State}, agent.enabled={crawler.agent?.enabled}, isOnNavMesh={crawler.agent?.isOnNavMesh}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] ForceCrawlerToChase: {crawler.gameObject.name} state={crawler.enemyAI?.State}, agent.enabled={crawler.agent?.enabled}, isOnNavMesh={crawler.agent?.isOnNavMesh}");
         
         // Ensure NavMeshAgent is on NavMesh
         if (crawler.agent != null && !crawler.agent.isOnNavMesh)
         {
-            Debug.LogWarning($"[BossRoombaController] {crawler.gameObject.name} not on NavMesh! Attempting to warp...");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] {crawler.gameObject.name} not on NavMesh! Attempting to warp...");
             
             // Try to sample a valid position nearby
             if (UnityEngine.AI.NavMesh.SamplePosition(crawler.transform.position, out var hit, 5f, UnityEngine.AI.NavMesh.AllAreas))
             {
                 crawler.agent.Warp(hit.position);
-                Debug.Log($"[BossRoombaController] Warped {crawler.gameObject.name} to {hit.position}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Warped {crawler.gameObject.name} to {hit.position}");
             }
             else
             {
-                Debug.LogError($"[BossRoombaController] Could not find valid NavMesh position for {crawler.gameObject.name}!");
+                EnemyBehaviorDebugLogBools.LogError($"[BossRoombaController] Could not find valid NavMesh position for {crawler.gameObject.name}!");
                 yield break;
             }
         }
@@ -1395,11 +1406,11 @@ public class BossRoombaController : MonoBehaviour
         if (player != null)
         {
             crawler.PlayerTarget = player;
-            Debug.Log($"[BossRoombaController] Set {crawler.gameObject.name} PlayerTarget to {player.name} BEFORE state transition");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Set {crawler.gameObject.name} PlayerTarget to {player.name} BEFORE state transition");
         }
         else
         {
-            Debug.LogError($"[BossRoombaController] player reference is NULL! Crawlers won't be able to chase.");
+            EnemyBehaviorDebugLogBools.LogError($"[BossRoombaController] player reference is NULL! Crawlers won't be able to chase.");
             yield break;
         }
         
@@ -1407,13 +1418,13 @@ public class BossRoombaController : MonoBehaviour
         if (crawler.enemyAI != null)
         {
             var currentState = crawler.enemyAI.State;
-            Debug.Log($"[BossRoombaController] Crawler {crawler.gameObject.name} is in state: {currentState}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawler.gameObject.name} is in state: {currentState}");
             
             // If in Ambush, fire LosePlayer to go to Chase
             if (currentState == CrawlerEnemyState.Ambush)
             {
                 bool fired = crawler.TryFireTriggerByName("LosePlayer");
-                Debug.Log($"[BossRoombaController] Fired LosePlayer trigger: {fired}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Fired LosePlayer trigger: {fired}");
                 
                 // IMPORTANT: Also directly set the destination immediately, don't wait for the behavior
                 // This ensures the crawler starts moving even if the state transition is delayed
@@ -1421,26 +1432,26 @@ public class BossRoombaController : MonoBehaviour
                 {
                     crawler.agent.isStopped = false;
                     crawler.agent.SetDestination(player.position);
-                    Debug.Log($"[BossRoombaController] Set immediate destination for {crawler.gameObject.name}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Set immediate destination for {crawler.gameObject.name}");
                 }
             }
             // If in Death state, we need to reinitialize
             else if (currentState == CrawlerEnemyState.Death)
             {
-                Debug.LogWarning($"[BossRoombaController] Crawler {crawler.gameObject.name} is in Death state! Cannot force to Chase - needs full reset.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawler.gameObject.name} is in Death state! Cannot force to Chase - needs full reset.");
                 // The crawler should have been properly reset before spawning
                 yield break;
             }
             // If already in Chase, just ensure destination is set
             else if (currentState == CrawlerEnemyState.Chase)
             {
-                Debug.Log($"[BossRoombaController] Crawler already in Chase state");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Crawler already in Chase state");
             }
             // For other states (Swarm, Attack, Flee), try to transition to Chase via LosePlayer
             else
             {
                 bool fired = crawler.TryFireTriggerByName("LosePlayer");
-                Debug.Log($"[BossRoombaController] Attempted LosePlayer trigger from {currentState}: {fired}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Attempted LosePlayer trigger from {currentState}: {fired}");
             }
             
             // Wait another frame for state transition
@@ -1451,18 +1462,18 @@ public class BossRoombaController : MonoBehaviour
                 crawler.enemyAI.State == CrawlerEnemyState.Attack ||
                 crawler.enemyAI.State == CrawlerEnemyState.Swarm)
             {
-                Debug.Log($"[BossRoombaController] SUCCESS: {crawler.gameObject.name} is now in state {crawler.enemyAI.State}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] SUCCESS: {crawler.gameObject.name} is now in state {crawler.enemyAI.State}");
                 
                 // Ensure destination is set (PlayerTarget was already set before transition)
                 if (crawler.agent != null && crawler.agent.isOnNavMesh && player != null)
                 {
                     crawler.agent.SetDestination(player.position);
-                    Debug.Log($"[BossRoombaController] Set {crawler.gameObject.name} destination to player at {player.position}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Set {crawler.gameObject.name} destination to player at {player.position}");
                 }
             }
             else
             {
-                Debug.LogWarning($"[BossRoombaController] {crawler.gameObject.name} still in state {crawler.enemyAI.State} - manually starting chase behavior");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] {crawler.gameObject.name} still in state {crawler.enemyAI.State} - manually starting chase behavior");
                 
                 // Last resort: directly start the chase behavior
                 if (crawler.agent != null && crawler.agent.isOnNavMesh && player != null)
@@ -1484,27 +1495,27 @@ public class BossRoombaController : MonoBehaviour
         
         if (drone == null || drone.gameObject == null)
         {
-            Debug.LogWarning("[BossRoombaController] ForceDroneToChase: drone is null after frame wait");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), "[BossRoombaController] ForceDroneToChase: drone is null after frame wait");
             yield break;
         }
         
         // Debug current state
-        Debug.Log($"[BossRoombaController] ForceDroneToChase: {drone.gameObject.name} state={drone.enemyAI?.State}, agent.enabled={drone.agent?.enabled}, isOnNavMesh={drone.agent?.isOnNavMesh}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] ForceDroneToChase: {drone.gameObject.name} state={drone.enemyAI?.State}, agent.enabled={drone.agent?.enabled}, isOnNavMesh={drone.agent?.isOnNavMesh}");
         
         // Ensure NavMeshAgent is on NavMesh
         if (drone.agent != null && !drone.agent.isOnNavMesh)
         {
-            Debug.LogWarning($"[BossRoombaController] {drone.gameObject.name} not on NavMesh! Attempting to warp...");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] {drone.gameObject.name} not on NavMesh! Attempting to warp...");
             
             // Try to sample a valid position nearby
             if (UnityEngine.AI.NavMesh.SamplePosition(drone.transform.position, out var hit, 5f, UnityEngine.AI.NavMesh.AllAreas))
             {
                 drone.agent.Warp(hit.position);
-                Debug.Log($"[BossRoombaController] Warped {drone.gameObject.name} to {hit.position}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Warped {drone.gameObject.name} to {hit.position}");
             }
             else
             {
-                Debug.LogError($"[BossRoombaController] Could not find valid NavMesh position for {drone.gameObject.name}!");
+                EnemyBehaviorDebugLogBools.LogError($"[BossRoombaController] Could not find valid NavMesh position for {drone.gameObject.name}!");
                 yield break;
             }
         }
@@ -1526,7 +1537,7 @@ public class BossRoombaController : MonoBehaviour
         if (drone.enemyAI != null && drone.enemyAI.State == DroneState.Idle)
         {
             bool fired = drone.TryFireTriggerByName("SeePlayer");
-            Debug.Log($"[BossRoombaController] Fired SeePlayer trigger on {drone.gameObject.name}: {fired}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Fired SeePlayer trigger on {drone.gameObject.name}: {fired}");
         }
         
         // Wait another frame for state transition
@@ -1535,13 +1546,13 @@ public class BossRoombaController : MonoBehaviour
         // Verify state
         if (drone.enemyAI != null)
         {
-            Debug.Log($"[BossRoombaController] Drone {drone.gameObject.name} is now in state: {drone.enemyAI.State}");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Drone {drone.gameObject.name} is now in state: {drone.enemyAI.State}");
             
             // Set destination to player
             if (drone.agent != null && drone.agent.isOnNavMesh && player != null)
             {
                 drone.agent.SetDestination(player.position);
-                Debug.Log($"[BossRoombaController] Set {drone.gameObject.name} destination to player at {player.position}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Set {drone.gameObject.name} destination to player at {player.position}");
             }
         }
     }

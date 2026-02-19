@@ -240,7 +240,7 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
 
         if (attackRoutine != null)
             StopCoroutine(attackRoutine);
-        Debug.Log($"BombCarrierEnemy using attackBehavior: {attackBehavior}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BombCarrierEnemy), $"BombCarrierEnemy using attackBehavior: {attackBehavior}");
         attackRoutine = StartCoroutine(AttackBehaviorRoutine());
     }
 

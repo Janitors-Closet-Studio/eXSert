@@ -54,7 +54,11 @@ public class SceneLoader : Singleton<SceneLoader>
     /// </summary>
     public void LoadMainMenu()
     {
-        if (isLoadingScene) return;
+        if (isLoadingScene)
+        {
+            Log("LoadMainMenu ignored because a scene transition is already in progress.");
+            return;
+        }
         
         Log("Loading Main Menu - Cleaning up persistent objects...");
 
@@ -80,7 +84,11 @@ public class SceneLoader : Singleton<SceneLoader>
         string spawnPointIdOverride = null,
         bool updateCheckpointAfterLoad = true)
     {
-        if (isLoadingScene) return;
+        if (isLoadingScene)
+        {
+            Log($"LoadInitialGameScene ignored because a scene transition is already in progress. Requested: {sceneName} (additive: {additiveSceneName ?? "<none>"})");
+            return;
+        }
         
         Log($"Loading initial game scene: {sceneName} (additive: {additiveSceneName ?? "<none>"})");
 
@@ -121,7 +129,11 @@ public class SceneLoader : Singleton<SceneLoader>
     /// </summary>
     public void RestartFromCheckpoint()
     {
-        if (isLoadingScene) return;
+        if (isLoadingScene)
+        {
+            Log("RestartFromCheckpoint ignored because a scene transition is already in progress.");
+            return;
+        }
         
         // Get checkpoint from system
         string checkpointSpawn = CheckpointSystem.Instance != null
@@ -225,6 +237,10 @@ public class SceneLoader : Singleton<SceneLoader>
         }
 
         Log("Main menu loaded successfully");
+        // Load binding overrides from PlayerPrefs
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+            InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
+        KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
     }
 
@@ -344,6 +360,10 @@ public class SceneLoader : Singleton<SceneLoader>
             Time.timeScale = previousTimeScale;
         }
 
+        // Load binding overrides from PlayerPrefs
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+            InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
+        KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
     }
 
@@ -376,6 +396,10 @@ public class SceneLoader : Singleton<SceneLoader>
             CheckpointSystem.Instance.SetCheckpoint(sceneName, "default");
         }
         
+        // Load binding overrides from PlayerPrefs
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+            InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
+        KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
     }
 

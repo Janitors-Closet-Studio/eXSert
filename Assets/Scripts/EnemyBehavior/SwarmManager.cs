@@ -61,7 +61,7 @@ public class SwarmManager : MonoBehaviour
             debugSwarmMembers.Clear();
             debugSwarmMembers.AddRange(swarmMembers);
             OnActiveCrawlersChanged?.Invoke(swarmMembers.Count);
-            Debug.Log($"SwarmManager: Added {crawler.gameObject.name} to swarm.", crawler);
+            EnemyBehaviorDebugLogBools.Log(nameof(SwarmManager), $"SwarmManager: Added {crawler.gameObject.name} to swarm.", crawler);
 
             if (!attackQueue.Contains(crawler))
                 attackQueue.Enqueue(crawler);
@@ -77,7 +77,7 @@ public class SwarmManager : MonoBehaviour
             debugSwarmMembers.Clear();
             debugSwarmMembers.AddRange(swarmMembers);
             OnActiveCrawlersChanged?.Invoke(swarmMembers.Count);
-            Debug.Log($"SwarmManager: Removed {crawler.gameObject.name} from swarm.", crawler);
+            EnemyBehaviorDebugLogBools.Log(nameof(SwarmManager), $"SwarmManager: Removed {crawler.gameObject.name} from swarm.", crawler);
 
             // Remove from attack queue without LINQ allocation
             RemoveFromAttackQueue(crawler);

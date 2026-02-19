@@ -1526,9 +1526,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4360433577188796707}
   - component: {fileID: 5480205498155007657}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: -Cameras-
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3672,9 +3672,9 @@ GameObject:
   - component: {fileID: 3657163976880928063}
   - component: {fileID: 3439018001167033462}
   - component: {fileID: 797948608421711896}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: MainCamera
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3687,8 +3687,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.07862169, y: -0.0019005621, z: 0.00014988966, w: -0.9969027}
-  m_LocalPosition: {x: 0.020454478, y: 1.9714823, z: -3.442392}
+  m_LocalRotation: {x: -0.07862126, y: -0.0019005656, z: 0.00014988909, w: -0.99690276}
+  m_LocalPosition: {x: 0.020454597, y: 1.9714823, z: -3.442392}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5396,6 +5396,7 @@ GameObject:
   - component: {fileID: 5206229162919500938}
   - component: {fileID: 359929981503245092}
   - component: {fileID: 5058666932746763221}
+  - component: {fileID: 1001267735247796350}
   m_Layer: 6
   m_Name: CombatManager
   m_TagString: Untagged
@@ -5516,7 +5517,7 @@ MonoBehaviour:
   animationController: {fileID: 5311890396266669227}
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
-  attackLockSystem: {fileID: 3007275964402751658}
+  attackLockSystem: {fileID: 1001267735247796350}
 --- !u!114 &5058666932746763221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5535,6 +5536,38 @@ MonoBehaviour:
   pauseTimeOnParry: 1
   parryPauseDuration: 0.3
   howSlowTimeScales: 0.5
+--- !u!114 &1001267735247796350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2452212790660438460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b19dc608cef71d4da470f1474716616, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AttackLockSystem
+  lockOnAngle: 30
+  lockOnDistance: 10
+  player: {fileID: 3646038222488559394}
+  playerMovement: {fileID: 6150044602222399215}
+  enemyLayers:
+    serializedVersion: 2
+    m_Bits: 256
+  enforceLayerMask: 1
+  softLockRadius: 4
+  softLockMoveDistance: 0.75
+  softLockStopBuffer: 0.5
+  softLockNoMoveRadius: 1.5
+  softLockMoveDuration: 0.1
+  onlySoftLockSingleTarget: 0
+  steerCamera: 1
+  rotatePlayerDuringHardLock: 1
+  hardLockRotateSpeed: 360
+  cameraSnapTime: 0.1
+  cameraManager: {fileID: 5480205498155007657}
+  rotatePlayerIfCameraDisabled: 0
 --- !u!1 &2525516429101545011
 GameObject:
   m_ObjectHideFlags: 0
@@ -7707,7 +7740,6 @@ GameObject:
   - component: {fileID: 2289477533837267770}
   - component: {fileID: 3564156978703942357}
   - component: {fileID: 6150044602222399215}
-  - component: {fileID: 3007275964402751658}
   - component: {fileID: 8127531854480134888}
   - component: {fileID: 2026860560813373367}
   m_Layer: 6
@@ -7856,38 +7888,6 @@ MonoBehaviour:
   invertYAxis: 0
   highFallHeightThreshold: 6
   highFallGroundProbeDistance: 25
---- !u!114 &3007275964402751658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3646038222488559394}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b19dc608cef71d4da470f1474716616, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AttackLockSystem
-  lockOnAngle: 30
-  lockOnDistance: 10
-  player: {fileID: 3646038222488559394}
-  playerMovement: {fileID: 6150044602222399215}
-  enemyLayers:
-    serializedVersion: 2
-    m_Bits: 256
-  enforceLayerMask: 1
-  softLockRadius: 4
-  softLockMoveDistance: 0.75
-  softLockStopBuffer: 0.5
-  softLockNoMoveRadius: 0.3
-  softLockMoveDuration: 0.1
-  onlySoftLockSingleTarget: 0
-  steerCamera: 1
-  rotatePlayerDuringHardLock: 1
-  hardLockRotateSpeed: 360
-  cameraSnapTime: 0.1
-  cameraManager: {fileID: 5480205498155007657}
-  rotatePlayerIfCameraDisabled: 0
 --- !u!114 &8127531854480134888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7903,7 +7903,7 @@ MonoBehaviour:
   maxHealth: 1000
   currentHealth: 1000
   startingHealthPercent: 1
-  invulnerable: 1
+  invulnerable: 0
   restartFromCheckpointOnDeath: 1
   destroyPlayerOnDeath: 0
   deathFadeDelaySeconds: 3.5
@@ -15012,7 +15012,7 @@ GameObject:
   - component: {fileID: 897994802152428115}
   m_Layer: 17
   m_Name: MoveCamera
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -15025,7 +15025,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6626823234369765875}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.078621686, y: -0.0019005621, z: 0.00014989063, w: -0.9969027}
+  m_LocalRotation: {x: -0.07862158, y: -0.0019005653, z: 0.0001498897, w: -0.9969027}
   m_LocalPosition: {x: 0.020454597, y: 1.9714823, z: -3.442392}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -19530,7 +19530,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4196343275464527414}
-  - component: {fileID: 3969716249651941483}
   m_Layer: 6
   m_Name: -Audio-
   m_TagString: Untagged
@@ -19556,25 +19555,6 @@ Transform:
   - {fileID: 607169572089459144}
   m_Father: {fileID: 5378940107489749497}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3969716249651941483
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8674996563826889607}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48a59423629965842855da33d772a75a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SoundManager
-  masterSource: {fileID: 0}
-  musicSource: {fileID: 0}
-  sfxSource: {fileID: 6637576537600715596}
-  voiceSource: {fileID: 460243241577124123}
-  ambienceSource: {fileID: 0}
-  uiSource: {fileID: 0}
-  puzzleSource: {fileID: 0}
 --- !u!1 &8707353537431604314
 GameObject:
   m_ObjectHideFlags: 0
@@ -20264,9 +20244,9 @@ GameObject:
   - component: {fileID: 7838498483116243344}
   - component: {fileID: 6789831858660127544}
   - component: {fileID: 2847159133351051580}
-  m_Layer: 0
+  m_Layer: 17
   m_Name: GuardCamera
-  m_TagString: Untagged
+  m_TagString: PlayerCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -20279,7 +20259,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8983900087774367925}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.080855094, y: -0.0024223754, z: 0.00019650566, w: -0.99672294}
+  m_LocalRotation: {x: -0.08089331, y: -0.0024217444, z: 0.00019654696, w: -0.9967198}
   m_LocalPosition: {x: 0.018365428, y: 2.058, z: -3.8722029}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

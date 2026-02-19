@@ -26,7 +26,8 @@ public class DiaryManager : Singleton<DiaryManager>
     
     private void OnDisable()
     {
-        EventsManager.Instance.diaryEvents.onFoundDiary -= FindDiary;
+        if (EventsManager.Instance != null && EventsManager.Instance.diaryEvents != null)
+            EventsManager.Instance.diaryEvents.onFoundDiary -= FindDiary;
 
     }
 
@@ -115,39 +116,27 @@ public class DiaryManager : Singleton<DiaryManager>
         Diaries diary = null;
         try
         {
-            // Check if manually set to true in inspector (takes priority over saved data)
-            bool inspectorValueIsTrue = diaryInfo.isFound;
-            
             if (PlayerPrefs.HasKey(diaryInfo.diaryID) && loadDiaryState)
             {
                 string serializedData = PlayerPrefs.GetString(diaryInfo.diaryID);
                 DiaryData diaryData = JsonUtility.FromJson<DiaryData>(serializedData);
                 diary = new Diaries(diaryInfo);
-                
-                // If inspector value is true, keep it; otherwise use saved data
-                if (inspectorValueIsTrue)
-                {
-                    diary.info.isFound = true;
-                    Debug.Log($"Loaded diary {diaryInfo.diaryID}: using inspector value isFound=true (overriding saved data)");
-                }
-                else
-                {
-                    diary.info.isFound = diaryData.isFound;
-                    Debug.Log($"Loaded diary {diaryInfo.diaryID}: isFound={diaryData.isFound}");
-                }
+                diary.info.isFound = diaryData.isFound;
+                Debug.Log($"Loaded diary {diaryInfo.diaryID}: isFound={diaryData.isFound}");
             }
             else
             {
                 diary = new Diaries(diaryInfo);
-                Debug.Log($"No saved data for diary {diaryInfo.diaryID}, created with isFound={diaryInfo.isFound}");
+                diary.info.isFound = false; // Always start as not found if no saved data
+                Debug.Log($"No saved data for diary {diaryInfo.diaryID}, created with isFound=false");
             }
         }
         catch (System.Exception e)
         {
             Debug.LogError("Failed to load diary with id " + diaryInfo.diaryID + ": " + e);
             diary = new Diaries(diaryInfo);
+            diary.info.isFound = false;
         }
-        
         return diary;
     }
 }

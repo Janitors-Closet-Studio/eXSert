@@ -82,25 +82,25 @@ namespace EnemyBehavior.Boss
                 // Must be actively charging
                 if (!bossBrain.IsCharging)
                 {
-                    Debug.Log($"[Pillar {pillarIndex}] Boss collision ignored - not charging (casual contact)");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossPillarCollider), $"[Pillar {pillarIndex}] Boss collision ignored - not charging (casual contact)");
                     return;
                 }
 
                 // If onlyDuringTargetedCharge is true, must be a targeted charge specifically
                 if (onlyDuringTargetedCharge && !bossBrain.IsTargetedCharge)
                 {
-                    Debug.Log($"[Pillar {pillarIndex}] Boss collision ignored - static charge, not targeted");
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossPillarCollider), $"[Pillar {pillarIndex}] Boss collision ignored - static charge, not targeted");
                     return;
                 }
             }
             else
             {
-                Debug.LogWarning($"[Pillar {pillarIndex}] No BossRoombaBrain reference - cannot verify charge state!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossPillarCollider), $"[Pillar {pillarIndex}] No BossRoombaBrain reference - cannot verify charge state!");
                 return;
             }
 
             hasTriggered = true;
-            Debug.Log($"[Pillar {pillarIndex}] BOSS COLLISION DETECTED during TARGETED charge!");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossPillarCollider), $"[Pillar {pillarIndex}] BOSS COLLISION DETECTED during TARGETED charge!");
 
             // Call the brain's collision handler (which will handle stun, form change, etc.)
             bossBrain.OnPillarCollision(pillarIndex);

@@ -12,9 +12,6 @@ public class MenuMusicPlayer : MonoBehaviour
     [SerializeField, Tooltip("The music clip to play in this menu")]
     private AudioClip backgroundMusic;
 
-    [SerializeField, Range(0f, 1f), Tooltip("Volume for the background music")]
-    private float musicVolume = 0.7f;
-
     [SerializeField, Tooltip("Should the music loop?")]
     private bool loopMusic = true;
 
@@ -54,7 +51,6 @@ public class MenuMusicPlayer : MonoBehaviour
 
         // Set the music clip
         SoundManager.Instance.musicSource.clip = backgroundMusic;
-        SoundManager.Instance.musicSource.volume = musicVolume;
         SoundManager.Instance.musicSource.loop = loopMusic;
 
         // Play the music

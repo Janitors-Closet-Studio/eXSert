@@ -75,7 +75,7 @@ namespace EnemyBehavior
         {
             if (Instance != null && Instance != this)
             {
-                Debug.LogWarning("[EnemyAttackQueueManager] Duplicate instance detected, destroying this one.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyAttackQueueManager), "[EnemyAttackQueueManager] Duplicate instance detected, destroying this one.");
                 Destroy(gameObject);
                 return;
             }
@@ -136,7 +136,7 @@ namespace EnemyBehavior
             {
                 if (debugLogging)
                 {
-                    Debug.Log($"[AttackQueue] Attack timeout! Cycling attacker: {attacker?.AttackerGameObject?.name}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Attack timeout! Cycling attacker: {attacker?.AttackerGameObject?.name}");
                 }
                 CycleAttacker(attacker);
             }
@@ -155,7 +155,7 @@ namespace EnemyBehavior
             {
                 if (debugLogging)
                 {
-                    Debug.Log($"[AttackQueue] Boss '{attacker.AttackerGameObject?.name}' excluded from queue (includeBossesInQueue=false)");
+                    EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Boss '{attacker.AttackerGameObject?.name}' excluded from queue (includeBossesInQueue=false)");
                 }
                 return;
             }
@@ -165,7 +165,7 @@ namespace EnemyBehavior
             {
                 if (debugLogging)
                 {
-                    Debug.LogWarning($"[AttackQueue] '{attacker.AttackerGameObject?.name}' already registered!");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyAttackQueueManager), $"[AttackQueue] '{attacker.AttackerGameObject?.name}' already registered!");
                 }
                 return;
             }
@@ -174,7 +174,7 @@ namespace EnemyBehavior
 
             if (debugLogging)
             {
-                Debug.Log($"[AttackQueue] Registered: {attacker.AttackerGameObject?.name} (Queue size: {attackQueue.Count})");
+                EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Registered: {attacker.AttackerGameObject?.name} (Queue size: {attackQueue.Count})");
             }
         }
 
@@ -193,7 +193,7 @@ namespace EnemyBehavior
 
             if (debugLogging && wasRemoved)
             {
-                Debug.Log($"[AttackQueue] Unregistered: {attacker.AttackerGameObject?.name} (Queue size: {attackQueue.Count})");
+                EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Unregistered: {attacker.AttackerGameObject?.name} (Queue size: {attackQueue.Count})");
             }
         }
 
@@ -215,7 +215,7 @@ namespace EnemyBehavior
             // Not in queue? They shouldn't be attacking - but register them as a failsafe
             if (!attackQueue.Contains(attacker))
             {
-                Debug.LogWarning($"[AttackQueue] '{attacker.AttackerGameObject?.name}' tried to attack but wasn't registered! Auto-registering...");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyAttackQueueManager), $"[AttackQueue] '{attacker.AttackerGameObject?.name}' tried to attack but wasn't registered! Auto-registering...");
                 Register(attacker);
                 return false; // They go to back of queue
             }
@@ -251,7 +251,7 @@ namespace EnemyBehavior
 
             if (!CanAttack(attacker))
             {
-                Debug.LogWarning($"[AttackQueue] '{attacker.AttackerGameObject?.name}' called BeginAttack but CanAttack returned false!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyAttackQueueManager), $"[AttackQueue] '{attacker.AttackerGameObject?.name}' called BeginAttack but CanAttack returned false!");
                 return;
             }
 
@@ -260,7 +260,7 @@ namespace EnemyBehavior
 
             if (debugLogging)
             {
-                Debug.Log($"[AttackQueue] Attack started: {attacker.AttackerGameObject?.name} (Active: {activeAttackers.Count})");
+                EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Attack started: {attacker.AttackerGameObject?.name} (Active: {activeAttackers.Count})");
             }
         }
 
@@ -364,7 +364,7 @@ namespace EnemyBehavior
 
                 if (debugLogging)
                 {
-                    Debug.Log($"[AttackQueue] Cycled to back: {attacker.AttackerGameObject?.name} (Queue size: {attackQueue.Count})");
+                    EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Cycled to back: {attacker.AttackerGameObject?.name} (Queue size: {attackQueue.Count})");
                 }
             }
         }
@@ -377,9 +377,9 @@ namespace EnemyBehavior
                 var attacker = attackQueue[i];
                 if (attacker == null || !attacker.IsAlive || attacker.AttackerGameObject == null)
                 {
-                    if (debugLogging && attacker?.AttackerGameObject != null)
+                if (debugLogging && attacker?.AttackerGameObject != null)
                     {
-                        Debug.Log($"[AttackQueue] Cleaned up dead attacker at index {i}");
+                        EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Cleaned up dead attacker at index {i}");
                     }
                     attackQueue.RemoveAt(i);
                     activeAttackers.Remove(attacker);
@@ -390,11 +390,11 @@ namespace EnemyBehavior
         [ContextMenu("Debug: Log Queue State")]
         public void DebugLogQueueState()
         {
-            Debug.Log($"[AttackQueue] === Queue State ===");
-            Debug.Log($"[AttackQueue] Count: {attackQueue.Count}");
-            Debug.Log($"[AttackQueue] Max Concurrent Attackers: {maxConcurrentAttackers}");
-            Debug.Log($"[AttackQueue] Active Attackers: {activeAttackers.Count}");
-            Debug.Log($"[AttackQueue] Include Bosses: {includeBossesInQueue}");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] === Queue State ===");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Count: {attackQueue.Count}");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Max Concurrent Attackers: {maxConcurrentAttackers}");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Active Attackers: {activeAttackers.Count}");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue] Include Bosses: {includeBossesInQueue}");
 
             for (int i = 0; i < attackQueue.Count; i++)
             {
@@ -404,7 +404,7 @@ namespace EnemyBehavior
                 string boss = attacker?.IsBoss == true ? " [BOSS]" : "";
                 string canAttack = i < maxConcurrentAttackers ? " [CAN ATTACK]" : "";
                 string isActive = activeAttackers.ContainsKey(attacker) ? " [ATTACKING]" : "";
-                Debug.Log($"[AttackQueue]   [{i}] {name} ({status}){boss}{canAttack}{isActive}");
+                EnemyBehaviorDebugLogBools.Log(nameof(EnemyAttackQueueManager), $"[AttackQueue]   [{i}] {name} ({status}){boss}{canAttack}{isActive}");
             }
         }
 
