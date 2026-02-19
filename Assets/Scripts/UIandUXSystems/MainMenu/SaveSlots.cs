@@ -16,8 +16,6 @@ public class SaveSlots : MonoBehaviour
     [Header("Content")]
     [SerializeField] private GameObject noDataContent;
     [SerializeField] private GameObject hasDataContent;
-    [SerializeField] private TextMeshProUGUI healthCountText;
-
     private Button saveSlotButton;
 
     [SerializeField] private SaveSlotsMenu saveSlotsMenu;
@@ -35,10 +33,14 @@ public class SaveSlots : MonoBehaviour
             noDataContent.SetActive(true);
             hasDataContent.SetActive(false);
         }
-        else
+        else if (data != null)
         {
             noDataContent.SetActive(false);
             hasDataContent.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError("SaveSlots: Data is null for " + gameObject.name);
         }
     }
 
@@ -56,6 +58,9 @@ public class SaveSlots : MonoBehaviour
     //Sets interactability of save slots
     public void SetInteractable(bool interactable)
     {
-        saveSlotButton.interactable = interactable;
+        if (saveSlotButton != null)
+            saveSlotButton.interactable = interactable;
+        else
+            Debug.LogError("SaveSlots: Button component missing on " + gameObject.name);
     }
 }

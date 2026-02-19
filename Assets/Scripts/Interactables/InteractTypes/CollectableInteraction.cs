@@ -25,6 +25,8 @@ public abstract class CollectableInteraction : InteractionManager
 
         this.interactable = false;
 
+        this.GetComponent<Collider>().enabled = false;
+
         InteractionUI.Instance._interactText.gameObject.SetActive(false);
         InteractionUI.Instance._interactIcon.gameObject.SetActive(false);
 

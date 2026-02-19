@@ -27,7 +27,7 @@ public class RumbleManager : Singleton<RumbleManager>
         base.Awake();
     }
 
-    void Start()
+    void OnEnable()
     {
         //Subscribes onControlsChanged to SwitchControls function
         InputReader.PlayerInput.onControlsChanged += SwitchControls;
@@ -75,6 +75,7 @@ public class RumbleManager : Singleton<RumbleManager>
     private void OnDisable()
     {
         //If the script is disabled then onControlsChanged is unsubscribed
-        InputReader.PlayerInput.onControlsChanged -= SwitchControls;
+        if(InputReader.PlayerInput != null)
+            InputReader.PlayerInput.onControlsChanged -= SwitchControls;
     }
 }

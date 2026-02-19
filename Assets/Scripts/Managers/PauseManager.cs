@@ -25,7 +25,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private GameObject[] globalBackButtonBlockers;
 
     [Header("Input Actions")]
-    [SerializeField] private InputActionReference _pauseActionReference;
     [SerializeField] private InputActionReference _navigationMenuActionReference;
     [SerializeField] private InputActionReference _swapMenuActionReference;
     [SerializeField] private InputActionReference _backActionReference; // UI/Back button
@@ -54,12 +53,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnEnable()
     {
-        // Pause action
-        if (_pauseActionReference == null || _pauseActionReference.action == null)
-            Debug.LogWarning($"Pause Input Action Reference is not set in the inspector. Keyboard/Controller Input won't pause the game properly");
-        else
-            _pauseActionReference.action.performed += OnPause;
-
         // Navigation Menu action
         if (_navigationMenuActionReference == null || _navigationMenuActionReference.action == null)
             Debug.LogWarning($"Navigation Menu Input Action Reference is not set in the inspector. Keyboard/Controller Input won't open navigation menu properly");
@@ -72,19 +65,18 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         else
             _swapMenuActionReference.action.performed += OnSwapMenu;
 
-        // Back action (UI/Back button)
         if (_backActionReference == null || _backActionReference.action == null)
             Debug.LogWarning($"Back Input Action Reference is not set in the inspector. UI/Back won't work properly");
         else
-            _backActionReference.action.performed += OnBackButton;
-            
+            _backActionReference.action.performed += OnPauseOrBack;
+
         SceneManager.sceneLoaded += HandleSceneLoaded;
     }
 
     private void OnDisable()
     {
-        if (_pauseActionReference != null && _pauseActionReference.action != null)
-            _pauseActionReference.action.performed -= OnPause;
+        if (_backActionReference != null && _backActionReference.action != null)
+            _backActionReference.action.performed -= OnPauseOrBack;
 
         if (_navigationMenuActionReference != null && _navigationMenuActionReference.action != null)
             _navigationMenuActionReference.action.performed -= OnNavigationMenu;
@@ -92,8 +84,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (_swapMenuActionReference != null && _swapMenuActionReference.action != null)
             _swapMenuActionReference.action.performed -= OnSwapMenu;
 
-        if (_backActionReference != null && _backActionReference.action != null)
-            _backActionReference.action.performed -= OnBackButton;
 
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
@@ -104,38 +94,61 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         HideAllMenus();
     }
 
-    private void OnPause(InputAction.CallbackContext context)
+
+    private void OnPauseOrBack(InputAction.CallbackContext context)
     {
         if (ConfirmationDialog.AnyOpen)
         {
-            Debug.Log("[PauseManager] OnPause ignored - confirmation dialog open");
+            Debug.Log("[PauseManager] OnPauseOrBack ignored - confirmation dialog open");
             return;
         }
-        Debug.Log($"[PauseManager] OnPause called - Current menu: {currentActiveMenu}, IsPaused: {IsPaused}");
-        
-        // If submenus are open, let back button handle it
-        if (menuListManager.menusToManage.Count > 2)
-        {
-            Debug.Log("[PauseManager] OnPause ignored - submenus active, use back button");
-            return;
-        }
-        
+        Debug.Log($"[PauseManager] OnPauseOrBack called - Current menu: {currentActiveMenu}, Menu count: {menuListManager.menusToManage.Count}, IsPaused: {IsPaused}");
+
         if(LogManager.Instance.unreadLogs.Count > 0 || DiaryManager.Instance.unreadDiaries.Count > 0)
             unreadEntriesNotif.SetActive(true);
         else
             unreadEntriesNotif.SetActive(false);
 
+        // If we have more than 2 menus (canvas + first menu), just go back one level
+        if (menuListManager.menusToManage.Count > 2)
+        {
+            GoBackOnce();
+            return;
+        }
+
+        // If settings menu is open, close it and return to pause menu
+        if (settingsMenuOpen)
+        {
+            CloseSettingsMenu();
+            return;
+        }
+
+        // If navigation menu is active, back/pause returns to pause menu
+        if(currentActiveMenu == ActiveMenu.NavigationMenu)
+        {
+            SwapToPauseMenu();
+            return;
+        }
+
+        // If we're in the pause menu with only one level, back/pause resumes the game
+        if(currentActiveMenu == ActiveMenu.PauseMenu)
+        {
+            ResumeGame();
+            return;
+        }
+
+        // If no menu is active, open pause menu
         if (currentActiveMenu == ActiveMenu.None)
         {
-            // Open pause menu
             ShowPauseMenu();
+            return;
         }
-        else if (currentActiveMenu == ActiveMenu.PauseMenu)
+
+        if (HasBlockingSubmenuActive())
         {
-            // Close pause menu and resume game (same button to toggle)
-            ResumeGame();
+            Debug.Log("[PauseManager] OnPauseOrBack ignored - submenu or popup still active");
+            return;
         }
-        // If navigation menu is active, pause button is ignored (locked)
     }
 
     private void OnNavigationMenu(InputAction.CallbackContext context)
@@ -146,13 +159,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
         Debug.Log($"[PauseManager] OnNavigationMenu called - Current menu: {currentActiveMenu}, IsPaused: {IsPaused}");
-        
-        // If submenus are open, let back button handle it
-        if (menuListManager.menusToManage.Count > 2)
-        {
-            Debug.Log("[PauseManager] OnNavigationMenu ignored - submenus active, use back button");
-            return;
-        }
         
         if (currentActiveMenu == ActiveMenu.None)
         {
@@ -169,49 +175,11 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void GoBackOnce()
     {
-        menuListManager.RemoveFirstItemInMenuList();
+        menuListManager.GoBackToPreviousMenu();
         menuListManager.SelectFirstSelectOnBack(menuListManager.menusToManage[0]);
     }
 
-    private void OnBackButton(InputAction.CallbackContext context)
-    {
-        Debug.Log($"[PauseManager] OnBackButton called - Current menu: {currentActiveMenu}, Menu count: {menuListManager.menusToManage.Count}");
-
-        // If we have more than 2 menus (canvas + first menu), just go back one level
-        if (menuListManager.menusToManage.Count > 2)
-        {
-            GoBackOnce();
-            return;
-        }
-
-        // Don't process back button if no menu is active and we're at base level
-        if (currentActiveMenu == ActiveMenu.None)
-        {
-            Debug.Log("[PauseManager] OnBackButton ignored - no menu active");
-            return;
-        }
-
-        if(currentActiveMenu == ActiveMenu.NavigationMenu)
-        {
-            // If we're in the navigation menu, back button takes us to the pause menu
-            SwapToPauseMenu();
-            return;
-        }
-
-        // At base level (canvas + first menu), close settings if open and resume game
-        if (settingsMenuOpen)
-        {
-            CloseSettingsMenu();
-            ResumeGame();
-            return;
-        }
-
-        if (HasBlockingSubmenuActive())
-        {
-            Debug.Log("[PauseManager] OnBackButton ignored - submenu or popup still active");
-            return;
-        }
-    }
+    
 
     /// <summary>
     /// Closes the settings menu and returns to the pause menu.
