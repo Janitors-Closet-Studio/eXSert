@@ -61,9 +61,12 @@ namespace Singletons {
         protected static T CreateInstance()
         {
             if (isApplicationQuitting)
+            {
+                Debug.LogWarning($"[Singleton] Instance of {typeof(T)} already destroyed on application quit. Returning null.");
                 return null;
+            }
 
-            GameObject singletonObject = new GameObject();
+            GameObject singletonObject = new();
             T newInstance = singletonObject.AddComponent<T>();
             singletonObject.name = typeof(T).ToString() + " (Singleton)";
             if (newInstance is Singleton<T> singleton && singleton.ShouldPersistAcrossScenes)

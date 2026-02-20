@@ -44,9 +44,6 @@ public class InputReader : Singleton<InputReader>
              * implement this later to check if player scene is loaded
              */
 
-            if (Instance == null)
-                CreateInstance();
-
             try
             {
                 string mapName = PlayerInput.currentActionMap.name;
@@ -65,8 +62,6 @@ public class InputReader : Singleton<InputReader>
         }
         private set
         {
-            if (Instance == null)
-                CreateInstance();
             try
             {
                 string mapName = value switch
@@ -104,16 +99,16 @@ public class InputReader : Singleton<InputReader>
                 return null;
             }
 
-            // Ensure the singleton instance exists
-            if (Instance == null) CreateInstance();
-
             if (_playerInput != null) return _playerInput;
-            else Debug.Log("[InputReader] _playerInput is null in PlayerInput getter.");
+            else Debug.LogWarning("[InputReader] _playerInput is null in PlayerInput getter.");
 
             // Tries to get PlayerInput from the singleton GameObject
-            _playerInput = Instance.GetComponent<PlayerInput>();
-            if (_playerInput != null) return _playerInput;
-            else Debug.Log("[InputReader] _playerInput is still null after GetComponent.");
+            if (Instance.TryGetComponent<PlayerInput>(out var existingInput))
+            {
+                _playerInput = existingInput;
+                return _playerInput;
+            }
+            else Debug.LogWarning("[InputReader] No PlayerInput found on singleton GameObject in getter. Attempting to Create one.");
 
             // Creates a PlayerInput component on the singleton GameObject if none exists
             PlayerInput newInput = Instance.gameObject.AddComponent<PlayerInput>();
@@ -237,11 +232,8 @@ public class InputReader : Singleton<InputReader>
     
     protected override void Awake()
     {
-        base.Awake(); // Ensure singleton behavior
 
-        // If this component was a duplicate (Singleton destroys the component only), do not continue initialization.
-        if (Instance != this)
-            return;
+        base.Awake(); // Ensure singleton behavior
 
         SceneManager.sceneLoaded += HandleSceneLoaded;
 
@@ -262,6 +254,7 @@ public class InputReader : Singleton<InputReader>
             Debug.LogWarning("[InputReader] PlayerControls asset not found in Resources. Using runtime-generated controls instead.");
         }
 
+        /*
         // Try to bind to an existing PlayerInput found in loaded scenes first; if none found,
         // ensure a PlayerInput component is attached to this InputReader singleton GameObject.
         if (TryAutoBindFromLoadedScenes())
@@ -288,6 +281,7 @@ public class InputReader : Singleton<InputReader>
 
             Debug.Log("[InputReader] No scene PlayerInput found. Attached PlayerInput to InputReader singleton for consistent access.");
         }
+        */
 
         // Use squared deadzone comparisons internally; set the default min to match the smallest deadzone
         InputSystem.settings.defaultDeadzoneMin = Mathf.Min(leftStickDeadzoneValue, rightStickDeadzoneValue);
@@ -295,28 +289,23 @@ public class InputReader : Singleton<InputReader>
         EnsureCursorManager(PlayerInput);
     }
 
-      /// <summary>
-    /// Static method to assign a new PlayerInput instance.
-    /// For compatibility with existing code that calls InputReader.AssignPlayerInput().
-    /// </summary>
-    /// <param name="newPlayerInput">The PlayerInput to assign.</param>
-    public static void AssignPlayerInput(PlayerInput newPlayerInput)
+    private void Start()
     {
-        if (Instance == null)
-            CreateInstance();
-
-        if (newPlayerInput == null)
+        if (TryGetComponent<PlayerInput>(out var existingInput))
         {
-            Debug.LogWarning("InputReader: Cannot assign null PlayerInput!");
-            return;
+            RebindTo(existingInput);
+            Debug.Log("[InputReader] Found existing PlayerInput on Start and bound to it.");
         }
-        else Debug.Log("[InputReader] AssignPlayerInput received a valid PlayerInput.");
-
-        Instance.RebindTo(newPlayerInput, switchToGameplay: true);
+        else
+        {
+            PlayerInput = gameObject.AddComponent<PlayerInput>();
+        }
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
+
         SceneManager.sceneLoaded -= HandleSceneLoaded;
         UnregisterActionCallbacks();
 
@@ -327,8 +316,14 @@ public class InputReader : Singleton<InputReader>
         }
     }
 
+    //Turns the actions on
+    private void OnEnable() => SetAllActionsEnabled(true);
+
+    private void OnDisable() => SetAllActionsEnabled(false);
+
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        /*
         // If we already have a PlayerInput, only early-out when it's a real scene/player binding.
         // When starting from MainMenu, InputReader may create a fallback PlayerInput on itself;
         // once gameplay scenes load we must rebind to the actual player PlayerInput.
@@ -356,75 +351,7 @@ public class InputReader : Singleton<InputReader>
 
         // If the specific scene didn't contain a player, try a broader search (e.g., additive load order differences)
         TryAutoBindFromLoadedScenes();
-    }
-
-    private System.Collections.IEnumerator WaitForPlayerInputRoutine()
-    {
-        const float timeout = 10f;
-        float elapsed = 0f;
-        while (_playerInput == null && elapsed < timeout)
-        {
-            if (TryAutoBindFromLoadedScenes())
-                yield break;
-            elapsed += Time.unscaledDeltaTime;
-            yield return null;
-        }
-    }
-
-    private bool TryAutoBindFromLoadedScenes()
-    {
-        for (int i = 0; i < SceneManager.sceneCount; i++)
-        {
-            Scene scene = SceneManager.GetSceneAt(i);
-            if (!scene.isLoaded || scene.name == "DontDestroyOnLoad")
-                continue;
-
-            if (TryBindFromScene(scene))
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool TryBindFromScene(Scene scene)
-    {
-        if (!scene.IsValid())
-            return false;
-
-        GameObject[] roots = scene.GetRootGameObjects();
-        PlayerInput fallback = null;
-
-        for (int i = 0; i < roots.Length; i++)
-        {
-            var candidate = roots[i].GetComponentInChildren<PlayerInput>(true);
-            if (candidate == null)
-                continue;
-
-            if (candidate.GetComponent<InputReader>() != null)
-                continue;
-
-            bool likelyPlayer = candidate.gameObject.CompareTag("Player")
-                || candidate.GetComponentInParent<PlayerMovement>() != null;
-
-            if (likelyPlayer)
-            {
-                Debug.Log($"[InputReader] Auto-binding to PlayerInput '{candidate.name}' in scene '{scene.name}'.");
-                RebindTo(candidate, switchToGameplay: true);
-                return true;
-            }
-
-            if (fallback == null)
-                fallback = candidate;
-        }
-
-        if (fallback != null)
-        {
-            Debug.Log($"[InputReader] Fallback binding to PlayerInput '{fallback.name}' in scene '{scene.name}'.");
-            RebindTo(fallback, switchToGameplay: true);
-            return true;
-        }
-
-        return false;
+        */
     }
 
     private void Update()
@@ -458,19 +385,9 @@ public class InputReader : Singleton<InputReader>
             activeControlScheme = string.Empty;
         }
     }
-
     #endregion
 
-    //Turns the actions on
-    private void OnEnable()
-    {
-        SetAllActionsEnabled(true);
-    }
-
-    private void OnDisable()
-    {
-        SetAllActionsEnabled(false);
-    }
+    
 
     /// <summary>
     /// Rebind this InputReader to a new PlayerInput instance (e.g., after scene restart or player respawn).
