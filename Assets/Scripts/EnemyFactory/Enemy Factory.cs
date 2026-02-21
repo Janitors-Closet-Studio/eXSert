@@ -39,7 +39,7 @@ namespace Progression.Encounters
         public static void Prewarm(GameObject prefab, int count)
         {
             // Validate input parameters
-            if (count < 1) throw new ArgumentOutOfRangeException(nameof(count), $"Count must be at least 1. Received: {count}");
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
             if (prefab == null) throw new ArgumentNullException(nameof(prefab));
             if (!prefab.TryGetComponent<BaseEnemyCore>(out _))
             {
@@ -54,7 +54,9 @@ namespace Progression.Encounters
                 Instance.pools[prefab] = queue;
             }
 
-            for (int i = 0; i < count; i++)
+            // Calculate how many instances need to be created to reach the desired count
+            int difference = count - queue.Count;
+            for (int i = 0; i < difference; i++)
             {
                 var go = Instantiate(prefab, Instance.transform);
                 go.SetActive(false);

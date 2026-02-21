@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Progression
@@ -12,6 +13,28 @@ namespace Progression
 
         [SerializeField]
         private bool SendDebugMessages = false;
+
+        [ContextMenu("Find Progression Manager")]
+        void FindManager()
+        {
+#if UNITY_EDITOR
+            var manager = FindAnyObjectByType<ProgressionManager>();
+            if (manager != null)
+            {
+                UnityEditor.Selection.activeGameObject = manager.gameObject;
+                UnityEditor.EditorGUIUtility.PingObject(manager.gameObject);
+
+                if (debugMessagesEnabled)
+                    Debug.Log($"ProgressionManager found on '{manager.gameObject.name}' and selected in the editor.");
+            }
+            else
+            {
+                Debug.LogWarning("ProgressionManager not found in the scene.");
+            }
+#else
+            Debug.LogWarning("FindManager is an editor-only helper and cannot run in a build.");
+#endif
+        }
         #endregion
 
         protected BoxCollider progressionCollider;
