@@ -4,87 +4,78 @@ using UnityEngine;
 
 namespace Progression.Encounters
 {
-    public class Wave : MonoBehaviour
+    internal class Wave : MonoBehaviour
     {
         #region Inspector Setup
         [Header("Wave Settings")]
         public string WaveObjectiveText = "Defeat all enemies in this wave!";
 
         #endregion
-        private List<GameObject> enemyGameObjects = new();
+        private readonly List<EnemySpawnMarker> spawnMarkers = new();
         private readonly List<BaseEnemyCore> enemies = new();
 
         private bool waveCompleted;
-        private bool initialized;
+        private bool debugMessagesEnabled = false;
 
         public event Action<Wave> OnWaveComplete;
         public event Action<Vector3> UpdateLastEnemyPosition;
 
-        // Call to set up this Wave when created from code
-        public void Initialize(List<GameObject> _enemies)
+        /// <summary>
+        /// Initializes the wave by assigning enemy spawn markers from the specified child GameObjects.
+        /// </summary>
+        /// <remarks>Only child GameObjects containing an <see cref="EnemySpawnMarker"/> component are
+        /// considered for spawning. Any GameObject without an <see cref="EnemySpawnMarker"/> is ignored, and a warning
+        /// is logged. The method clears any existing spawn markers before reinitializing.</remarks>
+        /// <param name="children">The list of child <see cref="GameObject"/> instances to be evaluated for enemy spawn markers. Must not be
+        /// <see langword="null"/> or empty.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="children"/> is <see langword="null"/> or contains no elements.</exception>
+        public Wave Initialize(List<GameObject> children, bool enableDebug = false)
         {
-            enemyGameObjects = _enemies ?? new List<GameObject>();
+            if (children == null || children.Count == 0)
+                throw new ArgumentNullException(nameof(children), $"[{name} of combat encounter {transform.parent.name}] No enemy GameObjects provided for wave initialization.");
+
+            // Debug log for wave initialization with the number of potential spawn points found
+            if (debugMessagesEnabled = enableDebug) Debug.Log($"[Wave] Initializing wave: {name} with {children.Count} potential enemy spawn markers.");
             waveCompleted = false;
-            InitializeEnemies();
-            initialized = true;
-        }
 
-        private void Awake()
-        {
-            // If Initialize wasn't called from code, auto-discover children as enemies
-            if (initialized) return;
-
-            if (enemyGameObjects == null || enemyGameObjects.Count == 0)
+            spawnMarkers.Clear(); // Clear any existing spawn markers before reinitializing
+            foreach (var child in children)
             {
-                enemyGameObjects = new List<GameObject>();
-                foreach (Transform child in transform)
-                    enemyGameObjects.Add(child.gameObject);
+                if (child.TryGetComponent<EnemySpawnMarker>(out var validMarker)) 
+                    spawnMarkers.Add(validMarker);
+                else
+                    Debug.LogWarning($"[{name} of combat encounter {transform.parent.name}] Child GameObject {child.name} does not contain an EnemySpawnMarker component and will be ignored.");
             }
+            if (spawnMarkers.Count == 0)
+                Debug.LogWarning($"[{name} of combat encounter {transform.parent.name}] No valid enemy spawn markers found among the provided child GameObjects.");
 
-            InitializeEnemies();
-            initialized = true;
+            return this;
         }
 
-        private void InitializeEnemies()
-        {
-            enemies.Clear();
-            foreach (var enemy in enemyGameObjects)
-            {
-                if (enemy == null) continue;
-
-                if (enemy.TryGetComponent<BaseEnemyCore>(out var enemyCore))
-                {
-                    enemies.Add(enemyCore);
-                    enemyCore.OnDeath -= OnEnemyDefeated; // Prevent double-subscription
-                    enemyCore.OnDeath += OnEnemyDefeated;
-                }
-            }
-        }
-
-        public override string ToString()
-        {
-            return $"{gameObject.name} with {enemies.Count} enemies";
-        }
+        public override string ToString() => $"{gameObject.name} with {enemies.Count} enemies";
 
         public void Cleanup() => UnsubscribeAllEnemies();
-
         private void UnsubscribeAllEnemies()
         {
-            foreach (var enemy in enemies)
-                if (enemy != null)
-                    enemy.OnDeath -= OnEnemyDefeated;
+            if (debugMessagesEnabled) Debug.Log($"[{name} of combat encounter {transform.parent.name}] Unsubscribing from all enemy death events.");
+            foreach (var enemy in enemies) enemy.OnDeath -= OnEnemyDefeated;
         }
 
         public void SpawnEnemies()
         {
-            Debug.Log($"[CombatEncounter] Spawning wave: {this}");
+            if (debugMessagesEnabled)
+                Debug.Log($"[{name} of combat encounter {transform.parent.name}] Spawning wave.");
 
-            if (!gameObject.activeSelf)
-                gameObject.SetActive(true);
+            // tells each spawn marker to spawn its enemy and then initilialize it for tracking and setup
+            foreach (EnemySpawnMarker marker in spawnMarkers) InitializeEnemy(marker.SpawnEnemy());
 
-            foreach (BaseEnemyCore enemy in enemies)
+            // Local function to initialize each spawned enemy by subscribing to its OnDeath event and adding it to the enemies list for tracking
+            void InitializeEnemy(BaseEnemyCore enemy)
             {
-                enemy.Spawn();
+                if (enemy == null) throw new ArgumentNullException(nameof(enemy), $"[{name} of combat encounter {transform.parent.name}] Spawned enemy is null. This should not happen if the EnemySpawnMarker and EnemyFactory are properly set up.");
+                enemies.Add(enemy);
+                enemy.OnDeath -= OnEnemyDefeated; // Prevent double-subscription
+                enemy.OnDeath += OnEnemyDefeated;
             }
         }
 
@@ -100,14 +91,9 @@ namespace Progression.Encounters
 
         private void OnEnemyDefeated(BaseEnemyCore enemy)
         {
-            Debug.Log($"[CombatEncounter] Enemy defeated: {enemy.name}");
+            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Enemy defeated: {enemy.name}"); // Debug log for enemy defeat with the name of the defeated enemy
 
-#if UNITY_EDITOR
-            Debug.Log($"[CombatEncounter] OnEnemyDefeated invoked from:\n{Environment.StackTrace}");
-#endif
-
-            if (!enemies.Contains(enemy))
-                return;
+            if (!enemies.Contains(enemy)) return;
 
             UpdateLastEnemyPosition?.Invoke(enemy.transform.position);
 
@@ -116,29 +102,20 @@ namespace Progression.Encounters
 
             if (!RemainingEnemiesCheck() && !waveCompleted)
                 OnWaveComplete?.Invoke(this); // trigger next wave or end encounter
-        }
 
-        private bool RemainingEnemiesCheck()
-        {
-            if (enemies == null || enemies.Count == 0)
+            bool RemainingEnemiesCheck()
+            {
+                if (enemies == null || enemies.Count == 0)
+                    return false;
+
+                foreach (var enemy in enemies)
+                    if (enemy != null && enemy.isAlive)
+                        return true;
+
                 return false;
-
-            foreach (var enemy in enemies)
-                if (enemy != null && enemy.isAlive)
-                    return true;
-
-            return false;
+            }
         }
 
-        private void OnDestroy()
-        {
-            Cleanup();
-        }
-
-        private void OnValidate()
-        {
-            // Ensure that enemyGameObjects list is always in sync with child GameObjects in the editor
-
-        }
+        private void OnDestroy() => Cleanup();
     }
 }

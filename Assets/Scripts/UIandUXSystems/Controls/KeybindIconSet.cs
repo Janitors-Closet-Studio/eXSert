@@ -107,13 +107,11 @@ public class KeybindIconSet : ScriptableObject
 
         if (!TryGetActionBinding(actionId, out ActionBinding bindingData))
         {
-            Debug.Log($"[KeybindIconSet] No ActionBinding found for {actionId}");
             return false;
         }
 
         if (bindingData.actionReference == null || bindingData.actionReference.action == null)
         {
-            Debug.Log($"[KeybindIconSet] No action reference for {actionId}");
             return false;
         }
 
@@ -138,37 +136,29 @@ public class KeybindIconSet : ScriptableObject
         }
         var action = runtimeAction;
 
-        Debug.Log($"[KeybindIconSet] Querying icon for action: {action.name}");
-
         // Force refresh of bindings after a rebind
         if (!action.enabled)
         {
-            Debug.Log($"[KeybindIconSet] Enabling action {action.name}");
             action.Enable();
         }
 
         // Dump all bindings for debug
-        Debug.Log($"[KeybindIconSet] Dumping all bindings for action {action.name}:");
         for (int i = 0; i < action.bindings.Count; i++)
         {
             var b = action.bindings[i];
-            Debug.Log($"  [{i}] id={b.id} name={b.name} path={b.path} overridePath={b.overridePath} effectivePath={b.effectivePath} isComposite={b.isComposite} isPartOfComposite={b.isPartOfComposite}");
         }
 
         int bindingIndex = ResolveBindingIndex(action, bindingData, useGamepad);
-        Debug.Log($"[KeybindIconSet] Resolved binding index for {action.name}: {bindingIndex}");
         if (bindingIndex >= 0 && bindingIndex < action.bindings.Count)
         {
             var binding = action.bindings[bindingIndex];
             // Always use effectivePath after rebinding
             controlPath = string.IsNullOrEmpty(binding.effectivePath) ? binding.path : binding.effectivePath;
-            Debug.Log($"[KeybindIconSet] Resolved binding for {action.name}: index={bindingIndex}, path={controlPath}, effectivePath={binding.effectivePath}, id={binding.id}");
             if (!string.IsNullOrEmpty(controlPath))
                 return true;
         }
 
         bool compositeResult = TryGetCompositeControlPath(action, bindingData, useGamepad, out controlPath);
-        Debug.Log($"[KeybindIconSet] Composite path result for {action.name}: {compositeResult}, path={controlPath}");
         return compositeResult;
     }
 
@@ -474,8 +464,7 @@ public class KeybindIconSet : ScriptableObject
 
         var iconList = useGamepad ? gamepadIcons : keyboardIcons;
         string shortPath = ExtractControlName(controlPath);
-        Debug.Log("Looking for icon with controlPath: " + controlPath + " and shortPath: " + shortPath);
-
+        
         for (int i = 0; i < iconList.Count; i++)
         {
             if (iconList[i].icon == null)
