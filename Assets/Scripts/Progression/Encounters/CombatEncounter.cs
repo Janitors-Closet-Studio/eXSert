@@ -57,15 +57,17 @@ namespace Progression.Encounters
         {
             base.SetupEncounter();
 
+            allWaves.Clear(); // Clear any existing waves in case of editor changes or scene reload
+
             // iterates through each child object under this encounter
             foreach (Transform child in transform)
             {
-                // if the child object doesn't have "wave" in the name, skip it.
+                // if the child object doesn't have "wave" in the name, or if its not active, skip it.
                 // This allows for organization of the encounter gameobject without breaking functionality
-                if (!child.name.ToLower().Contains("wave")) continue;
+                if (!child.name.ToLower().Contains("wave") || !child.gameObject.activeSelf) continue;
 
                 // Create or get a Wave component on the child object (wave root)
-                Wave newWave = CreateWave(child);
+                Wave newWave = SetupWave(child);
 
                 newWave.OnWaveComplete += WaveComplete;
                 newWave.UpdateLastEnemyPosition += OnUpdateLastEnemyPosition;
@@ -75,23 +77,19 @@ namespace Progression.Encounters
 
             ResetWaves();
 
-            // SyncNextEncounterDelay();
-
             // local function to create a new wave component and initialize it
-            Wave CreateWave(Transform parentObject)
+            Wave SetupWave(Transform parentObject)
             {
                 if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Setting up wave: {parentObject.name} for encounter: {name}");
 
-                Wave waveComponent;
-                if(parentObject.TryGetComponent<Wave>(out var existingWave)) waveComponent = existingWave;
-                else waveComponent = parentObject.gameObject.AddComponent<Wave>();
+                // Try to get an existing Wave component on the parent object. If it doesn't exist, add a new one.
+                Wave waveComponent = parentObject.TryGetComponent<Wave>(out var existingWave) ? waveComponent = existingWave :
+                     waveComponent = parentObject.gameObject.AddComponent<Wave>();
 
-                List < GameObject > enemiesToAdd = new();
-                foreach (Transform waveChild in parentObject)
-                    enemiesToAdd.Add(waveChild.gameObject);
+                List <GameObject> enemiesToAdd = new();
+                foreach (Transform waveChild in parentObject) enemiesToAdd.Add(waveChild.gameObject);
 
-                waveComponent.Initialize(enemiesToAdd);
-                return waveComponent;
+                return waveComponent.Initialize(enemiesToAdd, debugMessagesEnabled);
             }
         }
 
@@ -104,7 +102,7 @@ namespace Progression.Encounters
                 return;
             }
 
-            if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter started: {name} with {wavesQueue.Count} number of waves");
+            if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter started: {name} with {wavesQueue.Count} wave/s");
 
             encounterStarted = true;
             SpawnNextWave();
@@ -194,6 +192,29 @@ namespace Progression.Encounters
                 wavesQueue.Enqueue(wave);
                 wave.ResetEnemies();
             }
+        }
+
+        /// <summary>
+        /// Creates and adds a new wave GameObject as a child of the current transform.
+        /// </summary>
+        /// <remarks>The new wave is named sequentially based on existing child objects whose names
+        /// contain "wave". The wave is positioned at the origin relative to its parent and includes a <see
+        /// cref="Wave"/> component. Intended to be called while in the editor.</remarks>
+        /// <returns>The newly created <see cref="GameObject"/> representing the wave.</returns>
+        public GameObject GenerateNewWave()
+        {
+            int count = 1;
+            foreach (Transform child in transform)
+            {
+                if (!child.name.ToLower().Contains("wave")) continue;
+                count++;
+            }
+            GameObject newWaveObject = new($"Wave {count}");
+            newWaveObject.transform.SetParent(transform);
+            newWaveObject.transform.localPosition = Vector3.zero;
+            Wave newWave = newWaveObject.AddComponent<Wave>();
+            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Generated new wave: {newWave} for encounter: {name}");
+            return newWaveObject;
         }
         #endregion
     }

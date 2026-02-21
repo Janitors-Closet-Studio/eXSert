@@ -181,7 +181,6 @@ public class KeybindIconSwapper : MonoBehaviour
         if (sharedIconSet.TryGetIcon(action, useGamepad, out Sprite icon, out _))
         {
             targetImage.sprite = icon;
-            Debug.Log($"Found icon for action {action}: {icon.name}");
             targetImage.enabled = true;
         }
         else if (hideWhenMissing)

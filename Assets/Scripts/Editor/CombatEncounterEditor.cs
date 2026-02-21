@@ -35,19 +35,9 @@ public class CombatEncounterEditor : Editor
 
         GameObject parent = encounter.gameObject;
 
-        // Count existing wave-named children (case-insensitive)
-        int existing = 0;
-        foreach (Transform child in parent.transform)
-            if (child.name.ToLower().Contains("wave")) existing++;
-
-        string waveName = $"Wave {existing + 1}";
-
         // Create the new wave gameobject as a child
-        GameObject wave = new(waveName);
+        GameObject wave = encounter.GenerateNewWave();
         Undo.RegisterCreatedObjectUndo(wave, "Create Wave");
-        wave.transform.SetParent(parent.transform, false);
-        wave.transform.localPosition = Vector3.zero;
-        wave.AddComponent<Wave>();
 
         // Select the new wave in the editor
         Selection.activeGameObject = wave;
