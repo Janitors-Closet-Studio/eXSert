@@ -17,16 +17,20 @@ namespace Progression
     using Encounters;
     using SceneManagement;
 
+    [HelpURL("")]
     public class ProgressionManager : SceneSingleton<ProgressionManager>
     {
         #region Inspector Setup
         [Header("Progression Settings")]
+        [Header("Prewarming")]
+        [SerializeField, Tooltip("If true, the manager will prewarm the specified prefabs at the start of the scene. This can help reduce lag spikes when those prefabs are first instantiated.")]
+        private bool usePrewarmer = false;
+        [SerializeField, Tooltip("If true, the manager will prewarm the specified prefabs at the start of the scene. This can help reduce lag spikes when those prefabs are first instantiated.")]
+        private GameObject[] prefabsToPrewarm;
 
-        [Header("Stats")]
-        [SerializeField, Tooltip("The total number of encounters in the scene. " +
-            "This is used for tracking progression and should be set to the total number of encounters in the scene.")]
-        private int totalEncountersInScene = 0;
         #endregion
+
+        private int totalEncountersInScene = 0;
 
         /// <summary>
         /// Indicates whether all encounters in the scene have been completed
@@ -43,6 +47,8 @@ namespace Progression
             base.Awake(); // Singleton behavior
 
             this.gameObject.name = $"[{SceneAsset.GetSceneAssetOfObject(this.gameObject).name}] Progression Manager";
+
+            if (usePrewarmer) PrewarmEnemies();
         }
 
         private void OnDisable()
@@ -80,7 +86,7 @@ namespace Progression
 
                     // Subscribe the manager's UpdateObjective method to the encounter's UpdateObjective event
                     // When the encounter triggers an objective update, the manager can relay that to the HUD
-                    encounter.UpdateObjective += manager.UpdateObjective; 
+                    encounter.UpdateObjective += manager.UpdateObjective;
                     break;
 
                 case SceneLoadZone loadZone:
@@ -94,6 +100,54 @@ namespace Progression
             }
         }
         #endregion
+
+        private void PrewarmEnemies()
+        {
+            Dictionary<GameObject, int> shoppingList = new();
+
+            // Create a shopping list of prefabs to prewarm and their quantities
+            foreach (GameObject prefab in prefabsToPrewarm)
+            {
+                if (prefab == null) continue;
+
+                GameObject intendedPrefab;
+
+                if (prefab.TryGetComponent<EnemySpawnMarker>(out EnemySpawnMarker marker))
+                {
+                    Debug.LogWarning($"[ProgressionManager] Prefab {prefab.name} is a spawn marker for an enemy. " +
+                        $"Please use the enemy prefab instead. " +
+                        $"Function will get the correct prefab that was intended to prewarm.");
+
+                    intendedPrefab = marker.EnemyPrefab;
+
+                    if (!intendedPrefab.TryGetComponent<BaseEnemyCore>(out _))
+                    {
+                        Debug.LogError($"[ProgressionManager] Nevermind. The prefab that is in the marker isn't even a proper enemy. " +
+                            $"Did you even learn how to use any of this? " +
+                            $"Obviously skipping over this prefab.");
+                        continue;
+                    }
+                }
+
+                else if (prefab.GetComponent<BaseEnemyCore>() == null)
+                {
+                    Debug.LogWarning($"[ProgressionManager] Prefab {prefab.name} does not have a BaseEnemyCore component and will be skipped in prewarming.");
+                    continue;
+                }
+                
+                else intendedPrefab = prefab;
+
+                // Forming the shopping list
+                if (!shoppingList.ContainsKey(intendedPrefab))
+                    shoppingList[intendedPrefab] = 1;
+                else
+                    shoppingList[intendedPrefab]++;
+            }
+
+            // The prewarming part. It's a single command
+            foreach (KeyValuePair<GameObject, int> entry in shoppingList)
+                EnemyFactory.Prewarm(entry.Key, entry.Value);
+        }
     }
 }
 

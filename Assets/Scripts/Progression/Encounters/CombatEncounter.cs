@@ -194,6 +194,7 @@ namespace Progression.Encounters
             }
         }
 
+        [ContextMenu("Generate New Wave")]
         /// <summary>
         /// Creates and adds a new wave GameObject as a child of the current transform.
         /// </summary>
