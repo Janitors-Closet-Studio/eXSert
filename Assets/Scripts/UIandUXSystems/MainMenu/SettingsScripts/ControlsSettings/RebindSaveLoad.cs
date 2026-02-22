@@ -44,6 +44,7 @@ public class RebindSaveLoad : MonoBehaviour
         }
     }
 
+    // Fallback method to manually save rebinds if needed, such as a save button in the UI
     public void SaveRebindsManually() => SaveRebinds();
 
     private void OnDestroy()

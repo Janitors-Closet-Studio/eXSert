@@ -27,18 +27,9 @@ public class LogButton : MonoBehaviour, ISelectHandler
         if (logUIObject != null)
         {
             logUI = logUIObject.GetComponent<MenuEventSystemHandler>();
+
             if (logUI != null)
-            {
                 logUI.Selectables.Add(this.button);
-            }
-            else
-            {
-                Debug.LogError("MenuEventSystemHandler component not found on LogUI GameObject");
-            }
-        }
-        else
-        {
-            Debug.LogError("GameObject with tag 'LogUI' not found");
         }
     }
 
@@ -103,11 +94,6 @@ public class LogButton : MonoBehaviour, ISelectHandler
                 menuToManage.AddToMenuList(child.gameObject);
             }   
         }
-        else
-        {
-            Debug.LogError("GameObject with tag 'Canvas' not found");
-        }
-        
     }
 
     //Hides Menus

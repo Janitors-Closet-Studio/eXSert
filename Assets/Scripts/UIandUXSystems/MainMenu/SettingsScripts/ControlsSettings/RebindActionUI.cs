@@ -7,22 +7,16 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine.Events;
 using UnityEngine.UI;
-
-////TODO: localization support
-
-////TODO: deal with composites that have parts bound in different control schemes
 
 
 
 namespace UnityEngine.InputSystem.Samples.RebindUI
 {
-            /// <summary>
-        /// Inspector button to reset binding to default.
-        /// </summary>
-        
+    /// <summary>
+    /// Inspector button to reset binding to default.
+    /// </summary>
     public class RebindActionUI : MonoBehaviour
     {
         /// <summary>
@@ -273,7 +267,8 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
         /// Remove currently applied binding overrides.
         /// </summary>
        
-    public void ResetToDefault()
+
+        public void ResetToDefault()
         {
             if (!ResolveActionAndBinding(out var action, out var bindingIndex))
             {
@@ -296,7 +291,7 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             UpdateBindingDisplay();
         }
 
-       private void ResetBinding(InputAction action, int bindingIndex)
+        private void ResetBinding(InputAction action, int bindingIndex)
         {
             InputBinding newBinding = action.bindings[bindingIndex];
             string oldOverridePath = newBinding.overridePath;
@@ -318,7 +313,6 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                             otherAction.ApplyBindingOverride(currentIndex, oldOverridePath);
                         }
                     }
-
                     else
                     {
                         continue;
@@ -457,7 +451,6 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             m_RebindStartEvent?.Invoke(this, m_RebindOperation);
 
             m_RebindOperation.Start();
-            Debug.Log($"[RebindActionUI] Interactive rebind started for action '{action.name}' on {gameObject.name}");
         }
 
         private bool CheckDuplicateBindings(InputAction action, int bindingIndex, bool allCompositeParts = false)

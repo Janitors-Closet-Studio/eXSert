@@ -18,21 +18,15 @@ public class ResetDeviceBindings : MonoBehaviour
     void OnEnable()
     {
         if (_resetBindingsActionReference != null && _resetBindingsActionReference.action != null)
-        {
             _resetBindingsActionReference.action.performed += ctx => ResetControlSchemeBinding();
-        }
-        else
-        {
-            Debug.LogWarning($"Reset Bindings Input Action Reference is not set in the inspector. Reset bindings button won't work.");
-        }
+
     }
 
     void OnDisable()
     {
         if (_resetBindingsActionReference != null && _resetBindingsActionReference.action != null)
-        {
             _resetBindingsActionReference.action.performed -= ctx => ResetControlSchemeBinding();
-        }
+
     }
 
 
@@ -64,7 +58,5 @@ public class ResetDeviceBindings : MonoBehaviour
                     action.RemoveBindingOverride(InputBinding.MaskByGroup(_targetControlScheme));
                 }
         }
-
-        Debug.Log($"Reset {_targetControlScheme} bindings to default.");
     }
 }

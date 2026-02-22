@@ -63,9 +63,6 @@ public class DiaryUI : MonoBehaviour
             diaryImage.sprite = diaries.info.diaryImage.sprite;
         }
         else
-        {
             diaryImage.sprite = null;
-            Debug.LogWarning($"Diary {diaries.info.diaryID} has no image assigned");
-        }
     }
 }

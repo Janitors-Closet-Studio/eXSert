@@ -148,21 +148,18 @@ public class CranePuzzle : PuzzlePart
 
         if (playerInput == null)
         {
-            Debug.LogError("[CranePuzzle] InputReader.playerInput is null. Ensure InputReader is initialized.");
             return false;
         }
 
         var actions = playerInput.actions;
         if (actions == null)
         {
-            Debug.LogError("[CranePuzzle] playerInput.actions is null.");
             return false;
         }
 
         craneMap = actions.FindActionMap("CranePuzzle");
         if (craneMap == null)
         {
-            Debug.LogError("[CranePuzzle] 'CranePuzzle' action map not found in playerInput.actions.");
             return false;
         }
 
@@ -180,11 +177,9 @@ public class CranePuzzle : PuzzlePart
         {
             InputAction resolved = craneMap.FindAction(reference.action.name);
             if (resolved == null)
-                Debug.LogWarning($"[CranePuzzle] Action '{reference.action.name}' not found in CranePuzzle map.");
+            
             return resolved;
         }
-
-        Debug.LogWarning($"[CranePuzzle] {label} reference is null or has no action assigned.");
         return null;
     }
 
@@ -301,10 +296,6 @@ public class CranePuzzle : PuzzlePart
         DisableInteractUIDuringPuzzle();
 
         int status = SetupCranePuzzle();
-        if (status == -1)
-        {
-            Debug.LogError("[CranePuzzle] Crane Puzzle Set Up script failed");
-        }
     }
 
     // Call this when the puzzle is finished or cancelled
