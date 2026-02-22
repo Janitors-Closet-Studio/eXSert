@@ -166,7 +166,7 @@ public class DroneRelocateBehavior<TState, TTrigger> : RelocateBehavior<TState, 
             if (Time.time - startTime > maxRelocateTime)
             {
 #if UNITY_EDITOR
-                Debug.LogWarning($"[Failsafe] Relocate timed out after {maxRelocateTime}s. Forcing Idle.");
+                EnemyBehaviorDebugLogBools.LogWarning("DroneRelocateBehavior", $"[Failsafe] Relocate timed out after {maxRelocateTime}s. Forcing Idle.");
 #endif
                 for (int i = 0; i < drone.Cluster.drones.Count; i++)
                 {
@@ -194,7 +194,7 @@ public class DroneRelocateBehavior<TState, TTrigger> : RelocateBehavior<TState, 
                 if (stuckCount >= Mathf.CeilToInt(total / 2f))
                 {
 #if UNITY_EDITOR
-                    Debug.LogWarning($"[Failsafe] Cluster appears stuck in Relocate. Forcing Idle.");
+                    EnemyBehaviorDebugLogBools.LogWarning("DroneRelocateBehavior", $"[Failsafe] Cluster appears stuck in Relocate. Forcing Idle.");
 #endif
                     for (int i = 0; i < drone.Cluster.drones.Count; i++)
                     {

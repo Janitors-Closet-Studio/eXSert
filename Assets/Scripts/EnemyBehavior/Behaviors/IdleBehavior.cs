@@ -32,16 +32,16 @@ namespace Behaviors
         public virtual void OnEnter(BaseEnemy<TState, TTrigger> enemy)
         {
             this.enemy = enemy;
-            //Debug.Log("IdleBehavior.OnEnter called!");
+            //EnemyBehaviorDebugLogBools.Log("IdleBehavior", "IdleBehavior.OnEnter called!");
             if (enemy.agent == null)
             {
 #if UNITY_EDITOR
-                Debug.LogError("NavMeshAgent not initialized!");
+                EnemyBehaviorDebugLogBools.LogError("NavMeshAgent not initialized!");
 #endif
                 return;
             }
             enemy.SetEnemyColor(enemy.patrolColor);
-            //Debug.Log($"{enemy.gameObject.name} entered Idle state.");
+            //EnemyBehaviorDebugLogBools.Log("IdleBehavior", $"{enemy.gameObject.name} entered Idle state.");
             enemy.hasFiredLowHealth = false;
             enemy.CheckHealthThreshold();
 
@@ -80,7 +80,10 @@ namespace Behaviors
         private IEnumerator IdleTimerCoroutine()
         {
             yield return WaitForSecondsCache.Get(enemy.idleTimerDuration);
-            if (enemy.enemyAI.State.Equals(EnemyState.Idle))
+            
+            // Use generic comparison - check if current state name contains "Idle"
+            string currentStateName = enemy.enemyAI.State.ToString();
+            if (currentStateName.Contains("Idle"))
             {
                 // Use ZoneManager if available, otherwise fallback
                 Zone[] zones = ZoneManager.Instance != null 

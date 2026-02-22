@@ -34,7 +34,7 @@ namespace EnemyBehavior.Boss
             var collider = GetComponent<Collider>();
             if (collider == null)
             {
-                Debug.LogWarning($"[ArenaWallCollider] {gameObject.name} has no Collider component!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(ArenaWallCollider), $"[ArenaWallCollider] {gameObject.name} has no Collider component!");
             }
         }
 
@@ -71,7 +71,7 @@ namespace EnemyBehavior.Boss
             {
                 if (debugLogCollisions)
                 {
-                    Debug.Log($"[ArenaWallCollider] Boss hit wall '{gameObject.name}' during charge ({collisionType}). No stun applied.");
+                    EnemyBehaviorDebugLogBools.Log(nameof(ArenaWallCollider), $"[ArenaWallCollider] Boss hit wall '{gameObject.name}' during charge ({collisionType}). No stun applied.");
                 }
 
                 // Wall collision just stops movement - the NavMeshAgent and Rigidbody 
@@ -80,7 +80,7 @@ namespace EnemyBehavior.Boss
             }
             else if (debugLogCollisions)
             {
-                Debug.Log($"[ArenaWallCollider] Boss touched wall '{gameObject.name}' (not charging)");
+                EnemyBehaviorDebugLogBools.Log(nameof(ArenaWallCollider), $"[ArenaWallCollider] Boss touched wall '{gameObject.name}' (not charging)");
             }
         }
 

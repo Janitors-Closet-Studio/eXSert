@@ -22,7 +22,7 @@ public class BoxerEnemy : BaseEnemy<EnemyState, EnemyTrigger>
         deathBehavior = new DeathBehavior<EnemyState, EnemyTrigger>();
 
 #if UNITY_EDITOR
-        Debug.Log($"{gameObject.name} Awake called");
+        EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name} Awake called");
 #endif
 
         // Find the player - use PlayerPresenceManager if available
@@ -41,13 +41,13 @@ public class BoxerEnemy : BaseEnemy<EnemyState, EnemyTrigger>
         InitializeStateMachine(EnemyState.Idle);
         ConfigureStateMachine();
 #if UNITY_EDITOR
-        Debug.Log($"{gameObject.name} State machine initialized");
+        EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name} State machine initialized");
 #endif
         
         if (enemyAI.State.Equals(EnemyState.Idle))
         {
 #if UNITY_EDITOR
-            Debug.Log($"{gameObject.name} Manually calling OnEnterIdle for initial Idle state");
+            EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name} Manually calling OnEnterIdle for initial Idle state");
 #endif
             idleBehavior.OnEnter(this);
         }
@@ -62,12 +62,12 @@ public class BoxerEnemy : BaseEnemy<EnemyState, EnemyTrigger>
     {
         base.ConfigureStateMachine();
 
-        Debug.Log($"{gameObject.name} ConfigureStateMachine called");
+        EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name} ConfigureStateMachine called");
         EnemyStateMachineConfig.ConfigureBasic(enemyAI);
 
         enemyAI.Configure(EnemyState.Idle)
             .OnEntry(() => {
-                Debug.Log($"{gameObject.name} OnEntry lambda for Idle called");
+                EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name} OnEntry lambda for Idle called");
                 PlayIdleAnim();
                 idleBehavior.OnEnter(this);
             })
@@ -97,13 +97,13 @@ public class BoxerEnemy : BaseEnemy<EnemyState, EnemyTrigger>
         // --- CHASE STATE ---
         enemyAI.Configure(EnemyState.Chase)
             .OnEntry(() => {
-                Debug.Log($"{gameObject.name}: ENTERING Chase state");
+                EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name}: ENTERING Chase state");
                 // Force immediate transition to move animation (especially when coming from Attack state)
                 PlayLocomotionAnim(agent != null ? agent.velocity.magnitude : 1f);
                 chaseBehavior.OnEnter(this);
             })
             .OnExit(() => {
-                Debug.Log($"{gameObject.name}: EXITING Chase state");
+                EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name}: EXITING Chase state");
                 PlayIdleAnim();
                 chaseBehavior.OnExit(this);
             })
@@ -112,13 +112,13 @@ public class BoxerEnemy : BaseEnemy<EnemyState, EnemyTrigger>
         // --- ATTACK STATE ---
         enemyAI.Configure(EnemyState.Attack)
             .OnEntry(() => {
-                Debug.Log($"{gameObject.name}: ENTERING Attack state");
+                EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name}: ENTERING Attack state");
                 // Play attack animation immediately when entering attack state
                 PlayAttackAnim();
                 attackBehavior.OnEnter(this);
             })
             .OnExit(() => {
-                Debug.Log($"{gameObject.name}: EXITING Attack state");
+                EnemyBehaviorDebugLogBools.Log(nameof(BoxerEnemy), $"{gameObject.name}: EXITING Attack state");
                 PlayIdleAnim();
                 attackBehavior.OnExit(this);
             })

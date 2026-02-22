@@ -42,7 +42,7 @@ namespace Behaviors
                 if (crawler.Pocket == null)
                 {
 #if UNITY_EDITOR
-                    Debug.LogWarning($"{crawler.name}: No pocket assigned, cannot flee.");
+                    EnemyBehaviorDebugLogBools.LogWarning("FleeBehavior", $"{crawler.name}: No pocket assigned, cannot flee.");
 #endif
                     yield break;
                 }
@@ -69,7 +69,7 @@ namespace Behaviors
                 else
                 {
 #if UNITY_EDITOR
-                    Debug.LogWarning($"{crawler.name}: Agent is null or disabled in Flee state!");
+                    EnemyBehaviorDebugLogBools.LogWarning("FleeBehavior", $"{crawler.name}: Agent is null or disabled in Flee state!");
 #endif
                 }
 

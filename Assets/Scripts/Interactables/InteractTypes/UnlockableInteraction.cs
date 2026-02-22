@@ -7,6 +7,7 @@
 */
 
 using UnityEngine;
+using UnityEngine.Events;
 
 public abstract class UnlockableInteraction : InteractionManager
 {
@@ -18,6 +19,10 @@ public abstract class UnlockableInteraction : InteractionManager
     protected bool canUnlock => InternalPlayerInventory.Instance.HasItem(requiredItemID);
     [Header("Error SFX")]
     [SerializeField] private AudioClip errorSFXClip;
+
+    [Header("Events")]
+    [Tooltip("Invoked when the interaction successfully executes (i.e., after unlocking conditions are met).")]
+    [SerializeField] private UnityEvent onInteractionExecuted;
 
     protected override void Awake()
     {
@@ -40,6 +45,7 @@ public abstract class UnlockableInteraction : InteractionManager
         { 
             Debug.Log($"Interacting with {gameObject.name} which requires no item.");
             ExecuteInteraction();
+            onInteractionExecuted?.Invoke();
             return;
         }
 
@@ -48,6 +54,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if (canUnlock)
         {
             ExecuteInteraction();
+            onInteractionExecuted?.Invoke();
         }
         else
         {

@@ -77,7 +77,7 @@ public class EnemyProjectile : MonoBehaviour
 
         if (TryApplyDamage(col))
         {
-            Debug.Log($"[EnemyProjectile] Applied {damage} damage to {col.name}");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyProjectile), $"[EnemyProjectile] Applied {damage} damage to {col.name}");
             DeactivateToPool();
         }
     }

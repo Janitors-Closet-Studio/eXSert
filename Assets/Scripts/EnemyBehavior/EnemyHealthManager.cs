@@ -88,7 +88,7 @@ public class EnemyHealthManager : MonoBehaviour
 
     private void HandleEnemyDeath(BaseEnemyCore enemy)
     {
-        Debug.Log($"[EnemyHealthManager] HandleEnemyDeath called for {enemy.name}, isDead={isDead}");
+        EnemyBehaviorDebugLogBools.Log(nameof(EnemyHealthManager), $"[EnemyHealthManager] HandleEnemyDeath called for {enemy.name}, isDead={isDead}");
         
         if (isDead) return;
         isDead = true;
@@ -149,7 +149,7 @@ public class EnemyHealthManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[EnemyHealthManager] {gameObject.name}: Cannot set max health - no BaseEnemy found.");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyHealthManager), $"[EnemyHealthManager] {gameObject.name}: Cannot set max health - no BaseEnemy found.");
         }
     }
 
@@ -166,7 +166,7 @@ public class EnemyHealthManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[EnemyHealthManager] {gameObject.name}: Cannot set current health - no BaseEnemy found.");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyHealthManager), $"[EnemyHealthManager] {gameObject.name}: Cannot set current health - no BaseEnemy found.");
         }
     }
 
@@ -181,7 +181,7 @@ public class EnemyHealthManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[EnemyHealthManager] {gameObject.name}: Cannot take damage - no BaseEnemy found.");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyHealthManager), $"[EnemyHealthManager] {gameObject.name}: Cannot take damage - no BaseEnemy found.");
         }
     }
 
@@ -196,7 +196,7 @@ public class EnemyHealthManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[EnemyHealthManager] {gameObject.name}: Cannot heal - no BaseEnemy found.");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyHealthManager), $"[EnemyHealthManager] {gameObject.name}: Cannot heal - no BaseEnemy found.");
         }
     }
 }

@@ -25,13 +25,55 @@ public class SaveSlotsMenu : Menu
 
     [SerializeField] private string SceneName = "PlayerScene";
 
-    [SerializeField] private string DefaultSceneName = "VS_Elevator";
+    // Must match a scene name included in Build Settings.
+    [SerializeField] private string DefaultSceneName = "Elevator";
 
     private bool isLoadingGame = false;
+    private bool hasStartedSceneTransition = false;
 
     private void Awake()
     {
-        saveSlots = this.GetComponentsInChildren<SaveSlots>();
+        EnsureReferences();
+    }
+
+    private void EnsureReferences()
+    {
+        // Slots
+        if (saveSlots == null || saveSlots.Length == 0)
+        {
+            saveSlots = GetComponentsInChildren<SaveSlots>(true);
+        }
+
+        // Menu owner
+        if (mainMenu == null)
+        {
+            mainMenu = FindAnyObjectByType<MainMenu>();
+        }
+
+        // Buttons (try to recover from missing inspector wiring)
+        if (backButton == null || playButton == null)
+        {
+            var buttons = GetComponentsInChildren<Button>(true);
+            if (backButton == null)
+                backButton = FindButtonByNameContains(buttons, "back");
+            if (playButton == null)
+                playButton = FindButtonByNameContains(buttons, "play");
+        }
+    }
+
+    private static Button FindButtonByNameContains(Button[] buttons, string token)
+    {
+        if (buttons == null || string.IsNullOrWhiteSpace(token))
+            return null;
+
+        token = token.Trim();
+        foreach (var button in buttons)
+        {
+            if (button == null) continue;
+            if (button.name != null && button.name.ToLowerInvariant().Contains(token))
+                return button;
+        }
+        return null;
     }
 
     /// <summary>
@@ -40,7 +82,14 @@ public class SaveSlotsMenu : Menu
     /// </summary>
     public void OnSaveSlotClicked()
     {
-        playButton.interactable = false; // Prevent multiple clicks
+        EnsureReferences();
+
+        if (hasStartedSceneTransition)
+            return;
+
+        hasStartedSceneTransition = true;
+        if (playButton != null)
+            playButton.interactable = false; // Prevent multiple clicks
 
         DisableMenuButtons();
 
@@ -48,6 +97,7 @@ public class SaveSlotsMenu : Menu
         if (SceneLoader.Instance == null)
         {
             Debug.LogError("[SaveSlotsMenu] SceneLoader not found! Please add SceneLoader GameObject to the Main Menu scene.");
+            hasStartedSceneTransition = false;
             return;
         }
 
@@ -55,15 +105,18 @@ public class SaveSlotsMenu : Menu
         if (currentSaveSlotSelected == null)
         {
             // Try to auto-select the first valid slot
-            var profiles = DataPersistenceManager.instance.GetAllProfilesGameData();
+            var profiles = DataPersistenceManager.instance != null
+                ? DataPersistenceManager.instance.GetAllProfilesGameData()
+                : null;
             SaveSlots fallback = null;
             if (isLoadingGame)
             {
                 // Prefer a slot that actually has data when loading a game
                 foreach (var slot in saveSlots)
                 {
+                    if (slot == null) continue;
                     GameData data;
-                    if (profiles.TryGetValue(slot.GetProfileId(), out data) && data != null)
+                    if (profiles != null && profiles.TryGetValue(slot.GetProfileId(), out data) && data != null)
                     {
                         fallback = slot;
                         break;
@@ -83,11 +136,30 @@ public class SaveSlotsMenu : Menu
             else
             {
                 Debug.LogError("[SaveSlotsMenu] No save slots available to select.");
+                RestoreMenuButtons();
+                hasStartedSceneTransition = false;
                 return;
             }
         }
 
-        DataPersistenceManager.instance.ChangeSelectedProfileId(currentSaveSlotSelected.GetProfileId());
+        if (DataPersistenceManager.instance == null)
+        {
+            Debug.LogError("[SaveSlotsMenu] DataPersistenceManager not found. Ensure it exists in the Main Menu (or is allowed to auto-create) before starting a game.");
+            RestoreMenuButtons();
+            hasStartedSceneTransition = false;
+            return;
+        }
+
+        string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
+        if (string.IsNullOrWhiteSpace(selectedProfileId))
+        {
+            Debug.LogError("[SaveSlotsMenu] Selected save slot has an empty profile id. Assign unique Profile Ids on each SaveSlots component in the inspector.");
+            RestoreMenuButtons();
+            hasStartedSceneTransition = false;
+            return;
+        }
+
+        DataPersistenceManager.instance.ChangeSelectedProfileId(selectedProfileId);
 
         if (!isLoadingGame)
         { 
@@ -101,8 +173,22 @@ public class SaveSlotsMenu : Menu
             string configuredGameplay = string.IsNullOrWhiteSpace(SceneName) ? "PlayerScene" : SceneName;
             string configuredDefault = string.IsNullOrWhiteSpace(DefaultSceneName) ? configuredGameplay : DefaultSceneName;
 
-            string primaryScene = configuredDefault;
-            string secondaryScene = configuredGameplay;
+            string primaryScene = ResolveLoadableSceneOrFallback(configuredDefault, "Elevator");
+            string secondaryScene = ResolveLoadableSceneOrFallback(configuredGameplay, null);
+
+            if (string.IsNullOrWhiteSpace(primaryScene))
+            {
+                Debug.LogError($"[SaveSlotsMenu] Cannot start new game because no valid primary scene could be resolved (configuredDefault='{configuredDefault}').");
+                RestoreMenuButtons();
+                hasStartedSceneTransition = false;
+                return;
+            }
+
+            // Secondary scene is optional; only load if valid.
+            if (string.IsNullOrWhiteSpace(secondaryScene))
+            {
+                secondaryScene = null;
+            }
 
             if (string.Equals(primaryScene, secondaryScene))
             {
@@ -141,6 +227,15 @@ public class SaveSlotsMenu : Menu
                 }
             }
 
+            savedScene = ResolveLoadableSceneOrFallback(savedScene, "Elevator");
+            if (string.IsNullOrWhiteSpace(savedScene))
+            {
+                Debug.LogError("[SaveSlotsMenu] Cannot load game because the saved scene is missing/invalid and no fallback scene could be resolved.");
+                RestoreMenuButtons();
+                hasStartedSceneTransition = false;
+                return;
+            }
+
             string savedSpawnPoint = loadedData != null && !string.IsNullOrWhiteSpace(loadedData.currentSpawnPointID)
                 ? loadedData.currentSpawnPointID
                 : CheckpointSystem.Instance != null
@@ -155,6 +250,41 @@ public class SaveSlotsMenu : Menu
                 spawnPointIdOverride: savedSpawnPoint,
                 updateCheckpointAfterLoad: false);
         }
+    }
+
+    private static string ResolveLoadableSceneOrFallback(string sceneName, string fallbackSceneName)
+    {
+        if (!string.IsNullOrWhiteSpace(sceneName) && Application.CanStreamedLevelBeLoaded(sceneName))
+            return sceneName;
+
+        if (!string.IsNullOrWhiteSpace(sceneName))
+            Debug.LogError($"[SaveSlotsMenu] Scene '{sceneName}' is not loadable (not in Build Settings or misspelled).");
+
+        if (!string.IsNullOrWhiteSpace(fallbackSceneName) && Application.CanStreamedLevelBeLoaded(fallbackSceneName))
+        {
+            Debug.LogWarning($"[SaveSlotsMenu] Falling back to '{fallbackSceneName}'.");
+            return fallbackSceneName;
+        }
+
+        return null;
+    }
+
+    private void RestoreMenuButtons()
+    {
+        if (saveSlots != null)
+        {
+            foreach (SaveSlots saveSlot in saveSlots)
+            {
+                if (saveSlot != null)
+                    saveSlot.SetInteractable(true);
+            }
+        }
+
+        if (backButton != null)
+            backButton.gameObject.SetActive(true);
+
+        if (playButton != null)
+            playButton.interactable = true;
     }
 
     /// <summary>
@@ -187,24 +317,64 @@ public class SaveSlotsMenu : Menu
     //When the back button is click it activates the main menu again
     public void OnBackClicked()
     {
-        mainMenu.ActivateMenu();
+        EnsureReferences();
+        if (mainMenu != null)
+            mainMenu.ActivateMenu();
+        else
+            Debug.LogError("[SaveSlotsMenu] MainMenu reference not set (cannot go back). Assign it in the inspector.");
         this.DeactivateMenu();
     }
 
     //Activates the main menu when called
     public void ActivateMenu(bool isLoadingGame)
     {
+        EnsureReferences();
         this.gameObject.SetActive(true);
 
         this.isLoadingGame = isLoadingGame;
 
-        GameObject firstSelected = backButton.gameObject;
+        GameObject firstSelected = backButton != null ? backButton.gameObject : null;
 
-        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.instance.GetAllProfilesGameData();
+        if (backButton == null)
+        {
+            Debug.LogError("[SaveSlotsMenu] Back Button reference not set. Assign it in the inspector (or ensure the button name contains 'Back').");
+        }
+
+        if (DataPersistenceManager.instance == null)
+        {
+            Debug.LogError("[SaveSlotsMenu] DataPersistenceManager not found when opening save slot menu.");
+            return;
+        }
+
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.instance.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+
+        // Validate slot profile ids (common merge issue: ids cleared)
+        if (saveSlots == null || saveSlots.Length == 0)
+        {
+            Debug.LogError("[SaveSlotsMenu] No SaveSlots found under SaveSlotsMenu. Ensure the slot buttons have the SaveSlots component.");
+            return;
+        }
+
+        var seenProfileIds = new HashSet<string>();
+        foreach (var slot in saveSlots)
+        {
+            if (slot == null) continue;
+            string id = slot.GetProfileId();
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                Debug.LogWarning($"[SaveSlotsMenu] SaveSlots '{slot.name}' has an empty profile id.");
+                continue;
+            }
+            if (!seenProfileIds.Add(id))
+            {
+                Debug.LogWarning($"[SaveSlotsMenu] Duplicate profile id '{id}' detected (slot '{slot.name}'). Each slot should have a unique id.");
+            }
+        }
 
         //Disables and enables interactability of save slots depending if there is data attached to the profile Id
         foreach (SaveSlots saveSlot in saveSlots)
         {
+            if (saveSlot == null) continue;
             GameData profileData = null;
             profilesGameData.TryGetValue(saveSlot.GetProfileId(), out profileData);
             saveSlot.SetData(profileData);
@@ -246,11 +416,18 @@ public class SaveSlotsMenu : Menu
     //Makes it so when clicking buttons other buttons are noninteractable so no errors occur
     public void DisableMenuButtons()
     {
-        foreach(SaveSlots saveSlot in saveSlots)
+        EnsureReferences();
+        if (saveSlots != null)
         {
-            saveSlot.SetInteractable(false); 
+            foreach (SaveSlots saveSlot in saveSlots)
+            {
+                if (saveSlot == null) continue;
+                saveSlot.SetInteractable(false);
+            }
         }
-        backButton.gameObject.SetActive(false);
+
+        if (backButton != null)
+            backButton.gameObject.SetActive(false);
     }
 
     //Disables main menu

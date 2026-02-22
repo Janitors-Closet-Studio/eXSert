@@ -121,7 +121,7 @@ namespace Behaviors
                 if (safetyCounter > maxIterations)
                 {
 #if UNITY_EDITOR
-                    Debug.LogError("AttackLoop exceeded max iterations! Breaking to prevent freeze.");
+                    EnemyBehaviorDebugLogBools.LogError("AttackLoop exceeded max iterations! Breaking to prevent freeze.");
 #endif
                     yield break;
                 }
@@ -148,7 +148,7 @@ namespace Behaviors
                     if (boxHalfExtents == Vector3.zero)
                     {
 #if UNITY_EDITOR
-                        Debug.LogWarning("Attack box size is zero!");
+                        EnemyBehaviorDebugLogBools.LogWarning("AttackBehavior", "Attack box size is zero!");
 #endif
                         yield break;
                     }
@@ -166,41 +166,59 @@ namespace Behaviors
                         }
                     }
 
-                    if (playerInAttackBox)
+                if (playerInAttackBox)
                     {
                         // Notify queue that we're attacking
                         enemy.NotifyAttackBegin();
                         
-                        enemy.isAttackBoxActive = true;
-                        enemy.attackCollider.enabled = true;
-                        enemy.SetEnemyColor(enemy.hitboxActiveColor);
-
-                        DealDamageToPlayerOnce(playerCollider);
+                        // For animation-event-based attacks, don't enable hitbox here - let animation events handle it
+                        if (!enemy.useAnimationEventAttacks)
+                        {
+                            enemy.isAttackBoxActive = true;
+                            enemy.attackCollider.enabled = true;
+                            enemy.SetEnemyColor(enemy.hitboxActiveColor);
+                            DealDamageToPlayerOnce(playerCollider);
+                        }
+                        // else: Animation events (Attack/AttackEnd) will control hitbox timing
 
                         didAttack = true;
                         enemy.TriggerAttackAnimation();
                     }
                     else
                     {
-                        enemy.isAttackBoxActive = false;
-                        enemy.attackCollider.enabled = false;
-                        enemy.SetEnemyColor(enemy.attackColor);
+                        // Only disable hitbox here if NOT using animation events
+                        // (animation events handle their own disable via AttackEnd)
+                        if (!enemy.useAnimationEventAttacks)
+                        {
+                            enemy.isAttackBoxActive = false;
+                            enemy.attackCollider.enabled = false;
+                            enemy.SetEnemyColor(enemy.attackColor);
+                        }
                     }
                 }
                 catch (System.Exception ex)
                 {
 #if UNITY_EDITOR
-                    Debug.LogError("Exception in AttackLoop: " + ex);
+                    EnemyBehaviorDebugLogBools.LogError("Exception in AttackLoop: " + ex);
 #endif
                     yield break;
                 }
 
                 if (didAttack)
                 {
+                    // For animation-event-based attacks, wait for animation to complete
+                    // The attackActiveDuration is used as a minimum wait time for the full attack cycle
                     yield return WaitForSecondsCache.Get(enemy.attackActiveDuration);
-                    enemy.isAttackBoxActive = false;
-                    enemy.attackCollider.enabled = false;
-                    enemy.SetEnemyColor(enemy.attackColor);
+                    
+                    // Only disable hitbox via timer if NOT using animation events
+                    // Animation events will call AttackEnd() to disable the hitbox at the right time
+                    if (!enemy.useAnimationEventAttacks)
+                    {
+                        enemy.isAttackBoxActive = false;
+                        enemy.attackCollider.enabled = false;
+                        enemy.SetEnemyColor(enemy.attackColor);
+                    }
+                    
                     ResetDamageFlag();
                     yield return WaitForSecondsCache.Get(enemy.attackInterval);
 
@@ -221,6 +239,7 @@ namespace Behaviors
                     yield return WaitForSecondsCache.Get(0.1f);
                 }
             }
+            // Ensure hitbox is disabled when exiting attack state
             enemy.isAttackBoxActive = false;
             enemy.attackCollider.enabled = false;
             enemy.SetEnemyColor(enemy.attackColor);
@@ -242,7 +261,7 @@ namespace Behaviors
             {
                 CombatManager.ParrySuccessful();
 #if UNITY_EDITOR
-                Debug.Log($"{enemy.gameObject.name} attack parried by player.");
+                EnemyBehaviorDebugLogBools.Log("AttackBehavior", $"{enemy.gameObject.name} attack parried by player.");
 #endif
                 dmg = 0;
                 return;
@@ -252,7 +271,7 @@ namespace Behaviors
             if (healthSystem == null)
             {
 #if UNITY_EDITOR
-                Debug.LogWarning($"{playerCollider.gameObject.name} has Player tag but no IHealthSystem component.");
+                EnemyBehaviorDebugLogBools.LogWarning("AttackBehavior", $"{playerCollider.gameObject.name} has Player tag but no IHealthSystem component.");
 #endif
                 return;
             }
@@ -263,13 +282,13 @@ namespace Behaviors
             {
                 dmg *= 0.25f; // temporary guard mitigation
 #if UNITY_EDITOR
-                Debug.Log($"{enemy.gameObject.name} attack guarded. Applying reduced damage {dmg}.");
+                EnemyBehaviorDebugLogBools.Log("AttackBehavior", $"{enemy.gameObject.name} attack guarded. Applying reduced damage {dmg}.");
 #endif
             }
 
             healthSystem.LoseHP(dmg);
 #if UNITY_EDITOR
-            Debug.Log($"{enemy.gameObject.name} attacked {playerCollider.gameObject.name} for {dmg} damage.");
+            EnemyBehaviorDebugLogBools.Log("AttackBehavior", $"{enemy.gameObject.name} attacked {playerCollider.gameObject.name} for {dmg} damage.");
 #endif
         }
 

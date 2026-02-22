@@ -35,7 +35,7 @@ namespace EnemyBehavior.Boss
             
             if (controller == null)
             {
-                Debug.LogError($"[BossAlarmDamageReceiver] No BossRoombaController found! Alarm damage won't work.");
+                EnemyBehaviorDebugLogBools.LogError($"[BossAlarmDamageReceiver] No BossRoombaController found! Alarm damage won't work.");
             }
         }
         
@@ -48,7 +48,7 @@ namespace EnemyBehavior.Boss
             
             if (showDebugLogs)
             {
-                Debug.Log($"[BossAlarmDamageReceiver] Received {damage} damage, forwarding to controller");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAlarmDamageReceiver), $"[BossAlarmDamageReceiver] Received {damage} damage, forwarding to controller");
             }
             
             controller.DamageAlarm(damage);

@@ -102,7 +102,7 @@ namespace EnemyBehavior.Boss
             player = playerTransform;
             playerMovement = movement;
 #if UNITY_EDITOR
-            Debug.Log($"[VacuumSuctionEffect] Player references set: player={player?.name}, hasMovement={playerMovement != null}");
+            EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Player references set: player={player?.name}, hasMovement={playerMovement != null}");
 #endif
         }
 
@@ -112,32 +112,32 @@ namespace EnemyBehavior.Boss
         public void StartSuction(float duration)
         {
 #if UNITY_EDITOR
-            Debug.Log($"[VacuumSuctionEffect] StartSuction called with duration={duration}");
+            EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] StartSuction called with duration={duration}");
 #endif
             
             // Only search for player if references weren't provided via SetPlayerReferences
             if (player == null || playerMovement == null)
             {
 #if UNITY_EDITOR
-                Debug.Log("[VacuumSuctionEffect] Player references not set, searching...");
+                EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] Player references not set, searching...");
 #endif
                 FindPlayerReferences();
             }
 
             if (player == null || playerMovement == null)
             {
-                Debug.LogError($"[VacuumSuctionEffect] Cannot start suction - player={player?.name ?? "NULL"}, playerMovement={playerMovement != null}");
+                EnemyBehaviorDebugLogBools.LogError($"[VacuumSuctionEffect] Cannot start suction - player={player?.name ?? "NULL"}, playerMovement={playerMovement != null}");
                 return;
             }
 
             if (SuctionTarget == null)
             {
-                Debug.LogWarning("[VacuumSuctionEffect] SuctionTarget is null! Will use this transform as fallback.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] SuctionTarget is null! Will use this transform as fallback.");
             }
 #if UNITY_EDITOR
             else
             {
-                Debug.Log($"[VacuumSuctionEffect] SuctionTarget position: {SuctionTarget.position}");
+                EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] SuctionTarget position: {SuctionTarget.position}");
             }
 #endif
 
@@ -162,7 +162,7 @@ namespace EnemyBehavior.Boss
                     if (playerMovement != null)
                     {
                         player = playerMovement.transform;
-                        Debug.Log($"[VacuumSuctionEffect] Found player via PlayerPresenceManager: {player.name}");
+                        EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Found player via PlayerPresenceManager: {player.name}");
                         return;
                     }
                 }
@@ -172,7 +172,7 @@ namespace EnemyBehavior.Boss
             var playerObj = GameObject.FindWithTag("Player");
             if (playerObj != null)
             {
-                Debug.Log($"[VacuumSuctionEffect] Found tagged object: {playerObj.name}");
+                EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Found tagged object: {playerObj.name}");
                 
                 // PlayerMovement might be on the tagged object, a parent, or a child
                 playerMovement = playerObj.GetComponent<PlayerMovement>()
@@ -183,17 +183,17 @@ namespace EnemyBehavior.Boss
                 if (playerMovement != null)
                 {
                     player = playerMovement.transform;
-                    Debug.Log($"[VacuumSuctionEffect] Player set to: {player.name} (has PlayerMovement)");
+                    EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Player set to: {player.name} (has PlayerMovement)");
                 }
                 else
                 {
                     player = playerObj.transform;
-                    Debug.LogWarning($"[VacuumSuctionEffect] Could not find PlayerMovement component! Using tagged object: {playerObj.name}");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Could not find PlayerMovement component! Using tagged object: {playerObj.name}");
                 }
             }
             else
             {
-                Debug.LogError("[VacuumSuctionEffect] No GameObject with tag 'Player' found in scene!");
+                EnemyBehaviorDebugLogBools.LogError($"[VacuumSuctionEffect] No GameObject with tag 'Player' found in scene!");
             }
         }
 
@@ -229,8 +229,9 @@ namespace EnemyBehavior.Boss
             currentWaypointIndex = 0;
 
 
+
 #if UNITY_EDITOR
-            Debug.Log($"[VacuumSuctionEffect] SuctionCoroutine started - duration={duration}, player={player?.name}, playerMovement={playerMovement != null}");
+            EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] SuctionCoroutine started - duration={duration}, player={player?.name}, playerMovement={playerMovement != null}");
 #endif
 
             // Start VFX/Audio
@@ -253,7 +254,7 @@ namespace EnemyBehavior.Boss
             {
                 if (player == null || playerMovement == null)
                 {
-                    Debug.LogWarning("[VacuumSuctionEffect] Player reference lost during suction!");
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] Player reference lost during suction!");
                     yield return null;
                     continue;
                 }
@@ -268,7 +269,7 @@ namespace EnemyBehavior.Boss
                 if (distanceToTarget < MaxStrengthRadius)
                 {
 #if UNITY_EDITOR
-                    Debug.Log("[VacuumSuctionEffect] Player reached center zone!");
+                    EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] Player reached center zone!");
 #endif
                     break;
                 }
@@ -282,7 +283,7 @@ namespace EnemyBehavior.Boss
                     frameCount++;
                     if (frameCount % 60 == 0)
                     {
-                        Debug.Log($"[VacuumSuctionEffect] Player above height threshold ({player.position.y:F1} > {HeightThreshold:F1}) - no suction");
+                        EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Player above height threshold ({player.position.y:F1} > {HeightThreshold:F1}) - no suction");
                     }
 #endif
                     // Clear any existing velocity and skip this frame
@@ -301,7 +302,7 @@ namespace EnemyBehavior.Boss
                     frameCount++;
                     if (frameCount % 60 == 0)
                     {
-                        Debug.Log("[VacuumSuctionEffect] Player blocked by pillar - no suction");
+                        EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] Player blocked by pillar - no suction");
                     }
 #endif
                     // Clear any existing velocity and skip this frame
@@ -330,7 +331,7 @@ namespace EnemyBehavior.Boss
                 frameCount++;
                 if (frameCount % 60 == 0)
                 {
-                    Debug.Log($"[VacuumSuctionEffect] Pulling - dist={distanceToTarget:F1}m, strength={currentPullStrength:F1}");
+                    EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Pulling - dist={distanceToTarget:F1}m, strength={currentPullStrength:F1}");
                 }
 #endif
 
@@ -339,7 +340,7 @@ namespace EnemyBehavior.Boss
             }
 
 #if UNITY_EDITOR
-            Debug.Log($"[VacuumSuctionEffect] SuctionCoroutine ended - elapsed={elapsed:F2}s, isActive={isActive}");
+            EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] SuctionCoroutine ended - elapsed={elapsed:F2}s, isActive={isActive}");
 #endif
 
             // Clean up
@@ -515,14 +516,14 @@ namespace EnemyBehavior.Boss
 
             if (!NavMesh.SamplePosition(from, out fromHit, 5f, NavMeshAreaMask))
             {
-                Debug.LogWarning("[VacuumSuctionEffect] Could not find NavMesh position near player");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] Could not find NavMesh position near player");
                 pathCornerCount = 0;
                 return;
             }
 
             if (!NavMesh.SamplePosition(to, out toHit, 5f, NavMeshAreaMask))
             {
-                Debug.LogWarning("[VacuumSuctionEffect] Could not find NavMesh position near target");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] Could not find NavMesh position near target");
                 pathCornerCount = 0;
                 return;
             }
@@ -538,11 +539,11 @@ namespace EnemyBehavior.Boss
                     currentWaypointIndex = 1;
                 }
 
-                Debug.Log($"[VacuumSuctionEffect] Path calculated with {pathCornerCount} corners");
+                EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Path calculated with {pathCornerCount} corners");
             }
             else
             {
-                Debug.LogWarning("[VacuumSuctionEffect] Failed to calculate NavMesh path");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(VacuumSuctionEffect), "[VacuumSuctionEffect] Failed to calculate NavMesh path");
                 pathCornerCount = 0;
             }
         }

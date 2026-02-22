@@ -25,7 +25,7 @@ public class EnemyDeathSoundConfig : MonoBehaviour
     {
         if (deathSound == null)
         {
-            Debug.LogWarning($"{gameObject.name}: No death sound assigned!");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyDeathSoundConfig), $"{gameObject.name}: No death sound assigned!");
             return;
         }
         
@@ -33,7 +33,7 @@ public class EnemyDeathSoundConfig : MonoBehaviour
         if (customAudioSource != null)
         {
             customAudioSource.PlayOneShot(deathSound, volume);
-            Debug.Log($"🔊 {gameObject.name} playing death sound through custom AudioSource");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyDeathSoundConfig), $"🔊 {gameObject.name} playing death sound through custom AudioSource");
             return;
         }
         
@@ -41,10 +41,10 @@ public class EnemyDeathSoundConfig : MonoBehaviour
         if (SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
         {
             SoundManager.Instance.sfxSource.PlayOneShot(deathSound, volume);
-            Debug.Log($"🔊 {gameObject.name} playing death sound through SoundManager");
+            EnemyBehaviorDebugLogBools.Log(nameof(EnemyDeathSoundConfig), $"🔊 {gameObject.name} playing death sound through SoundManager");
             return;
         }
         
-        Debug.LogWarning($"🔊 {gameObject.name}: Cannot play death sound - no AudioSource available!");
+        EnemyBehaviorDebugLogBools.LogWarning(nameof(EnemyDeathSoundConfig), $"🔊 {gameObject.name}: Cannot play death sound - no AudioSource available!");
     }
 }

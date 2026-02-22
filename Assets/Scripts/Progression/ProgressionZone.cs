@@ -5,14 +5,23 @@ namespace Progression
     [RequireComponent(typeof(BoxCollider))]
     public abstract class ProgressionZone : MonoBehaviour
     {
-        private ProgressionManager progressionManager;
+        #region Inspector Setup
+        [Header("Progression Zone Settings")]
+        [SerializeField, Tooltip("Whether the zone is enabled at the start of the scene. If false, the player will not trigger the zone until it is enabled by another encounter.")]
+        private bool startEnabled = true;
+
+        [SerializeField]
+        private bool SendDebugMessages = false;
+        #endregion
 
         protected BoxCollider progressionCollider;
+
+        protected bool debugMessagesEnabled => SendDebugMessages;
 
         /// <summary>
         /// Indicates if the encounter can be started when the player is in the zone
         /// </summary>
-        protected bool zoneEnabled = false;
+        protected bool zoneEnabled = true;
 
         /// <summary>
         /// Indicates whether the player is currently within the encounter zone
@@ -31,39 +40,38 @@ namespace Progression
 
         protected virtual void Start()
         {
-            progressionManager = FindManager();
-
-            if (progressionManager == null) return;
-
             AddToManager();
+
+            if (!startEnabled) DisableZone();
+            else EnableZone();
         }
 
-        private ProgressionManager FindManager()
+        private void AddToManager() => ProgressionManager.AddProgressable(this);
+
+        public void EnableZone()
         {
-            SceneAsset asset = SceneAsset.GetSceneAssetOfObject(this.gameObject);
-            ProgressionManager manager = ProgressionManager.GetInstance(asset);
-            if (manager == null)
-            {
-                Debug.LogError($"{this.gameObject.name} could not find ProgressionManager in scene {asset.name}");
-            }
-            return manager;
+            zoneEnabled = true;
+            UpdateCollider();
         }
 
-        private void AddToManager()
+        public void DisableZone()
         {
-            progressionManager.AddProgressable(this);
+            zoneEnabled = false;
+            UpdateCollider();
         }
+
+        private void UpdateCollider() => progressionCollider.enabled = zoneEnabled;
 
         #region Collider Triggers
         protected void OnTriggerEnter(Collider other)
         {
-            if (!zoneActive || !other.CompareTag("Player")) return;
+            if (!zoneEnabled || !other.transform.root.CompareTag("Player")) return;
             zoneActive = true;
             PlayerEnteredZone();
         }
         protected void OnTriggerExit(Collider other)
         {
-            if (!zoneEnabled || !other.CompareTag("Player")) return;
+            if (!zoneEnabled || !other.transform.root.CompareTag("Player")) return;
             zoneActive = false;
             PlayerExitedZone();
         }

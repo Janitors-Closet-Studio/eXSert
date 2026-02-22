@@ -78,11 +78,11 @@ namespace EnemyBehavior.Boss
             if (leftArmHitbox != null)
             {
                 leftArmHitbox.EnableHitbox();
-                Debug.Log("[AnimMediator] Left arm enabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Left arm enabled");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Left arm hitbox not assigned!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Left arm hitbox not assigned!");
             }
         }
 
@@ -91,7 +91,7 @@ namespace EnemyBehavior.Boss
             if (leftArmHitbox != null)
             {
                 leftArmHitbox.DisableHitbox();
-                Debug.Log("[AnimMediator] Left arm disabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Left arm disabled");
             }
         }
         #endregion
@@ -102,11 +102,11 @@ namespace EnemyBehavior.Boss
             if (rightArmHitbox != null)
             {
                 rightArmHitbox.EnableHitbox();
-                Debug.Log("[AnimMediator] Right arm enabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Right arm enabled");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Right arm hitbox not assigned!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Right arm hitbox not assigned!");
             }
         }
 
@@ -115,7 +115,7 @@ namespace EnemyBehavior.Boss
             if (rightArmHitbox != null)
             {
                 rightArmHitbox.DisableHitbox();
-                Debug.Log("[AnimMediator] Right arm disabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Right arm disabled");
             }
         }
         #endregion
@@ -126,11 +126,11 @@ namespace EnemyBehavior.Boss
             if (centerArmHitbox != null)
             {
                 centerArmHitbox.EnableHitbox();
-                Debug.Log("[AnimMediator] Center arm enabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Center arm enabled");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Center arm hitbox not assigned!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Center arm hitbox not assigned!");
             }
         }
 
@@ -139,7 +139,7 @@ namespace EnemyBehavior.Boss
             if (centerArmHitbox != null)
             {
                 centerArmHitbox.DisableHitbox();
-                Debug.Log("[AnimMediator] Center arm disabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Center arm disabled");
             }
         }
 
@@ -159,12 +159,12 @@ namespace EnemyBehavior.Boss
             if (leftArmHitbox != null)
             {
                 leftArmHitbox.EnableHitboxWithDashKnockback(forceOverride);
-                Debug.Log("[AnimMediator] Left arm enabled with DASH KNOCKBACK");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Left arm enabled with DASH KNOCKBACK");
             }
             if (rightArmHitbox != null)
             {
                 rightArmHitbox.EnableHitboxWithDashKnockback(forceOverride);
-                Debug.Log("[AnimMediator] Right arm enabled with DASH KNOCKBACK");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Right arm enabled with DASH KNOCKBACK");
             }
         }
 
@@ -181,11 +181,11 @@ namespace EnemyBehavior.Boss
             if (spinHitbox != null)
             {
                 spinHitbox.EnableHitbox();
-                Debug.Log("[AnimMediator] Spin hitbox enabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Spin hitbox enabled");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Spin hitbox not assigned!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Spin hitbox not assigned!");
             }
         }
 
@@ -194,7 +194,7 @@ namespace EnemyBehavior.Boss
             if (spinHitbox != null)
             {
                 spinHitbox.DisableHitbox();
-                Debug.Log("[AnimMediator] Spin hitbox disabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Spin hitbox disabled");
             }
         }
         #endregion
@@ -205,11 +205,11 @@ namespace EnemyBehavior.Boss
             if (chargeHitbox != null)
             {
                 chargeHitbox.EnableHitbox();
-                Debug.Log("[AnimMediator] Charge hitbox enabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Charge hitbox enabled");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Charge hitbox not assigned!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Charge hitbox not assigned!");
             }
         }
 
@@ -222,11 +222,11 @@ namespace EnemyBehavior.Boss
             if (chargeHitbox != null)
             {
                 chargeHitbox.EnableHitboxWithDashKnockback(forceOverride);
-                Debug.Log("[AnimMediator] Charge hitbox enabled with DASH KNOCKBACK");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Charge hitbox enabled with DASH KNOCKBACK");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Charge hitbox not assigned!");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Charge hitbox not assigned!");
             }
         }
 
@@ -235,7 +235,7 @@ namespace EnemyBehavior.Boss
             if (chargeHitbox != null)
             {
                 chargeHitbox.DisableHitbox();
-                Debug.Log("[AnimMediator] Charge hitbox disabled");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Charge hitbox disabled");
             }
         }
         #endregion
@@ -250,11 +250,11 @@ namespace EnemyBehavior.Boss
             if (bossBrain != null)
             {
                 bossBrain.OnArmsDeployComplete();
-                Debug.Log("[AnimMediator] Arms deployment complete - forwarded to brain");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Arms deployment complete - forwarded to brain");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Boss brain not found! Cannot forward OnArmsDeployComplete");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Boss brain not found! Cannot forward OnArmsDeployComplete");
             }
         }
 
@@ -267,11 +267,11 @@ namespace EnemyBehavior.Boss
             if (bossBrain != null)
             {
                 bossBrain.OnArmsRetractComplete();
-                Debug.Log("[AnimMediator] Arms retract complete - forwarded to brain");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Arms retract complete - forwarded to brain");
             }
             else
             {
-                Debug.LogWarning("[AnimMediator] Boss brain not found! Cannot forward OnArmsRetractComplete");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossAnimationEventMediator), "[AnimMediator] Boss brain not found! Cannot forward OnArmsRetractComplete");
             }
         }
         #endregion
@@ -284,7 +284,7 @@ namespace EnemyBehavior.Boss
             DisableCenterArm();
             DisableSpin();
             DisableCharge();
-            Debug.Log("[AnimMediator] All hitboxes disabled");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] All hitboxes disabled");
         }
         #endregion
 
@@ -321,17 +321,17 @@ namespace EnemyBehavior.Boss
         #region Visual Effects Events
         public void SpawnWindupEffect()
         {
-            Debug.Log("[AnimMediator] Windup effect triggered");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Windup effect triggered");
         }
 
         public void SpawnHitEffect()
         {
-            Debug.Log("[AnimMediator] Hit effect triggered");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Hit effect triggered");
         }
 
         public void SpawnRecoveryEffect()
         {
-            Debug.Log("[AnimMediator] Recovery effect triggered");
+            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Recovery effect triggered");
         }
         #endregion
 

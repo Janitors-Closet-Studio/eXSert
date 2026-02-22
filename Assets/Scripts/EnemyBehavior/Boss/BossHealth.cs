@@ -226,7 +226,7 @@ namespace EnemyBehavior.Boss
             }
             else
             {
-                Debug.LogError("[BossHealth] BossRoombaBrain reference is missing!");
+                EnemyBehaviorDebugLogBools.LogError("[BossHealth] BossRoombaBrain reference is missing!");
             }
         }
 
@@ -244,7 +244,7 @@ namespace EnemyBehavior.Boss
         {
             if (showDebugLogs)
             {
-                Debug.Log($"[BossHealth] {message}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossHealth), $"[BossHealth] {message}");
             }
         }
 

@@ -601,6 +601,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ResetDefault",
+                    "type": "Button",
+                    "id": "ed96022f-7d1e-4c9b-a35c-247d4f948831",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -628,17 +637,6 @@
                 },
                 {
                     "name": "",
-                    "id": "8e16a3af-f874-470f-831d-b6a18212e108",
-                    "path": "<Keyboard>/backspace",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Back",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "04e1bde0-a53f-4aa7-89e8-f91cc6742894",
                     "path": "<Gamepad>/buttonSouth",
                     "interactions": "",
@@ -652,28 +650,6 @@
                     "name": "",
                     "id": "42733773-79db-4257-812a-11e53c3a417b",
                     "path": "<Keyboard>/enter",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Select",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "42931305-387b-4810-be60-d40ab5155d16",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Keyboard&Mouse",
-                    "action": "Select",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "9aafe093-a206-4468-8a6f-6f0bf3951178",
-                    "path": "<Keyboard>/space",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -1041,6 +1017,28 @@
                     "processors": "",
                     "groups": ";Gamepad",
                     "action": "Decrease",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "91a4a5ac-3ab5-4317-8449-fd9932618ebb",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ResetDefault",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "fe7e7e01-02ff-4133-8be0-61fdf8cb6c5e",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ResetDefault",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

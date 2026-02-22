@@ -23,7 +23,7 @@ namespace EnemyBehavior.Crowd
             // Simple duplicate guard for additive scenes
             if (Instance != null && Instance != this)
             {
-                Debug.LogWarning("CrowdController duplicate detected, destroying this instance (additive scene overlap).");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(CrowdController), "CrowdController duplicate detected, destroying this instance (additive scene overlap).");
                 Destroy(gameObject);
                 return;
             }

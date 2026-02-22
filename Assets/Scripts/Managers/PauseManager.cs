@@ -267,6 +267,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             InputReader.PlayerInput.SwitchCurrentActionMap("UI");
         }
+        else
+        {
+            Debug.LogWarning("PlayerInput is null when trying to show pause menu. Make sure InputReader is set up correctly.");
+        }
     }
 
     private void ShowNavigationMenu()
@@ -318,6 +322,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (InputReader.PlayerInput != null)
         {
             InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+        }
+        else
+        {
+            Debug.LogWarning("PlayerInput is null when trying to resume game. Make sure InputReader is set up correctly.");
         }
     }
 
