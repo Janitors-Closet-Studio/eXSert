@@ -8,7 +8,7 @@ public class InteractionUI : Singleton<InteractionUI>
     public TMP_Text _interactText;
     public Image _interactIcon;
     public TMP_Text _collectText;
-
+    public TMP_Text _collectBottomText;
     protected override void Awake()
     {
         base.Awake();

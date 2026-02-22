@@ -8,7 +8,7 @@ public abstract class CollectableInteraction : InteractionManager
     [SerializeField] private string collectID;
     [SerializeField] private float uiDisplayDuration = 4f;
     [SerializeField] private float uiFadeDuration = 2f;
-
+    [SerializeField] private string noticeBottomText = "Check your Navigation Menu for more details!";
     protected override void Interact()
     {
         ExecuteInteraction();
@@ -51,16 +51,21 @@ public abstract class CollectableInteraction : InteractionManager
     {
         var collectText = InteractionUI.Instance._collectText;
 
-        if(collectText == null)
+        var collectBottomText = InteractionUI.Instance._collectBottomText;
+
+        if(collectText == null || collectBottomText == null)
         {
-            Debug.LogError("InteractionUIManager instance is null. Cannot show collect text.");
             yield break;
         }
 
         collectText.text = "Collected: " + collectID.Trim();
+        collectBottomText.text = noticeBottomText;
 
         collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, 0f);
         collectText.gameObject.SetActive(true);
+
+        collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, 0f);
+        collectBottomText.gameObject.SetActive(true);
 
         float elapsedTime = 0f;
 
@@ -69,6 +74,7 @@ public abstract class CollectableInteraction : InteractionManager
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(elapsedTime / fadeDuration);
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
+            collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
             yield return null;
         }
     }
@@ -76,10 +82,10 @@ public abstract class CollectableInteraction : InteractionManager
     private IEnumerator FadeOutUI(float fadeDuration)
     {
         var collectText = InteractionUI.Instance._collectText;
+        var collectBottomText = InteractionUI.Instance._collectBottomText;
 
-        if (collectText == null)
+        if (collectText == null || collectBottomText == null)
         {
-            Debug.LogError("InteractionUIManager instance is null. Cannot fade out collect text.");
             yield break;
         }
 
@@ -89,9 +95,11 @@ public abstract class CollectableInteraction : InteractionManager
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(1f - (elapsedTime / fadeDuration));
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
+            collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
             yield return null;
         }
         collectText.gameObject.SetActive(false);
+        collectBottomText.gameObject.SetActive(false);
     }
 
     private IEnumerator FadeInAndFadeOutUI(float fadeDuration, float displayDuration)

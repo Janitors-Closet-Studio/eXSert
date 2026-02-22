@@ -50,7 +50,7 @@ public class LogUI : MonoBehaviour
     }
 
     //Sets each log info
-    private void SetLogInfo(Logs log)
+    internal void SetLogInfo(Logs log)
     {
         logName.text = log.info.logName;
         logDescription.GetComponent<TMP_Text>().text = log.info.logDescription;

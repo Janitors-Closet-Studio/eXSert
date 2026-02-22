@@ -47,7 +47,7 @@ public class DiaryUI : MonoBehaviour
     }
 
     //Sets each diary info
-    private void SetDiaryInfo(Diaries diaries)
+    internal void SetDiaryInfo(Diaries diaries)
     {
         diaryID.text = diaries.info.diaryTitle;
         diaryDescription.GetComponent<TMP_Text>().text = diaries.info.diaryDescription;
