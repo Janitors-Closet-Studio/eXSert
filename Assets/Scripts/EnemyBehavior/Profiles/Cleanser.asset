@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1942f2f1c6145a948b52e7ca3c842505, type: 3}
+  m_Name: Cleanser
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehaviorProfile
+  inspectorHelp: 'EnemyBehaviorProfile: central tuning for NavMeshAgent movement,
+    avoidance, and planner/crowd hints.
+
+    Assign this asset to enemies (BaseEnemy.behaviorProfile
+    or BossRoombaController.profile).
+
+    Reasonable starting values are provided
+    below; tweak per enemy type.'
+  SpeedRange: {x: 10, y: 12}
+  Acceleration: 12
+  AngularSpeed: 360
+  StoppingDistance: 0.2
+  AvoidancePriority: 1
+  PersonalSpaceRadius: 2
+  PreferredAreas: []
+  PreferredAreaCostMultiplier: 0.8
+  ManyToOne: 0
+  AvoidCrowds: 0
+  Importance: 3

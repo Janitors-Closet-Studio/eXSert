@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
@@ -14,6 +14,8 @@ public class MainMenu : Menu
     [SerializeField] private Button loadGame;
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button quitButton;
+    
+    [SerializeField] private InputActionReference backButtonInputAction;
 
     private void Start()
     {
@@ -23,29 +25,38 @@ public class MainMenu : Menu
             loadGame.interactable = false;
         }
         
-        // Hook up button listeners if not already done in inspector
-        if (newGameButton != null)
-        {
-            newGameButton.onClick.AddListener(OnNewGameSelected);
-        }
-        
         if (quitButton != null)
         {
             quitButton.onClick.AddListener(OnQuitGameClicked);
         }
     }
 
-    /// <summary>
-    /// Called when New Game button is clicked.
-    /// Opens save slot selection for new game.
-    /// </summary>
-    public void OnNewGameSelected()
+    protected override void OnEnable()
     {
-        saveSlotsMenu.ActivateMenu(false);
-        this.DeactivateMenu();
+        base.OnEnable();
+
+        if (backButtonInputAction != null && backButtonInputAction.action != null)
+        {
+            backButtonInputAction.action.performed += OnBackButtonPressed;
+            backButtonInputAction.action.Enable();
+        }
     }
-    
-    /// <summary>
+
+    private void OnDisable()
+    {
+        if (backButtonInputAction != null && backButtonInputAction.action != null)
+        {
+            backButtonInputAction.action.performed -= OnBackButtonPressed;
+        }
+    }
+
+    private void OnBackButtonPressed(InputAction.CallbackContext context)
+    {
+        var menuListManager = this.GetComponent<MenuListManager>();
+        if (menuListManager != null)
+            menuListManager.GoBackToPreviousMenu();
+    }
+
     /// Called when Load Game button is clicked.
     /// Opens save slot selection for loading existing game.
     /// </summary>

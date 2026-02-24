@@ -351,13 +351,6 @@ public class PlayerMovement : MonoBehaviour
                 Debug.LogWarning("PlayerMovement: AerialComboManager reference missing - aerial combos won't reset correctly.");
         }
 
-        // Assign PlayerInput to InputReader
-        var playerInput = GetComponent<PlayerInput>()
-            ?? GetComponentInParent<PlayerInput>()
-            ?? GetComponentInChildren<PlayerInput>(true);
-
-        InputReader.AssignPlayerInput(playerInput);
-
         doubleJumpAvailable = canDoubleJump;
         airborneStartHeight = transform.position.y;
         airDashAvailable = true;

@@ -35,10 +35,6 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
         {
             player = playerController.gameObject;
         }
-        else
-        {
-            Debug.LogError("Could not find player - no CharacterController found in scene");
-        }
     }
 
     public override void ConsoleInteracted()

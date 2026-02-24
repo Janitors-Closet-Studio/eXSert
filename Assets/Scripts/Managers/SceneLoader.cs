@@ -27,6 +27,13 @@ public class SceneLoader : Singleton<SceneLoader>
     private string loadingSceneName = "LoadingScene";
     [SerializeField, Tooltip("Automatically load the loading scene when the main menu boots so the overlay is ready.")]
     private bool preloadLoadingScene = true;
+
+    [Header("Music Screen")]
+    [SerializeField, Tooltip("Scene that contains the LoadingScreenController and supporting visuals.")]
+    private string musicSceneName = "MusicScene";
+    [SerializeField, Tooltip("Automatically load the music scene when the main menu boots so the overlay is ready.")]
+    private bool preloadMusicScene = true;
+
     [SerializeField, Range(0f, 60f), Tooltip("Minimum number of seconds the loading screen should remain visible once the prop showcase appears.")]
     private float minimumLoadingScreenSeconds = 1.5f;
     
@@ -36,6 +43,9 @@ public class SceneLoader : Singleton<SceneLoader>
     private bool isLoadingScene = false;
     private bool loadingSceneReady = false;
     private bool loadingSceneLoadInProgress = false;
+
+    
+
     private bool playerSceneReady = false;
     private bool playerSceneLoadInProgress = false;
 
@@ -46,6 +56,11 @@ public class SceneLoader : Singleton<SceneLoader>
         if (preloadLoadingScene)
         {
             StartCoroutine(EnsureLoadingSceneLoadedCoroutine());
+        }
+
+        if (preloadMusicScene)
+        {
+            LoadSceneAdditive(musicSceneName);
         }
     }
 

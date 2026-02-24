@@ -21,37 +21,29 @@ public class LogScrollingList : MonoBehaviour
 
     [Header("Rect Transforms")]
     [SerializeField] private RectTransform scrollRectTransform;
-    [SerializeField] private RectTransform contentRectTransform;
+    [SerializeField] internal RectTransform contentRectTransform;
     private Dictionary<string, LogButton> idToButtonMap = new Dictionary<string, LogButton>(); //Dict to hold id of buttons
     //If the button for a log doesn't already exist, this function will make it
-    public LogButton CreateButtonIfNotExists(Logs log, UnityAction selectAction)
+    public LogButton CreateButtonIfNotExists(Logs log, UnityAction selectAction, bool isRead)
     {
         LogButton logButton = null;
 
         if (log.info.isFound)
         {
-            Debug.Log($"Log {log.info.logID} is marked as found, checking if button exists...");
             if (!idToButtonMap.ContainsKey(log.info.logID))
-            {
-                Debug.Log($"Creating button for log {log.info.logID}");
-                logButton = InstantiateLogButton(log, selectAction);
-            }
+                logButton = InstantiateLogButton(log, selectAction, isRead);
             else
-            {
-                Debug.Log($"Button for log {log.info.logID} already exists");
                 logButton = idToButtonMap[log.info.logID];
-            }
+
             return logButton;
         }
         else
-        {
-            Debug.Log($"Log {log.info.logID} is NOT marked as found (isFound={log.info.isFound}), skipping button creation");
             return logButton;
-        }
+        
     }
 
     //Used by the function above to instantiate the button into the content parent in the scroll list
-    private LogButton InstantiateLogButton(Logs log, UnityAction selectAction)
+    private LogButton InstantiateLogButton(Logs log, UnityAction selectAction, bool isRead)
     {
         LogButton logButton = Instantiate(
             logEntryButtonPrefab,
@@ -65,11 +57,21 @@ public class LogScrollingList : MonoBehaviour
         {
             selectAction();
             UpdateScrolling(buttonRectTranform);
-        });
+        }, isRead);
 
         idToButtonMap[log.info.logID] = logButton;
 
         return logButton;
+    }
+
+    public void ClearLogButtons()
+    {
+        foreach (var kvp in idToButtonMap)
+        {
+            if (kvp.Value != null)
+                Destroy(kvp.Value.gameObject);
+        }
+        idToButtonMap.Clear();
     }
 
     //So whenever you scroll down the menu will dynamically shift the scroll list

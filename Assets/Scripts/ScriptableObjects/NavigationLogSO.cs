@@ -24,6 +24,7 @@ public class NavigationLogSO : ScriptableObject
     public string logDescription;
     public Image logImage;
     public bool isFound;
+    public bool isRead;
 
     //This ensures that the idName cannot be repeated
     private void OnValidate()

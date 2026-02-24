@@ -149,6 +149,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ResetControls",
+                    "type": "Button",
+                    "id": "4b2654fa-a4c8-450c-a30a-1174ec8f3a7e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -514,6 +523,28 @@
                     "action": "RightTarget",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b1a52d21-ba86-4c90-ba76-1e026cc59f46",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ResetControls",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "626d1a1b-4ff6-449b-a994-eb3eec42b288",
+                    "path": "<Gamepad>/leftStickPress",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ResetControls",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -606,6 +637,15 @@
                     "name": "ResetDefault",
                     "type": "Button",
                     "id": "ed96022f-7d1e-4c9b-a35c-247d4f948831",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Pause",
+                    "type": "Button",
+                    "id": "d1415509-9347-487c-8dbd-473c851072d0",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -1039,6 +1079,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "ResetDefault",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7083329b-0715-4c34-b152-98d383fd16d5",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Pause",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e8f9d0d8-cda0-49cb-95ee-9e244065065f",
+                    "path": "<Gamepad>/start",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "Pause",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

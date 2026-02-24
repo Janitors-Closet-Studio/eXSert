@@ -51,6 +51,9 @@ namespace Behaviors
             // Wait for SFX duration
             yield return WaitForSecondsCache.Get(1f);
 
+            // Death animation/sequence is now complete - fire the OnDeath event
+            enemy.OnDeathSequenceComplete();
+
             // Hide health bar but don't destroy it (can be re-enabled on reset)
             if (enemy.healthBarInstance != null)
             {

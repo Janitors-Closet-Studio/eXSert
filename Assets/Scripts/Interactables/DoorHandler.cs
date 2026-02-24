@@ -70,10 +70,6 @@ public class DoorHandler : MonoBehaviour
         {
             hingeOriginalRot = hingePivot.rotation;
         }
-        if (bottomDoorPart == null)
-        {
-            Debug.Log("No bottomDoorPart reference assigned.");
-        }
     }
 
     /// <summary>
@@ -135,7 +131,6 @@ public class DoorHandler : MonoBehaviour
 
     private void OpenOut()
     {
-        Debug.Log("Door opening outwards.");
         // Use hinge pivot to rotate outwards so the door stays locked in its socket
         EnsurePivot();
         hingeStartRot = hingePivot.rotation;
@@ -145,7 +140,6 @@ public class DoorHandler : MonoBehaviour
 
     private void OpenIn()
     {
-        Debug.Log("Door opening inwards.");
         // Use hinge pivot to rotate inwards so the door stays locked in its socket
         EnsurePivot();
         hingeStartRot = hingePivot.rotation;
@@ -226,7 +220,6 @@ public class DoorHandler : MonoBehaviour
     {
         if(topDoorPart == null && bottomDoorPart == null)
         {
-            Debug.LogError("Top or Bottom door part references are missing for OpenUp door type.");
             yield break;
         }
 
@@ -273,7 +266,6 @@ public class DoorHandler : MonoBehaviour
     {
         if(topDoorPart == null && bottomDoorPart == null)
         {
-            Debug.LogError("Top or Bottom door part references are missing for OpenUp door type.");
             yield break;
         }
 

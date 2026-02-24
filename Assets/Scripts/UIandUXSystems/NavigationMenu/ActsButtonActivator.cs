@@ -20,9 +20,5 @@ public class ActsButtonActivator : MonoBehaviour
         }
     }
 
-    private void DetectActiveAct()
-    {
-
-    }
 
 }

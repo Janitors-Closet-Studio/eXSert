@@ -43,13 +43,10 @@ public abstract class UnlockableInteraction : InteractionManager
     {
         if (!needsItem)
         { 
-            Debug.Log($"Interacting with {gameObject.name} which requires no item.");
             ExecuteInteraction();
             onInteractionExecuted?.Invoke();
             return;
         }
-
-        Debug.Log($"Attempting to interact with {gameObject.name}. Required item: {requiredItemID}, Player has item: {canUnlock}");
 
         if (canUnlock)
         {
@@ -58,7 +55,6 @@ public abstract class UnlockableInteraction : InteractionManager
         }
         else
         {
-            Debug.Log($"Cannot interact with {gameObject.name}. Player does not have required item: {requiredItemID}");
             if (errorSFXClip != null)
             {
                 SoundManager.Instance.puzzleSource.PlayOneShot(errorSFXClip);

@@ -14,7 +14,7 @@ public class DiarySO : ScriptableObject
 
     public Image diaryImage;
     public bool isFound;
-
+    public bool isRead;
     //This ensures that the idName cannot be repeated
     private void OnValidate()
     {
