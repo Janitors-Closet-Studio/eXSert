@@ -25,13 +25,11 @@ public class CraneGrabObject : MonoBehaviour
         // Verify setup
         if (cargoBayCrane == null)
         {
-            Debug.LogError("CraneGrabObject: CranePuzzle reference not set!");
             return;
         }
         
         if (cargoBayCrane.magnetExtender == null)
         {
-            Debug.LogError("CraneGrabObject: magnetExtender not set on CranePuzzle!");
             return;
         }
 
@@ -39,7 +37,6 @@ public class CraneGrabObject : MonoBehaviour
         Collider col = GetComponent<Collider>();
         if (col == null)
         {
-            Debug.LogError($"CraneGrabObject: {gameObject.name} has no Collider component!");
             return;
         }
     }

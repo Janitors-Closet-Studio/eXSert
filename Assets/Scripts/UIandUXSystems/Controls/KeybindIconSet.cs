@@ -119,19 +119,6 @@ public class KeybindIconSet : ScriptableObject
         InputAction runtimeAction = ResolveRuntimeAction(assetAction);
         if (runtimeAction == null)
         {
-            Debug.Log($"[KeybindIconSet] Could not resolve runtime action for {assetAction?.name}");
-            if (InputReader.PlayerInput != null && InputReader.PlayerInput.actions != null)
-            {
-                Debug.Log("[KeybindIconSet] Available action maps:");
-                foreach (var map in InputReader.PlayerInput.actions.actionMaps)
-                {
-                    Debug.Log($"  Map: {map.name}");
-                    foreach (var act in map.actions)
-                    {
-                        Debug.Log($"    Action: {act.name}");
-                    }
-                }
-            }
             return false;
         }
         var action = runtimeAction;
@@ -140,12 +127,6 @@ public class KeybindIconSet : ScriptableObject
         if (!action.enabled)
         {
             action.Enable();
-        }
-
-        // Dump all bindings for debug
-        for (int i = 0; i < action.bindings.Count; i++)
-        {
-            var b = action.bindings[i];
         }
 
         int bindingIndex = ResolveBindingIndex(action, bindingData, useGamepad);
@@ -464,7 +445,8 @@ public class KeybindIconSet : ScriptableObject
 
         var iconList = useGamepad ? gamepadIcons : keyboardIcons;
         string shortPath = ExtractControlName(controlPath);
-        
+        Debug.Log("Looking for icon with controlPath: " + controlPath + " and shortPath: " + shortPath);
+
         for (int i = 0; i < iconList.Count; i++)
         {
             if (iconList[i].icon == null)

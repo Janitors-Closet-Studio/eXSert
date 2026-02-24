@@ -33,19 +33,16 @@ public class MenuMusicPlayer : MonoBehaviour
     {
         if (backgroundMusic == null)
         {
-            Debug.LogWarning("[MenuMusicPlayer] No background music assigned!");
             return;
         }
 
         if (SoundManager.Instance == null)
         {
-            Debug.LogError("[MenuMusicPlayer] SoundManager not found in scene! Make sure you have a SoundManager GameObject.");
             return;
         }
 
         if (SoundManager.Instance.musicSource == null)
         {
-            Debug.LogError("[MenuMusicPlayer] SoundManager has no musicSource assigned!");
             return;
         }
 

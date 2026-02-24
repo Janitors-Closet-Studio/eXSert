@@ -32,14 +32,6 @@ public class DiaryButton : MonoBehaviour, ISelectHandler
             {
                 diaryUI.Selectables.Add(this.button);
             }
-            else
-            {
-                Debug.LogError("MenuEventSystemHandler component not found on DiaryUI GameObject");
-            }
-        }
-        else
-        {
-            Debug.LogError("GameObject with tag 'DiaryUI' not found");
         }
     }
 
@@ -97,10 +89,6 @@ public class DiaryButton : MonoBehaviour, ISelectHandler
                 Transform child = individualDiaryMenuObject.transform.GetChild(0);
                 menuToManage.AddToMenuList(child.gameObject);
             }
-        }
-        else
-        {
-            Debug.LogError("GameObject with tag 'Canvas' not found");
         }
     }
         

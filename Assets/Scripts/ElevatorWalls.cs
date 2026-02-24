@@ -119,7 +119,9 @@ public class ElevatorWalls : MonoBehaviour
         if (highestOtherY == float.NegativeInfinity)
             return wall != null ? wall.transform.position.y + _detectedWallSpacing : restartPoint_DEPRECATED;
 
-        return highestOtherY + _detectedWallSpacing;
+        // Add a small buffer to ensure walls connect without gaps
+        float buffer = 0.5f; // Adjust as needed for your scale
+        return highestOtherY + _detectedWallSpacing - buffer;
     }
 
     /// <summary>

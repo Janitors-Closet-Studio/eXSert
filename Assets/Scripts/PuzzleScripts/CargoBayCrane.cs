@@ -417,7 +417,6 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
             // Move crane to target drop zone
             if (activeTargetDropZone == null)
             {
-                Debug.LogWarning("[CargoBayCrane] No target drop zone assigned for this console.");
                 EndPuzzle();
                 yield break;
             }
