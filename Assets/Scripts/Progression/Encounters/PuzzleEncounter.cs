@@ -5,6 +5,12 @@ namespace Progression.Encounters
 {
     public class PuzzleEncounter : BasicEncounter
     {
+        /*
+         * reminder to self: I need to add a way to call HandleOnComplete from the basicEncounter
+         * It should be fine for now though.
+         * I also just need to generally give this script a lookover too to make sure its functioning optimal.
+         */
+
         protected override Color DebugColor => Color.purple;
 
         [SerializeField] private string objectiveText = "Complete the puzzle!";
@@ -15,11 +21,6 @@ namespace Progression.Encounters
         private PuzzlePart part;
         private IConsoleSelectable consoleSelectable;
         private PuzzleInteraction[] interactPoints;
-
-        /// <summary>
-        /// Override of isCompleted that checks the completion status of the puzzle part instead.
-        /// </summary>
-        public override bool isCompleted => part.isCompleted;
 
         public override string ObjectiveText => objectiveText;
 

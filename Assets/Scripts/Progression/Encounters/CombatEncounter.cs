@@ -11,9 +11,6 @@ namespace Progression.Encounters
         #region Inspector Setup
         [Header("Combat Encounter Settings")]
 
-        [SerializeField] private bool tempIsCompleted;
-
-        [Header("Timing")]
         [SerializeField, Tooltip("Seconds to wait before advancing to the next wave.")]
         private float nextWaveDelaySeconds = 0.15f;
 
@@ -28,8 +25,6 @@ namespace Progression.Encounters
         #endregion
 
         private Vector3 lastEnemyPosition;
-
-        public override bool isCompleted { get => tempIsCompleted; }
 
         public override string ObjectiveText 
         { 
@@ -51,11 +46,13 @@ namespace Progression.Encounters
         private bool encounterStarted = false;
         private Coroutine waveAdvanceRoutine;
 
-        private void OnUpdateLastEnemyPosition(Vector3 position) => lastEnemyPosition = position;
 
+        #region Basic Encounter Overrides
         protected override void SetupEncounter()
         {
             base.SetupEncounter();
+
+            OnEncounterCompleted += DropItem;
 
             allWaves.Clear(); // Clear any existing waves in case of editor changes or scene reload
 
@@ -94,6 +91,17 @@ namespace Progression.Encounters
         }
 
         protected override void PlayerEnteredZone() => BeginEncounter();
+
+        protected override void CleanupEncounter()
+        {
+            base.CleanupEncounter();
+
+            OnEncounterCompleted -= DropItem;
+        }
+        #endregion
+
+        private void OnUpdateLastEnemyPosition(Vector3 position) => lastEnemyPosition = position;
+
         private void BeginEncounter()
         {
             if (encounterStarted)
@@ -106,13 +114,6 @@ namespace Progression.Encounters
 
             encounterStarted = true;
             SpawnNextWave();
-        }
-
-        private void CompleteEncounter()
-        {
-            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter completed: {name}");
-
-            DropItem();
         }
 
         private void DropItem()
@@ -143,7 +144,7 @@ namespace Progression.Encounters
 
             // Check if there are more waves to spawn
             if (wavesQueue.Count != 0) SpawnNextWave(3f);
-            else CompleteEncounter();
+            else HandleEncounterCompleted();
         }
 
         private void CleanupWave(Wave wave)
