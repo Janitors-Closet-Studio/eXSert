@@ -106,7 +106,7 @@ public class CranePuzzle : PuzzlePart
     [SerializeField] private bool invertHorizontal = false;
     #endregion
 
-    private bool isMoving = false;
+    internal bool isMoving = false;
     private bool puzzleActive = false;
     internal bool isExtending = false;
     protected bool isAutomatedMovement = false;
@@ -198,6 +198,8 @@ public class CranePuzzle : PuzzlePart
 
             if (runtimeCraneMoveAction == null || runtimeConfirmAction == null || runtimeEscapeAction == null)
                 return EmergencyExit("[CranePuzzle] Missing input actions. Check CranePuzzle action map and input references.");
+
+            Debug.LogError($"{runtimeConfirmAction}, {runtimeEscapeAction}, {runtimeCraneMoveAction}"); // Log which actions are missing
         }
 
         runtimeCraneMoveAction.Enable();
@@ -224,10 +226,7 @@ public class CranePuzzle : PuzzlePart
             cachedPlayerMovement = pm;
             pm.enabled = false;
         }
-        else
-        {
-            Debug.LogWarning("[CranePuzzle] PlayerMovement not found; player input may remain enabled during the puzzle.");
-        }
+
 
         SwitchPuzzleCamera();
 
@@ -241,6 +240,7 @@ public class CranePuzzle : PuzzlePart
         {
             Debug.LogError(reason);
             EndPuzzle();
+            Debug.LogError($"{runtimeConfirmAction}, {runtimeEscapeAction}, {runtimeCraneMoveAction}"); // Log which actions are missing
             return -1;
         }
     }
@@ -421,7 +421,7 @@ public class CranePuzzle : PuzzlePart
         moveCoroutine = null;
     }
 
-    private void CraneMovement()
+    public virtual void CraneMovement()
     {
         Vector2 input = cachedMoveInput;
         float xInput = input.x;
@@ -481,6 +481,51 @@ public class CranePuzzle : PuzzlePart
             }
         }
     }
+
+    public CraneMovementDirection GetCurrentMovementDirection()
+    {
+        if (!isMoving)
+            return CraneMovementDirection.None;
+
+        Vector2 input = cachedMoveInput;
+        float xInput = input.x;
+        float yInput = input.y;
+
+        if (swapXZControls)
+        {
+            float temp = xInput;
+            xInput = yInput;
+            yInput = temp;
+        }
+
+        if (Mathf.Abs(xInput) > Mathf.Abs(yInput))
+        {
+            return xInput > 0 ? CraneMovementDirection.Right : CraneMovementDirection.Left;
+        }
+        else if (Mathf.Abs(yInput) > Mathf.Abs(xInput))
+        {
+            return yInput > 0 ? CraneMovementDirection.Up : CraneMovementDirection.Down;
+        }
+        else if (Mathf.Abs(yInput) > 0 && swapXZControls)
+        {
+            return yInput > 0 ? CraneMovementDirection.Forward : CraneMovementDirection.Backward;
+        }
+        else
+        {
+            return CraneMovementDirection.None;
+        }
+    }
+
+    public enum CraneMovementDirection
+{
+    None,
+    Up,
+    Down,
+    Left,
+    Right,
+    Forward,
+    Backward
+}
 
     public bool IsMoving()
     {
@@ -556,6 +601,8 @@ public class CranePuzzle : PuzzlePart
         }
     }
     #endregion
+
+    
 
     private void CacheCranePartStartPositions()
     {
@@ -785,3 +832,4 @@ public class ShowIfZDrawer : PropertyDrawer
     }
 }
 #endif
+

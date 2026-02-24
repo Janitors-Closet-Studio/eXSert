@@ -121,13 +121,10 @@ public class GraphicsSettings : MonoBehaviour
         if (motionBlur)
         {
             motionBlurText.text = "On";
-            Debug.Log("Motion Blur:" + isMotionBlur);
-            // Add motion blur logic here
         }
         else
         {
             motionBlurText.text = "Off";
-            Debug.Log("Motion Blur:" + isMotionBlur);
         }
     }
 
@@ -155,12 +152,12 @@ public class GraphicsSettings : MonoBehaviour
         {
             //Add camera shake logic here
             cameraShakeText.text = "On";
-            Debug.Log("Motion Blur:" + isCameraShake);
+
         }
         else
         {
             cameraShakeText.text = "Off";
-            Debug.Log("Motion Blur:" + isCameraShake);
+
         }
     }
 

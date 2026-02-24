@@ -23,17 +23,13 @@ public class DoorInteractions : UnlockableInteraction
                 if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
                 {
                     doorHandler.doorLockState = DoorHandler.DoorLockState.Unlocked;
-                    Debug.Log("Door Unlocked!");
                 }
 
                 // Open/close after ensuring unlock so a single console use works.
                 doorHandler.Interact();
-                Debug.Log("Door Interacted With!");
+
             }
-            else
-            {
-                Debug.LogError("DoorHandler reference is missing. Please assign it in the inspector.");
-            }
+
         }
     }
 }

@@ -19,11 +19,6 @@ public class RumbleManager : Singleton<RumbleManager>
     protected override void Awake()
     {
 
-        if (pad == null)
-        {
-            Debug.LogWarning("To use the rumble feature please use a gamepad.");
-        }
-
         base.Awake();
     }
 

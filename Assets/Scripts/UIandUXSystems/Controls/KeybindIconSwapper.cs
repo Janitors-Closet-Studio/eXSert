@@ -70,10 +70,6 @@ public class KeybindIconSwapper : MonoBehaviour
         if (sharedIconSet == null)
         {
             sharedIconSet = Resources.Load<KeybindIconSet>("KeybindIconSet");
-            if (sharedIconSet == null)
-            {
-                Debug.LogError("[KeybindIconSwapper] Could not find KeybindIconSet asset in Resources! Please place your KeybindIconSet.asset in a Resources folder.");
-            }
         }
     }
 
@@ -181,7 +177,6 @@ public class KeybindIconSwapper : MonoBehaviour
         if (sharedIconSet.TryGetIcon(action, useGamepad, out Sprite icon, out _))
         {
             targetImage.sprite = icon;
-            Debug.Log($"Found icon for action {action}: {icon.name}");
             targetImage.enabled = true;
         }
         else if (hideWhenMissing)

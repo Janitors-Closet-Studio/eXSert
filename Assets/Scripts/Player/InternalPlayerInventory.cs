@@ -22,14 +22,9 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
     public void AddCollectible(string collectibleId)
     {
         if (!collectedInteractables.Contains(collectibleId))
-        {
             collectedInteractables.Add(collectibleId);
-            Debug.Log($"Collectible {collectibleId} added to inventory.");
-        }
-        else
-        {
-            Debug.Log($"Collectible {collectibleId} is already in inventory.");
-        }
+
+
     }
 
     /// <summary>

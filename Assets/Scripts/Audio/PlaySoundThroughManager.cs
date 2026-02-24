@@ -26,13 +26,11 @@ public class PlaySoundThroughManager : MonoBehaviour
     {
         if (soundClip == null)
         {
-            Debug.LogWarning($"{gameObject.name}: No audio clip assigned!");
             return;
         }
         
         if (SoundManager.Instance == null || SoundManager.Instance.sfxSource == null)
         {
-            Debug.LogWarning($"{gameObject.name}: SoundManager not found in scene!");
             return;
         }
 
