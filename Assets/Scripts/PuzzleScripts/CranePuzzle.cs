@@ -232,6 +232,8 @@ public class CranePuzzle : PuzzlePart
 
         moveCoroutine = StartCoroutine(MoveCraneCoroutine());
 
+        Debug.Log("Crane Puzzle Started");
+
         return 1; // Returns 1 which means things were set up properly
 
         // Emergency Exit script in case things are missing;
