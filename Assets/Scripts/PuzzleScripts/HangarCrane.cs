@@ -15,90 +15,62 @@ public class HangarCrane : CranePuzzle{
     public List<HangarCranePart> hangarCraneParts = new List<HangarCranePart>();
     // Store original local positions for HangarCranePart
     private Dictionary<HangarCranePart, Vector3> cranePartStartLocalPositions = new Dictionary<HangarCranePart, Vector3>();
+    // Store current sway state for each part
+    private class SwayState {
+        public Vector3 velocity = Vector3.zero;
+        public Vector3 offset = Vector3.zero;
+    }
+    private Dictionary<HangarCranePart, SwayState> swayStates = new Dictionary<HangarCranePart, SwayState>();
+
+    private void Awake()
+    {
+        // Cache original local positions and initialize sway states
+        foreach (var part in hangarCraneParts)
+        {
+            if (part != null && part.partTransform != null)
+            {
+                cranePartStartLocalPositions[part] = part.partTransform.localPosition;
+                swayStates[part] = new SwayState();
+            }
+        }
+    }
 
     private void LateUpdate()
     {
-        // Only sway if crane is moving
-        if (!isMoving) return;
-
-        float swayTime = Time.time;
-        CraneMovementDirection dir = GetCurrentMovementDirection(); // Only call here, not in any field initializer
+        float deltaTime = Time.deltaTime;
+        CraneMovementDirection dir = GetCurrentMovementDirection();
         foreach (var part in hangarCraneParts)
         {
             if (part == null || part.partTransform == null) continue;
+            if (!cranePartStartLocalPositions.ContainsKey(part)) continue;
 
-            float swayAmount = part.swayAmount;
-            float swaySpeed = part.swaySpeed;
+            // Determine sway direction based on movement
+            Vector3 swayDir = Vector3.zero;
+            if (isMoving)
+            {
+                if (dir == CraneMovementDirection.Left || dir == CraneMovementDirection.Right)
+                    swayDir = Vector3.forward;
+                else if (dir == CraneMovementDirection.Up || dir == CraneMovementDirection.Down)
+                    swayDir = Vector3.right;
+                else if (dir == CraneMovementDirection.Forward || dir == CraneMovementDirection.Backward)
+                    swayDir = Vector3.right;
+            }
 
-            // Sway direction: perpendicular to crane movement
-            Vector3 swayDir = Vector3.right;
-            if (dir == CraneMovementDirection.Left || dir == CraneMovementDirection.Right)
-                swayDir = Vector3.forward;
-            else if (dir == CraneMovementDirection.Up || dir == CraneMovementDirection.Down)
-                swayDir = Vector3.right;
+            // Target offset is a sinusoidal oscillation while moving, zero when stopped
+            float swayTarget = isMoving ? Mathf.Sin(Time.time * part.swaySpeed) * part.swayAmount : 0f;
+            Vector3 targetOffset = swayDir * swayTarget;
 
-            // Calculate sway offset
-            float swayOffset = Mathf.Sin(swayTime * swaySpeed) * swayAmount;
-            Vector3 visualOffset = swayDir * swayOffset;
+            // Spring-damped interpolation for smooth, natural sway
+            SwayState state = swayStates[part];
+            float smoothTime = 0.18f; // Lower = snappier, higher = more damped
+            state.offset = Vector3.SmoothDamp(state.offset, targetOffset, ref state.velocity, smoothTime, Mathf.Infinity, deltaTime);
 
             // Apply visual sway (localPosition)
-            if (cranePartStartLocalPositions.ContainsKey(part))
-                part.partTransform.localPosition = cranePartStartLocalPositions[part] + visualOffset;
+            part.partTransform.localPosition = cranePartStartLocalPositions[part] + state.offset;
         }
     }
     
-    private IEnumerator SwayPartsIfMoving()
-    {
-        CraneMovementDirection directionCraneIsMoving = GetCurrentMovementDirection();
-        while (isMoving && directionCraneIsMoving != CraneMovementDirection.None)
-        {
-            SwayParts(directionCraneIsMoving);
-            yield return null;
-        }
-    }
+    // Removed coroutine-based sway; handled in LateUpdate with spring-damped logic
 
-    public override void CraneMovement()
-    {
-        base.CraneMovement();
-        if (isMoving)
-        {
-            StartCoroutine(SwayPartsIfMoving());
-        }
-    }
-
-    private void SwayParts(CraneMovementDirection movementDirection)
-    {
-        float swayTime = Time.time;
-        foreach (HangarCranePart part in hangarCraneParts)
-        {
-            if (part == null || part.partTransform == null) continue;
-            Vector3 swayDirection = GetSwayDirection(movementDirection);
-            float swayOffset = Mathf.Sin(swayTime * part.swaySpeed) * part.swayAmount;
-            Vector3 visualOffset = swayDirection * swayOffset;
-            // Reset to original position plus visual sway
-                if (cranePartStartLocalPositions.ContainsKey(part))
-                    part.partTransform.localPosition = cranePartStartLocalPositions[part] + visualOffset;
-        }
-    }
-
-    private Vector3 GetSwayDirection(CraneMovementDirection movementDirection)
-    {
-        switch (movementDirection)
-        {
-            case CraneMovementDirection.Up:
-                return Vector3.up;
-            case CraneMovementDirection.Down:
-                return Vector3.down;
-            case CraneMovementDirection.Left:
-                return Vector3.left;
-            case CraneMovementDirection.Right:
-                return Vector3.right;
-            case CraneMovementDirection.Forward:
-                return Vector3.forward;
-            case CraneMovementDirection.Backward:
-                return Vector3.back;
-            default:
-                return Vector3.zero;
-        }
-    }
+    // Sway direction logic now handled inline in LateUpdate
 }
