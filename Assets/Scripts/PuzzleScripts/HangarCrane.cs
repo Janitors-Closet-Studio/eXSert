@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class HangarCranePart
+public class HangarCranePart : CranePart
 {
     public Transform partTransform;
     public float swayAmount;
@@ -11,11 +11,40 @@ public class HangarCranePart
 }
 
 
-public class HangarCrane : CranePuzzle
-{
+public class HangarCrane : CranePuzzle{
+    public List<HangarCranePart> hangarCraneParts = new List<HangarCranePart>();
 
-    public List<HangarCranePart> hangarCraneParts = new List<HangarCranePart>();    
+    private void LateUpdate()
+    {
+        // Only sway if crane is moving
+        if (!isMoving) return;
 
+        float swayTime = Time.time;
+        CraneMovementDirection dir = GetCurrentMovementDirection(); // Only call here, not in any field initializer
+        foreach (var part in hangarCraneParts)
+        {
+            if (part == null || part.partTransform == null) continue;
+
+            float swayAmount = part.swayAmount;
+            float swaySpeed = part.swaySpeed;
+
+            // Sway direction: perpendicular to crane movement
+            Vector3 swayDir = Vector3.right;
+            if (dir == CraneMovementDirection.Left || dir == CraneMovementDirection.Right)
+                swayDir = Vector3.forward;
+            else if (dir == CraneMovementDirection.Up || dir == CraneMovementDirection.Down)
+                swayDir = Vector3.right;
+
+            // Calculate sway offset
+            float swayOffset = Mathf.Sin(swayTime * swaySpeed) * swayAmount;
+            Vector3 visualOffset = swayDir * swayOffset;
+
+            // Apply visual sway (localPosition)
+            if (cranePartStartLocalPositions.ContainsKey(part))
+                part.partTransform.localPosition = cranePartStartLocalPositions[part] + visualOffset;
+        }
+    }
+    
     private IEnumerator SwayPartsIfMoving()
     {
         CraneMovementDirection directionCraneIsMoving = GetCurrentMovementDirection();
@@ -37,10 +66,16 @@ public class HangarCrane : CranePuzzle
 
     private void SwayParts(CraneMovementDirection movementDirection)
     {
+        float swayTime = Time.time;
         foreach (HangarCranePart part in hangarCraneParts)
         {
+            if (part == null || part.partTransform == null) continue;
             Vector3 swayDirection = GetSwayDirection(movementDirection);
-            part.partTransform.localPosition += swayDirection * part.swayAmount * Time.deltaTime;
+            float swayOffset = Mathf.Sin(swayTime * part.swaySpeed) * part.swayAmount;
+            Vector3 visualOffset = swayDirection * swayOffset;
+            // Reset to original position plus visual sway
+            if (cranePartStartLocalPositions.ContainsKey(part))
+                part.partTransform.localPosition = cranePartStartLocalPositions[part] + visualOffset;
         }
     }
 

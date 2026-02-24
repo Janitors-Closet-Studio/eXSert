@@ -141,8 +141,11 @@ public class CranePuzzle : PuzzlePart
         }
     }
 
-    private bool TryResolveRuntimeActions()
-    {
+    private bool TryResolveRuntimeActions() {
+        Debug.Log("[CranePuzzle] TryResolveRuntimeActions called.");
+        Debug.Log($"PlayerInput: {(InputReader.PlayerInput != null ? InputReader.PlayerInput.ToString() : "null")}");
+        Debug.Log($"craneMoveAction: {(craneMoveAction != null ? craneMoveAction.ToString() : "null")}, _escapePuzzleAction: {(_escapePuzzleAction != null ? _escapePuzzleAction.ToString() : "null")}, _confirmPuzzleAction: {(_confirmPuzzleAction != null ? _confirmPuzzleAction.ToString() : "null")}");
+    
         // Safely obtain a PlayerInput reference from InputReader
         PlayerInput playerInput = InputReader.PlayerInput;
 
@@ -157,9 +160,20 @@ public class CranePuzzle : PuzzlePart
             return false;
         }
 
-        craneMap = actions.FindActionMap("CranePuzzle");
+        // Handle PlayerInput action asset clones
+        string mapName = "CranePuzzle";
+        craneMap = null;
+        foreach (var map in actions.actionMaps)
+        {
+            if (map.name == mapName)
+            {
+                craneMap = map;
+                break;
+            }
+        }
         if (craneMap == null)
         {
+            Debug.LogError($"[CranePuzzle] Could not find action map '{mapName}' in PlayerInput actions (possible clone issue).");
             return false;
         }
 
@@ -172,12 +186,26 @@ public class CranePuzzle : PuzzlePart
     }
 
     private InputAction ResolveRuntimeAction(InputActionReference reference, string label)
+       
     {
+
+         Debug.Log($"[CranePuzzle] Resolving action for {label}: reference {(reference != null ? reference.ToString() : "null")}, action name {(reference != null && reference.action != null ? reference.action.name : "null")}");
         if (reference != null && reference.action != null)
         {
-            InputAction resolved = craneMap.FindAction(reference.action.name);
+            // Handle PlayerInput action asset clones: search by name
+            InputAction resolved = null;
+            foreach (var action in craneMap.actions)
+            {
+                if (action.name == reference.action.name)
+                {
+                    resolved = action;
+                    break;
+                }
+            }
             if (resolved == null)
-            
+            {
+                Debug.LogError($"[CranePuzzle] Could not resolve action '{reference.action.name}' in action map '{craneMap.name}' (possible clone issue).");
+            }
             return resolved;
         }
         return null;
@@ -698,6 +726,9 @@ public class CranePuzzle : PuzzlePart
 
         string map = (toCrane) ? "CranePuzzle" : "Gameplay";
         InputReader.PlayerInput.SwitchCurrentActionMap(map);
+
+        // Re-resolve runtime actions after switching maps
+        TryResolveRuntimeActions();
     }
 
     private string GetLayerMaskNames(LayerMask mask)
