@@ -82,9 +82,7 @@ public class LogManager : Singleton<LogManager>
     private void FindLog(string id)
     {
         Logs logs = GetLogById(id);
-        Debug.Log($"FindLog called for {id}: was isFound={logs.info.isFound}");
         logs.info.isFound = true;
-        Debug.Log($"FindLog set isFound=true for {id}, firing LogStateChange event");
         EventsManager.Instance.logEvents.LogStateChange(logs);
     }
 
@@ -96,10 +94,7 @@ public class LogManager : Singleton<LogManager>
         Dictionary<string, Logs> idToLogMap = new Dictionary<string, Logs>();
         foreach (NavigationLogSO logInfo in allLogs)
         {
-            if (idToLogMap == null)
-            {
-                Debug.LogWarning("Duplicate ID found when creating log map: " + logInfo.logID);
-            }
+
             idToLogMap.Add(logInfo.logID, LoadLog(logInfo));
         }
         return idToLogMap;
@@ -109,10 +104,6 @@ public class LogManager : Singleton<LogManager>
     private Logs GetLogById(string id)
     {
         Logs logs = logMap[id];
-        if (logs == null)
-        {
-            Debug.LogError("ID not found in Log Map: " + id);
-        }
         return logs;
     }
 
@@ -157,23 +148,19 @@ public class LogManager : Singleton<LogManager>
                 if (inspectorValueIsTrue)
                 {
                     log.info.isFound = true;
-                    Debug.Log($"Loaded log {logInfo.logID}: using inspector value isFound=true (overriding saved data)");
                 }
                 else
                 {
                     log.info.isFound = logData.isFound;
-                    Debug.Log($"Loaded log {logInfo.logID}: isFound={logData.isFound}");
                 }
             }
             else
             {
                 log = new Logs(logInfo);
-                Debug.Log($"No saved data for log {logInfo.logID}, created with isFound={logInfo.isFound}");
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError("Failed to load log with id " + logInfo.logID + ": " + e);
             log = new Logs(logInfo);
         }
         

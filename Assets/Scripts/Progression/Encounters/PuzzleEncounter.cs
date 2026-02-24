@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace Progression.Encounters
 {
+    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.mx9wqx5qgrio")]
     public class PuzzleEncounter : BasicEncounter
     {
         /*

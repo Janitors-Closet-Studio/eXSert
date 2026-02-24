@@ -11,8 +11,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Scene = UnityEngine.SceneManagement.Scene;
 
-[Serializable]
-[CreateAssetMenu(fileName = "New Game Scene", menuName = "Scene/Scene Asset")]
+[Serializable, CreateAssetMenu(fileName = "New Game Scene", menuName = "Scene/Scene Asset")]
+[HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.jla7jdxhssmh")]
 public class SceneAsset : ScriptableObject
 {
     // The name of the scene, serialized for easy editing in the inspector

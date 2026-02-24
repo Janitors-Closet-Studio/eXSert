@@ -139,7 +139,6 @@ public class FileDataHandler
             //If the file gather doesn't exists, it will move onto the next file
             if (!File.Exists(fullPath))
             {
-                Debug.LogWarning("This directory does not contain data");
                 continue;
             }
 
@@ -150,10 +149,6 @@ public class FileDataHandler
             if (profileData != null)
             {
                 profileDictionary.Add(profileId, profileData);
-            }
-            else
-            {
-                Debug.LogWarning("Tried to load profile but something went wrong. ProfileId: " + profileId);
             }
         }
 

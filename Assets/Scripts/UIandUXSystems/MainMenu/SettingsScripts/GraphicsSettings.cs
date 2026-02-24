@@ -68,18 +68,18 @@ public class GraphicsSettings : MonoBehaviour
         brightnessLevel = defaultBrightness;
     }
 
-    void Update()
+    private void OnEnable()
     {
-        if (_applyAction.action.WasPerformedThisFrame() && graphicsSettingsContainer.gameObject.activeSelf)
-        {
-            GraphicsApply();
-            Debug.Log("Graphics Settings Applied");
-        }
-        else
-        {
-            return;
-        }
+        if (_applyAction != null && _applyAction.action != null)
+            _applyAction.action.performed += ctx => GraphicsApply();
     }
+
+    private void OnDisable()
+    {
+        if (_applyAction != null && _applyAction.action != null)
+            _applyAction.action.performed -= ctx => GraphicsApply();
+    }
+
 
     //Alls functions below change values based on player choice
     public void SetBrightness(float brightness)
@@ -121,13 +121,10 @@ public class GraphicsSettings : MonoBehaviour
         if (motionBlur)
         {
             motionBlurText.text = "On";
-            Debug.Log("Motion Blur:" + isMotionBlur);
-            // Add motion blur logic here
         }
         else
         {
             motionBlurText.text = "Off";
-            Debug.Log("Motion Blur:" + isMotionBlur);
         }
     }
 
@@ -155,12 +152,12 @@ public class GraphicsSettings : MonoBehaviour
         {
             //Add camera shake logic here
             cameraShakeText.text = "On";
-            Debug.Log("Motion Blur:" + isCameraShake);
+
         }
         else
         {
             cameraShakeText.text = "Off";
-            Debug.Log("Motion Blur:" + isCameraShake);
+
         }
     }
 

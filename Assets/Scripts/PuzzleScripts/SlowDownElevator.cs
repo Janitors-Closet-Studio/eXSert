@@ -55,7 +55,6 @@ public class SlowDownElevator : MonoBehaviour
     {
         if (!Application.isPlaying)
         {
-            Debug.LogWarning("[SlowDownElevator] Debug_RunFullSequence can only run in Play Mode.");
             return;
         }
 
@@ -96,9 +95,7 @@ public class SlowDownElevator : MonoBehaviour
         _elevatorWalls.elevatorSpeed = 0f;
         
         EnsureProperWallStates();
-        
-        Debug.Log($"[SlowDownElevator] Starting puzzle. ElevatorWall Y: {_initialElevatorWallY}, SwitchPoint: {_pointToSwitchWallsY}, EndYPos: {_elevatorWalls.endYPos}");
-        
+    
         // Compute distances along the wrapped path: start -> swap -> end (wrapping past yBounds to restartPoint)
         _distanceToSwap = Mathf.Abs(_initialElevatorWallY - _pointToSwitchWallsY);
 
@@ -117,8 +114,6 @@ public class SlowDownElevator : MonoBehaviour
         }
 
         _totalDecelerationDistance = _distanceToSwap + distanceSwapToEnd;
-
-        Debug.Log($"[SlowDownElevator] Dist to swap: {_distanceToSwap}, swap->end: {distanceSwapToEnd}, Total: {_totalDecelerationDistance}");
         _actualDecelerationDuration = (_initialSpeed > 0.01f) ? (2f * _totalDecelerationDistance / _initialSpeed) : decelerationDuration;
         
         if (_decelerationCoroutine != null)
@@ -179,7 +174,6 @@ public class SlowDownElevator : MonoBehaviour
                     elevatorPos.y = currentY;  // wrapped movement
                     _elevatorWalls.elevatorWall.transform.position = elevatorPos;
                     
-                    Debug.Log($"[BeforeSwap] Y: {currentY} (raw {rawY}), DistTraveled: {distanceTraveled}/{_totalDecelerationDistance}");
                 }
 
                 // Trigger swap the first time we pass the raw swap height (off-screen), before wrapping back
@@ -197,8 +191,6 @@ public class SlowDownElevator : MonoBehaviour
                     }
                     if(_elevatorWalls.elevatorWall != null)
                         _elevatorWalls.elevatorWall.SetActive(false);
-
-                    Debug.Log($"[Swap] Triggered at distance {distanceTraveled}, Y={currentY}");
                 }
 
                 // Move wallWithDoor only after swap
@@ -246,7 +238,6 @@ public class SlowDownElevator : MonoBehaviour
     {
         if(targetObject == null)
         {
-            Debug.LogError("[SlowDownElevator] Target object is null!");
             yield break;
         }
 
@@ -285,9 +276,7 @@ public class SlowDownElevator : MonoBehaviour
         float beforeRepeat = normalized;
         normalized = Mathf.Repeat(normalized, loopHeight);
         float result = _elevatorWalls.yBounds + normalized;
-        
-        Debug.Log($"[WrapY] RawY: {rawY}, yBounds: {_elevatorWalls.yBounds}, LoopHeight: {loopHeight}, Normalized: {beforeRepeat}, AfterRepeat: {normalized}, Result: {result}");
-        
+            
         return result;
     }
 }

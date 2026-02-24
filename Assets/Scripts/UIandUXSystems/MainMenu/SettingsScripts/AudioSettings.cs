@@ -60,6 +60,44 @@ public class AudioSettings : MonoBehaviour
         SetCurrentValuesOnSliders();
     }
 
+    private void OnEnable()
+    {
+        if (_applyAction != null && _applyAction.action != null)
+            _applyAction.action.performed += ctx => VolumeApply();
+    }
+
+    private void OnDisable()
+    {
+        if (_applyAction != null && _applyAction.action != null)
+            _applyAction.action.performed -= ctx => VolumeApply();
+    }
+
+    //all functions below sets the volumes for each mixer depending on the slider
+    public void SetSFXVolume(float volume)
+    {
+        _sfxVolumeRaw = volume;
+        ApplyScaledVolumes();
+    }
+
+    public void SetMusicVolume(float volume)
+    {
+        _musicVolumeRaw = volume;
+        ApplyScaledVolumes();
+    }
+
+    public void SetVoiceVolume(float volume)
+    {
+        _voiceVolumeRaw = volume;
+        ApplyScaledVolumes();
+    }
+
+
+    public void SetMasterVolume(float volume)
+    {
+        _masterVolumeRaw = volume;
+        ApplyScaledVolumes();
+    }
+
     private bool HasSavedVolumes()
     {
         return PlayerPrefs.HasKey("masterVolume")
@@ -68,6 +106,7 @@ public class AudioSettings : MonoBehaviour
             || PlayerPrefs.HasKey("voiceVolume");
     }
 
+    // This method caches the raw volume levels from the audio sources, which are used for applying master volume scaling correctly.
     private void CacheRawVolumesFromSources()
     {
         _masterVolumeRaw = SoundManager.Instance.masterSource.volume;
@@ -132,46 +171,6 @@ public class AudioSettings : MonoBehaviour
 
         if (voiceVolumeSlider != null)
             voiceVolumeSlider.value = _voiceVolumeRaw;
-    }
-
-
-    void Update()
-    {
-        if (_applyAction.action.WasPerformedThisFrame() && volumeSettingsContainer.gameObject.activeSelf)
-        {
-            VolumeApply();
-            Debug.Log("Audio Settings Applied");
-        } 
-        else 
-        {
-            return;
-        }
-    }
-
-    //all functions below sets the volumes for each mixer depending on the slider
-    public void SetSFXVolume(float volume)
-    {
-        _sfxVolumeRaw = volume;
-        ApplyScaledVolumes();
-    }
-
-    public void SetMusicVolume(float volume)
-    {
-        _musicVolumeRaw = volume;
-        ApplyScaledVolumes();
-    }
-
-    public void SetVoiceVolume(float volume)
-    {
-        _voiceVolumeRaw = volume;
-        ApplyScaledVolumes();
-    }
-
-
-    public void SetMasterVolume(float volume)
-    {
-        _masterVolumeRaw = volume;
-        ApplyScaledVolumes();
     }
 
     //Applies volume levels

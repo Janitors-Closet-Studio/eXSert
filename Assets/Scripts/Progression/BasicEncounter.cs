@@ -11,6 +11,7 @@ using UnityEngine;
 namespace Progression.Encounters
 {
     [RequireComponent(typeof(BoxCollider))]
+    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.z4zoa520n2tr")]
     public abstract class BasicEncounter : ProgressionZone
     {
         public string encounterName => this.gameObject.name;

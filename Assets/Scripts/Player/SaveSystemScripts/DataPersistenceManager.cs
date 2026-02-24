@@ -50,11 +50,6 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         if (Instance != this)
             return;
 
-        if (disableDataPersistence)
-        {
-            Debug.LogWarning("Data persistence is disabled.");
-        }
-
         //Defines the save file
         this.fileDataHandler = new FileDataHandler(Application.persistentDataPath, fileName);
 
@@ -64,7 +59,6 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         if (overrideSelectedProfileId)
         {
             this.selectedProfileId = testSelectedProfile;
-            Debug.LogWarning("Overrode selected profile id with test id: " + testSelectedProfile);
         }
     }
 
@@ -131,7 +125,6 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         //If it doesnt, it will call the NewGame function
         if(this.gameData == null)
         {
-            Debug.Log("Intializing");
             return;
         }
         // Keep the manager's cached lastSavedScene in sync with the loaded profile
@@ -148,11 +141,6 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         if (disableDataPersistence)
         {
             return;
-        }
-
-        if (this.gameData == null)
-        {
-            Debug.LogWarning("No data was found");
         }
 
         //Goes through each of the found items that needs to be saved and saves them

@@ -59,7 +59,6 @@ public class PlayerLifeBoxDetector : MonoBehaviour
 
         if (healthBarManager == null)
         {
-            Debug.LogWarning("[PlayerLifeBoxDetector] PlayerHealthBarManager not found; cannot kill player.");
             return;
         }
 

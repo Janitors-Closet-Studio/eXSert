@@ -4,6 +4,7 @@ using UnityEngine;
 namespace Progression
 {
     [RequireComponent(typeof(BoxCollider))]
+    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.b9oi5t9la060")]
     public abstract class ProgressionZone : MonoBehaviour
     {
         #region Inspector Setup
