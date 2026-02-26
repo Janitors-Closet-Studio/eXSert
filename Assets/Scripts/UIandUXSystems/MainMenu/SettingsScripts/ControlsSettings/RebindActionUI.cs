@@ -7,22 +7,16 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine.Events;
 using UnityEngine.UI;
-
-////TODO: localization support
-
-////TODO: deal with composites that have parts bound in different control schemes
 
 
 
 namespace UnityEngine.InputSystem.Samples.RebindUI
 {
-            /// <summary>
-        /// Inspector button to reset binding to default.
-        /// </summary>
-        
+    /// <summary>
+    /// Inspector button to reset binding to default.
+    /// </summary>
     public class RebindActionUI : MonoBehaviour
     {
         /// <summary>
@@ -53,10 +47,20 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             if (m_Action == null || m_Action.action == null)
                 return null;
             var assetAction = m_Action.action;
-            // Try to resolve from PlayerInput singleton
+            // Always resolve Pause from PlayerInput.actions for runtime rebinding
             var playerInput = InputReader.PlayerInput;
             if (playerInput != null && playerInput.actions != null)
             {
+                if (assetAction.name == "Pause")
+                {
+                    // Always use runtime Pause action from PlayerInput.actions
+                    foreach (var map in playerInput.actions.actionMaps)
+                    {
+                        var runtimePause = map.FindAction("Pause");
+                        if (runtimePause != null)
+                            return runtimePause;
+                    }
+                }
                 var mapName = assetAction.actionMap != null ? assetAction.actionMap.name : string.Empty;
                 if (!string.IsNullOrEmpty(mapName))
                 {
@@ -263,7 +267,8 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
         /// Remove currently applied binding overrides.
         /// </summary>
        
-    public void ResetToDefault()
+
+        public void ResetToDefault()
         {
             if (!ResolveActionAndBinding(out var action, out var bindingIndex))
             {
@@ -286,7 +291,7 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             UpdateBindingDisplay();
         }
 
-       private void ResetBinding(InputAction action, int bindingIndex)
+        private void ResetBinding(InputAction action, int bindingIndex)
         {
             InputBinding newBinding = action.bindings[bindingIndex];
             string oldOverridePath = newBinding.overridePath;
@@ -308,7 +313,6 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                             otherAction.ApplyBindingOverride(currentIndex, oldOverridePath);
                         }
                     }
-
                     else
                     {
                         continue;
@@ -396,8 +400,16 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                             ClearDuplicateBinding(action, bindingIndex);
                         }
 
+
                         // Update display to show new binding
                         UpdateBindingDisplay();
+
+                        // Save rebinds immediately after a successful rebind
+                        var rebindSaveLoad = UnityEngine.Object.FindFirstObjectByType<RebindSaveLoad>();
+                        if (rebindSaveLoad != null)
+                        {
+                            rebindSaveLoad.SaveRebindsManually();
+                        }
 
                         // Re-enable action and action maps
                         action.Enable();
@@ -439,7 +451,6 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             m_RebindStartEvent?.Invoke(this, m_RebindOperation);
 
             m_RebindOperation.Start();
-            Debug.Log($"[RebindActionUI] Interactive rebind started for action '{action.name}' on {gameObject.name}");
         }
 
         private bool CheckDuplicateBindings(InputAction action, int bindingIndex, bool allCompositeParts = false)
@@ -736,6 +747,7 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
 
         private static List<RebindActionUI> s_RebindActionUIs;
 
+        /*
         // We want the label for the action name to update in edit mode, too, so
         // we kick that off from here.
         #if UNITY_EDITOR
@@ -744,8 +756,10 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             UpdateActionLabel();
             UpdateBindingDisplay();
         }
+        
 
         #endif
+        */
 
         private void UpdateActionLabel()
         {

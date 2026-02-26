@@ -40,24 +40,20 @@ public class MusicBox : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
 
-        if (IsTargetSceneLoaded())
-            TryBindMusicSource();
+        TryBindMusicSource();
     }
 
     private void PlayLevelMusic()
     {
-        if (!IsTargetSceneLoaded())
-            return;
+
 
         if (levelMusic == null)
         {
-            Debug.LogWarning("No level music clip assigned!");
             return;
         }
 
         if (!TryBindMusicSource())
         {
-            Debug.LogError("SoundManager has no levelMusicSource assigned!");
             return;
         }
 
@@ -80,7 +76,6 @@ public class MusicBox : MonoBehaviour
     {
         if (ambienceClip == null)
         {
-            Debug.LogWarning("No ambience clip assigned!");
             return;
         }
 
@@ -89,7 +84,6 @@ public class MusicBox : MonoBehaviour
             var sm = SoundManager.Instance;
             if (sm == null || sm.ambienceSource == null)
             {
-                Debug.LogError("SoundManager has no ambienceSource assigned!");
                 return;
             }
             ambienceSource = sm.ambienceSource;
@@ -197,32 +191,6 @@ public class MusicBox : MonoBehaviour
     }
 #endif
 
-    private bool IsTargetSceneLoaded()
-    {
-        if (string.IsNullOrWhiteSpace(sceneName))
-            return true;
-
-        string target = NormalizeSceneName(sceneName);
-        for (int i = 0; i < SceneManager.sceneCount; i++)
-        {
-            var scene = SceneManager.GetSceneAt(i);
-            if (!scene.isLoaded)
-                continue;
-
-            if (string.Equals(NormalizeSceneName(scene.name), target, System.StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        return false;
-    }
-
-    private string NormalizeSceneName(string nameValue)
-    {
-        string trimmed = nameValue.Trim();
-        return trimmed.EndsWith(".unity", System.StringComparison.OrdinalIgnoreCase)
-            ? trimmed.Substring(0, trimmed.Length - 6)
-            : trimmed;
-    }
 
     private void OnDrawGizmos()
     {

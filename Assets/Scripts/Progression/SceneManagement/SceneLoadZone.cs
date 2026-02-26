@@ -3,12 +3,13 @@ using UnityEngine;
 namespace Progression.SceneManagement
 {
     [RequireComponent(typeof(BoxCollider))]
+    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.ifc87dwst3ky")]
     public class SceneLoadZone : ProgressionZone
     {
-        [SerializeField, CriticalReference, Tooltip("The scene to load when the player enters this zone.")]
-        private SceneAsset sceneToManage;
         [SerializeField, Tooltip("Should the scene be loaded or unloaded? Check to load scene")]
         private bool loadScene = true;
+        [SerializeField, CriticalReference, Tooltip("The scene to load when the player enters this zone.")]
+        private SceneAsset sceneToManage;
 
         protected override Color DebugColor => Color.yellow;
 

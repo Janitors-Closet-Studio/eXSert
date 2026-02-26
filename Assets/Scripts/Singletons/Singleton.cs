@@ -61,11 +61,15 @@ namespace Singletons {
         protected static T CreateInstance()
         {
             if (isApplicationQuitting)
+            {
+                Debug.LogWarning($"[Singleton] Instance of {typeof(T)} already destroyed on application quit. Returning null.");
                 return null;
+            }
 
-            GameObject singletonObject = new GameObject();
+            GameObject singletonObject = new();
             T newInstance = singletonObject.AddComponent<T>();
-            singletonObject.name = typeof(T).ToString() + " (Singleton)";
+            (newInstance as Singleton<T>).UpdateInstanceName(); // Update the name of the GameObject to reflect the singleton type
+
             if (newInstance is Singleton<T> singleton && singleton.ShouldPersistAcrossScenes)
             {
                 if (Application.isPlaying)
@@ -73,8 +77,13 @@ namespace Singletons {
                     DontDestroyOnLoad(singletonObject);
                 }
             }
+
             return newInstance;
         }
+
+        private void UpdateInstanceName() => name = $"{this} (Singleton)";
+        public static void UpdateName() => (Instance as Singleton<T>).UpdateInstanceName();
+        public override string ToString() => base.ToString();
 
         /// <summary>
         /// Initializes the singleton instance and ensures only one instance of the component exists in the scene.
@@ -88,20 +97,13 @@ namespace Singletons {
             if (_instance == null)
             {
                 _instance = this as T;
-                if (ShouldPersistAcrossScenes)
-                {
-                    if (Application.isPlaying)
-                    {
-                        DontDestroyOnLoad(gameObject);
-                    }
-                }
+                if (ShouldPersistAcrossScenes && Application.isPlaying) 
+                    DontDestroyOnLoad(gameObject);
             }
             else if (_instance != this)
             {
                 Debug.LogWarning($"Another instance of singleton {typeof(T)} already exists. Destroying this component only.");
-                // Only destroy the component, not the entire GameObject
-                // This prevents destroying Player when InputReader is a duplicate
-                Destroy(this);
+                Destroy(gameObject);
             }
         }
 

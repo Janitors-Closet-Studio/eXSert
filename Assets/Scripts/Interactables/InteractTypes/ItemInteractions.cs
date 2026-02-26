@@ -4,16 +4,11 @@
     Place this script where you want an item to be interacted with and collected into the player's inventory.
 */
 
-using UnityEngine;
-
-public class ItemInteractions : InteractionManager
+public class ItemInteractions : CollectableInteraction
 {
-    protected override void Interact()
+    protected override void ExecuteInteraction()
     {
         InternalPlayerInventory.Instance.AddCollectible(this.interactId);
-        DeactivateInteractable(this);
-
-        Debug.Log("Interacted with item: " + this.interactId);
     }
 
 }

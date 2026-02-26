@@ -19,6 +19,10 @@ public class DiaryUI : MonoBehaviour
     //DiaryStateChange being subscribed and unsubscribed
     private void OnEnable()
     {
+        if(scrollingList != null)
+            scrollingList.ClearDiaryButtons(); // Clear existing buttons to prevent duplicates
+
+        EventsManager.Instance.diaryEvents.onDiaryStateChange -= DiaryStateChange; // Unsubscribe first to prevent multiple subscriptions
         EventsManager.Instance.diaryEvents.onDiaryStateChange += DiaryStateChange;
         // Refresh all diaries to populate buttons when UI becomes active
         if (DiaryManager.Instance != null)
@@ -39,23 +43,26 @@ public class DiaryUI : MonoBehaviour
         {
             SetDiaryInfo(diaries);
            
-        });
+        }, diaries.info.isRead);
     }
 
     //Sets each diary info
-    private void SetDiaryInfo(Diaries diaries)
+    internal void SetDiaryInfo(Diaries diaries)
     {
         diaryID.text = diaries.info.diaryTitle;
         diaryDescription.GetComponent<TMP_Text>().text = diaries.info.diaryDescription;
+        diaries.info.isRead = true; // Mark diary as read when selected
+        
+        if(DiaryManager.Instance.unreadDiaries.Contains(diaries.info))
+        {
+            DiaryManager.Instance.unreadDiaries.Remove(diaries.info);
+        }
         
         if (diaries.info.diaryImage != null && diaries.info.diaryImage.sprite != null)
         {
             diaryImage.sprite = diaries.info.diaryImage.sprite;
         }
         else
-        {
             diaryImage.sprite = null;
-            Debug.LogWarning($"Diary {diaries.info.diaryID} has no image assigned");
-        }
     }
 }

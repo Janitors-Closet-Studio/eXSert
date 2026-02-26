@@ -11,6 +11,8 @@ public class DiaryManager : Singleton<DiaryManager>
 
     private Dictionary<string, Diaries> diaryMap;
 
+    internal List<DiarySO> unreadDiaries = new List<DiarySO>();
+
     protected override void Awake()
     {
 
@@ -54,9 +56,7 @@ public class DiaryManager : Singleton<DiaryManager>
     private void FindDiary(string id)
     {
         Diaries diaries = GetDiaryById(id);
-        Debug.Log($"FindDiary called for {id}: was isFound={diaries.info.isFound}");
         diaries.info.isFound = true;
-        Debug.Log($"FindDiary set isFound=true for {id}, firing DiaryStateChange event");
         EventsManager.Instance.diaryEvents.DiaryStateChange(diaries);
     }
 
@@ -68,10 +68,6 @@ public class DiaryManager : Singleton<DiaryManager>
         Dictionary<string, Diaries> idToDiaryMap = new Dictionary<string, Diaries>();
         foreach (DiarySO diaryInfo in allDiaries)
         {
-            if (idToDiaryMap == null)
-            {
-                Debug.LogWarning("Duplicate ID found when creating diary map: " + diaryInfo.diaryID);
-            }
             idToDiaryMap.Add((diaryInfo.diaryID), LoadDiary(diaryInfo));
         }
         return idToDiaryMap;
@@ -81,10 +77,6 @@ public class DiaryManager : Singleton<DiaryManager>
     private Diaries GetDiaryById(string id)
     {
         Diaries diaries = diaryMap[id];
-        if (diaries == null)
-        {
-            Debug.LogError("ID not found in Diary Map: " + id);
-        }
         return diaries;
     }
 
@@ -122,18 +114,15 @@ public class DiaryManager : Singleton<DiaryManager>
                 DiaryData diaryData = JsonUtility.FromJson<DiaryData>(serializedData);
                 diary = new Diaries(diaryInfo);
                 diary.info.isFound = diaryData.isFound;
-                Debug.Log($"Loaded diary {diaryInfo.diaryID}: isFound={diaryData.isFound}");
             }
             else
             {
                 diary = new Diaries(diaryInfo);
                 diary.info.isFound = false; // Always start as not found if no saved data
-                Debug.Log($"No saved data for diary {diaryInfo.diaryID}, created with isFound=false");
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError("Failed to load diary with id " + diaryInfo.diaryID + ": " + e);
             diary = new Diaries(diaryInfo);
             diary.info.isFound = false;
         }

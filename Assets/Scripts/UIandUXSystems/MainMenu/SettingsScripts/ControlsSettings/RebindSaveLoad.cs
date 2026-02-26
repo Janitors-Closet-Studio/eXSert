@@ -16,20 +16,49 @@ public class RebindSaveLoad : MonoBehaviour
     {
         if (loadControlScheme)
         {
-            var rebinds = PlayerPrefs.GetString("rebinds");
+            var rebinds = PlayerPrefs.GetString("InputBindingOverrides");
             if (!string.IsNullOrEmpty(rebinds))
                 //Loads the rebinds if player prefs isnt null
                 actions.LoadBindingOverridesFromJson(rebinds);
+            // Refresh keybind icons and UI after loading
+            UnityEngine.InputSystem.Samples.RebindUI.RebindActionUI[] rebindUIs = FindObjectsOfType<UnityEngine.InputSystem.Samples.RebindUI.RebindActionUI>(true);
+            foreach (var ui in rebindUIs)
+            {
+                ui.UpdateBindingDisplay();
+            }
+            var iconSwappers = FindObjectsOfType<KeybindIconSwapper>(true);
+            foreach (var swapper in iconSwappers)
+            {
+                swapper.RefreshIcon();
+            }
         }
+    }
+
+    private void SaveRebinds()
+    {
+        if (loadControlScheme)
+        {
+            var rebinds = actions.SaveBindingOverridesAsJson();
+            PlayerPrefs.SetString("InputBindingOverrides", rebinds);
+            PlayerPrefs.Save();
+        }
+    }
+
+    // Fallback method to manually save rebinds if needed, such as a save button in the UI
+    public void SaveRebindsManually() => SaveRebinds();
+
+    private void OnDestroy()
+    {
+        SaveRebinds();
     }
 
     public void OnDisable()
     {
-        if (loadControlScheme)
-        {
-            //Saves bindings to player prefs
-            var rebinds = actions.SaveBindingOverridesAsJson();
-            PlayerPrefs.SetString("rebinds", rebinds);
-        }
+        SaveRebinds();
+    }
+
+    public void OnApplicationQuit()
+    {
+        SaveRebinds();
     }
 }

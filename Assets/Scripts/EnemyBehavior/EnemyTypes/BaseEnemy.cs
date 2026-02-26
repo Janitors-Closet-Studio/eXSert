@@ -845,8 +845,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             {
                 deathSequenceTriggered = true;
                 
-                // Fire the OnDeath event for any listeners
-                InvokeOnDeath();
+                // NOTE: OnDeath event is now fired AFTER death animation completes
+                // See DeathBehavior.OnDeathSequenceComplete() or DeathFallbackRoutine()
 
                 EnemyBehaviorDebugLogBools.Log("BaseEnemy", "Health reached 0, triggering death sequence.");
                 
@@ -867,6 +867,18 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             hasFiredLowHealth = true;
             TryFireTriggerByName("LowHealth");
         }
+    }
+
+    /// <summary>
+    /// Called when the death animation/sequence has fully completed.
+    /// This fires the OnDeath event and should be called by DeathBehavior or death fallback.
+    /// </summary>
+    public void OnDeathSequenceComplete()
+    {
+        InvokeOnDeath();
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Death sequence complete. OnDeath event fired.");
+#endif
     }
 
     /// <summary>
@@ -921,6 +933,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             healthBarInstance.gameObject.SetActive(true);
         }
         
+        // Reset the state machine to Idle state so enemies don't spawn in Death state
+        ResetStateMachineToIdle();
+        
         // Ensure the GameObject is inactive (ready for Spawn to activate)
         if (gameObject.activeSelf)
         {
@@ -934,8 +949,43 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         InvokeOnReset();
         
 #if UNITY_EDITOR
-        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] ResetEnemy() called. Health restored to {maxHealth}.");
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] ResetEnemy() called. Health restored to {maxHealth}. State machine reset.");
 #endif
+    }
+
+    /// <summary>
+    /// Resets the state machine to Idle state. Override in derived classes if a different
+    /// initial state is needed or if state machine needs special reset handling.
+    /// </summary>
+    protected virtual void ResetStateMachineToIdle()
+    {
+        // Try to transition to Idle via a trigger if possible
+        // This handles the case where state machine doesn't allow direct state setting
+        if (enemyAI != null)
+        {
+            // Stateless library doesn't support direct state setting, so we need to
+            // reinitialize the state machine entirely for a clean reset
+            var initialState = GetInitialState();
+            enemyAI = new Stateless.StateMachine<TState, TTrigger>(initialState);
+            ConfigureStateMachine();
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] State machine reinitialized to {initialState}.");
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Returns the initial state for this enemy type. Override in derived classes
+    /// to specify a different starting state.
+    /// </summary>
+    protected virtual TState GetInitialState()
+    {
+        // Default implementation tries to return the first enum value (usually Idle)
+        // Derived classes should override this to return their specific initial state
+        var values = System.Enum.GetValues(typeof(TState));
+        if (values.Length > 0)
+            return (TState)values.GetValue(0);
+        return default;
     }
 
     // Method to fire triggers safely by value, returns true if fired
@@ -989,6 +1039,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
 
         yield return WaitForSecondsCache.Get(3f);
+
+        // Fire OnDeath event now that death animation has completed
+        OnDeathSequenceComplete();
 
         // Hide health bar but don't destroy it (can be re-enabled on reset)
         if (healthBarInstance != null)

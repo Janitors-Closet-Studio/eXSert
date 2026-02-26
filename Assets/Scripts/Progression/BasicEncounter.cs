@@ -10,6 +10,7 @@ using UnityEngine;
 namespace Progression.Encounters
 {
     [RequireComponent(typeof(BoxCollider))]
+    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.z4zoa520n2tr")]
     public abstract class BasicEncounter : ProgressionZone
     {
         public string encounterName => this.gameObject.name;
@@ -23,8 +24,8 @@ namespace Progression.Encounters
         [SerializeField]
         public ProgressionZone encounterToEnable;
 
-        [SerializeField, Tooltip("Seconds to wait before enabling the next encounter.")]
-        protected float enableNextEncounterDelaySeconds = 3f;
+        [SerializeField, Tooltip("Seconds to wait before enabling the next encounter."), Range(0, 60)]
+        protected float enableNextEncounterDelaySeconds = 0f;
         #endregion
 
         /// <summary>

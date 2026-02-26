@@ -19,15 +19,10 @@ public class RumbleManager : Singleton<RumbleManager>
     protected override void Awake()
     {
 
-        if (pad == null)
-        {
-            Debug.LogWarning("To use the rumble feature please use a gamepad.");
-        }
-
         base.Awake();
     }
 
-    void Start()
+    void OnEnable()
     {
         //Subscribes onControlsChanged to SwitchControls function
         InputReader.PlayerInput.onControlsChanged += SwitchControls;
@@ -75,6 +70,7 @@ public class RumbleManager : Singleton<RumbleManager>
     private void OnDisable()
     {
         //If the script is disabled then onControlsChanged is unsubscribed
-        InputReader.PlayerInput.onControlsChanged -= SwitchControls;
+        if(InputReader.PlayerInput != null)
+            InputReader.PlayerInput.onControlsChanged -= SwitchControls;
     }
 }

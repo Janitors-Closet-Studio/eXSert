@@ -20,13 +20,11 @@ public class PlayLevelMusic : MonoBehaviour
     {
         if (levelMusicClip == null)
         {
-            Debug.LogWarning("No level music clip assigned!");
             return;
         }
 
         if (musicSource == null)
         {
-            Debug.LogError("SoundManager has no musicSource assigned!");
             return;
         }
 

@@ -107,13 +107,11 @@ public class KeybindIconSet : ScriptableObject
 
         if (!TryGetActionBinding(actionId, out ActionBinding bindingData))
         {
-            Debug.Log($"[KeybindIconSet] No ActionBinding found for {actionId}");
             return false;
         }
 
         if (bindingData.actionReference == null || bindingData.actionReference.action == null)
         {
-            Debug.Log($"[KeybindIconSet] No action reference for {actionId}");
             return false;
         }
 
@@ -121,42 +119,27 @@ public class KeybindIconSet : ScriptableObject
         InputAction runtimeAction = ResolveRuntimeAction(assetAction);
         if (runtimeAction == null)
         {
-            Debug.Log($"[KeybindIconSet] Could not resolve runtime action for {assetAction?.name}");
             return false;
         }
         var action = runtimeAction;
 
-        Debug.Log($"[KeybindIconSet] Querying icon for action: {action.name}");
-
         // Force refresh of bindings after a rebind
         if (!action.enabled)
         {
-            Debug.Log($"[KeybindIconSet] Enabling action {action.name}");
             action.Enable();
         }
 
-        // Dump all bindings for debug
-        Debug.Log($"[KeybindIconSet] Dumping all bindings for action {action.name}:");
-        for (int i = 0; i < action.bindings.Count; i++)
-        {
-            var b = action.bindings[i];
-            Debug.Log($"  [{i}] id={b.id} name={b.name} path={b.path} overridePath={b.overridePath} effectivePath={b.effectivePath} isComposite={b.isComposite} isPartOfComposite={b.isPartOfComposite}");
-        }
-
         int bindingIndex = ResolveBindingIndex(action, bindingData, useGamepad);
-        Debug.Log($"[KeybindIconSet] Resolved binding index for {action.name}: {bindingIndex}");
         if (bindingIndex >= 0 && bindingIndex < action.bindings.Count)
         {
             var binding = action.bindings[bindingIndex];
             // Always use effectivePath after rebinding
             controlPath = string.IsNullOrEmpty(binding.effectivePath) ? binding.path : binding.effectivePath;
-            Debug.Log($"[KeybindIconSet] Resolved binding for {action.name}: index={bindingIndex}, path={controlPath}, effectivePath={binding.effectivePath}, id={binding.id}");
             if (!string.IsNullOrEmpty(controlPath))
                 return true;
         }
 
         bool compositeResult = TryGetCompositeControlPath(action, bindingData, useGamepad, out controlPath);
-        Debug.Log($"[KeybindIconSet] Composite path result for {action.name}: {compositeResult}, path={controlPath}");
         return compositeResult;
     }
 
@@ -752,14 +735,14 @@ public enum KeybindAction
     GP_Interact = 8,
     GP_Jump = 9,
 
-    UI_Navigate = 10,
+    UI_Navigate = 11,
     UI_Swap = 18,
     UI_RestoreDefault = 19,
-    UI_Confirm = 14,
-    UI_Cancel = 15,
+    UI_Confirm = 15,
+    UI_Cancel = 16,
 
     // Crane actions moved to the bottom for inspector readability.
-    CraneExit = 11,
-    CraneConfirm = 12,
-    CraneMove = 13
+    CraneExit = 12,
+    CraneConfirm = 13,
+    CraneMove = 14
 }

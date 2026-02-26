@@ -28,9 +28,6 @@ public class PuzzleInteraction : UnlockableInteraction
 
     protected override void ExecuteInteraction()
     {
-        Debug.Log($"Executing puzzle interaction on {gameObject.name}.");
-        if (ButtonPressed == null)
-            Debug.LogWarning("ButtonPressed event has no subscribers. Make sure to subscribe to it in order for the puzzle interaction to work.");
         ButtonPressed?.Invoke();
         ButtonPressedWithSender?.Invoke(this);
     }

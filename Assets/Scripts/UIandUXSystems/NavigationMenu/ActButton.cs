@@ -13,15 +13,6 @@ public class ActButton : MonoBehaviour
 
     [SerializeField] private GameObject sceneTriggerBox = null;
 
-    void Awake()
-    {
-        if(sceneTriggerBox == null)
-        {
-            Debug.LogWarning("[ActButton] Scene Trigger Box not assigned in inspector.");
-        }
-    }
-
-
     public void OnActButtonClick()
     {
         bool matchKey = false;
@@ -39,20 +30,8 @@ public class ActButton : MonoBehaviour
         {
             bool isCompleted = ActsManager.Instance.actCompletionMap[actNumber];
             if(isCompleted)
-            {
                 TeleportPlayerToAct();
-            }
-            else
-            {
-                Debug.Log($"[ActButton] Act {actNumber} has not been completed yet.");
-            }
         }
-        else
-        {
-            Debug.LogWarning($"[ActButton] Act {actNumber} not found in completion map.");
-        }
-
-        
     }
 
 
@@ -62,13 +41,9 @@ public class ActButton : MonoBehaviour
         {
             var player = GameObject.FindGameObjectWithTag("Player"); // Finds player
             if (player != null)
-            {
                 player.transform.position = sceneTriggerBox.transform.position;
-            }
-            else
-            {
-                Debug.LogError("Player GameObject with tag 'Player' not found");
-            }
+            
         }
     }
+    
 }

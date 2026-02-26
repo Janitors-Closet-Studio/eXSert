@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System;
+using System.Collections;
 
 [RequireComponent(typeof(BoxCollider))]
 public abstract class InteractionManager : MonoBehaviour, IInteractable
@@ -13,11 +14,13 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     [Header("Debugging")]
     [SerializeField] private bool _showHitbox;
+    internal bool interactable = true;
 
     [Space(10)]
     [Header("Interaction Animation and ID")]
     [SerializeField] private AnimationClip _interactAnimation;
     [SerializeField] private string _interactId;
+    [SerializeField] private AudioClip _interactionSFX;
     [SerializeField] private string _interactionPrompt = "Press to Interact";
     
     [Space(10)]
@@ -46,23 +49,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (ui._interactIcon != null)
             ui._interactIcon.gameObject.SetActive(false);
     }
-    public void OnInteractButtonPressed()
-    {
-        if (!isPlayerNearby || !InputReader.InteractTriggered)
-            return;
-
-        Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
-        Interact();
-        var ui = ResolveInteractionUI();
-        ui?._interactEffect?.Play();
-    }
-
-    private void Update()
-    {
-        OnInteractButtonPressed();
-    }
-
-    protected abstract void Interact();
 
     public void DeactivateInteractable(MonoBehaviour interactable)
     {
@@ -90,7 +76,27 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (ui._interactText != null)
             ui._interactText.gameObject.SetActive(false);
     }
+
+    public void OnInteractButtonPressed()
+    {
+        if (!isPlayerNearby || !InputReader.InteractTriggered || !interactable)
+            return;
+
+        Interact();
+        var ui = ResolveInteractionUI();
+        if(ui != null && _interactionSFX != null)
+            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+    }
+
+    private void Update()
+    {
+        OnInteractButtonPressed();
+    }
+
+    protected abstract void Interact();
+
     
+
     public void SwapBasedOnInputMethod()
     {
         var ui = ResolveInteractionUI();
@@ -115,8 +121,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (!other.transform.root.CompareTag("Player"))
             return;
 
-        Debug.Log($"Player entered interaction zone of {gameObject.name}");
-
         isPlayerNearby = true;
 
         SwapBasedOnInputMethod();
@@ -125,14 +129,14 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (ui == null)
             return;
 
-        if (ui._interactText != null)
+        if (ui._interactText != null && interactable)
         {
             ui._interactText.gameObject.SetActive(true);
             if (ui._interactText.transform.parent != null)
                 ui._interactText.transform.parent.gameObject.SetActive(true);
         }
 
-        if (ui._interactIcon != null)
+        if (ui._interactIcon != null && interactable)
             ui._interactIcon.gameObject.SetActive(true);
     }
 

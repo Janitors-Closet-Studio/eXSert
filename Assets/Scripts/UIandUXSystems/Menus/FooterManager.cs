@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using System.ComponentModel;
 using Unity.VisualScripting;
+using System.Collections;
+
 
 
 #if UNITY_EDITOR
@@ -79,15 +81,15 @@ public class FooterManager : MonoBehaviour
 
     }
 
-    private void Update()
+    private IEnumerator UpdateFooterMessage()
     {
-        if(currentFooterType != footerTypes.Settings){
-            CheckForFooterUpdate();
-        }
-        else 
-        {
-            return;
-        }
+        yield return new WaitForSeconds(0.1f); // Adjust the delay as needed
+        CheckForFooterUpdate();
+    }
+
+    void OnEnable()
+    {
+        StartCoroutine(UpdateFooterMessage());
     }
 
 }
