@@ -44,10 +44,11 @@ public class SceneLoader : Singleton<SceneLoader>
     private bool loadingSceneReady = false;
     private bool loadingSceneLoadInProgress = false;
 
-    
-
     private bool playerSceneReady = false;
     private bool playerSceneLoadInProgress = false;
+
+    private bool musicBoxSceneReady = false;
+    private bool musicBoxSceneLoadInProgress = false;
 
     protected override void Awake()
     {
@@ -60,7 +61,7 @@ public class SceneLoader : Singleton<SceneLoader>
 
         if (preloadMusicScene)
         {
-            LoadSceneAdditive(musicSceneName);
+            StartCoroutine(EnsureMusicSceneLoadedCoroutine());
         }
     }
 
@@ -253,7 +254,7 @@ public class SceneLoader : Singleton<SceneLoader>
 
         Log("Main menu loaded successfully");
         // Load binding overrides from PlayerPrefs
-        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null && InputReader.PlayerInput.actions != null)
             InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
         KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
@@ -376,10 +377,11 @@ public class SceneLoader : Singleton<SceneLoader>
         }
 
         // Load binding overrides from PlayerPrefs
-        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null && InputReader.PlayerInput.actions != null)
             InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
         KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
+        Log("[DEBUG] LoadInitialGameSceneCoroutine finished");
     }
 
     private IEnumerator LoadSceneAdditiveCoroutine(string sceneName)
@@ -412,7 +414,7 @@ public class SceneLoader : Singleton<SceneLoader>
         }
         
         // Load binding overrides from PlayerPrefs
-        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null)
+        if (PlayerPrefs.HasKey("InputBindingOverrides") && InputReader.PlayerInput != null && InputReader.PlayerInput.actions != null)
             InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(PlayerPrefs.GetString("InputBindingOverrides"));
         KeybindIconSwapper.RefreshAllIcons();
         isLoadingScene = false;
@@ -588,7 +590,16 @@ public class SceneLoader : Singleton<SceneLoader>
             return true;
         if (IsPlayerSceneName(scene.name))
             return true;
+        if (IsMusicSceneName(scene.name)) // Music scene will never be unloaded
+            return true;
         return false;
+    }
+
+    private bool IsMusicSceneName(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(musicSceneName))
+            return false;
+        return string.Equals(sceneName, musicSceneName, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool IsLoadingSceneName(string sceneName)
@@ -745,6 +756,31 @@ public class SceneLoader : Singleton<SceneLoader>
 
         playerSceneLoadInProgress = false;
         playerSceneReady = true;
+    }
+
+    private IEnumerator EnsureMusicSceneLoadedCoroutine()
+    {
+        if (string.IsNullOrWhiteSpace(musicSceneName))
+            yield break;
+
+        Scene musicScene = SceneManager.GetSceneByName(musicSceneName);
+        if (musicScene.isLoaded)
+        {
+            yield break;
+        }
+
+        AsyncOperation loadOp = SceneManager.LoadSceneAsync(musicSceneName, LoadSceneMode.Additive);
+        if (loadOp == null)
+        {
+            Debug.LogWarning($"[SceneLoader] Failed to load music scene '{musicSceneName}'. Is it added to Build Settings?");
+            yield break;
+        }
+
+        while (!loadOp.isDone)
+        {
+            yield return null;
+        }
+
     }
 
 
