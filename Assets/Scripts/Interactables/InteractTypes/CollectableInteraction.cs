@@ -19,7 +19,6 @@ public abstract class CollectableInteraction : InteractionManager
 
     protected override void Interact()
     {
-        base.Interact();
 
         ExecuteInteraction();
 
