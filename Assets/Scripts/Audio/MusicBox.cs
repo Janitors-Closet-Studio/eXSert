@@ -49,13 +49,11 @@ public class MusicBox : MonoBehaviour
 
         if (levelMusic == null)
         {
-            Debug.LogWarning("No level music clip assigned!");
             return;
         }
 
         if (!TryBindMusicSource())
         {
-            Debug.LogError("SoundManager has no levelMusicSource assigned!");
             return;
         }
 
@@ -78,7 +76,6 @@ public class MusicBox : MonoBehaviour
     {
         if (ambienceClip == null)
         {
-            Debug.LogWarning("No ambience clip assigned!");
             return;
         }
 
@@ -87,7 +84,6 @@ public class MusicBox : MonoBehaviour
             var sm = SoundManager.Instance;
             if (sm == null || sm.ambienceSource == null)
             {
-                Debug.LogError("SoundManager has no ambienceSource assigned!");
                 return;
             }
             ambienceSource = sm.ambienceSource;
@@ -101,7 +97,7 @@ public class MusicBox : MonoBehaviour
         ambienceSource.Play();
     }
 
-    private IEnumerator FadeOutMusic(float fadeDuration)
+    public IEnumerator FadeOutMusic(float fadeDuration)
     {
         if (musicSource == null || !musicSource.isPlaying)
             yield break;
@@ -118,7 +114,7 @@ public class MusicBox : MonoBehaviour
         musicSource.volume = startVolume; // Reset volume for next time
     }
 
-    private IEnumerator FadeOutAmbience(float fadeDuration)
+    public IEnumerator FadeOutAmbience(float fadeDuration)
     {
         if (ambienceSource == null || !ambienceSource.isPlaying)
             yield break;

@@ -39,19 +39,17 @@ public class GeneralSettings : MonoBehaviour
 
     [SerializeField] private InputActionReference _applyAction;
 
-    void Update()
+    private void OnEnable()
     {
-        if (_applyAction.action.WasPerformedThisFrame() && generalSettingsContainer.gameObject.activeSelf)
-        {
-            GeneralApply();
-            Debug.Log("General Settings Applied");
-        }
-        else 
-        {
-            return;
-        }
+        if (_applyAction != null && _applyAction.action != null)
+            _applyAction.action.performed += ctx => GeneralApply();
     }
 
+    private void OnDisable()
+    {
+        if (_applyAction != null && _applyAction.action != null)
+            _applyAction.action.performed -= ctx => GeneralApply();
+    }
 
 
     //All functions below sets values based on player choice
@@ -72,8 +70,6 @@ public class GeneralSettings : MonoBehaviour
     public void SetComboProgressionDisplay(bool displayOn)
     {
         SettingsManager.Instance.comboProgression = displayOn;
-
-        Debug.Log("Combo Progression: " + !isComboProgressionOn);
 
         if (displayOn)
         {

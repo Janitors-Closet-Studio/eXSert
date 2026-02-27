@@ -38,31 +38,6 @@ public class SoundManager : Singleton<SoundManager>
         PersistAudioSource(sfxSource);
         PersistAudioSource(voiceSource);
 
-        if (masterSource == null)
-        {
-            Debug.LogWarning("To have sound in the scene you must have a master volume source assigned!");
-        }
-
-        if (musicSource == null)
-        {
-            Debug.LogWarning("To play music in the scene you must have a music source assigned!");
-        }
-
-        if (levelMusicSource == null)
-        {
-            Debug.LogWarning("To play level music in the scene you must have a level music source assigned!");
-        }
-
-        if (sfxSource == null)
-        {
-            Debug.LogWarning("To play SFX you must have an SFX source assigned!");
-        }
-
-        if (voiceSource == null)
-        {
-            Debug.LogWarning("To play voices in the scene you must have a voice source assigned!");
-        }
-
         base.Awake();
 
         if (SoundManager.Instance != this)

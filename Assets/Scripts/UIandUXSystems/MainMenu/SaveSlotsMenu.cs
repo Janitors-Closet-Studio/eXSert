@@ -96,7 +96,6 @@ public class SaveSlotsMenu : Menu
         // Safety check for SceneLoader
         if (SceneLoader.Instance == null)
         {
-            Debug.LogError("[SaveSlotsMenu] SceneLoader not found! Please add SceneLoader GameObject to the Main Menu scene.");
             hasStartedSceneTransition = false;
             return;
         }
@@ -135,7 +134,6 @@ public class SaveSlotsMenu : Menu
             }
             else
             {
-                Debug.LogError("[SaveSlotsMenu] No save slots available to select.");
                 RestoreMenuButtons();
                 hasStartedSceneTransition = false;
                 return;
@@ -144,7 +142,6 @@ public class SaveSlotsMenu : Menu
 
         if (DataPersistenceManager.instance == null)
         {
-            Debug.LogError("[SaveSlotsMenu] DataPersistenceManager not found. Ensure it exists in the Main Menu (or is allowed to auto-create) before starting a game.");
             RestoreMenuButtons();
             hasStartedSceneTransition = false;
             return;
@@ -153,7 +150,6 @@ public class SaveSlotsMenu : Menu
         string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
         if (string.IsNullOrWhiteSpace(selectedProfileId))
         {
-            Debug.LogError("[SaveSlotsMenu] Selected save slot has an empty profile id. Assign unique Profile Ids on each SaveSlots component in the inspector.");
             RestoreMenuButtons();
             hasStartedSceneTransition = false;
             return;
@@ -178,7 +174,6 @@ public class SaveSlotsMenu : Menu
 
             if (string.IsNullOrWhiteSpace(primaryScene))
             {
-                Debug.LogError($"[SaveSlotsMenu] Cannot start new game because no valid primary scene could be resolved (configuredDefault='{configuredDefault}').");
                 RestoreMenuButtons();
                 hasStartedSceneTransition = false;
                 return;
@@ -230,7 +225,6 @@ public class SaveSlotsMenu : Menu
             savedScene = ResolveLoadableSceneOrFallback(savedScene, "Elevator");
             if (string.IsNullOrWhiteSpace(savedScene))
             {
-                Debug.LogError("[SaveSlotsMenu] Cannot load game because the saved scene is missing/invalid and no fallback scene could be resolved.");
                 RestoreMenuButtons();
                 hasStartedSceneTransition = false;
                 return;
@@ -257,14 +251,8 @@ public class SaveSlotsMenu : Menu
         if (!string.IsNullOrWhiteSpace(sceneName) && Application.CanStreamedLevelBeLoaded(sceneName))
             return sceneName;
 
-        if (!string.IsNullOrWhiteSpace(sceneName))
-            Debug.LogError($"[SaveSlotsMenu] Scene '{sceneName}' is not loadable (not in Build Settings or misspelled).");
-
         if (!string.IsNullOrWhiteSpace(fallbackSceneName) && Application.CanStreamedLevelBeLoaded(fallbackSceneName))
-        {
-            Debug.LogWarning($"[SaveSlotsMenu] Falling back to '{fallbackSceneName}'.");
             return fallbackSceneName;
-        }
 
         return null;
     }
@@ -294,17 +282,13 @@ public class SaveSlotsMenu : Menu
     public void OnDeleteSaveClicked()
     {
         if (currentSaveSlotSelected == null)
-        {
-            Debug.LogWarning("[SaveSlotsMenu] No save slot selected to delete.");
             return;
-        }
+        
 
         string profileId = currentSaveSlotSelected.GetProfileId();
         if (string.IsNullOrEmpty(profileId))
-        {
-            Debug.LogWarning("[SaveSlotsMenu] Selected slot has no profile id.");
             return;
-        }
+
 
         // Delete save file for this slot
         DataPersistenceManager.instance.DeleteProfile(profileId);
@@ -320,8 +304,7 @@ public class SaveSlotsMenu : Menu
         EnsureReferences();
         if (mainMenu != null)
             mainMenu.ActivateMenu();
-        else
-            Debug.LogError("[SaveSlotsMenu] MainMenu reference not set (cannot go back). Assign it in the inspector.");
+
         this.DeactivateMenu();
     }
 
@@ -335,25 +318,15 @@ public class SaveSlotsMenu : Menu
 
         GameObject firstSelected = backButton != null ? backButton.gameObject : null;
 
-        if (backButton == null)
-        {
-            Debug.LogError("[SaveSlotsMenu] Back Button reference not set. Assign it in the inspector (or ensure the button name contains 'Back').");
-        }
-
         if (DataPersistenceManager.instance == null)
-        {
-            Debug.LogError("[SaveSlotsMenu] DataPersistenceManager not found when opening save slot menu.");
             return;
-        }
+        
 
         Dictionary<string, GameData> profilesGameData = DataPersistenceManager.instance.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
 
         // Validate slot profile ids (common merge issue: ids cleared)
         if (saveSlots == null || saveSlots.Length == 0)
-        {
-            Debug.LogError("[SaveSlotsMenu] No SaveSlots found under SaveSlotsMenu. Ensure the slot buttons have the SaveSlots component.");
             return;
-        }
 
         var seenProfileIds = new HashSet<string>();
         foreach (var slot in saveSlots)
@@ -361,14 +334,7 @@ public class SaveSlotsMenu : Menu
             if (slot == null) continue;
             string id = slot.GetProfileId();
             if (string.IsNullOrWhiteSpace(id))
-            {
-                Debug.LogWarning($"[SaveSlotsMenu] SaveSlots '{slot.name}' has an empty profile id.");
                 continue;
-            }
-            if (!seenProfileIds.Add(id))
-            {
-                Debug.LogWarning($"[SaveSlotsMenu] Duplicate profile id '{id}' detected (slot '{slot.name}'). Each slot should have a unique id.");
-            }
         }
 
         //Disables and enables interactability of save slots depending if there is data attached to the profile Id

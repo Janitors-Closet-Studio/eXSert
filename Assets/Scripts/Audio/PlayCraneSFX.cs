@@ -20,7 +20,6 @@ public class PlayCraneSFX : MonoBehaviour
         
         if (puzzleSource == null)
         {
-            Debug.LogError("PuzzleSource is not assigned in SoundManager! Please assign it in the inspector.");
             enabled = false;
             return;
         }
@@ -35,10 +34,6 @@ public class PlayCraneSFX : MonoBehaviour
             puzzleSource.clip = craneSFXClip;
             puzzleSource.volume = originalSourceVolume * clipVolume;
             puzzleSource.loop = loop;
-        }
-        else
-        {
-            Debug.LogWarning("Crane SFX clip is null!");
         }
     }
 

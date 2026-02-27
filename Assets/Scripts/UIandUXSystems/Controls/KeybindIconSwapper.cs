@@ -70,10 +70,6 @@ public class KeybindIconSwapper : MonoBehaviour
         if (sharedIconSet == null)
         {
             sharedIconSet = Resources.Load<KeybindIconSet>("KeybindIconSet");
-            if (sharedIconSet == null)
-            {
-                Debug.LogError("[KeybindIconSwapper] Could not find KeybindIconSet asset in Resources! Please place your KeybindIconSet.asset in a Resources folder.");
-            }
         }
     }
 

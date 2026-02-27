@@ -50,7 +50,7 @@ public class LogUI : MonoBehaviour
     }
 
     //Sets each log info
-    private void SetLogInfo(Logs log)
+    internal void SetLogInfo(Logs log)
     {
         Debug.Log($"Setting log info for {log.info.logID}");
         logName.text = log.info.logName;
@@ -67,14 +67,9 @@ public class LogUI : MonoBehaviour
          // Update the log image, and handle case where there may not be an image assigned
         
         if (log.info.logImage != null && log.info.logImage.sprite != null)
-        {
             logImage.sprite = log.info.logImage.sprite;
-        }
         else
-        {
             logImage.sprite = null;
-            Debug.LogWarning($"Log {log.info.logID} has no image assigned");
-        }
     }
 
 }

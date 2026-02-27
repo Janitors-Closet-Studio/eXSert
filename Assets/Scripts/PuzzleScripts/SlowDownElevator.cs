@@ -13,9 +13,10 @@ using Progression.Encounters;
 using UnityEngine;
 public class SlowDownElevator : MonoBehaviour
 {
+    #region Inspector Setup
     [Header("Required References")]
     [SerializeField, CriticalReference] private ElevatorWalls _elevatorWalls;
-    [SerializeField] private BasicEncounter basicEncounter;
+    [SerializeField, CriticalReference] private BasicEncounter basicEncounter;
 
     [Header("Deceleration")]
     [SerializeField] [Range(0.1f, 10f)] private float decelerationDuration = 2f;
@@ -31,6 +32,7 @@ public class SlowDownElevator : MonoBehaviour
     [Header("Animation Timing")]
     [SerializeField] [Range(0f, 5f)] private float delayBeforeDrop = 0.5f;
     [SerializeField] [Range(0f, 5f)] private float delayBetweenAnimations = 0.5f;
+    #endregion
 
     // Internal state
     internal bool _isDecelerating = false;
@@ -53,7 +55,6 @@ public class SlowDownElevator : MonoBehaviour
     {
         if (!Application.isPlaying)
         {
-            Debug.LogWarning("[SlowDownElevator] Debug_RunFullSequence can only run in Play Mode.");
             return;
         }
 
@@ -74,28 +75,11 @@ public class SlowDownElevator : MonoBehaviour
         _initialSpeed = 0f;
     }
 
-    private void Start()
-    {
-        if (basicEncounter != null)
-        {
-            StartCoroutine(WaitForEncounterCompletion());
-        }
-    }
-
-    private IEnumerator WaitForEncounterCompletion()
-    {
-        // Wait until all enemies are defeated
-        while (!basicEncounter.isCompleted)
-        {
-            yield return new WaitForSeconds(0.5f); // Check every half second
-        }
-
-        // All enemies dead, start the elevator slow down
-        SetUpStateToSlowWalls();
-    }
+    private void OnEnable() => basicEncounter.OnEncounterCompleted += SetUpStateToSlowWalls;
+    private void OnDisable() => basicEncounter.OnEncounterCompleted -= SetUpStateToSlowWalls;
 
     /// <summary>
-    /// Initiates the elevator deceleration puzzle.
+    /// Initiates the elevator deceleration process.
     /// Automatically called when all enemies are defeated.
     /// </summary>
     public void SetUpStateToSlowWalls()
@@ -111,9 +95,7 @@ public class SlowDownElevator : MonoBehaviour
         _elevatorWalls.elevatorSpeed = 0f;
         
         EnsureProperWallStates();
-        
-        Debug.Log($"[SlowDownElevator] Starting puzzle. ElevatorWall Y: {_initialElevatorWallY}, SwitchPoint: {_pointToSwitchWallsY}, EndYPos: {_elevatorWalls.endYPos}");
-        
+    
         // Compute distances along the wrapped path: start -> swap -> end (wrapping past yBounds to restartPoint)
         _distanceToSwap = Mathf.Abs(_initialElevatorWallY - _pointToSwitchWallsY);
 
@@ -132,8 +114,6 @@ public class SlowDownElevator : MonoBehaviour
         }
 
         _totalDecelerationDistance = _distanceToSwap + distanceSwapToEnd;
-
-        Debug.Log($"[SlowDownElevator] Dist to swap: {_distanceToSwap}, swap->end: {distanceSwapToEnd}, Total: {_totalDecelerationDistance}");
         _actualDecelerationDuration = (_initialSpeed > 0.01f) ? (2f * _totalDecelerationDistance / _initialSpeed) : decelerationDuration;
         
         if (_decelerationCoroutine != null)
@@ -194,7 +174,6 @@ public class SlowDownElevator : MonoBehaviour
                     elevatorPos.y = currentY;  // wrapped movement
                     _elevatorWalls.elevatorWall.transform.position = elevatorPos;
                     
-                    Debug.Log($"[BeforeSwap] Y: {currentY} (raw {rawY}), DistTraveled: {distanceTraveled}/{_totalDecelerationDistance}");
                 }
 
                 // Trigger swap the first time we pass the raw swap height (off-screen), before wrapping back
@@ -212,8 +191,6 @@ public class SlowDownElevator : MonoBehaviour
                     }
                     if(_elevatorWalls.elevatorWall != null)
                         _elevatorWalls.elevatorWall.SetActive(false);
-
-                    Debug.Log($"[Swap] Triggered at distance {distanceTraveled}, Y={currentY}");
                 }
 
                 // Move wallWithDoor only after swap
@@ -261,7 +238,6 @@ public class SlowDownElevator : MonoBehaviour
     {
         if(targetObject == null)
         {
-            Debug.LogError("[SlowDownElevator] Target object is null!");
             yield break;
         }
 
@@ -300,9 +276,7 @@ public class SlowDownElevator : MonoBehaviour
         float beforeRepeat = normalized;
         normalized = Mathf.Repeat(normalized, loopHeight);
         float result = _elevatorWalls.yBounds + normalized;
-        
-        Debug.Log($"[WrapY] RawY: {rawY}, yBounds: {_elevatorWalls.yBounds}, LoopHeight: {loopHeight}, Normalized: {beforeRepeat}, AfterRepeat: {normalized}, Result: {result}");
-        
+            
         return result;
     }
 }
