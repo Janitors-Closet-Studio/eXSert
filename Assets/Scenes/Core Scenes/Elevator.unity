@@ -1237,6 +1237,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 90
       objectReference: {fileID: 0}
+    - target: {fileID: -8020457421623501468, guid: 7fa3347f9d8ee2d47b69ad626f495f1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 667b0e5907735e540bf37b3f5cee4529, type: 2}
     - target: {fileID: -5743350618785959237, guid: 7fa3347f9d8ee2d47b69ad626f495f1a, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 65
@@ -1253,6 +1257,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 65
       objectReference: {fileID: 0}
+    - target: {fileID: 7469973971868601538, guid: 7fa3347f9d8ee2d47b69ad626f495f1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 368ad758db63c4748b039c256bd1ca27, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -36848,9 +36856,17 @@ MonoBehaviour:
   currentDoorState: 1
   doorLockState: 1
   doorType: 0
-  topDoorPart: {fileID: 355597685}
-  bottomDoorPart: {fileID: 1591648531}
-  distToOpenParts: 2
+  doorParts:
+  - partObject: {fileID: 355597685}
+    moveX: 0
+    moveY: 1
+    moveZ: 0
+    distToOpenParts: 3
+  - partObject: {fileID: 1591648531}
+    moveX: 0
+    moveY: 1
+    moveZ: 0
+    distToOpenParts: -3
   openSpeed: 1
   hingePivot: {fileID: 0}
 --- !u!4 &1066649023
@@ -58392,6 +58408,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 90
       objectReference: {fileID: 0}
+    - target: {fileID: -8020457421623501468, guid: 7fa3347f9d8ee2d47b69ad626f495f1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 667b0e5907735e540bf37b3f5cee4529, type: 2}
     - target: {fileID: -5743350618785959237, guid: 7fa3347f9d8ee2d47b69ad626f495f1a, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 65
@@ -58408,6 +58428,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 65
       objectReference: {fileID: 0}
+    - target: {fileID: 7469973971868601538, guid: 7fa3347f9d8ee2d47b69ad626f495f1a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 368ad758db63c4748b039c256bd1ca27, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

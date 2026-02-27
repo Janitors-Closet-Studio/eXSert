@@ -30,6 +30,7 @@ public class MusicBox : MonoBehaviour
     private Coroutine fadeOutMusicRoutine;
     private Coroutine fadeOutAmbienceRoutine;
 
+    private SoundManager cachedSoundManager;
     private void Awake()
     {
         boxCollider = GetComponent<BoxCollider>();
@@ -40,22 +41,17 @@ public class MusicBox : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
 
+        cachedSoundManager = SoundManager.Instance;
         TryBindMusicSource();
     }
 
     private void PlayLevelMusic()
     {
-
-
         if (levelMusic == null)
-        {
             return;
-        }
 
         if (!TryBindMusicSource())
-        {
             return;
-        }
 
         if (fadeOutMusicRoutine != null)
         {
@@ -63,37 +59,36 @@ public class MusicBox : MonoBehaviour
             fadeOutMusicRoutine = null;
         }
 
-        if (musicSource.isPlaying && musicSource.clip == levelMusic)
+        // Only update if clip or loop state changed
+        if (musicSource.isPlaying && musicSource.clip == levelMusic && musicSource.loop == loopMusic)
             return;
 
-        musicSource.clip = levelMusic;
-        musicSource.loop = loopMusic;
+        if (musicSource.clip != levelMusic)
+            musicSource.clip = levelMusic;
+        if (musicSource.loop != loopMusic)
+            musicSource.loop = loopMusic;
         musicSource.Play();
-        Debug.Log($"🎵 [MusicBox] Playing level music: {levelMusic.name}");
     }
 
     private void PlayAmbience()
     {
         if (ambienceClip == null)
-        {
             return;
-        }
 
         if (ambienceSource == null)
         {
-            var sm = SoundManager.Instance;
-            if (sm == null || sm.ambienceSource == null)
-            {
+            if (cachedSoundManager == null || cachedSoundManager.ambienceSource == null)
                 return;
-            }
-            ambienceSource = sm.ambienceSource;
+            ambienceSource = cachedSoundManager.ambienceSource;
         }
 
         if (ambienceSource.isPlaying && ambienceSource.clip == ambienceClip)
             return;
 
-        ambienceSource.clip = ambienceClip;
-        ambienceSource.loop = true;
+        if (ambienceSource.clip != ambienceClip)
+            ambienceSource.clip = ambienceClip;
+        if (!ambienceSource.loop)
+            ambienceSource.loop = true;
         ambienceSource.Play();
     }
 
@@ -103,13 +98,13 @@ public class MusicBox : MonoBehaviour
             yield break;
 
         float startVolume = musicSource.volume;
-
-        for (float t = 0; t < fadeDuration; t += Time.deltaTime)
+        float t = 0f;
+        while (t < fadeDuration)
         {
-            musicSource.volume = Mathf.Lerp(startVolume, 0, t / fadeDuration);
+            t += Time.deltaTime;
+            musicSource.volume = Mathf.MoveTowards(musicSource.volume, 0, startVolume * (Time.deltaTime / fadeDuration));
             yield return null;
         }
-
         musicSource.Stop();
         musicSource.volume = startVolume; // Reset volume for next time
     }
@@ -120,13 +115,13 @@ public class MusicBox : MonoBehaviour
             yield break;
 
         float startVolume = ambienceSource.volume;
-
-        for (float t = 0; t < fadeDuration; t += Time.deltaTime)
+        float t = 0f;
+        while (t < fadeDuration)
         {
-            ambienceSource.volume = Mathf.Lerp(startVolume, 0, t / fadeDuration);
+            t += Time.deltaTime;
+            ambienceSource.volume = Mathf.MoveTowards(ambienceSource.volume, 0, startVolume * (Time.deltaTime / fadeDuration));
             yield return null;
         }
-
         ambienceSource.Stop();
         ambienceSource.volume = startVolume; // Reset volume for next time
     }
@@ -208,11 +203,12 @@ public class MusicBox : MonoBehaviour
         if (musicSource != null)
             return true;
 
-        var sm = SoundManager.Instance;
-        if (sm == null)
+        if (cachedSoundManager == null)
+            cachedSoundManager = SoundManager.Instance;
+        if (cachedSoundManager == null)
             return false;
 
-        musicSource = sm.levelMusicSource;
+        musicSource = cachedSoundManager.levelMusicSource;
         return musicSource != null;
     }
 }
