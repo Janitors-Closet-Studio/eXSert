@@ -16,7 +16,7 @@ public class CraneGrabObject : MonoBehaviour
     private void OnValidate()
     {
         if (grabLocalOffset == Vector3.zero)
-            grabLocalOffset = new Vector3(0f, -1.7f, 0f);
+            grabLocalOffset = new Vector3(0f, -1f, 0f);
     }
 #endif
 

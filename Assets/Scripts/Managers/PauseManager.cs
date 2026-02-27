@@ -100,7 +100,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnPauseOrBack(InputAction.CallbackContext context)
     {
-        if(CranePuzzle.IsCranePuzzleActive)
+        if(CranePuzzle.IsCranePuzzleActive || Hint.isHintActive)
         {
             Debug.Log("[PauseManager] OnPauseOrBack ignored - crane puzzle active");
             return;

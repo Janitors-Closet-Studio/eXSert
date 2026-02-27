@@ -41,6 +41,8 @@ public abstract class UnlockableInteraction : InteractionManager
 
     protected override void Interact()
     {
+        base.Interact();
+
         if (!needsItem)
         { 
             ExecuteInteraction();

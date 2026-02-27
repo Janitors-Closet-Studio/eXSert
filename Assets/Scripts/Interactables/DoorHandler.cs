@@ -30,6 +30,7 @@ public class DoorPartMovement
     public bool moveZ = false;
     
     public float distToOpenParts = 2.0f;
+    [HideInInspector] public Vector3 closedLocalPosition;
 }
 public class DoorHandler : MonoBehaviour
 {
@@ -44,7 +45,7 @@ public class DoorHandler : MonoBehaviour
     public DoorType doorType;
     
 
-    private Vector3 doorPosOrigin;
+    internal Vector3 doorPosOrigin;
     private Quaternion doorRotOrigin;
     private Vector3 targetDoorPos;
     private Quaternion targetDoorRot;
@@ -163,6 +164,12 @@ public class DoorHandler : MonoBehaviour
     // These two functions handle the OpenUp door type
     private void OpenUnconvential()
     {
+        // Store closed local positions at the moment of opening
+        foreach (var partMove in doorParts)
+        {
+            if (partMove.partObject != null)
+                partMove.closedLocalPosition = partMove.partObject.transform.localPosition;
+        }
         StopAllCoroutines();
         StartCoroutine(OpenUnconventialCoroutine());
     }
@@ -236,9 +243,9 @@ public class DoorHandler : MonoBehaviour
             yield break;
         }
 
-        // Prepare target positions for each part
+        // Prepare target local positions for each part
         List<GameObject> movingParts = new List<GameObject>();
-        List<Vector3> targetPositions = new List<Vector3>();
+        List<Vector3> targetLocalPositions = new List<Vector3>();
 
         foreach (var partMove in doorParts)
         {
@@ -249,7 +256,8 @@ public class DoorHandler : MonoBehaviour
                 partMove.moveZ ? partMove.distToOpenParts : 0f
             );
             movingParts.Add(partMove.partObject);
-            targetPositions.Add(partMove.partObject.transform.position + offset);
+            // Use closedLocalPosition as base
+            targetLocalPositions.Add(partMove.closedLocalPosition + offset);
         }
 
         if (movingParts.Count == 0)
@@ -264,12 +272,12 @@ public class DoorHandler : MonoBehaviour
             for (int i = 0; i < movingParts.Count; i++)
             {
                 var part = movingParts[i];
-                var target = targetPositions[i];
+                var target = targetLocalPositions[i];
                 if (part == null) continue;
-                if (Vector3.Distance(part.transform.position, target) > 0.01f)
+                if (Vector3.Distance(part.transform.localPosition, target) > 0.01f)
                 {
                     float t = Mathf.Clamp01(openSpeed * Time.deltaTime);
-                    part.transform.position = Vector3.Lerp(part.transform.position, target, t);
+                    part.transform.localPosition = Vector3.Lerp(part.transform.localPosition, target, t);
                     allAtTarget = false;
                 }
             }
@@ -286,15 +294,15 @@ public class DoorHandler : MonoBehaviour
             yield break;
         }
 
-        // Prepare closed positions for each part (all return to doorPosOrigin)
+        // Prepare closed local positions for each part (return to closedLocalPosition)
         List<GameObject> movingParts = new List<GameObject>();
-        List<Vector3> closedPositions = new List<Vector3>();
+        List<Vector3> closedLocalPositions = new List<Vector3>();
 
         foreach (var partMove in doorParts)
         {
             if (partMove.partObject == null) continue;
             movingParts.Add(partMove.partObject);
-            closedPositions.Add(doorPosOrigin);
+            closedLocalPositions.Add(partMove.closedLocalPosition);
         }
 
         if (movingParts.Count == 0)
@@ -309,12 +317,12 @@ public class DoorHandler : MonoBehaviour
             for (int i = 0; i < movingParts.Count; i++)
             {
                 var part = movingParts[i];
-                var target = closedPositions[i];
+                var target = closedLocalPositions[i];
                 if (part == null) continue;
-                if (Vector3.Distance(part.transform.position, target) > 0.01f)
+                if (Vector3.Distance(part.transform.localPosition, target) > 0.01f)
                 {
                     float t = Mathf.Clamp01(openSpeed * Time.deltaTime);
-                    part.transform.position = Vector3.Lerp(part.transform.position, target, t);
+                    part.transform.localPosition = Vector3.Lerp(part.transform.localPosition, target, t);
                     allAtClosed = false;
                 }
             }

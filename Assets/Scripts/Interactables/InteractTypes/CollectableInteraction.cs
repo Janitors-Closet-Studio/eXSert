@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Events;
+using System;
 
 public abstract class CollectableInteraction : InteractionManager
 {
@@ -17,7 +19,10 @@ public abstract class CollectableInteraction : InteractionManager
 
     protected override void Interact()
     {
+        base.Interact();
+
         ExecuteInteraction();
+
         StartCoroutine(FadeInAndFadeOutUI(uiFadeDuration, uiDisplayDuration));
         StartCoroutine(DeactivateInteractableCoroutine(this));
         if(_interactionSFX != null)

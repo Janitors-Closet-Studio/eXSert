@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System;
+using UnityEngine.Events;
 using System.Collections;
 
 [RequireComponent(typeof(BoxCollider))]
@@ -27,6 +28,11 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [Header("Input Action Reference")]
     [SerializeField, CriticalReference] internal InputActionReference _interactInputAction;
 
+    [Space(10), Header("Hint Settings")]
+    public UnityEvent[] collectEvents;
+    public bool hasHint = false;
+    internal Hint hint;
+
     internal InteractionUI ResolveInteractionUI()
     {
         return FindObjectOfType<InteractionUI>(true);
@@ -38,7 +44,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         interactId = _interactId.Trim().ToLowerInvariant();
 
-        
+        if(hasHint)
+        {
+             hint = GetComponent<Hint>();
+            if (hint == null)
+            {
+                Debug.LogWarning($"InteractionManager on {gameObject.name} is set to have a hint, but no Hint component was found.");
+            }
+            else
+            {
+                hint.enabled = false; // Disable the hint component until the item is collected
+            }
+        }
 
         var ui = ResolveInteractionUI();
         if (ui == null)
@@ -92,9 +109,17 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         OnInteractButtonPressed();
     }
 
-    protected abstract void Interact();
-
-    
+    protected virtual void Interact()
+    {
+        foreach (UnityEvent collectEvent in collectEvents)
+        {
+            if (collectEvent != null)
+            {
+                this.hint.enabled = true; // Enable the hint component when the item is collected
+                collectEvent?.Invoke();
+            }
+        }
+    }
 
     public void SwapBasedOnInputMethod()
     {
