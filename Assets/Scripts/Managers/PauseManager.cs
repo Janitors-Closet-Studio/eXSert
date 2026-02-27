@@ -98,6 +98,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnPauseOrBack(InputAction.CallbackContext context)
     {
+        if(CranePuzzle.IsCranePuzzleActive)
+        {
+            Debug.Log("[PauseManager] OnPauseOrBack ignored - crane puzzle active");
+            return;
+        }
+
         if (ConfirmationDialog.AnyOpen)
         {
             Debug.Log("[PauseManager] OnPauseOrBack ignored - confirmation dialog open");

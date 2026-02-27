@@ -812,6 +812,8 @@ MonoBehaviour:
   requireShift: 1
   onlyFromMainMenu: 1
   mainMenuSceneName: MainMenu
+  debugLogging: 0
+  debugStatusIntervalSeconds: 2
   entries:
   - key: 49
     sceneName: CargoBay
@@ -828,6 +830,9 @@ MonoBehaviour:
   - key: 53
     sceneName: Conservatory
     spawnPointId: conservatory
+  - key: 53
+    sceneName: Hangar_Brandon
+    spawnPointId: hangar
 --- !u!4 &317748736
 Transform:
   m_ObjectHideFlags: 0
