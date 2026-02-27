@@ -8,12 +8,20 @@ public abstract class CollectableInteraction : InteractionManager
     [SerializeField] private string collectID;
     [SerializeField] private float uiDisplayDuration = 4f;
     [SerializeField] private float uiFadeDuration = 2f;
+    [SerializeField] private string bottomFlavorText = "Press Pause to View";
+
+    private void Awake()
+    {
+        collectID = this.interactId;
+    }
 
     protected override void Interact()
     {
         ExecuteInteraction();
         StartCoroutine(FadeInAndFadeOutUI(uiFadeDuration, uiDisplayDuration));
         StartCoroutine(DeactivateInteractableCoroutine(this));
+        if(_interactionSFX != null)
+            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
     }
     protected abstract void ExecuteInteraction();
 
@@ -50,6 +58,7 @@ public abstract class CollectableInteraction : InteractionManager
     private IEnumerator FadeInUI(float fadeDuration, float displayDuration)
     {
         var collectText = InteractionUI.Instance._collectText;
+        var collectBottomText = InteractionUI.Instance._collectBottomText;
 
         if(collectText == null)
         {
@@ -59,8 +68,14 @@ public abstract class CollectableInteraction : InteractionManager
 
         collectText.text = "Collected: " + collectID.Trim();
 
+        if(collectBottomText != null)
+            collectBottomText.text = bottomFlavorText;
+
         collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, 0f);
         collectText.gameObject.SetActive(true);
+
+        collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, 0f);
+        collectBottomText.gameObject.SetActive(true);
 
         float elapsedTime = 0f;
 
@@ -69,6 +84,7 @@ public abstract class CollectableInteraction : InteractionManager
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(elapsedTime / fadeDuration);
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
+            collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
             yield return null;
         }
     }
@@ -76,6 +92,7 @@ public abstract class CollectableInteraction : InteractionManager
     private IEnumerator FadeOutUI(float fadeDuration)
     {
         var collectText = InteractionUI.Instance._collectText;
+        var collectBottomText = InteractionUI.Instance._collectBottomText;
 
         if (collectText == null)
         {
@@ -89,9 +106,11 @@ public abstract class CollectableInteraction : InteractionManager
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(1f - (elapsedTime / fadeDuration));
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
+            collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
             yield return null;
         }
         collectText.gameObject.SetActive(false);
+        collectBottomText.gameObject.SetActive(false);
     }
 
     private IEnumerator FadeInAndFadeOutUI(float fadeDuration, float displayDuration)

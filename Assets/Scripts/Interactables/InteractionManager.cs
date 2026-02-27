@@ -20,7 +20,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [Header("Interaction Animation and ID")]
     [SerializeField] private AnimationClip _interactAnimation;
     [SerializeField] private string _interactId;
-    [SerializeField] private AudioClip _interactionSFX;
+    [SerializeField] internal AudioClip _interactionSFX;
     [SerializeField] private string _interactionPrompt = "Press to Interact";
     
     [Space(10)]
@@ -85,8 +85,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         Interact();
         var ui = ResolveInteractionUI();
-        if(ui != null && _interactionSFX != null)
-            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
     }
 
     private void Update()

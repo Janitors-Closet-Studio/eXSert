@@ -142,7 +142,6 @@ public class ElevatorWalls : MonoBehaviour
             // Reset wall to top when it goes below bounds - preserve original X and Z
             if(position.y <= disappearY)
             {
-                // Respawn directly above the currently highest other wall.
                 position.y = GetRespawnY(wall);
                 wall.transform.position = position;
             }
