@@ -845,6 +845,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             {
                 deathSequenceTriggered = true;
                 
+                // Disable colliders immediately to prevent lock-on targeting during death
+                DisableCollidersForDeath();
+                
                 // NOTE: OnDeath event is now fired AFTER death animation completes
                 // See DeathBehavior.OnDeathSequenceComplete() or DeathFallbackRoutine()
 
@@ -932,6 +935,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         {
             healthBarInstance.gameObject.SetActive(true);
         }
+        
+        // Re-enable colliders that were disabled during death (for lock-on targeting)
+        EnableCollidersForReset();
         
         // Reset the state machine to Idle state so enemies don't spawn in Death state
         ResetStateMachineToIdle();
@@ -1027,6 +1033,53 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             return;
 
         deathFallbackRoutine = StartCoroutine(DeathFallbackRoutine());
+    }
+
+    /// <summary>
+    /// Disables colliders to prevent lock-on targeting and other interactions during death.
+    /// Called when the death sequence begins.
+    /// </summary>
+    protected virtual void DisableCollidersForDeath()
+    {
+        // Disable detection collider
+        if (detectionCollider != null)
+            detectionCollider.enabled = false;
+        
+        // Disable attack collider
+        if (attackCollider != null)
+            attackCollider.enabled = false;
+        
+        // Disable any other colliders on the main GameObject (used for lock-on)
+        var mainCollider = GetComponent<Collider>();
+        if (mainCollider != null && mainCollider != detectionCollider && mainCollider != attackCollider)
+            mainCollider.enabled = false;
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Colliders disabled for death sequence (lock-on prevention).");
+#endif
+    }
+
+    /// <summary>
+    /// Re-enables colliders after enemy reset for lock-on targeting and detection.
+    /// Called when the enemy is reset by the encounter system.
+    /// </summary>
+    protected virtual void EnableCollidersForReset()
+    {
+        // Re-enable detection collider
+        if (detectionCollider != null)
+            detectionCollider.enabled = true;
+        
+        // Attack collider should remain disabled until an attack (keep it off)
+        // attackCollider is enabled/disabled by EnableAttackHitbox/DisableAttackHitbox
+        
+        // Re-enable any main collider on the GameObject
+        var mainCollider = GetComponent<Collider>();
+        if (mainCollider != null && mainCollider != detectionCollider && mainCollider != attackCollider)
+            mainCollider.enabled = true;
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Colliders re-enabled after reset.");
+#endif
     }
 
     private IEnumerator DeathFallbackRoutine()
