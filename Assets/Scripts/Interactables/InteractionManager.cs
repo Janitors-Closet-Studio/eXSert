@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using System;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using Unity.VisualScripting;
 
 [RequireComponent(typeof(BoxCollider))]
 public abstract class InteractionManager : MonoBehaviour, IInteractable
@@ -37,6 +38,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     private void Start()
     {
         StartCoroutine(FindPlayerScene("PlayerScene"));
+    }
+
+    private void OnEnable()
+    {
+        if (_interactInputAction != null)
+            _interactInputAction.action.performed += InteractPressed;
+    }
+
+    private void OnDisable()
+    {
+        if (_interactInputAction != null)
+            _interactInputAction.action.performed -= InteractPressed;
     }
 
     private IEnumerator FindPlayerScene(string sceneName)
@@ -85,20 +98,20 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             InteractionUI.Instance._interactText.gameObject.SetActive(false);
     }
 
+    // Only here to satisfy the IInteractable interface, actual interaction logic should be implemented in derived classes.
     public void OnInteractButtonPressed()
     {
-        if (!isPlayerNearby || !InputReader.InteractTriggered || !interactable)
+        throw new NotImplementedException("OnInteractButtonPressed should be implemented in the derived class.");
+    }
+
+    private void InteractPressed(InputAction.CallbackContext context)
+    {
+        if (!isPlayerNearby || !interactable)
             return;
 
-        Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
+        Debug.Log($"Player interacted with {gameObject.name} using InputAction.");
         Interact();
     }
-
-    private void Update()
-    {
-        OnInteractButtonPressed();
-    }
-
     protected abstract void Interact();
 
     public void SwapBasedOnInputMethod()
