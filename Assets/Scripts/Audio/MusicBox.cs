@@ -11,6 +11,8 @@ using UnityEngine.SceneManagement;
 [RequireComponent(typeof(Rigidbody))]
 public class MusicBox : MonoBehaviour
 {
+    // Track the currently active MusicBox
+    private static MusicBox currentActiveBox;
     [SerializeField] private AudioClip levelMusic;
     [SerializeField] private AudioClip ambienceClip;
     private AudioSource musicSource;
@@ -58,22 +60,49 @@ public class MusicBox : MonoBehaviour
         if (!TryBindMusicSource())
             return;
 
+        // If fading out, stop fade and fade back in if needed
         if (fadeOutMusicRoutine != null)
         {
             StopCoroutine(fadeOutMusicRoutine);
             fadeOutMusicRoutine = null;
+            // If music is playing but volume is low, fade in
+            if (musicSource.isPlaying && musicSource.volume < cachedMusicVolume)
+            {
+                StartCoroutine(FadeInMusic(1f));
+                return;
+            }
         }
 
         // Only update if clip or loop state changed
         if (musicSource.isPlaying && musicSource.clip == levelMusic && musicSource.loop == loopMusic)
+        {
+            // If volume is low, fade in
+            if (musicSource.volume < cachedMusicVolume)
+                StartCoroutine(FadeInMusic(1f));
             return;
+        }
 
         if (musicSource.clip != levelMusic)
             musicSource.clip = levelMusic;
         if (musicSource.loop != loopMusic)
             musicSource.loop = loopMusic;
-        musicSource.volume = cachedMusicVolume; // Ensure correct volume immediately
+        musicSource.volume = 0f;
         musicSource.Play();
+        StartCoroutine(FadeInMusic(1f));
+    }
+
+    private IEnumerator FadeInMusic(float fadeDuration)
+    {
+        if (musicSource == null)
+            yield break;
+        float t = 0f;
+        while (t < fadeDuration)
+        {
+            t += Time.deltaTime;
+            musicSource.volume = Mathf.MoveTowards(musicSource.volume, cachedMusicVolume, cachedMusicVolume * (Time.deltaTime / fadeDuration));
+            yield return null;
+        }
+        musicSource.volume = cachedMusicVolume;
     }
 
     private void PlayAmbience()
@@ -134,8 +163,15 @@ public class MusicBox : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player")){
-            StopAllCoroutines();    
+        if (other.CompareTag("Player"))
+        {
+            // If another box was active, stop its fade coroutines
+            if (currentActiveBox != null && currentActiveBox != this)
+            {
+                currentActiveBox.StopAllCoroutines();
+            }
+            currentActiveBox = this;
+            StopAllCoroutines();
             PlayLevelMusic();
             PlayAmbience();
         }
@@ -146,18 +182,22 @@ public class MusicBox : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
 
-        if (musicSource == null || !musicSource.isPlaying)
-            return;
+        // Only fade out if this is still the active box
+        if (currentActiveBox == this)
+        {
+            if (musicSource == null || !musicSource.isPlaying)
+                return;
 
-        if (fadeOutMusicRoutine != null)
-            StopCoroutine(fadeOutMusicRoutine);
+            if (fadeOutMusicRoutine != null)
+                StopCoroutine(fadeOutMusicRoutine);
 
-        fadeOutMusicRoutine = StartCoroutine(FadeOutMusic(2f));
+            fadeOutMusicRoutine = StartCoroutine(FadeOutMusic(2f));
 
-        if (fadeOutAmbienceRoutine != null)
-            StopCoroutine(fadeOutAmbienceRoutine);
+            if (fadeOutAmbienceRoutine != null)
+                StopCoroutine(fadeOutAmbienceRoutine);
 
-        fadeOutAmbienceRoutine = StartCoroutine(FadeOutAmbience(2f));
+            fadeOutAmbienceRoutine = StartCoroutine(FadeOutAmbience(2f));
+        }
 
     }
 
