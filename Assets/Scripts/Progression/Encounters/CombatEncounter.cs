@@ -6,23 +6,25 @@ using UnityEngine.SceneManagement;
 
 namespace Progression.Encounters
 {
-    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.i423tfr2oxw")]
     public class CombatEncounter : BasicEncounter
     {
         #region Inspector Setup
         [Header("Combat Encounter Settings")]
 
+        [SerializeField, Tooltip("Seconds to wait before advancing to the next wave.")]
+        private float nextWaveDelaySeconds = 0.15f;
+
         [Header("Progression")]
+        [SerializeField] private bool autoFindByTag = false;
+        [SerializeField] private string enemyTag = "Enemy";
+
+
         [SerializeField] private bool dropObjectOnClear = false;
         [SerializeField] private GameObject objectToDrop;
-        private const bool dropAtLastEnemyPosition = true;
+        private bool dropAtLastEnemyPosition = true;
         #endregion
 
         private Vector3 lastEnemyPosition;
-
-        private bool tempIsCompleted;
-
-        public override bool isCompleted { get => tempIsCompleted; }
 
         public override string ObjectiveText 
         { 
@@ -44,11 +46,13 @@ namespace Progression.Encounters
         private bool encounterStarted = false;
         private Coroutine waveAdvanceRoutine;
 
-        private void OnUpdateLastEnemyPosition(Vector3 position) => lastEnemyPosition = position;
 
+        #region Basic Encounter Overrides
         protected override void SetupEncounter()
         {
             base.SetupEncounter();
+
+            OnEncounterCompleted += DropItem;
 
             allWaves.Clear(); // Clear any existing waves in case of editor changes or scene reload
 
@@ -87,6 +91,17 @@ namespace Progression.Encounters
         }
 
         protected override void PlayerEnteredZone() => BeginEncounter();
+
+        protected override void CleanupEncounter()
+        {
+            base.CleanupEncounter();
+
+            OnEncounterCompleted -= DropItem;
+        }
+        #endregion
+
+        private void OnUpdateLastEnemyPosition(Vector3 position) => lastEnemyPosition = position;
+
         private void BeginEncounter()
         {
             if (encounterStarted)
@@ -99,13 +114,6 @@ namespace Progression.Encounters
 
             encounterStarted = true;
             SpawnNextWave();
-        }
-
-        private void CompleteEncounter()
-        {
-            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter completed: {name}");
-
-            DropItem();
         }
 
         private void DropItem()
@@ -136,7 +144,7 @@ namespace Progression.Encounters
 
             // Check if there are more waves to spawn
             if (wavesQueue.Count != 0) SpawnNextWave(3f);
-            else CompleteEncounter();
+            else HandleEncounterCompleted();
         }
 
         private void CleanupWave(Wave wave)

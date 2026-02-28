@@ -13,9 +13,10 @@ using Progression.Encounters;
 using UnityEngine;
 public class SlowDownElevator : MonoBehaviour
 {
+    #region Inspector Setup
     [Header("Required References")]
     [SerializeField, CriticalReference] private ElevatorWalls _elevatorWalls;
-    [SerializeField] private BasicEncounter basicEncounter;
+    [SerializeField, CriticalReference] private BasicEncounter basicEncounter;
 
     [Header("Deceleration")]
     [SerializeField] [Range(0.1f, 10f)] private float decelerationDuration = 2f;
@@ -31,6 +32,7 @@ public class SlowDownElevator : MonoBehaviour
     [Header("Animation Timing")]
     [SerializeField] [Range(0f, 5f)] private float delayBeforeDrop = 0.5f;
     [SerializeField] [Range(0f, 5f)] private float delayBetweenAnimations = 0.5f;
+    #endregion
 
     // Internal state
     internal bool _isDecelerating = false;
@@ -73,28 +75,11 @@ public class SlowDownElevator : MonoBehaviour
         _initialSpeed = 0f;
     }
 
-    private void Start()
-    {
-        if (basicEncounter != null)
-        {
-            StartCoroutine(WaitForEncounterCompletion());
-        }
-    }
-
-    private IEnumerator WaitForEncounterCompletion()
-    {
-        // Wait until all enemies are defeated
-        while (!basicEncounter.isCompleted)
-        {
-            yield return new WaitForSeconds(0.5f); // Check every half second
-        }
-
-        // All enemies dead, start the elevator slow down
-        SetUpStateToSlowWalls();
-    }
+    private void OnEnable() => basicEncounter.OnEncounterCompleted += SetUpStateToSlowWalls;
+    private void OnDisable() => basicEncounter.OnEncounterCompleted -= SetUpStateToSlowWalls;
 
     /// <summary>
-    /// Initiates the elevator deceleration puzzle.
+    /// Initiates the elevator deceleration process.
     /// Automatically called when all enemies are defeated.
     /// </summary>
     public void SetUpStateToSlowWalls()

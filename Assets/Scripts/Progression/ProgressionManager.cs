@@ -17,7 +17,7 @@ namespace Progression
     using Encounters;
     using SceneManagement;
 
-    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.ba7p6f215mok")]
+    [HelpURL("")]
     public class ProgressionManager : SceneSingleton<ProgressionManager>
     {
         #region Inspector Setup

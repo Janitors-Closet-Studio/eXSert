@@ -52,6 +52,7 @@ public class LogUI : MonoBehaviour
     //Sets each log info
     internal void SetLogInfo(Logs log)
     {
+        Debug.Log($"Setting log info for {log.info.logID}");
         logName.text = log.info.logName;
         logDescription.GetComponent<TMP_Text>().text = log.info.logDescription;
         logLocation.text = log.info.locationFound;

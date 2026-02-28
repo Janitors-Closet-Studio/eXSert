@@ -30,6 +30,7 @@ public class DiaryScrollingList : MonoBehaviour
         if (EventSystem.current.currentSelectedGameObject != null)
         {
             selectedButton = EventSystem.current.currentSelectedGameObject;
+            Debug.Log("Selected Button: " + selectedButton.name);
         }
     }
 
@@ -40,15 +41,24 @@ public class DiaryScrollingList : MonoBehaviour
 
         if (diary.info.isFound)
         {
+            Debug.Log($"Diary {diary.info.diaryID} is marked as found, checking if button exists...");
             if (!idToButtonMap.ContainsKey(diary.info.diaryID))
+            {
+                Debug.Log($"Creating button for diary {diary.info.diaryID}");
                 diaryButton = InstantiateDiaryButton(diary, selectAction, isRead);
+            }
             else
+            {
+                Debug.Log($"Button for diary {diary.info.diaryID} already exists");
                 diaryButton = idToButtonMap[diary.info.diaryID];
-
+            }
             return diaryButton;
         }
         else
+        {
+            Debug.Log($"Diary {diary.info.diaryID} is NOT marked as found (isFound={diary.info.isFound}), skipping button creation");
             return diaryButton;
+        }
     }
 
     //Used by the function above to instantiate the button into the content parent in the scroll list

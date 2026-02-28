@@ -82,6 +82,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (!isPlayerNearby || !InputReader.InteractTriggered || !interactable)
             return;
 
+        Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         Interact();
         var ui = ResolveInteractionUI();
         if(ui != null && _interactionSFX != null)
@@ -120,6 +121,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         // Ensure the collider belongs to the player character, checking the root object for the "Player" tag to account for child colliders.
         if (!other.transform.root.CompareTag("Player"))
             return;
+
+        Debug.Log($"Player entered interaction zone of {gameObject.name}");
 
         isPlayerNearby = true;
 
