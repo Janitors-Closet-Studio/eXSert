@@ -11,7 +11,7 @@ public class Hint : MonoBehaviour
     [SerializeField] private string hintDescription = "This is a hint.";
     private MenuListManager menuListManager;
 
-    private void Awake()
+    private void Start()
     {
         menuListManager = InteractionUI.Instance.GetComponentInParent<MenuListManager>();
         if (menuListManager == null)

@@ -12,8 +12,10 @@ public abstract class CollectableInteraction : InteractionManager
     [SerializeField] private float uiFadeDuration = 2f;
     [SerializeField] private string bottomFlavorText = "Press Pause to View";
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         collectID = this.interactId;
     }
 
