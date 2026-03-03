@@ -16,6 +16,8 @@ public class PlaySoundOnEvent : MonoBehaviour
     
     [Tooltip("Whether to use PlayOneShot (allows overlapping) or Play (stops previous sound)")]
     [SerializeField] private bool usePlayOneShot = true;
+
+    [SerializeField] private bool loop = false;
     
     private AudioSource audioSource;
     
