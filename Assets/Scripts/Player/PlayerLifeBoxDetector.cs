@@ -54,6 +54,7 @@ public class PlayerLifeBoxDetector : MonoBehaviour
 
     private void TryKillPlayer()
     {
+        Debug.Log("Player is out of bounds of life boxes! Killing player");
         if (!killPlayerWhenOutOfLifeBox)
             return;
 

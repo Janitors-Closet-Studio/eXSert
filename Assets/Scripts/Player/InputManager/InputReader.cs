@@ -13,13 +13,11 @@
 */
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using Singletons;
 using eXsert;
-using System.Runtime.CompilerServices;
 
 internal enum ActionMap
 {
@@ -31,6 +29,8 @@ internal enum ActionMap
 [Serializable]
 public class InputReader : Singleton<InputReader>
 {
+    public override string ToString() => "Input Reader";
+
     internal static string activeControlScheme;
 
     /// <summary>
@@ -80,7 +80,7 @@ public class InputReader : Singleton<InputReader>
         }
     }
 
-    public static InputActionAsset playerControls { get; private set; }
+    public static InputActionAsset PlayerControls { get; private set; }
     private PlayerControls runtimeGeneratedControls;
 
     /// <summary>
@@ -100,15 +100,10 @@ public class InputReader : Singleton<InputReader>
             }
 
             if (_playerInput != null) return _playerInput;
-            else Debug.LogWarning("[InputReader] _playerInput is null in PlayerInput getter.");
 
             // Tries to get PlayerInput from the singleton GameObject
             if (Instance.TryGetComponent<PlayerInput>(out var existingInput))
-            {
-                _playerInput = existingInput;
-                return _playerInput;
-            }
-            else Debug.LogWarning("[InputReader] No PlayerInput found on singleton GameObject in getter. Attempting to Create one.");
+                return _playerInput = existingInput;
 
             // Creates a PlayerInput component on the singleton GameObject if none exists
             PlayerInput newInput = Instance.gameObject.AddComponent<PlayerInput>();
@@ -236,64 +231,26 @@ public class InputReader : Singleton<InputReader>
     #endregion
 
     #region Unity Lifecycle
-    
     protected override void Awake()
     {
-
         base.Awake(); // Ensure singleton behavior
 
-        SceneManager.sceneLoaded += HandleSceneLoaded;
-
-        // Prefer a project asset if available, but do not require Resources/.
-        // If the asset isn't located under a Resources folder, fall back to a runtime-generated wrapper.
-        playerControls = Resources.Load<InputActionAsset>("PlayerControls");
-        if (playerControls == null)
+        PlayerControls = Resources.Load<InputActionAsset>("PlayerControls");
+        if (PlayerControls == null)
         {
+            Debug.LogWarning("[InputReader] PlayerControls asset not found in Resources. Attempting to generate controls at runtime.");
             runtimeGeneratedControls = new PlayerControls();
-            playerControls = runtimeGeneratedControls.asset;
+            PlayerControls = runtimeGeneratedControls.asset;
 
-            if (playerControls == null)
+            if (PlayerControls == null)
             {
                 Debug.LogError("[InputReader] Failed to load PlayerControls from Resources and failed to generate runtime controls.");
                 return;
             }
-
-            Debug.LogWarning("[InputReader] PlayerControls asset not found in Resources. Using runtime-generated controls instead.");
         }
-
-        /*
-        // Try to bind to an existing PlayerInput found in loaded scenes first; if none found,
-        // ensure a PlayerInput component is attached to this InputReader singleton GameObject.
-        if (TryAutoBindFromLoadedScenes())
-        {
-            // Bound to a PlayerInput on a scene object (likely the player prefab).
-        }
-        else
-        {
-            // Ensure the singleton GameObject has a PlayerInput component so menus and UI can use input
-            var singletonPlayerInput = GetComponent<PlayerInput>();
-            if (singletonPlayerInput == null)
-            {
-                singletonPlayerInput = gameObject.AddComponent<PlayerInput>();
-            }
-            else Debug.Log("[InputReader] singletonPlayerInput already exists.");
-
-            if (singletonPlayerInput.actions == null && playerControls != null)
-            {
-                singletonPlayerInput.actions = Instantiate(playerControls);
-            }
-
-            // Do not force Gameplay map here; menus generally need Menu map available by default.
-            RebindTo(singletonPlayerInput, switchToGameplay: false);
-
-            Debug.Log("[InputReader] No scene PlayerInput found. Attached PlayerInput to InputReader singleton for consistent access.");
-        }
-        */
 
         // Use squared deadzone comparisons internally; set the default min to match the smallest deadzone
         InputSystem.settings.defaultDeadzoneMin = Mathf.Min(leftStickDeadzoneValue, rightStickDeadzoneValue);
-
-        EnsureCursorManager(PlayerInput);
     }
 
     private void Start()
@@ -306,6 +263,8 @@ public class InputReader : Singleton<InputReader>
         else
         {
             PlayerInput = gameObject.AddComponent<PlayerInput>();
+            PlayerInput.neverAutoSwitchControlSchemes = false;
+            RebindTo(PlayerInput);
         }
     }
 
@@ -313,7 +272,6 @@ public class InputReader : Singleton<InputReader>
     {
         base.OnDestroy();
 
-        SceneManager.sceneLoaded -= HandleSceneLoaded;
         UnregisterActionCallbacks();
 
         if (runtimeGeneratedControls != null)
@@ -327,39 +285,6 @@ public class InputReader : Singleton<InputReader>
     private void OnEnable() => SetAllActionsEnabled(true);
 
     private void OnDisable() => SetAllActionsEnabled(false);
-
-    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        /*
-        // If we already have a PlayerInput, only early-out when it's a real scene/player binding.
-        // When starting from MainMenu, InputReader may create a fallback PlayerInput on itself;
-        // once gameplay scenes load we must rebind to the actual player PlayerInput.
-        if (_playerInput != null)
-        {
-            // Unity's fake-null for destroyed objects
-            if (_playerInput == null)
-            {
-                _playerInput = null;
-            }
-            else
-            {
-                bool isFallbackOnSingleton = _playerInput.gameObject == gameObject
-                    || _playerInput.gameObject.scene.name == "DontDestroyOnLoad";
-
-                if (!isFallbackOnSingleton)
-                    return;
-            }
-        }
-
-        Debug.Log("[InputReader] Attempting to bind PlayerInput after scene load.");
-
-        if (scene.isLoaded && TryBindFromScene(scene))
-            return;
-
-        // If the specific scene didn't contain a player, try a broader search (e.g., additive load order differences)
-        TryAutoBindFromLoadedScenes();
-        */
-    }
 
     private void Update()
     {
@@ -416,16 +341,10 @@ public class InputReader : Singleton<InputReader>
 
         UnregisterActionCallbacks();
 
-        PlayerInput = newPlayerInput;
-
-        EnsureCursorManager(PlayerInput);
-
         if (PlayerInput.actions == null)
         {
-            if (playerControls != null)
-            {
-                PlayerInput.actions = Instantiate(playerControls);
-            }
+            if (PlayerControls != null)
+                PlayerInput.actions = Instantiate(PlayerControls);
             else
             {
                 Debug.LogError("[InputReader] PlayerInput has no action asset and no fallback is available.");
@@ -433,8 +352,7 @@ public class InputReader : Singleton<InputReader>
             }
         }
 
-        if (!PlayerInput.enabled)
-            PlayerInput.enabled = true;
+        if (!PlayerInput.enabled) PlayerInput.enabled = true;
 
         PlayerInput.neverAutoSwitchControlSchemes = false;
 
@@ -487,15 +405,6 @@ public class InputReader : Singleton<InputReader>
         }
 
         Debug.Log("[InputReader] Rebound to new PlayerInput and actions re-enabled.");
-    }
-
-    private static void EnsureCursorManager(PlayerInput target)
-    {
-        if (target == null)
-            return;
-
-        if (target.GetComponent<CursorBySchemeAndMap>() == null)
-            target.gameObject.AddComponent<CursorBySchemeAndMap>();
     }
 
     private void RegisterActionCallbacks()

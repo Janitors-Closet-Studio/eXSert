@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Progression.Checkpoints;
 
 /// <summary>
 /// Handles common game actions like restarting, returning to menu, quitting.
@@ -31,18 +32,7 @@ public class GameActionHandler : MonoBehaviour
 
         PrepareForSceneLoad(resumeImmediately: false);
         
-        // Use SceneLoader to restart from checkpoint
-        if (SceneLoader.Instance != null)
-        {
-            SceneLoader.Instance.RestartFromCheckpoint();
-        }
-        else
-        {
-            // Fallback: just reload current scene
-            Debug.LogWarning("[GameActionHandler] SceneLoader not found, using fallback reload");
-            string currentScene = SceneManager.GetActiveScene().name;
-            SceneManager.LoadScene(currentScene);
-        }
+        CheckpointBehavior.RespawnPlayer();
     }
 
     /// <summary>
@@ -55,17 +45,7 @@ public class GameActionHandler : MonoBehaviour
         
         PrepareForSceneLoad(resumeImmediately: false);
         
-        // Use SceneLoader to properly clean up and load main menu
-        if (SceneLoader.Instance != null)
-        {
-            SceneLoader.Instance.LoadMainMenu();
-        }
-        else
-        {
-            // Fallback: just load main menu scene
-            Debug.LogWarning("[GameActionHandler] SceneLoader not found, using fallback load");
-            SceneManager.LoadScene("MainMenu");
-        }
+        SceneAsset.Load("MainMenu");
     }
 
     /// <summary>

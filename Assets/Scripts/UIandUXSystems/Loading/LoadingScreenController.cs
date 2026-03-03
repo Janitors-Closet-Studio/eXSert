@@ -71,6 +71,7 @@ namespace UI.Loading
                 Instance = null;
         }
 
+        /*
         /// <summary>
         /// Begins the loading workflow. The supplied routine performs the actual scene loading work.
         /// </summary>
@@ -100,6 +101,7 @@ namespace UI.Loading
             float targetMinimumDisplay = minimumDisplayOverride ?? minimumDisplaySeconds;
             activeRoutine = StartCoroutine(RunLoadingSequence(loadSteps, pauseGame, targetMinimumDisplay));
         }
+        */
 
         private IEnumerator RunLoadingSequence(IEnumerator loadSteps, bool pauseGame, float minimumDisplayDuration)
         {
@@ -315,7 +317,5 @@ namespace UI.Loading
             action.performed -= callback;
             action.canceled -= callback;
         }
-
-
     }
 }

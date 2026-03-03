@@ -9,6 +9,8 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Progression.Checkpoints;
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -37,6 +39,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     public static event Action OnPlayerDied;
     public static event Action<PlayerHealthBarManager> OnPlayerHealthRegistered;
 
+    #region Inspector Setup
     [Header("Health Settings")]
     [SerializeField, Min(1f)] private float maxHealth = 500f;
     [SerializeField] private float currentHealth = -1f;
@@ -69,6 +72,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [Header("Debug")]
     [SerializeField, Tooltip("Damage applied when using the debug buttons.")]
     private float debugDamageAmount = 100f;
+    #endregion
 
     public static PlayerHealthBarManager Instance { get; private set; }
 
@@ -227,8 +231,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     public void HandleDeath(bool playDeathAnimation)
     {
-        if (isDead)
-            return;
+        if (isDead) return;
 
         isDead = true;
         currentHealth = 0f;
@@ -245,14 +248,9 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             deathFadeDelaySeconds = .5f;
         }
 
-
-
         OnPlayerDied?.Invoke();
 
-        if (deathSequenceRoutine != null)
-        {
-            StopCoroutine(deathSequenceRoutine);
-        }
+        if (deathSequenceRoutine != null) StopCoroutine(deathSequenceRoutine);
 
         deathSequenceRoutine = StartCoroutine(DeathSequenceRoutine(playDeathAnimation));
     }
@@ -316,20 +314,14 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     {
         playerMovement?.EnterDeathState();
         AcquireDeathInputLock();
-        if(playDeathAnimation)
-            animationController?.PlayDeath();
+        if(playDeathAnimation) animationController?.PlayDeath();
 
         yield return WaitForDeathFadeTiming();
 
-        if (restartFromCheckpointOnDeath && SceneLoader.Instance != null)
-        {
-            SceneLoader.Instance.RestartFromCheckpoint();
-        }
+        if (restartFromCheckpointOnDeath) CheckpointBehavior.RespawnPlayer();
 
-        if (destroyPlayerOnDeath)
-        {
+        else if (destroyPlayerOnDeath)
             Destroy(gameObject);
-        }
 
         ReleaseDeathSequenceLocks();
         deathSequenceRoutine = null;

@@ -5,6 +5,7 @@ namespace Progression
 {
     [RequireComponent(typeof(BoxCollider))]
     [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.b9oi5t9la060")]
+    [DefaultExecutionOrder(10)] // Ensure this executes after the ProgressionManager, which may rely on it to register itself in Awake
     public abstract class ProgressionZone : MonoBehaviour
     {
         #region Inspector Setup
@@ -107,7 +108,7 @@ namespace Progression
         #region Debug Scripts
         protected abstract Color DebugColor { get; }
 
-        private void OnDrawGizmos()
+        protected virtual void OnDrawGizmos()
         {
             if (progressionCollider == null)
                 progressionCollider = GetComponent<BoxCollider>();
