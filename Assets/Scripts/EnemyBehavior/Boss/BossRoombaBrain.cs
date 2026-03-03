@@ -129,7 +129,7 @@ namespace EnemyBehavior.Boss
 
         [Header("Audio")]
         [Tooltip("AudioSource used for playing attack SFX. Auto-creates if null.")]
-        public AudioSource AttackAudioSource;
+        private AudioSource AttackAudioSource;
         [Tooltip("SFX played when arms deploy.")]
         public AudioClip ArmsDeploySFX;
         [Tooltip("SFX played when arms retract.")]
@@ -575,7 +575,7 @@ namespace EnemyBehavior.Boss
         {
             if (AttackAudioSource == null)
             {
-                AttackAudioSource = GetComponent<AudioSource>();
+                AttackAudioSource = SoundManager.Instance.sfxSource;
                 if (AttackAudioSource == null)
                 {
                     AttackAudioSource = gameObject.AddComponent<AudioSource>();
