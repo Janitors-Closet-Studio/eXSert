@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class PauseManager : Singletons.Singleton<PauseManager>
 {
@@ -28,6 +29,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     [SerializeField] private InputActionReference _navigationMenuActionReference;
     [SerializeField] private InputActionReference _swapMenuActionReference;
     [SerializeField] private InputActionReference _pauseActionReference;
+
 
     private MenuListManager menuListManager;
 
@@ -349,13 +351,14 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void SetMenuStates(bool showPause, bool showNavigation, bool showSettings)
     {
+        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
         settingsMenuOpen = showSettings;
 
         if (pauseMenuHolder != null)
-            pauseMenuHolder.SetActive(showPause);
+            StartCoroutine(fadeMenus.FadeMenu(pauseMenuHolder, fadeMenus.fadeDuration, showPause));
 
         if (navigationMenuHolder != null)
-            navigationMenuHolder.SetActive(showNavigation);
+            StartCoroutine(fadeMenus.FadeMenu(navigationMenuHolder, fadeMenus.fadeDuration, showNavigation));
 
         if (settingsMenuContainer != null)
             settingsMenuContainer.SetActive(showSettings);
@@ -389,6 +392,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         CacheHudRootName();
         return true;
     }
+
+    
 
     private void CacheHudRootName()
     {
