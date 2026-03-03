@@ -17,6 +17,7 @@ public class SlowDownElevator : MonoBehaviour
     [Header("Required References")]
     [SerializeField, CriticalReference] private ElevatorWalls _elevatorWalls;
     [SerializeField, CriticalReference] private BasicEncounter basicEncounter;
+    [SerializeField] private GameObject platform;
 
     [Header("Deceleration")]
     [SerializeField] [Range(0.1f, 10f)] private float decelerationDuration = 2f;
@@ -32,6 +33,9 @@ public class SlowDownElevator : MonoBehaviour
     [Header("Animation Timing")]
     [SerializeField] [Range(0f, 5f)] private float delayBeforeDrop = 0.5f;
     [SerializeField] [Range(0f, 5f)] private float delayBetweenAnimations = 0.5f;
+
+    [Header("Wall Offset")]
+    [SerializeField] private float wallHeight = 2.0f; // Set this to your actual wall prefab height
     #endregion
 
     // Internal state
@@ -146,8 +150,6 @@ public class SlowDownElevator : MonoBehaviour
     /// </summary>
     private IEnumerator SlowDownWalls()
     {
-
-
         while (_decelerationTimer < _actualDecelerationDuration)
         {
             _decelerationTimer += Time.deltaTime;
@@ -201,12 +203,13 @@ public class SlowDownElevator : MonoBehaviour
                     _elevatorWalls.wallWithDoor.transform.position = doorPos;
                 }
                 
-                // Move wallBelow to maintain relative offset (one wall height below)
+                // Move wallBelow to maintain offset from the active wall
                 if(_elevatorWalls.wallBelow != null)
                 {
                     Vector3 belowPos = _elevatorWalls.wallBelow.transform.position;
-                    float wallHeight = _initialBelowWallY - _initialDoorWallY;
-                    belowPos.y = WrapY(rawY + wallHeight, loopHeight);
+                    float loopHeightbelow = _elevatorWalls.restartPoint - _elevatorWalls.yBounds;
+                    float referenceY = !_swapped && _elevatorWalls.elevatorWall != null ? _elevatorWalls.elevatorWall.transform.position.y : (_elevatorWalls.wallWithDoor != null ? _elevatorWalls.wallWithDoor.transform.position.y : currentY);
+                    belowPos.y = WrapY(referenceY + wallHeight, loopHeightbelow); // Move down, wrap, and reappear above
                     _elevatorWalls.wallBelow.transform.position = belowPos;
                 }
             }

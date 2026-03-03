@@ -2598,6 +2598,12 @@ MonoBehaviour:
   showAttackGizmo: 1
   canBeParried: 1
   useAnimationEventAttacks: 1
+  attackIndicatorPrefab: {fileID: 0}
+  attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
+  attackIndicatorLeadTime: 0.5
+  attackIndicatorDuration: 0
+  attackIndicatorFollowsEnemy: 1
+  attackIndicatorScale: 1
   healthBarPrefab: {fileID: 5126943973119965438, guid: 07e119a181a9f3b48be33765f2c7cca7, type: 3}
   healthBarAnchor: {fileID: 6087566551674551161}
   healthBarInstance: {fileID: 0}
@@ -2616,7 +2622,16 @@ MonoBehaviour:
   hitTriggerName: Hit
   dieTriggerName: Die
   moveSpeedParameterName: MoveSpeed
-  hitSFX: []
+  hitSFX:
+  - {fileID: 8300000, guid: fea046d21ea1536489cc8a8b5503988a, type: 3}
+  - {fileID: 8300000, guid: a8c24f9c30af59f459983078dea8d53c, type: 3}
+  - {fileID: 8300000, guid: 829098d54d46d1e48a7c0bd3c21ff3b2, type: 3}
+  - {fileID: 8300000, guid: 29b9afe8c0e380f40a95243d8a0ec9c3, type: 3}
+  movementSFXClip: {fileID: 8300000, guid: 88758955d94cd5749b9d4c8380a5d3f8, type: 3}
+  movementStopSFXClip: {fileID: 8300000, guid: 1e265eab76b9f1246a104ad6b253c01f, type: 3}
+  movementSFXVolume: 0.5
+  movementSFXFadeOutDuration: 0.3
+  movementSFXSpeedThreshold: 0.1
   behaviorProfile: {fileID: 11400000, guid: 00406da0031ea004186842087fee3a2e, type: 2}
   patrolColor: {r: 0, g: 1, b: 0, a: 1}
   chaseColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

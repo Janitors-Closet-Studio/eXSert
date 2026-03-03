@@ -81,10 +81,14 @@ MonoBehaviour:
   _showHitbox: 1
   _interactAnimation: {fileID: 0}
   _interactId: 
+  _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   requiredItemID: 
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls: []
   doorHandlers:
   - {fileID: 98182257937175027}
 --- !u!65 &5925842294498272219
@@ -191,9 +195,7 @@ MonoBehaviour:
   currentDoorState: 1
   doorLockState: 0
   doorType: 1
-  topDoorPart: {fileID: 0}
-  bottomDoorPart: {fileID: 0}
-  distToOpenParts: 2
+  doorParts: []
   openSpeed: 2
   hingePivot: {fileID: 788580226970741485}
 --- !u!65 &3682277934187709703

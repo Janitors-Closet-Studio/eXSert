@@ -162,27 +162,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.43
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 1.061
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 1.39
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: -0.24339634
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0.96992695
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.z
@@ -194,7 +194,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: 208.174
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -368,7 +368,7 @@ MonoBehaviour:
   lowHealthThresholdPercent: 0.25
   handleLowHealth: 1
   currentZone: {fileID: 0}
-  allowZoneRelocation: 1
+  allowZoneRelocation: 0
   idleTimerDuration: 15
   detectionRange: 10
   showDetectionGizmo: 1
@@ -380,6 +380,13 @@ MonoBehaviour:
   attackActiveDuration: 0.5
   showAttackGizmo: 1
   canBeParried: 1
+  useAnimationEventAttacks: 0
+  attackIndicatorPrefab: {fileID: 0}
+  attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
+  attackIndicatorLeadTime: 0.5
+  attackIndicatorDuration: 0
+  attackIndicatorFollowsEnemy: 1
+  attackIndicatorScale: 1
   healthBarPrefab: {fileID: 5126943973119965438, guid: ba84b42810b4ba14b8c277e64607a584, type: 3}
   healthBarAnchor: {fileID: 1847539679579535266}
   healthBarInstance: {fileID: 0}
@@ -400,7 +407,14 @@ MonoBehaviour:
   moveSpeedParameterName: MoveSpeed
   hitSFX:
   - {fileID: 8300000, guid: 9140d9d040f3f6540b85d369ee7b6cb3, type: 3}
-  - {fileID: 8300000, guid: 822262151de15304fbd21c9717e83c06, type: 3}
+  - {fileID: 8300000, guid: 7eb79a319e58df5488ac6dbc6d8d44e8, type: 3}
+  - {fileID: 8300000, guid: 9804f65ba154f254eb6941b16adcb66a, type: 3}
+  - {fileID: 8300000, guid: b01bc93c46a65c04989f72624f49fb4f, type: 3}
+  movementSFXClip: {fileID: 0}
+  movementStopSFXClip: {fileID: 0}
+  movementSFXVolume: 0.5
+  movementSFXFadeOutDuration: 0.3
+  movementSFXSpeedThreshold: 0.1
   behaviorProfile: {fileID: 0}
   patrolColor: {r: 0, g: 1, b: 0, a: 1}
   chaseColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

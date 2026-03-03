@@ -45,6 +45,8 @@ public abstract class UnlockableInteraction : InteractionManager
         { 
             ExecuteInteraction();
             onInteractionExecuted?.Invoke();
+            if(_interactionSFX != null)
+            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
             return;
         }
 
@@ -52,6 +54,8 @@ public abstract class UnlockableInteraction : InteractionManager
         {
             ExecuteInteraction();
             onInteractionExecuted?.Invoke();
+            if(_interactionSFX != null)
+            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
         }
         else
         {

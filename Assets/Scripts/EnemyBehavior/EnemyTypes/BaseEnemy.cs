@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using EnemyBehavior;
+using Unity.VisualScripting;
 
 // BaseEnemy is generic so derived classes can define their own states and triggers
 public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttacker
@@ -64,6 +65,24 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
 
     [SerializeField, Tooltip("When true, hitbox enable/disable is controlled by animation events (Attack, AttackEnd). When false, uses timer-based hitbox duration.")]
     public bool useAnimationEventAttacks = false;
+
+    [Header("Attack Indicator VFX")]
+    [SerializeField, Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
+    protected GameObject attackIndicatorPrefab;
+    [SerializeField, Tooltip("Position offset from the enemy's transform where the indicator spawns (local space).")]
+    protected Vector3 attackIndicatorOffset = new Vector3(0f, 0f, 1.5f);
+    [SerializeField, Tooltip("Seconds before the attack lands that the indicator appears. Adjust per-enemy for timing.")]
+    protected float attackIndicatorLeadTime = 0.5f;
+    [SerializeField, Tooltip("How long the indicator stays visible. Set to 0 to auto-hide when attack starts.")]
+    protected float attackIndicatorDuration = 0f;
+    [SerializeField, Tooltip("If true, indicator follows the enemy's position/rotation. If false, spawns at fixed world position.")]
+    protected bool attackIndicatorFollowsEnemy = true;
+    [SerializeField, Tooltip("Scale multiplier for the indicator VFX.")]
+    protected float attackIndicatorScale = 1f;
+
+    // Runtime state for attack indicator
+    protected GameObject attackIndicatorInstance;
+    protected Coroutine attackIndicatorCoroutine;
 
     [Header("Enemy Health Bar")]
     [SerializeField, Tooltip("Prefab for the enemy's health bar UI.")]
@@ -133,6 +152,24 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     [Header("SFX")]
     [SerializeField, Tooltip("Audio clip to play when the enemy is hit.")]
     private AudioClip[] hitSFX;
+    
+    [Header("Movement SFX")]
+    [SerializeField, Tooltip("Audio clip to loop while the enemy is moving.")]
+    private AudioClip movementSFXClip;
+    [SerializeField, Tooltip("Audio clip to play when the enemy stops moving (optional).")]
+    private AudioClip movementStopSFXClip;
+    [SerializeField, Range(0f, 1f), Tooltip("Volume multiplier for movement SFX.")]
+    private float movementSFXVolume = 0.5f;
+    [SerializeField, Tooltip("Duration in seconds for the movement SFX to fade out when stopping.")]
+    private float movementSFXFadeOutDuration = 0.3f;
+    [SerializeField, Tooltip("Minimum speed threshold to consider the enemy as moving.")]
+    private float movementSFXSpeedThreshold = 0.1f;
+    
+    // Movement SFX runtime state
+    private AudioSource movementAudioSource;
+    private float originalMovementSFXVolume;
+    private bool wasMovingForSFX;
+    private Coroutine movementSFXFadeCoroutine;
     
     [Header("Behavior Profile")]
     [SerializeField, Tooltip("Optional behavior profile for NavMeshAgent settings. If assigned, these settings will be applied on Awake.")]
@@ -267,6 +304,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         EnsureDetectionCollider();
         EnsureAttackCollider();
         EnsurePlayerTargetReference();
+        EnsureAudioSource();
 
         animator = GetComponentInChildren<Animator>();
         if (animator == null)
@@ -372,6 +410,22 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
 
         externalHelperRoots.Clear();
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (movementSFXClip == null)
+            return;
+
+        if (movementAudioSource == null)
+        {
+            movementAudioSource = gameObject.AddComponent<AudioSource>();
+            movementAudioSource.playOnAwake = false;
+            movementAudioSource.loop = true;
+            movementAudioSource.clip = movementSFXClip;
+            movementAudioSource.volume = movementSFXVolume;
+            originalMovementSFXVolume = movementSFXVolume;
+        }
     }
 
     private void EnsureRigidBodyForTriggers()
@@ -485,6 +539,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         SceneManager.sceneLoaded -= HandleSceneLoaded;
         CleanupExternalHelpers();
         
+        // Stop movement SFX
+        ForceStopMovementSFX();
+        
         // Unregister from the attack queue system
         UnregisterFromAttackQueue();
     }
@@ -520,6 +577,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             PlayState(locomotionStateName);
         }
         // If neither parameter nor state exists, just skip locomotion animation
+        
+        // Update movement SFX based on current speed
+        UpdateMovementSFX(moveSpeed);
     }
 
     protected virtual void PlayAttackAnim()
@@ -754,6 +814,135 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     }
     #endregion
 
+    #region Attack Indicator VFX
+    /// <summary>
+    /// Shows the attack indicator VFX. Call this before an attack to warn the player.
+    /// Can be called from code (timer-based) or via animation events.
+    /// </summary>
+    /// <param name="customOffset">Optional: Override the default offset for this specific attack.</param>
+    /// <param name="customDuration">Optional: Override the default duration for this specific attack.</param>
+    public virtual void ShowAttackIndicator(Vector3? customOffset = null, float? customDuration = null)
+    {
+        if (attackIndicatorPrefab == null) return;
+
+        // Clean up any existing indicator
+        HideAttackIndicator();
+
+        Vector3 offset = customOffset ?? attackIndicatorOffset;
+        Vector3 spawnPos = transform.TransformPoint(offset);
+        Quaternion spawnRot = transform.rotation;
+
+        attackIndicatorInstance = Instantiate(attackIndicatorPrefab, spawnPos, spawnRot);
+        
+        if (attackIndicatorScale != 1f)
+        {
+            attackIndicatorInstance.transform.localScale *= attackIndicatorScale;
+        }
+
+        if (attackIndicatorFollowsEnemy)
+        {
+            attackIndicatorInstance.transform.SetParent(transform);
+            attackIndicatorInstance.transform.localPosition = offset;
+            attackIndicatorInstance.transform.localRotation = Quaternion.identity;
+        }
+
+        float duration = customDuration ?? attackIndicatorDuration;
+        if (duration > 0f)
+        {
+            attackIndicatorCoroutine = StartCoroutine(HideIndicatorAfterDelay(duration));
+        }
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Attack indicator shown at offset {offset}");
+#endif
+    }
+
+    /// <summary>
+    /// Hides/destroys the attack indicator VFX.
+    /// Called automatically when attack starts (if duration is 0) or after duration expires.
+    /// Can also be called manually via animation events.
+    /// </summary>
+    public virtual void HideAttackIndicator()
+    {
+        if (attackIndicatorCoroutine != null)
+        {
+            StopCoroutine(attackIndicatorCoroutine);
+            attackIndicatorCoroutine = null;
+        }
+
+        if (attackIndicatorInstance != null)
+        {
+            Destroy(attackIndicatorInstance);
+            attackIndicatorInstance = null;
+        }
+    }
+
+    /// <summary>
+    /// Animation Event receiver: Shows the attack indicator.
+    /// Add this animation event at the start of the attack windup.
+    /// </summary>
+    public void AttackIndicatorStart()
+    {
+        ShowAttackIndicator();
+    }
+
+    /// <summary>
+    /// Animation Event receiver: Hides the attack indicator.
+    /// Add this animation event when the attack begins (hitbox enabled) or when indicator should disappear.
+    /// </summary>
+    public void AttackIndicatorEnd()
+    {
+        HideAttackIndicator();
+    }
+
+    /// <summary>
+    /// Shows the attack indicator and automatically starts the attack after the lead time.
+    /// Useful for timer-based attacks that want indicator → attack flow.
+    /// </summary>
+    /// <param name="onIndicatorComplete">Action to invoke when lead time elapses (e.g., enable hitbox).</param>
+    protected Coroutine ShowAttackIndicatorWithCallback(System.Action onIndicatorComplete)
+    {
+        return StartCoroutine(AttackIndicatorSequence(onIndicatorComplete));
+    }
+
+    private IEnumerator AttackIndicatorSequence(System.Action onIndicatorComplete)
+    {
+        ShowAttackIndicator();
+        yield return WaitForSecondsCache.Get(attackIndicatorLeadTime);
+        
+        // Auto-hide if duration was 0 (hide when attack starts)
+        if (attackIndicatorDuration <= 0f)
+        {
+            HideAttackIndicator();
+        }
+        
+        onIndicatorComplete?.Invoke();
+    }
+
+    private IEnumerator HideIndicatorAfterDelay(float delay)
+    {
+        yield return WaitForSecondsCache.Get(delay);
+        HideAttackIndicator();
+    }
+
+    /// <summary>
+    /// Gets the world position where the attack indicator should spawn.
+    /// Override in derived classes for custom positioning (e.g., at muzzle for turrets).
+    /// </summary>
+    protected virtual Vector3 GetAttackIndicatorWorldPosition()
+    {
+        return transform.TransformPoint(attackIndicatorOffset);
+    }
+
+    /// <summary>
+    /// Override in derived classes to provide a custom attack indicator prefab per attack type.
+    /// </summary>
+    protected virtual GameObject GetAttackIndicatorPrefab()
+    {
+        return attackIndicatorPrefab;
+    }
+    #endregion
+
     protected virtual void OnDamageTaken(float amount)
     {
         if (currentHealth > 0f)
@@ -821,6 +1010,142 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
     }
 
+    #region Movement SFX
+    /// <summary>
+    /// Updates the movement SFX based on the current movement speed.
+    /// Call this from Update or from locomotion methods when the enemy's speed changes.
+    /// </summary>
+    /// <param name="currentSpeed">The current movement speed of the enemy.</param>
+    protected virtual void UpdateMovementSFX(float currentSpeed)
+    {
+        if (movementSFXClip == null) return;
+        
+        bool isMoving = currentSpeed > movementSFXSpeedThreshold;
+        
+        if (isMoving && !wasMovingForSFX)
+        {
+            // Started moving - play movement SFX
+            StartMovementSFX();
+        }
+        else if (!isMoving && wasMovingForSFX)
+        {
+            // Stopped moving - fade out and play stop clip
+            StopMovementSFX();
+        }
+        
+        wasMovingForSFX = isMoving;
+    }
+
+    /// <summary>
+    /// Starts playing the movement SFX loop.
+    /// </summary>
+    protected virtual void StartMovementSFX()
+    {
+        // Stop any ongoing fade
+        if (movementSFXFadeCoroutine != null)
+        {
+            StopCoroutine(movementSFXFadeCoroutine);
+            movementSFXFadeCoroutine = null;
+        }
+        
+        
+        movementAudioSource.clip = movementSFXClip;
+        movementAudioSource.volume = SoundManager.Instance.sfxSource.volume;
+        movementAudioSource.loop = true;
+        
+        if (!movementAudioSource.isPlaying)
+        {
+            movementAudioSource.Play();
+        }
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Movement SFX started.");
+#endif
+    }
+
+    /// <summary>
+    /// Stops the movement SFX with a smooth fade out.
+    /// </summary>
+    protected virtual void StopMovementSFX()
+    {
+        if (movementAudioSource == null || !movementAudioSource.isPlaying) return;
+        
+        // Start fade out coroutine
+        if (movementSFXFadeOutDuration > 0f)
+        {
+            movementSFXFadeCoroutine = StartCoroutine(FadeOutMovementSFX());
+        }
+        else
+        {
+            // Immediate stop
+            movementAudioSource.Stop();
+            movementAudioSource.volume = originalMovementSFXVolume;
+            PlayMovementStopSFX();
+        }
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Movement SFX stopping (fade: {movementSFXFadeOutDuration}s).");
+#endif
+    }
+
+    /// <summary>
+    /// Coroutine to smoothly fade out the movement SFX.
+    /// </summary>
+    private IEnumerator FadeOutMovementSFX()
+    {
+        if (movementAudioSource == null) yield break;
+        
+        float startVolume = movementAudioSource.volume;
+        float elapsed = 0f;
+        
+        while (elapsed < movementSFXFadeOutDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / movementSFXFadeOutDuration;
+            movementAudioSource.volume = Mathf.Lerp(startVolume, 0f, t);
+            yield return null;
+        }
+        
+        movementAudioSource.Stop();
+        movementAudioSource.volume = originalMovementSFXVolume; // Reset volume for SoundManager
+        
+        PlayMovementStopSFX();
+        
+        movementSFXFadeCoroutine = null;
+    }
+
+    /// <summary>
+    /// Plays the optional stop SFX when movement ends.
+    /// </summary>
+    private void PlayMovementStopSFX()
+    {
+        if (movementStopSFXClip != null && movementAudioSource != null)
+        {
+            movementAudioSource.PlayOneShot(movementStopSFXClip, movementSFXVolume);
+        }
+    }
+
+    /// <summary>
+    /// Immediately stops all movement SFX without fade. Call this on death or disable.
+    /// </summary>
+    protected void ForceStopMovementSFX()
+    {
+        if (movementSFXFadeCoroutine != null)
+        {
+            StopCoroutine(movementSFXFadeCoroutine);
+            movementSFXFadeCoroutine = null;
+        }
+        
+        if (movementAudioSource != null && movementAudioSource.clip == movementSFXClip)
+        {
+            movementAudioSource.Stop();
+            movementAudioSource.volume = originalMovementSFXVolume;
+        }
+        
+        wasMovingForSFX = false;
+    }
+    #endregion
+
     // SetHealth now clamps and updates health, but expects the new value
     public virtual void SetHealth(float value)
     {
@@ -844,6 +1169,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             if (!deathSequenceTriggered)
             {
                 deathSequenceTriggered = true;
+                
+                // Disable colliders immediately to prevent lock-on targeting during death
+                DisableCollidersForDeath();
                 
                 // NOTE: OnDeath event is now fired AFTER death animation completes
                 // See DeathBehavior.OnDeathSequenceComplete() or DeathFallbackRoutine()
@@ -921,6 +1249,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             deathFallbackRoutine = null;
         }
         
+        // Clean up any active attack indicator
+        HideAttackIndicator();
+        
         // Re-enable the agent if it was disabled
         if (agent != null && !agent.enabled)
         {
@@ -932,6 +1263,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         {
             healthBarInstance.gameObject.SetActive(true);
         }
+        
+        // Re-enable colliders that were disabled during death (for lock-on targeting)
+        EnableCollidersForReset();
         
         // Reset the state machine to Idle state so enemies don't spawn in Death state
         ResetStateMachineToIdle();
@@ -1027,6 +1361,59 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             return;
 
         deathFallbackRoutine = StartCoroutine(DeathFallbackRoutine());
+    }
+
+    /// <summary>
+    /// Disables colliders to prevent lock-on targeting and other interactions during death.
+    /// Called when the death sequence begins.
+    /// </summary>
+    protected virtual void DisableCollidersForDeath()
+    {
+        // Clean up any active attack indicator
+        HideAttackIndicator();
+        
+        // Stop movement SFX immediately
+        ForceStopMovementSFX();
+        
+        // Disable detection collider
+        if (detectionCollider != null)
+            detectionCollider.enabled = false;
+        
+        // Disable attack collider
+        if (attackCollider != null)
+            attackCollider.enabled = false;
+        
+        // Disable any other colliders on the main GameObject (used for lock-on)
+        var mainCollider = GetComponent<Collider>();
+        if (mainCollider != null && mainCollider != detectionCollider && mainCollider != attackCollider)
+            mainCollider.enabled = false;
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Colliders disabled for death sequence (lock-on prevention).");
+#endif
+    }
+
+    /// <summary>
+    /// Re-enables colliders after enemy reset for lock-on targeting and detection.
+    /// Called when the enemy is reset by the encounter system.
+    /// </summary>
+    protected virtual void EnableCollidersForReset()
+    {
+        // Re-enable detection collider
+        if (detectionCollider != null)
+            detectionCollider.enabled = true;
+        
+        // Attack collider should remain disabled until an attack (keep it off)
+        // attackCollider is enabled/disabled by EnableAttackHitbox/DisableAttackHitbox
+        
+        // Re-enable any main collider on the GameObject
+        var mainCollider = GetComponent<Collider>();
+        if (mainCollider != null && mainCollider != detectionCollider && mainCollider != attackCollider)
+            mainCollider.enabled = true;
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Colliders re-enabled after reset.");
+#endif
     }
 
     private IEnumerator DeathFallbackRoutine()

@@ -1525,16 +1525,28 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.55685
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.011473
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1563,6 +1575,10 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8640552964809476368, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -1844,6 +1860,12 @@ MonoBehaviour:
   showAttackGizmo: 1
   canBeParried: 1
   useAnimationEventAttacks: 1
+  attackIndicatorPrefab: {fileID: 0}
+  attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
+  attackIndicatorLeadTime: 0.5
+  attackIndicatorDuration: 0
+  attackIndicatorFollowsEnemy: 1
+  attackIndicatorScale: 1
   healthBarPrefab: {fileID: 5126943973119965438, guid: ba84b42810b4ba14b8c277e64607a584, type: 3}
   healthBarAnchor: {fileID: 4024182181471907119}
   healthBarInstance: {fileID: 0}
@@ -1864,9 +1886,14 @@ MonoBehaviour:
   moveSpeedParameterName: MoveSpeed
   hitSFX:
   - {fileID: 8300000, guid: 9140d9d040f3f6540b85d369ee7b6cb3, type: 3}
-  - {fileID: 8300000, guid: 95e59ee44eace214e801fde0cb590bbf, type: 3}
-  - {fileID: 8300000, guid: fea046d21ea1536489cc8a8b5503988a, type: 3}
-  - {fileID: 8300000, guid: 95e59ee44eace214e801fde0cb590bbf, type: 3}
+  - {fileID: 8300000, guid: 9804f65ba154f254eb6941b16adcb66a, type: 3}
+  - {fileID: 8300000, guid: 7eb79a319e58df5488ac6dbc6d8d44e8, type: 3}
+  - {fileID: 8300000, guid: b01bc93c46a65c04989f72624f49fb4f, type: 3}
+  movementSFXClip: {fileID: 8300000, guid: aed7a003877fed84cbf45591ca2fb7fb, type: 3}
+  movementStopSFXClip: {fileID: 8300000, guid: def8f2cb31a73844f88d618cb6311822, type: 3}
+  movementSFXVolume: 0.5
+  movementSFXFadeOutDuration: 0.3
+  movementSFXSpeedThreshold: 0.1
   behaviorProfile: {fileID: 0}
   patrolColor: {r: 0, g: 1, b: 0, a: 1}
   chaseColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

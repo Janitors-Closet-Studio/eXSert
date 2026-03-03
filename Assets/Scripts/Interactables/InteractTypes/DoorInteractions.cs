@@ -8,11 +8,14 @@
 */
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.ProBuilder.Shapes;
 
 public class DoorInteractions : UnlockableInteraction
 {
     [Tooltip("Place the gameObject with the DoorHandler component here, it may be on a different object or the same object as this script.")]
     [SerializeField] private List<DoorHandler> doorHandlers;
+
+    
 
     protected override void ExecuteInteraction()
     {
@@ -24,12 +27,21 @@ public class DoorInteractions : UnlockableInteraction
                 {
                     doorHandler.doorLockState = DoorHandler.DoorLockState.Unlocked;
                 }
-
-                // Open/close after ensuring unlock so a single console use works.
+                
                 doorHandler.Interact();
+                
 
             }
 
         }
+    }
+
+    private bool CheckIfDoorIsMoving(DoorHandler doorHandler)
+    {
+        if (doorHandler.doorPosOrigin != doorHandler.transform.position)
+        {
+            return true;
+        }
+        return false;
     }
 }
