@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Read Journal Entries
+  m_text: Select a Save File to Load
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 385c891594674a748b41d51281414e2e, type: 2}
   m_sharedMaterial: {fileID: -8113300539578493447, guid: 385c891594674a748b41d51281414e2e, type: 2}
@@ -405,18 +405,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3abd4fa975a5f043b7d500cdae14bcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  currentFooterType: 2
   footerText: {fileID: 7670546707832598099}
-  logHolderUI: {fileID: 0}
-  diaryHolderUI: {fileID: 0}
-  mainNavigationMenuHolderUI: {fileID: 0}
-  IndividualLogUI: {fileID: 0}
-  IndividualDiaryUI: {fileID: 0}
-  overlayUI: {fileID: 0}
-  ActsUI: {fileID: 0}
-  settingsUI: {fileID: 0}
-  controlsUI: {fileID: 0}
-  pauseUI: {fileID: 0}
+  defaultFooterMessage: Select a Save File to Load
 --- !u!1 &3126206236290731542
 GameObject:
   m_ObjectHideFlags: 0
@@ -1206,7 +1196,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -15.143372, y: -368.232}
+  m_AnchoredPosition: {x: 0, y: -447.11}
   m_SizeDelta: {x: 1716.0178, y: 185.77103}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &7710852090479337179

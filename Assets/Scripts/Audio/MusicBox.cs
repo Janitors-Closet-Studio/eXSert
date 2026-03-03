@@ -97,7 +97,7 @@ public class MusicBox : MonoBehaviour
         ambienceSource.Play();
     }
 
-    private IEnumerator FadeOutMusic(float fadeDuration)
+    public IEnumerator FadeOutMusic(float fadeDuration)
     {
         if (musicSource == null || !musicSource.isPlaying)
             yield break;
@@ -114,7 +114,7 @@ public class MusicBox : MonoBehaviour
         musicSource.volume = startVolume; // Reset volume for next time
     }
 
-    private IEnumerator FadeOutAmbience(float fadeDuration)
+    public IEnumerator FadeOutAmbience(float fadeDuration)
     {
         if (ambienceSource == null || !ambienceSource.isPlaying)
             yield break;
