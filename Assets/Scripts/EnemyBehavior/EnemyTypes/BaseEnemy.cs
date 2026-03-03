@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using EnemyBehavior;
+using Unity.VisualScripting;
 
 // BaseEnemy is generic so derived classes can define their own states and triggers
 public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttacker
@@ -303,6 +304,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         EnsureDetectionCollider();
         EnsureAttackCollider();
         EnsurePlayerTargetReference();
+        EnsureAudioSource();
 
         animator = GetComponentInChildren<Animator>();
         if (animator == null)
@@ -408,6 +410,22 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
 
         externalHelperRoots.Clear();
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (movementSFXClip == null)
+            return;
+
+        if (movementAudioSource == null)
+        {
+            movementAudioSource = gameObject.AddComponent<AudioSource>();
+            movementAudioSource.playOnAwake = false;
+            movementAudioSource.loop = true;
+            movementAudioSource.clip = movementSFXClip;
+            movementAudioSource.volume = movementSFXVolume;
+            originalMovementSFXVolume = movementSFXVolume;
+        }
     }
 
     private void EnsureRigidBodyForTriggers()
@@ -1030,14 +1048,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             movementSFXFadeCoroutine = null;
         }
         
-        // Use SoundManager's sfxSource
-        if (SoundManager.Instance == null || SoundManager.Instance.sfxSource == null) return;
-        
-        movementAudioSource = SoundManager.Instance.sfxSource;
-        originalMovementSFXVolume = movementAudioSource.volume;
         
         movementAudioSource.clip = movementSFXClip;
-        movementAudioSource.volume = originalMovementSFXVolume * movementSFXVolume;
+        movementAudioSource.volume = SoundManager.Instance.sfxSource.volume;
         movementAudioSource.loop = true;
         
         if (!movementAudioSource.isPlaying)
@@ -1106,9 +1119,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     /// </summary>
     private void PlayMovementStopSFX()
     {
-        if (movementStopSFXClip != null && SoundManager.Instance != null)
+        if (movementStopSFXClip != null && movementAudioSource != null)
         {
-            SoundManager.Instance.sfxSource.PlayOneShot(movementStopSFXClip, movementSFXVolume);
+            movementAudioSource.PlayOneShot(movementStopSFXClip, movementSFXVolume);
         }
     }
 
