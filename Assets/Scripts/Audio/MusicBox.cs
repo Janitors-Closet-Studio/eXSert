@@ -1,5 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using Unity.VisualScripting;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -45,11 +47,19 @@ public class MusicBox : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
 
-        cachedAmbienceVolume = SoundManager.Instance != null ? SoundManager.Instance.ambienceSource.volume : 1.0f;
-        cachedMusicVolume = SoundManager.Instance != null ? SoundManager.Instance.musicSource.volume : 1.0f;
+        UpdateCachedVolumes();
 
         cachedSoundManager = SoundManager.Instance;
         TryBindMusicSource();
+    }
+
+    public void UpdateCachedVolumes()
+    {
+        if (SoundManager.Instance != null)
+        {
+            cachedAmbienceVolume = SoundManager.Instance.ambienceSource.volume;
+            cachedMusicVolume = SoundManager.Instance.musicSource.volume;
+        }
     }
 
     private void PlayLevelMusic()
