@@ -848,6 +848,7 @@ GameObject:
   - component: {fileID: 1453178041}
   - component: {fileID: 1453178040}
   - component: {fileID: 1453178039}
+  - component: {fileID: 1453178047}
   - component: {fileID: 1453178038}
   - component: {fileID: 1453178037}
   - component: {fileID: 1453178046}
@@ -991,6 +992,8 @@ MonoBehaviour:
     MinRange: 0
     MaxRange: 15
     ComboCooldown: 2
+    MinAggressionLevel: 1
+    MaxAggressionLevel: 5
     Steps:
     - BasicAttack: 1
       IsFinisher: 0
@@ -1181,6 +1184,33 @@ MonoBehaviour:
     DelayBetweenDashes: 0.3
     DashSFX: {fileID: 0}
     DashVFX: {fileID: 0}
+  KnockbackSettings:
+    KnockbackForce: 15
+    VerticalForce: 5
+    KnockbackRadius: 4
+    Damage: 15
+    AnimationTrigger: Attack_Knockback
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  MiniCrescentSettings:
+    WaveSpeed: 20
+    Damage: 20
+    WaveWidth: 8
+    WaveHeight: 1.5
+    MaxDistance: 25
+    AnimationTrigger: Attack_MiniCrescent
+    SlashSFX: {fileID: 0}
+    WavePrefab: {fileID: 0}
+  GapCloseDashSettings:
+    DashSpeed: 25
+    DashDuration: 0.3
+    MinDistanceToUse: 8
+    TargetStopDistance: 3
+    MinAggressionLevel: 4
+    AnimationTrigger: Dash_GapClose
+    DashSFX: {fileID: 0}
+    DashVFX: {fileID: 0}
   HighDiveAttack:
     ID: HighDive
     Category: 0
@@ -1273,6 +1303,7 @@ MonoBehaviour:
   comboSystem: {fileID: 1453178039}
   dualWieldSystem: {fileID: 1453178038}
   platformController: {fileID: 1453178037}
+  aggressionSystem: {fileID: 0}
   suctionEffect: {fileID: 1453178046}
   animator: {fileID: 1453178036}
   sfxSource: {fileID: 0}
@@ -1432,6 +1463,113 @@ MonoBehaviour:
   VacuumAudioSource: {fileID: 0}
   SuctionTarget: {fileID: 0}
   ArenaManager: {fileID: 0}
+--- !u!114 &1453178047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1453178035}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62ae44156d573124c8e098f0eccdda2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserAggressionSystem
+  aggressionValue: 0
+  minAggressionValue: 0
+  maxAggressionValue: 100
+  forceMaxAggressionOnLowHealth: 1
+  forceMaxAggressionHealthThreshold: 0.25
+  permanentForceMaxAggression: 0
+  aggressionRangeRadius: 10
+  playerLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  detectPlayerGuarding: 1
+  guardCheckInterval: 0.1
+  modifiers:
+    PlayerAttackProximity: 1
+    PlayerHitsBoss: 3
+    PlayerRetreats: 2
+    PlayerGuardingPerSecond: 0.5
+    PlayerBlocks: 1
+    PlayerParries: 2
+    PlayerCounters: 3
+    PlayerMaxStacksCounter: 5
+    UltimateCanceled: 10
+    UltimateCompleted: 5
+    IdleDecayPerSecond: 1
+    CleanserCounterDecay: 5
+    IdleEscalationThreshold: 5
+    IdleEscalationBase: 2
+    IdleEscalationLogMultiplier: 3
+  levelMultipliers:
+    Level1Multiplier: 1
+    Level2Multiplier: 2
+    Level3Multiplier: 3
+    Level4Multiplier: 4
+    Level5Multiplier: 5
+  counterChances:
+  - Level: 1
+    ChanceAtZeroStacks: 0.02
+    ChanceAtMediumStacks: 0.02
+    ChanceAtMaxStacks: 0
+  - Level: 2
+    ChanceAtZeroStacks: 0.15
+    ChanceAtMediumStacks: 0.05
+    ChanceAtMaxStacks: 0
+  - Level: 3
+    ChanceAtZeroStacks: 0.35
+    ChanceAtMediumStacks: 0.1
+    ChanceAtMaxStacks: 0
+  - Level: 4
+    ChanceAtZeroStacks: 0.6
+    ChanceAtMediumStacks: 0.2
+    ChanceAtMaxStacks: 0.02
+  - Level: 5
+    ChanceAtZeroStacks: 1
+    ChanceAtMediumStacks: 0.35
+    ChanceAtMaxStacks: 0.1
+  movementConfigs:
+  - Level: 1
+    SpeedMultiplier: 0.7
+    PreferredDistance: 8
+    RepositionInterval: 3
+    AggressivelyClosesDistance: 0
+    CanUseDash: 0
+    StrafeChance: 0.7
+  - Level: 2
+    SpeedMultiplier: 0.85
+    PreferredDistance: 6
+    RepositionInterval: 2.5
+    AggressivelyClosesDistance: 0
+    CanUseDash: 0
+    StrafeChance: 0.5
+  - Level: 3
+    SpeedMultiplier: 1
+    PreferredDistance: 5
+    RepositionInterval: 2
+    AggressivelyClosesDistance: 1
+    CanUseDash: 0
+    StrafeChance: 0.3
+  - Level: 4
+    SpeedMultiplier: 1.15
+    PreferredDistance: 4
+    RepositionInterval: 1.5
+    AggressivelyClosesDistance: 1
+    CanUseDash: 1
+    StrafeChance: 0.2
+  - Level: 5
+    SpeedMultiplier: 1.3
+    PreferredDistance: 3
+    RepositionInterval: 1
+    AggressivelyClosesDistance: 1
+    CanUseDash: 1
+    StrafeChance: 0.1
+  counterAnimationTrigger: Counter
+  counterDamage: 25
+  counterParryWindow: 0.4
+  showAggressionRangeGizmo: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

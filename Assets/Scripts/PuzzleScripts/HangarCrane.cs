@@ -14,7 +14,7 @@ public class HangarCranePart
 public class HangarCrane : CranePuzzle{
     public List<HangarCranePart> hangarCraneParts = new List<HangarCranePart>();
     // Store original local positions for HangarCranePart
-    private Dictionary<HangarCranePart, Vector3> cranePartStartLocalPositions = new Dictionary<HangarCranePart, Vector3>();
+    private new Dictionary<HangarCranePart, Vector3> cranePartStartLocalPositions = new Dictionary<HangarCranePart, Vector3>();
     // Store current sway state for each part
     private class SwayState {
         public Vector3 velocity = Vector3.zero;
@@ -70,7 +70,4 @@ public class HangarCrane : CranePuzzle{
         }
     }
     
-    // Removed coroutine-based sway; handled in LateUpdate with spring-damped logic
-
-    // Sway direction logic now handled inline in LateUpdate
 }

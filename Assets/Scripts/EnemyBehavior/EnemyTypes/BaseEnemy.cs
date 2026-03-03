@@ -65,6 +65,24 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     [SerializeField, Tooltip("When true, hitbox enable/disable is controlled by animation events (Attack, AttackEnd). When false, uses timer-based hitbox duration.")]
     public bool useAnimationEventAttacks = false;
 
+    [Header("Attack Indicator VFX")]
+    [SerializeField, Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
+    protected GameObject attackIndicatorPrefab;
+    [SerializeField, Tooltip("Position offset from the enemy's transform where the indicator spawns (local space).")]
+    protected Vector3 attackIndicatorOffset = new Vector3(0f, 0f, 1.5f);
+    [SerializeField, Tooltip("Seconds before the attack lands that the indicator appears. Adjust per-enemy for timing.")]
+    protected float attackIndicatorLeadTime = 0.5f;
+    [SerializeField, Tooltip("How long the indicator stays visible. Set to 0 to auto-hide when attack starts.")]
+    protected float attackIndicatorDuration = 0f;
+    [SerializeField, Tooltip("If true, indicator follows the enemy's position/rotation. If false, spawns at fixed world position.")]
+    protected bool attackIndicatorFollowsEnemy = true;
+    [SerializeField, Tooltip("Scale multiplier for the indicator VFX.")]
+    protected float attackIndicatorScale = 1f;
+
+    // Runtime state for attack indicator
+    protected GameObject attackIndicatorInstance;
+    protected Coroutine attackIndicatorCoroutine;
+
     [Header("Enemy Health Bar")]
     [SerializeField, Tooltip("Prefab for the enemy's health bar UI.")]
     public GameObject healthBarPrefab;
@@ -754,6 +772,135 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     }
     #endregion
 
+    #region Attack Indicator VFX
+    /// <summary>
+    /// Shows the attack indicator VFX. Call this before an attack to warn the player.
+    /// Can be called from code (timer-based) or via animation events.
+    /// </summary>
+    /// <param name="customOffset">Optional: Override the default offset for this specific attack.</param>
+    /// <param name="customDuration">Optional: Override the default duration for this specific attack.</param>
+    public virtual void ShowAttackIndicator(Vector3? customOffset = null, float? customDuration = null)
+    {
+        if (attackIndicatorPrefab == null) return;
+
+        // Clean up any existing indicator
+        HideAttackIndicator();
+
+        Vector3 offset = customOffset ?? attackIndicatorOffset;
+        Vector3 spawnPos = transform.TransformPoint(offset);
+        Quaternion spawnRot = transform.rotation;
+
+        attackIndicatorInstance = Instantiate(attackIndicatorPrefab, spawnPos, spawnRot);
+        
+        if (attackIndicatorScale != 1f)
+        {
+            attackIndicatorInstance.transform.localScale *= attackIndicatorScale;
+        }
+
+        if (attackIndicatorFollowsEnemy)
+        {
+            attackIndicatorInstance.transform.SetParent(transform);
+            attackIndicatorInstance.transform.localPosition = offset;
+            attackIndicatorInstance.transform.localRotation = Quaternion.identity;
+        }
+
+        float duration = customDuration ?? attackIndicatorDuration;
+        if (duration > 0f)
+        {
+            attackIndicatorCoroutine = StartCoroutine(HideIndicatorAfterDelay(duration));
+        }
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Attack indicator shown at offset {offset}");
+#endif
+    }
+
+    /// <summary>
+    /// Hides/destroys the attack indicator VFX.
+    /// Called automatically when attack starts (if duration is 0) or after duration expires.
+    /// Can also be called manually via animation events.
+    /// </summary>
+    public virtual void HideAttackIndicator()
+    {
+        if (attackIndicatorCoroutine != null)
+        {
+            StopCoroutine(attackIndicatorCoroutine);
+            attackIndicatorCoroutine = null;
+        }
+
+        if (attackIndicatorInstance != null)
+        {
+            Destroy(attackIndicatorInstance);
+            attackIndicatorInstance = null;
+        }
+    }
+
+    /// <summary>
+    /// Animation Event receiver: Shows the attack indicator.
+    /// Add this animation event at the start of the attack windup.
+    /// </summary>
+    public void AttackIndicatorStart()
+    {
+        ShowAttackIndicator();
+    }
+
+    /// <summary>
+    /// Animation Event receiver: Hides the attack indicator.
+    /// Add this animation event when the attack begins (hitbox enabled) or when indicator should disappear.
+    /// </summary>
+    public void AttackIndicatorEnd()
+    {
+        HideAttackIndicator();
+    }
+
+    /// <summary>
+    /// Shows the attack indicator and automatically starts the attack after the lead time.
+    /// Useful for timer-based attacks that want indicator → attack flow.
+    /// </summary>
+    /// <param name="onIndicatorComplete">Action to invoke when lead time elapses (e.g., enable hitbox).</param>
+    protected Coroutine ShowAttackIndicatorWithCallback(System.Action onIndicatorComplete)
+    {
+        return StartCoroutine(AttackIndicatorSequence(onIndicatorComplete));
+    }
+
+    private IEnumerator AttackIndicatorSequence(System.Action onIndicatorComplete)
+    {
+        ShowAttackIndicator();
+        yield return WaitForSecondsCache.Get(attackIndicatorLeadTime);
+        
+        // Auto-hide if duration was 0 (hide when attack starts)
+        if (attackIndicatorDuration <= 0f)
+        {
+            HideAttackIndicator();
+        }
+        
+        onIndicatorComplete?.Invoke();
+    }
+
+    private IEnumerator HideIndicatorAfterDelay(float delay)
+    {
+        yield return WaitForSecondsCache.Get(delay);
+        HideAttackIndicator();
+    }
+
+    /// <summary>
+    /// Gets the world position where the attack indicator should spawn.
+    /// Override in derived classes for custom positioning (e.g., at muzzle for turrets).
+    /// </summary>
+    protected virtual Vector3 GetAttackIndicatorWorldPosition()
+    {
+        return transform.TransformPoint(attackIndicatorOffset);
+    }
+
+    /// <summary>
+    /// Override in derived classes to provide a custom attack indicator prefab per attack type.
+    /// </summary>
+    protected virtual GameObject GetAttackIndicatorPrefab()
+    {
+        return attackIndicatorPrefab;
+    }
+    #endregion
+
     protected virtual void OnDamageTaken(float amount)
     {
         if (currentHealth > 0f)
@@ -845,6 +992,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             {
                 deathSequenceTriggered = true;
                 
+                // Disable colliders immediately to prevent lock-on targeting during death
+                DisableCollidersForDeath();
+                
                 // NOTE: OnDeath event is now fired AFTER death animation completes
                 // See DeathBehavior.OnDeathSequenceComplete() or DeathFallbackRoutine()
 
@@ -921,6 +1071,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             deathFallbackRoutine = null;
         }
         
+        // Clean up any active attack indicator
+        HideAttackIndicator();
+        
         // Re-enable the agent if it was disabled
         if (agent != null && !agent.enabled)
         {
@@ -932,6 +1085,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         {
             healthBarInstance.gameObject.SetActive(true);
         }
+        
+        // Re-enable colliders that were disabled during death (for lock-on targeting)
+        EnableCollidersForReset();
         
         // Reset the state machine to Idle state so enemies don't spawn in Death state
         ResetStateMachineToIdle();
@@ -1027,6 +1183,56 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             return;
 
         deathFallbackRoutine = StartCoroutine(DeathFallbackRoutine());
+    }
+
+    /// <summary>
+    /// Disables colliders to prevent lock-on targeting and other interactions during death.
+    /// Called when the death sequence begins.
+    /// </summary>
+    protected virtual void DisableCollidersForDeath()
+    {
+        // Clean up any active attack indicator
+        HideAttackIndicator();
+        
+        // Disable detection collider
+        if (detectionCollider != null)
+            detectionCollider.enabled = false;
+        
+        // Disable attack collider
+        if (attackCollider != null)
+            attackCollider.enabled = false;
+        
+        // Disable any other colliders on the main GameObject (used for lock-on)
+        var mainCollider = GetComponent<Collider>();
+        if (mainCollider != null && mainCollider != detectionCollider && mainCollider != attackCollider)
+            mainCollider.enabled = false;
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Colliders disabled for death sequence (lock-on prevention).");
+#endif
+    }
+
+    /// <summary>
+    /// Re-enables colliders after enemy reset for lock-on targeting and detection.
+    /// Called when the enemy is reset by the encounter system.
+    /// </summary>
+    protected virtual void EnableCollidersForReset()
+    {
+        // Re-enable detection collider
+        if (detectionCollider != null)
+            detectionCollider.enabled = true;
+        
+        // Attack collider should remain disabled until an attack (keep it off)
+        // attackCollider is enabled/disabled by EnableAttackHitbox/DisableAttackHitbox
+        
+        // Re-enable any main collider on the GameObject
+        var mainCollider = GetComponent<Collider>();
+        if (mainCollider != null && mainCollider != detectionCollider && mainCollider != attackCollider)
+            mainCollider.enabled = true;
+
+#if UNITY_EDITOR
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Colliders re-enabled after reset.");
+#endif
     }
 
     private IEnumerator DeathFallbackRoutine()

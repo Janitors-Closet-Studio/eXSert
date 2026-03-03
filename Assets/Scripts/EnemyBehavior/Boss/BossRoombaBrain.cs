@@ -46,6 +46,12 @@ namespace EnemyBehavior.Boss
         public string AnimatorTriggerOnRecovery;
         [Tooltip("Set true if this attack requires arms to be deployed before windup.")]
         public bool RequiresArms;
+        
+        [Header("Sound Effects")]
+        [Tooltip("SFX played when the attack begins (typically at windup start).")]
+        public AudioClip AttackSFX;
+        [Tooltip("Volume multiplier for this attack's SFX (0-1).")]
+        [Range(0f, 1f)] public float SFXVolume = 1.0f;
     }
 
     [System.Serializable]
@@ -120,6 +126,46 @@ namespace EnemyBehavior.Boss
         public float HornsRaiseDuration = 0.8f;
         [Tooltip("Duration to wait for horns lower animation to complete")]
         public float HornsLowerDuration = 0.8f;
+
+        [Header("Audio")]
+        [Tooltip("AudioSource used for playing attack SFX. Auto-creates if null.")]
+        private AudioSource AttackAudioSource;
+        [Tooltip("SFX played when arms deploy.")]
+        public AudioClip ArmsDeploySFX;
+        [Tooltip("SFX played when arms retract.")]
+        public AudioClip ArmsRetractSFX;
+        [Tooltip("SFX played when horns raise (faceplate lower).")]
+        public AudioClip HornsRaiseSFX;
+        [Tooltip("SFX played when horns lower (faceplate raise).")]
+        public AudioClip HornsLowerSFX;
+        [Tooltip("SFX played when boss is stunned.")]
+        public AudioClip StunSFX;
+        [Tooltip("SFX played when boss takes damage.")]
+        public AudioClip DamagedSFX;
+        [Tooltip("SFX played when a side panel breaks off.")]
+        public AudioClip PanelBreakSFX;
+        [Tooltip("SFX played during vacuum suction.")]
+        public AudioClip VacuumSuctionSFX;
+        [Tooltip("Master volume for all boss SFX (0-1).")]
+        [Range(0f, 1f)] public float MasterSFXVolume = 1.0f;
+
+        [Header("Attack Indicator VFX")]
+        [Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
+        [SerializeField] private GameObject attackIndicatorPrefab;
+        [Tooltip("Position offset from the boss's transform where the indicator spawns (local space).")]
+        [SerializeField] private Vector3 attackIndicatorOffset = new Vector3(0f, 0.5f, 3f);
+        [Tooltip("Seconds before the attack lands that the indicator appears.")]
+        [SerializeField] private float attackIndicatorLeadTime = 0.5f;
+        [Tooltip("How long the indicator stays visible. Set to 0 to auto-hide when attack starts.")]
+        [SerializeField] private float attackIndicatorDuration = 0f;
+        [Tooltip("If true, indicator follows the boss's position/rotation.")]
+        [SerializeField] private bool attackIndicatorFollowsBoss = true;
+        [Tooltip("Scale multiplier for the indicator VFX.")]
+        [SerializeField] private float attackIndicatorScale = 1f;
+        
+        // Runtime state for attack indicator
+        private GameObject attackIndicatorInstance;
+        private Coroutine attackIndicatorCoroutine;
 
         [Header("Windows")]
         public float ParryStaggerSeconds = 3.0f;
@@ -507,6 +553,9 @@ namespace EnemyBehavior.Boss
             hasEverMounted = false;
 
             CacheAnimatorLayerIndices();
+            
+            // Ensure AudioSource exists for SFX playback
+            EnsureAudioSource();
 
             attackThresholdForVacuum = Random.Range(AttackCountForVacuumRange.x, AttackCountForVacuumRange.y + 1);
 
@@ -517,6 +566,130 @@ namespace EnemyBehavior.Boss
             }
 
             InitializeAttackDescriptors();
+        }
+        
+        /// <summary>
+        /// Ensures an AudioSource exists for playing SFX. Creates one if not assigned.
+        /// </summary>
+        private void EnsureAudioSource()
+        {
+            if (AttackAudioSource == null)
+            {
+                AttackAudioSource = SoundManager.Instance.sfxSource;
+                if (AttackAudioSource == null)
+                {
+                    AttackAudioSource = gameObject.AddComponent<AudioSource>();
+                    AttackAudioSource.playOnAwake = false;
+                    AttackAudioSource.spatialBlend = 1f; // 3D sound
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Created AudioSource for SFX");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Plays a one-shot SFX clip at the specified volume.
+        /// </summary>
+        /// <param name="clip">The AudioClip to play.</param>
+        /// <param name="volumeMultiplier">Volume multiplier (0-1) applied on top of MasterSFXVolume.</param>
+        private void PlaySFX(AudioClip clip, float volumeMultiplier = 1f)
+        {
+            if (clip == null || AttackAudioSource == null) return;
+            float finalVolume = MasterSFXVolume * Mathf.Clamp01(volumeMultiplier);
+            AttackAudioSource.PlayOneShot(clip, finalVolume);
+        }
+        
+        #region Attack Indicator VFX
+        /// <summary>
+        /// Shows the attack indicator VFX before an attack.
+        /// </summary>
+        /// <param name="customOffset">Optional: Override the default offset for this specific attack.</param>
+        /// <param name="customDuration">Optional: Override the default duration for this specific attack.</param>
+        public void ShowAttackIndicator(Vector3? customOffset = null, float? customDuration = null)
+        {
+            if (attackIndicatorPrefab == null) return;
+
+            HideAttackIndicator();
+
+            Vector3 offset = customOffset ?? attackIndicatorOffset;
+            Vector3 spawnPos = transform.TransformPoint(offset);
+            Quaternion spawnRot = transform.rotation;
+
+            attackIndicatorInstance = Instantiate(attackIndicatorPrefab, spawnPos, spawnRot);
+            
+            if (attackIndicatorScale != 1f)
+            {
+                attackIndicatorInstance.transform.localScale *= attackIndicatorScale;
+            }
+
+            if (attackIndicatorFollowsBoss)
+            {
+                attackIndicatorInstance.transform.SetParent(transform);
+                attackIndicatorInstance.transform.localPosition = offset;
+                attackIndicatorInstance.transform.localRotation = Quaternion.identity;
+            }
+
+            float duration = customDuration ?? attackIndicatorDuration;
+            if (duration > 0f)
+            {
+                attackIndicatorCoroutine = StartCoroutine(HideIndicatorAfterDelay(duration));
+            }
+
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Attack indicator shown at offset {offset}");
+#endif
+        }
+
+        /// <summary>
+        /// Hides/destroys the attack indicator VFX.
+        /// </summary>
+        public void HideAttackIndicator()
+        {
+            if (attackIndicatorCoroutine != null)
+            {
+                StopCoroutine(attackIndicatorCoroutine);
+                attackIndicatorCoroutine = null;
+            }
+
+            if (attackIndicatorInstance != null)
+            {
+                Destroy(attackIndicatorInstance);
+                attackIndicatorInstance = null;
+            }
+        }
+
+        /// <summary>
+        /// Animation Event receiver: Shows the attack indicator.
+        /// </summary>
+        public void AttackIndicatorStart()
+        {
+            ShowAttackIndicator();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: Hides the attack indicator.
+        /// </summary>
+        public void AttackIndicatorEnd()
+        {
+            HideAttackIndicator();
+        }
+
+        private IEnumerator HideIndicatorAfterDelay(float delay)
+        {
+            yield return WaitForSecondsCache.Get(delay);
+            HideAttackIndicator();
+        }
+        #endregion
+
+
+        
+        /// <summary>
+        /// Plays the SFX for the given attack.
+        /// </summary>
+        /// <param name="attack">The attack descriptor containing the SFX clip.</param>
+        private void PlayAttackSFX(BossAttackDescriptor attack)
+        {
+            if (attack == null) return;
+            PlaySFX(attack.AttackSFX, attack.SFXVolume);
         }
 
         /// <summary>
@@ -1157,10 +1330,12 @@ namespace EnemyBehavior.Boss
 
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Starting vacuum attack animations - Windup trigger: {a.AnimatorTriggerOnWindup}");
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnWindup)) animator.SetTrigger(a.AnimatorTriggerOnWindup);
+            PlayAttackSFX(a); // Attack SFX
             yield return WaitForSecondsCache.Get(a.WindupSpeedMultiplier * GetClipLength(animator, a.WindupClipName));
             
             // START VACUUM SUCTION EFFECT during the active phase
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnActive)) animator.SetTrigger(a.AnimatorTriggerOnActive);
+            PlaySFX(VacuumSuctionSFX); // Vacuum-specific suction SFX
             
             // Calculate active phase duration
             float activePhaseDuration = a.ActiveSpeedMultiplier * GetClipLength(animator, a.ActiveClipName);
@@ -2082,8 +2257,18 @@ namespace EnemyBehavior.Boss
                 }
             }
             
+            // Show attack indicator at the start of windup
+            ShowAttackIndicator();
+            
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnWindup)) animator.SetTrigger(a.AnimatorTriggerOnWindup);
+            PlayAttackSFX(a); // Attack SFX
             yield return WaitForSecondsCache.Get(a.WindupSpeedMultiplier * GetClipLength(animator, a.WindupClipName));
+            
+            // Hide attack indicator when active phase begins (if duration was 0)
+            if (attackIndicatorDuration <= 0f)
+            {
+                HideAttackIndicator();
+            }
             
             // Store starting position for lunge
             Vector3 lungeStartPos = transform.position;
@@ -2220,6 +2405,7 @@ namespace EnemyBehavior.Boss
             }
 
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnWindup)) animator.SetTrigger(a.AnimatorTriggerOnWindup);
+            PlayAttackSFX(a); // Attack SFX
             yield return WaitForSecondsCache.Get(a.WindupSpeedMultiplier * GetClipLength(animator, a.WindupClipName));
 
             // Recalculate direction to player at dash moment (they may have moved during windup)
@@ -2401,6 +2587,7 @@ namespace EnemyBehavior.Boss
             
             var a = KnockOffSpin;
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnWindup)) animator.SetTrigger(a.AnimatorTriggerOnWindup);
+            PlayAttackSFX(a); // Attack SFX
             yield return WaitForSecondsCache.Get(a.WindupSpeedMultiplier * GetClipLength(animator, a.WindupClipName));
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnActive)) animator.SetTrigger(a.AnimatorTriggerOnActive);
 
@@ -2471,6 +2658,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(TriggerStunWindup))
             {
                 animator.SetTrigger(TriggerStunWindup);
+                PlaySFX(StunSFX); // Stun SFX
                 PushAction($"Stun animation: Windup triggered");
             }
 
@@ -2599,6 +2787,9 @@ namespace EnemyBehavior.Boss
             panel.isDestroyed = true;
             panel.currentHealth = 0;
             PushAction($"Side panel {panelIndex} DESTROYED! Zone now vulnerable (x{panel.vulnerabilityMultiplier} damage)");
+
+            // Play panel break SFX
+            PlaySFX(PanelBreakSFX);
 
             if (panel.panelVisualMesh == null)
             {
@@ -2740,6 +2931,10 @@ namespace EnemyBehavior.Boss
         private void TriggerRandomHitReact()
         {
             if (animator == null) return;
+            
+            // Play damaged SFX
+            PlaySFX(DamagedSFX);
+            
             int roll = Random.Range(0, 3);
             switch (roll)
             {
@@ -3677,6 +3872,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(ArmsDeployTrigger)) 
             {
                 animator.SetTrigger(ArmsDeployTrigger);
+                PlaySFX(ArmsDeploySFX); // Arms deploy SFX
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{ArmsDeployTrigger}' SET");
 #endif
@@ -3724,6 +3920,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(ArmsRetractTrigger)) 
             {
                 animator.SetTrigger(ArmsRetractTrigger);
+                PlaySFX(ArmsRetractSFX); // Arms retract SFX
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{ArmsRetractTrigger}' SET");
 #endif
@@ -3830,6 +4027,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(HornsRaiseTrigger)) 
             {
                 animator.SetTrigger(HornsRaiseTrigger);
+                PlaySFX(HornsRaiseSFX); // Horns raise SFX
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{HornsRaiseTrigger}' SET");
 #endif
@@ -3883,6 +4081,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(HornsLowerTrigger)) 
             {
                 animator.SetTrigger(HornsLowerTrigger);
+                PlaySFX(HornsLowerSFX); // Horns lower SFX
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{HornsLowerTrigger}' SET");
 #endif

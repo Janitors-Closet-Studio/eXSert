@@ -31,7 +31,9 @@ namespace EnemyBehavior.Boss.Cleanser
         RakeIntoSpinSlash,      // Wing rake followed by 360 spin slash (or just spin slash)
         SpareToss,              // Projectile throw
         SpinDash,               // Meta Knight style spinning dash (1 or 3 times)
-        LegSweep                // Low sweep requiring jump to avoid
+        LegSweep,               // Low sweep requiring jump to avoid
+        Knockback,              // Pushes player away using external force
+        MiniCrescentWave        // Quick ranged crescent wave slash
     }
 
     /// <summary>
@@ -43,6 +45,15 @@ namespace EnemyBehavior.Boss.Cleanser
         HighDive,               // Leap high then slam down
         AnimeDashSlash,         // Pentagram-style dash attacks around player
         Whirlwind               // Spinning suction + leap slam
+    }
+
+    /// <summary>
+    /// Movement-only actions for the Cleanser (no hitbox).
+    /// </summary>
+    public enum CleanserMovementAction
+    {
+        None,
+        GapClosingDash          // Pure movement dash to close distance (no attack)
     }
 
     /// <summary>
@@ -338,5 +349,110 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("VFX prefab spawned on impact.")]
         public GameObject ImpactVFX;
+    }
+
+    /// <summary>
+    /// Configuration for the Knockback attack.
+    /// Uses external force to push the player away.
+    /// </summary>
+    [System.Serializable]
+    public class KnockbackAttackConfig
+    {
+        [Header("Force Settings")]
+        [Tooltip("Horizontal knockback force applied to player.")]
+        public float KnockbackForce = 15f;
+        
+        [Tooltip("Vertical force component (lifts player slightly).")]
+        public float VerticalForce = 5f;
+        
+        [Tooltip("Range at which knockback affects player.")]
+        public float KnockbackRadius = 4f;
+        
+        [Tooltip("Damage dealt by the knockback attack.")]
+        public float Damage = 15f;
+
+        [Header("Animation")]
+        [Tooltip("Animation trigger for the knockback attack.")]
+        public string AnimationTrigger = "Attack_Knockback";
+
+        [Header("SFX/VFX")]
+        [Tooltip("Sound effect when attack starts.")]
+        public AudioClip AttackSFX;
+        
+        [Tooltip("Sound effect on impact.")]
+        public AudioClip ImpactSFX;
+        
+        [Tooltip("VFX prefab for the impact effect.")]
+        public GameObject ImpactVFX;
+    }
+
+    /// <summary>
+    /// Configuration for the Mini Crescent Wave ranged attack.
+    /// A quick one-off crescent slash projectile.
+    /// </summary>
+    [System.Serializable]
+    public class MiniCrescentWaveConfig
+    {
+        [Header("Projectile Settings")]
+        [Tooltip("Speed of the crescent wave projectile.")]
+        public float WaveSpeed = 20f;
+        
+        [Tooltip("Damage dealt by the wave.")]
+        public float Damage = 20f;
+        
+        [Tooltip("Width of the wave hitbox.")]
+        public float WaveWidth = 8f;
+        
+        [Tooltip("Height of the wave (relative to Cleanser position).")]
+        public float WaveHeight = 1.5f;
+        
+        [Tooltip("Maximum travel distance before wave dissipates.")]
+        public float MaxDistance = 25f;
+
+        [Header("Animation")]
+        [Tooltip("Animation trigger for the crescent wave slash.")]
+        public string AnimationTrigger = "Attack_MiniCrescent";
+
+        [Header("SFX/VFX")]
+        [Tooltip("Sound effect when slashing.")]
+        public AudioClip SlashSFX;
+        
+        [Tooltip("Prefab for the crescent wave projectile.")]
+        public GameObject WavePrefab;
+    }
+
+    /// <summary>
+    /// Configuration for the Gap Closing Dash (movement only, no attack).
+    /// </summary>
+    [System.Serializable]
+    public class GapClosingDashConfig
+    {
+        [Header("Dash Settings")]
+        [Tooltip("Speed of the dash.")]
+        public float DashSpeed = 25f;
+        
+        [Tooltip("Duration of the dash.")]
+        public float DashDuration = 0.3f;
+        
+        [Tooltip("Minimum distance to player required to use dash.")]
+        public float MinDistanceToUse = 8f;
+        
+        [Tooltip("Target distance from player to stop dashing.")]
+        public float TargetStopDistance = 3f;
+
+        [Header("Aggression Requirements")]
+        [Tooltip("Minimum aggression level required to use this dash.")]
+        public int MinAggressionLevel = 4;
+
+        [Header("Animation")]
+        [Tooltip("Animation trigger for the dash.")]
+        public string AnimationTrigger = "Dash_GapClose";
+
+        [Header("SFX/VFX")]
+        [Tooltip("Sound effect during dash.")]
+        public AudioClip DashSFX;
+        
+        [Tooltip("VFX prefab for dash trail/afterimage.")]
+        public GameObject DashVFX;
     }
 }

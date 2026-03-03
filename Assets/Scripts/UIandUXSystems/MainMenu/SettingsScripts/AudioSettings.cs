@@ -141,6 +141,17 @@ public class AudioSettings : MonoBehaviour
 
         if (SoundManager.Instance.puzzleSource != null)
             SoundManager.Instance.puzzleSource.volume = _sfxVolumeRaw * _masterVolumeRaw;
+
+        UpdateMusicBoxVolumes();
+    }
+
+    private void UpdateMusicBoxVolumes()
+    {
+        MusicBox[] musicBoxes = FindObjectsOfType<MusicBox>();
+        foreach (MusicBox box in musicBoxes)
+        {
+            box.UpdateCachedVolumes();
+        }
     }
 
     private void SetStaticSlidersToCurrentValues()

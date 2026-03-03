@@ -38,6 +38,7 @@ namespace EnemyBehavior.Boss.Cleanser
             : BasicAttack != CleanserBasicAttack.None;
     }
 
+
     /// <summary>
     /// A complete combo sequence for the Cleanser boss.
     /// </summary>
@@ -58,6 +59,13 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("Cooldown after using this combo before it can be selected again.")]
         public float ComboCooldown = 5f;
+
+        [Header("Aggression Requirements")]
+        [Tooltip("Minimum aggression level required to use this combo (1-5).")]
+        [Range(1, 5)] public int MinAggressionLevel = 1;
+        
+        [Tooltip("Maximum aggression level at which this combo can be used (1-5). Set to 5 for no upper limit.")]
+        [Range(1, 5)] public int MaxAggressionLevel = 5;
         
         [Tooltip("The steps in this combo.")]
         public List<ComboStep> Steps = new List<ComboStep>();
@@ -86,6 +94,14 @@ namespace EnemyBehavior.Boss.Cleanser
                 }
                 return -1;
             }
+        }
+
+        /// <summary>
+        /// Checks if this combo is available at the given aggression level.
+        /// </summary>
+        public bool IsAvailableAtAggressionLevel(int level)
+        {
+            return level >= MinAggressionLevel && level <= MaxAggressionLevel;
         }
     }
 
@@ -120,6 +136,12 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isExecutingCombo;
         private bool isInRecovery;
         private float recoveryEndTime;
+        private CleanserAggressionSystem aggressionSystem;
+
+        private void Awake()
+        {
+            aggressionSystem = GetComponent<CleanserAggressionSystem>();
+        }
 
         /// <summary>
         /// Returns true if the system is currently executing a combo.
@@ -142,11 +164,23 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
-        /// Selects a random eligible combo based on distance to player and cooldowns.
+        /// Selects a random eligible combo based on distance to player, cooldowns, and aggression level.
         /// </summary>
         /// <param name="distanceToPlayer">Current distance to the player.</param>
         /// <returns>Selected combo or null if none are eligible.</returns>
         public CleanserCombo SelectCombo(float distanceToPlayer)
+        {
+            int currentAggressionLevel = aggressionSystem != null ? (int)aggressionSystem.CurrentLevel : 1;
+            return SelectCombo(distanceToPlayer, currentAggressionLevel);
+        }
+
+        /// <summary>
+        /// Selects a random eligible combo based on distance to player, cooldowns, and aggression level.
+        /// </summary>
+        /// <param name="distanceToPlayer">Current distance to the player.</param>
+        /// <param name="aggressionLevel">Current aggression level (1-5).</param>
+        /// <returns>Selected combo or null if none are eligible.</returns>
+        public CleanserCombo SelectCombo(float distanceToPlayer, int aggressionLevel)
         {
             List<CleanserCombo> eligible = new List<CleanserCombo>();
             int totalWeight = 0;
@@ -160,6 +194,10 @@ namespace EnemyBehavior.Boss.Cleanser
                     continue;
                     
                 if (comboCooldowns.TryGetValue(combo.ComboName, out float cooldownEnd) && Time.time < cooldownEnd)
+                    continue;
+
+                // Check aggression level requirements
+                if (!combo.IsAvailableAtAggressionLevel(aggressionLevel))
                     continue;
                     
                 eligible.Add(combo);

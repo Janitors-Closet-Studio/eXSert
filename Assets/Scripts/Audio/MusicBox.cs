@@ -1,5 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using Unity.VisualScripting;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -11,10 +13,14 @@ using UnityEngine.SceneManagement;
 [RequireComponent(typeof(Rigidbody))]
 public class MusicBox : MonoBehaviour
 {
+    // Track the currently active MusicBox
+    private static MusicBox currentActiveBox;
     [SerializeField] private AudioClip levelMusic;
     [SerializeField] private AudioClip ambienceClip;
     private AudioSource musicSource;
     private AudioSource ambienceSource;
+    private float cachedMusicVolume;
+    private float cachedAmbienceVolume;
     [SerializeField] private bool loopMusic = true;
 
     [Header("Debugging")]
@@ -30,6 +36,7 @@ public class MusicBox : MonoBehaviour
     private Coroutine fadeOutMusicRoutine;
     private Coroutine fadeOutAmbienceRoutine;
 
+    private SoundManager cachedSoundManager;
     private void Awake()
     {
         boxCollider = GetComponent<BoxCollider>();
@@ -40,100 +47,141 @@ public class MusicBox : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
 
+        UpdateCachedVolumes();
+
+        cachedSoundManager = SoundManager.Instance;
         TryBindMusicSource();
+    }
+
+    public void UpdateCachedVolumes()
+    {
+        if (SoundManager.Instance != null)
+        {
+            cachedAmbienceVolume = SoundManager.Instance.ambienceSource.volume;
+            cachedMusicVolume = SoundManager.Instance.musicSource.volume;
+        }
     }
 
     private void PlayLevelMusic()
     {
-
-
         if (levelMusic == null)
-        {
             return;
-        }
 
         if (!TryBindMusicSource())
-        {
             return;
-        }
 
+        // If fading out, stop fade and fade back in if needed
         if (fadeOutMusicRoutine != null)
         {
             StopCoroutine(fadeOutMusicRoutine);
             fadeOutMusicRoutine = null;
+            // If music is playing but volume is low, fade in
+            if (musicSource.isPlaying && musicSource.volume < cachedMusicVolume)
+            {
+                StartCoroutine(FadeInMusic(1f));
+                return;
+            }
         }
 
-        if (musicSource.isPlaying && musicSource.clip == levelMusic)
+        // Only update if clip or loop state changed
+        if (musicSource.isPlaying && musicSource.clip == levelMusic && musicSource.loop == loopMusic)
+        {
+            // If volume is low, fade in
+            if (musicSource.volume < cachedMusicVolume)
+                StartCoroutine(FadeInMusic(1f));
             return;
+        }
 
-        musicSource.clip = levelMusic;
-        musicSource.loop = loopMusic;
+        if (musicSource.clip != levelMusic)
+            musicSource.clip = levelMusic;
+        if (musicSource.loop != loopMusic)
+            musicSource.loop = loopMusic;
+        musicSource.volume = 0f;
         musicSource.Play();
-        Debug.Log($"🎵 [MusicBox] Playing level music: {levelMusic.name}");
+        StartCoroutine(FadeInMusic(1f));
+    }
+
+    private IEnumerator FadeInMusic(float fadeDuration)
+    {
+        if (musicSource == null)
+            yield break;
+        float t = 0f;
+        while (t < fadeDuration)
+        {
+            t += Time.deltaTime;
+            musicSource.volume = Mathf.MoveTowards(musicSource.volume, cachedMusicVolume, cachedMusicVolume * (Time.deltaTime / fadeDuration));
+            yield return null;
+        }
+        musicSource.volume = cachedMusicVolume;
     }
 
     private void PlayAmbience()
     {
         if (ambienceClip == null)
-        {
             return;
-        }
 
         if (ambienceSource == null)
         {
-            var sm = SoundManager.Instance;
-            if (sm == null || sm.ambienceSource == null)
-            {
+            if (cachedSoundManager == null || cachedSoundManager.ambienceSource == null)
                 return;
-            }
-            ambienceSource = sm.ambienceSource;
+            ambienceSource = cachedSoundManager.ambienceSource;
         }
 
         if (ambienceSource.isPlaying && ambienceSource.clip == ambienceClip)
             return;
 
-        ambienceSource.clip = ambienceClip;
-        ambienceSource.loop = true;
+        if (ambienceSource.clip != ambienceClip)
+            ambienceSource.clip = ambienceClip;
+        if (!ambienceSource.loop)
+            ambienceSource.loop = true;
+        ambienceSource.volume = cachedAmbienceVolume;   
         ambienceSource.Play();
     }
 
-    private IEnumerator FadeOutMusic(float fadeDuration)
+    public IEnumerator FadeOutMusic(float fadeDuration)
     {
         if (musicSource == null || !musicSource.isPlaying)
             yield break;
 
-        float startVolume = musicSource.volume;
-
-        for (float t = 0; t < fadeDuration; t += Time.deltaTime)
+        float t = 0f;
+        while (t < fadeDuration)
         {
-            musicSource.volume = Mathf.Lerp(startVolume, 0, t / fadeDuration);
+            t += Time.deltaTime;
+            musicSource.volume = Mathf.MoveTowards(musicSource.volume, 0, cachedMusicVolume * (Time.deltaTime / fadeDuration));
             yield return null;
         }
-
         musicSource.Stop();
-        musicSource.volume = startVolume; // Reset volume for next time
+        musicSource.volume = cachedMusicVolume; // Reset volume for next time
+        fadeOutMusicRoutine = null;
     }
 
-    private IEnumerator FadeOutAmbience(float fadeDuration)
+    public IEnumerator FadeOutAmbience(float fadeDuration)
     {
         if (ambienceSource == null || !ambienceSource.isPlaying)
             yield break;
-
-        float startVolume = ambienceSource.volume;
-
-        for (float t = 0; t < fadeDuration; t += Time.deltaTime)
+        float t = 0f;
+        while (t < fadeDuration)
         {
-            ambienceSource.volume = Mathf.Lerp(startVolume, 0, t / fadeDuration);
+            t += Time.deltaTime;
+            ambienceSource.volume = Mathf.MoveTowards(ambienceSource.volume, 0, cachedAmbienceVolume * (Time.deltaTime / fadeDuration));
             yield return null;
         }
-
         ambienceSource.Stop();
-        ambienceSource.volume = startVolume; // Reset volume for next time
+        ambienceSource.volume = cachedAmbienceVolume; // Reset volume for next time
+        fadeOutAmbienceRoutine = null;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player")){
+        if (other.CompareTag("Player"))
+        {
+            // If another box was active, stop its fade coroutines
+            if (currentActiveBox != null && currentActiveBox != this)
+            {
+                currentActiveBox.StopAllCoroutines();
+            }
+            currentActiveBox = this;
+            StopAllCoroutines();
             PlayLevelMusic();
             PlayAmbience();
         }
@@ -144,18 +192,23 @@ public class MusicBox : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
 
-        if (musicSource == null || !musicSource.isPlaying)
-            return;
+        // Only fade out if this is still the active box
+        if (currentActiveBox == this)
+        {
+            if (musicSource == null || !musicSource.isPlaying)
+                return;
 
-        if (fadeOutMusicRoutine != null)
-            StopCoroutine(fadeOutMusicRoutine);
+            if (fadeOutMusicRoutine != null)
+                StopCoroutine(fadeOutMusicRoutine);
 
-        fadeOutMusicRoutine = StartCoroutine(FadeOutMusic(2f));
+            fadeOutMusicRoutine = StartCoroutine(FadeOutMusic(2f));
 
-        if (fadeOutAmbienceRoutine != null)
-            StopCoroutine(fadeOutAmbienceRoutine);
+            if (fadeOutAmbienceRoutine != null)
+                StopCoroutine(fadeOutAmbienceRoutine);
 
-        fadeOutAmbienceRoutine = StartCoroutine(FadeOutAmbience(2f));
+            fadeOutAmbienceRoutine = StartCoroutine(FadeOutAmbience(2f));
+        }
+
     }
 
     private void OnValidate()
@@ -208,11 +261,12 @@ public class MusicBox : MonoBehaviour
         if (musicSource != null)
             return true;
 
-        var sm = SoundManager.Instance;
-        if (sm == null)
+        if (cachedSoundManager == null)
+            cachedSoundManager = SoundManager.Instance;
+        if (cachedSoundManager == null)
             return false;
 
-        musicSource = sm.levelMusicSource;
+        musicSource = cachedSoundManager.levelMusicSource;
         return musicSource != null;
     }
 }

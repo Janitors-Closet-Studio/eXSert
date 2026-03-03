@@ -75,8 +75,8 @@ public class ShowIfZAttribute : PropertyAttribute { }
 public class CranePuzzle : PuzzlePart 
 {
     
-        // Static flag to block pause menu globally
-        public static bool IsCranePuzzleActive = false;
+    // Static flag to block pause menu globally
+    public static bool IsCranePuzzleActive = false;
 
     // Cache of the player's movement component so it can be re-enabled later
     private PlayerMovement cachedPlayerMovement;

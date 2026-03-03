@@ -296,11 +296,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -13.612439
+      value: -13.612
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.65
+      value: -1.715
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalPosition.z
@@ -867,7 +867,7 @@ MonoBehaviour:
   lowHealthThresholdPercent: 0.25
   handleLowHealth: 1
   currentZone: {fileID: 0}
-  allowZoneRelocation: 1
+  allowZoneRelocation: 0
   idleTimerDuration: 15
   detectionRange: 10
   showDetectionGizmo: 1
@@ -879,6 +879,7 @@ MonoBehaviour:
   attackActiveDuration: 0.5
   showAttackGizmo: 1
   canBeParried: 1
+  useAnimationEventAttacks: 0
   healthBarPrefab: {fileID: 5126943973119965438, guid: ba84b42810b4ba14b8c277e64607a584, type: 3}
   healthBarAnchor: {fileID: 0}
   healthBarInstance: {fileID: 0}
@@ -918,7 +919,7 @@ MonoBehaviour:
   maxYawLeft: 80
   maxYawRight: 80
   muzzleForwardOffset: 0.1
-  gunfireSfx: {fileID: 8300000, guid: 38a315f3cb914af48b952a8101d88e62, type: 3}
+  gunfireSfx: {fileID: 8300000, guid: f310bef2e9109a14aaa2980ad7866ff0, type: 3}
   projectilePoolSize: 16
   showTelegraphLine: 1
   telegraphColor: {r: 1, g: 0.15, b: 0.15, a: 1}
@@ -959,7 +960,7 @@ CapsuleCollider:
   m_Radius: 0.68
   m_Height: 2.5
   m_Direction: 1
-  m_Center: {x: 0, y: 1.25, z: 0}
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!4 &9116645942203580927 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}

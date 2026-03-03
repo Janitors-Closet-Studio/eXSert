@@ -39,6 +39,7 @@ namespace EnemyBehavior.Boss
         [Header("SFX")]
         [SerializeField, Tooltip("Sound effect to play when the boss takes damage")]
         private AudioClip[] damageSFX;
+        [SerializeField] private AudioClip defeatSFX;
 
         [Header("References")]
         [SerializeField, Tooltip("Reference to boss brain for panel count and defeat callback")]
@@ -195,6 +196,14 @@ namespace EnemyBehavior.Boss
             }
         }
 
+        private void PlayDefeatSFX()
+        {
+            if (defeatSFX != null && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.sfxSource.PlayOneShot(defeatSFX);
+            }
+        }
+
         /// <summary>
         /// Apply damage to the boss directly (bypasses panel armor).
         /// Used by vulnerable zones and internal systems.
@@ -219,6 +228,8 @@ namespace EnemyBehavior.Boss
         {
             isDefeated = true;
             Log("Boss defeated!");
+            
+            PlayDefeatSFX();
             
             if (brain != null)
             {

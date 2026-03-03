@@ -63,14 +63,16 @@ public class MenuListManager : MonoBehaviour
         }
 
         if (menusToManage.Contains(menuToAdd))
-        {
             menusToManage.Remove(menuToAdd);
-        }
+        
+        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
 
         if (!menusToManage.Contains(menuToAdd))
         {
             menusToManage.Insert(0, menuToAdd);
-            menuToAdd.SetActive(true);
+
+            if(menuToAdd != firstMenuToOpen && menuToAdd != canvas)
+                fadeMenus.StartCoroutine(fadeMenus.FadeMenu(menuToAdd, fadeMenus.fadeDuration, true));
 
             if(menuToAdd.tag != "LogUI" && menuToAdd.tag != "DiaryUI")
                 SetAsLastSibling(menuToAdd);
@@ -114,10 +116,13 @@ public class MenuListManager : MonoBehaviour
             return;
 
         GameObject currentTop = menusToManage[0];
-        if(currentTop != null)
-            currentTop.SetActive(false);
+
+        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
+        if (currentTop != null)
+            fadeMenus.StartCoroutine(fadeMenus.FadeMenu(currentTop, fadeMenus.fadeDuration, false));
 
         menusToManage.RemoveAt(0);
+        
 
         if (menusToManage.Count > 0)
         {
@@ -126,15 +131,6 @@ public class MenuListManager : MonoBehaviour
             {
                 SelectFirstSelectOnBack(newTop);
             }
-        }
-    }
-
-    public void RemoveFromMenuList(GameObject menuToRemove)
-    {
-        if (menusToManage.Contains(menuToRemove))
-        {
-            menusToManage.Remove(menuToRemove);
-            menuToRemove.SetActive(false);
         }
     }
 
