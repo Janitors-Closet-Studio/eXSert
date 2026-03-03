@@ -17015,6 +17015,7 @@ GameObject:
   - component: {fileID: 5311890396266669227}
   - component: {fileID: 2544315719399479553}
   - component: {fileID: 8069822390347909149}
+  - component: {fileID: 1928066033365348012}
   m_Layer: 6
   m_Name: PlayerModel
   m_TagString: Player
@@ -17077,7 +17078,7 @@ MonoBehaviour:
   defaultTransition: 0.08
   fallingTransition: 0.5
   attackManager: {fileID: 2445762002116463598}
-  playerMovement: {fileID: 0}
+  playerMovement: {fileID: 6150044602222399215}
   logAnimationEvents: 1
 --- !u!114 &2544315719399479553
 MonoBehaviour:
@@ -17093,7 +17094,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatIdleController
   animationController: {fileID: 5311890396266669227}
   characterController: {fileID: 2289477533837267770}
-  playerMovement: {fileID: 0}
+  playerMovement: {fileID: 6150044602222399215}
   combatDuration: 10
   movementThreshold: 0.02
 --- !u!114 &8069822390347909149
@@ -17118,6 +17119,23 @@ MonoBehaviour:
   - {fileID: 0}
   airMoveDuration: 0.5
   airMoveAudioClip: {fileID: 8300000, guid: 639f0af7a82d0934b977fcf7f85e6db6, type: 3}
+--- !u!114 &1928066033365348012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7469685511396239477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7042811ff23a38847aebf84616647ba1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayFootstepSound
+  walkClip:
+  - {fileID: 8300000, guid: 233c6727aaaf01d4e88ed6bf649e49ab, type: 3}
+  - {fileID: 8300000, guid: c060774e692565b499994b187d7dc89c, type: 3}
+  - {fileID: 8300000, guid: 5ce9dde57a9c0514ba6c3ee96cc29ed2, type: 3}
+  - {fileID: 8300000, guid: e64c4180c7e047a4688071f7298b8d98, type: 3}
 --- !u!1 &7501573926819253410
 GameObject:
   m_ObjectHideFlags: 0

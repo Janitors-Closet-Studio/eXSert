@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Events;
+using System;
 
 public abstract class CollectableInteraction : InteractionManager
 {
@@ -8,12 +10,24 @@ public abstract class CollectableInteraction : InteractionManager
     [SerializeField] private string collectID;
     [SerializeField] private float uiDisplayDuration = 4f;
     [SerializeField] private float uiFadeDuration = 2f;
-    [SerializeField] private string noticeBottomText = "Check your Navigation Menu for more details!";
+    [SerializeField] private string bottomFlavorText = "Press Pause to View";
+
+    protected override void Awake()
+    {
+        base.Awake();
+
+        collectID = this.interactId;
+    }
+
     protected override void Interact()
     {
+
         ExecuteInteraction();
+
         StartCoroutine(FadeInAndFadeOutUI(uiFadeDuration, uiDisplayDuration));
         StartCoroutine(DeactivateInteractableCoroutine(this));
+        if(_interactionSFX != null)
+            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
     }
     protected abstract void ExecuteInteraction();
 
@@ -50,16 +64,18 @@ public abstract class CollectableInteraction : InteractionManager
     private IEnumerator FadeInUI(float fadeDuration, float displayDuration)
     {
         var collectText = InteractionUI.Instance._collectText;
-
         var collectBottomText = InteractionUI.Instance._collectBottomText;
 
-        if(collectText == null || collectBottomText == null)
+        if(collectText == null)
         {
+            Debug.LogError("InteractionUIManager instance is null. Cannot show collect text.");
             yield break;
         }
 
         collectText.text = "Collected: " + collectID.Trim();
-        collectBottomText.text = noticeBottomText;
+
+        if(collectBottomText != null)
+            collectBottomText.text = bottomFlavorText;
 
         collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, 0f);
         collectText.gameObject.SetActive(true);
@@ -84,8 +100,9 @@ public abstract class CollectableInteraction : InteractionManager
         var collectText = InteractionUI.Instance._collectText;
         var collectBottomText = InteractionUI.Instance._collectBottomText;
 
-        if (collectText == null || collectBottomText == null)
+        if (collectText == null)
         {
+            Debug.LogError("InteractionUIManager instance is null. Cannot fade out collect text.");
             yield break;
         }
 

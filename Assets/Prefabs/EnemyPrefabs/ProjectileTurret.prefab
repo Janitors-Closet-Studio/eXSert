@@ -162,27 +162,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.43
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 1.061
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 1.39
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: -0.24339634
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0.96992695
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalRotation.z
@@ -194,7 +194,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: 208.174
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -368,7 +368,7 @@ MonoBehaviour:
   lowHealthThresholdPercent: 0.25
   handleLowHealth: 1
   currentZone: {fileID: 0}
-  allowZoneRelocation: 1
+  allowZoneRelocation: 0
   idleTimerDuration: 15
   detectionRange: 10
   showDetectionGizmo: 1
@@ -380,6 +380,7 @@ MonoBehaviour:
   attackActiveDuration: 0.5
   showAttackGizmo: 1
   canBeParried: 1
+  useAnimationEventAttacks: 0
   healthBarPrefab: {fileID: 5126943973119965438, guid: ba84b42810b4ba14b8c277e64607a584, type: 3}
   healthBarAnchor: {fileID: 1847539679579535266}
   healthBarInstance: {fileID: 0}

@@ -18,7 +18,12 @@ public class PlaySoundThroughManager : MonoBehaviour
     [SerializeField] [Range(0f, 10f)] private float fadeOutDuration = 1f;
     
     private Coroutine _fadeOutCoroutine;
-    
+
+    private void Start()
+    {
+        PlaySound();
+    }
+
     /// <summary>
     /// Play the assigned sound through SoundManager.
     /// </summary>

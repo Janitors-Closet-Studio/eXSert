@@ -63,6 +63,14 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Spin Dash Configuration")]
         public SpinDashConfig SpinDashSettings = new SpinDashConfig();
 
+        [Header("New Attack Configurations")]
+        [Tooltip("Configuration for the knockback attack that pushes player away.")]
+        public KnockbackAttackConfig KnockbackSettings = new KnockbackAttackConfig();
+        [Tooltip("Configuration for the mini crescent wave ranged attack.")]
+        public MiniCrescentWaveConfig MiniCrescentSettings = new MiniCrescentWaveConfig();
+        [Tooltip("Configuration for the gap-closing dash (no hitbox).")]
+        public GapClosingDashConfig GapCloseDashSettings = new GapClosingDashConfig();
+
         [Header("Strong Attack Configurations")]
         public CleanserAttackDescriptor HighDiveAttack;
         public CleanserAttackDescriptor AnimeDashSlashAttack;
@@ -113,6 +121,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private CleanserComboSystem comboSystem;
         [SerializeField] private CleanserDualWieldSystem dualWieldSystem;
         [SerializeField] private CleanserPlatformController platformController;
+        [SerializeField] private CleanserAggressionSystem aggressionSystem;
         [SerializeField] private VacuumSuctionEffect suctionEffect;
         [SerializeField] private Animator animator;
         [SerializeField] private AudioSource sfxSource;
@@ -139,6 +148,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private Dictionary<string, float> attackCooldowns = new Dictionary<string, float>();
         private AttackCategory currentAttackCategory = AttackCategory.Halberd;
         private bool pickedUpWeaponThisCombo;
+        private float baseAgentSpeed;
 
         #region IQueuedAttacker Implementation
         
@@ -208,6 +218,12 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             currentHealth -= finalDamage;
+
+            // Notify aggression system that player hit the boss
+            if (aggressionSystem != null)
+            {
+                aggressionSystem.OnPlayerHitsBoss();
+            }
             
             if (currentHealth <= 0f)
             {
@@ -224,6 +240,7 @@ namespace EnemyBehavior.Boss.Cleanser
             comboSystem = comboSystem ?? GetComponent<CleanserComboSystem>();
             dualWieldSystem = dualWieldSystem ?? GetComponent<CleanserDualWieldSystem>();
             platformController = platformController ?? GetComponent<CleanserPlatformController>();
+            aggressionSystem = aggressionSystem ?? GetComponent<CleanserAggressionSystem>();
             animator = animator ?? GetComponentInChildren<Animator>();
             
             ApplyMovementSettings();
@@ -236,11 +253,13 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (agent == null) return;
             
+            
             if (profile != null)
             {
                 // Use profile settings
                 float speed = Random.Range(profile.SpeedRange.x, profile.SpeedRange.y);
                 agent.speed = speed;
+                baseAgentSpeed = speed;
                 agent.angularSpeed = profile.AngularSpeed;
                 agent.acceleration = profile.Acceleration;
                 agent.stoppingDistance = profile.StoppingDistance;
@@ -253,6 +272,7 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 // Use fallback settings
                 agent.speed = FallbackSpeed;
+                baseAgentSpeed = FallbackSpeed;
                 agent.angularSpeed = FallbackAngularSpeed;
                 agent.acceleration = FallbackAcceleration;
                 agent.stoppingDistance = FallbackStoppingDistance;
@@ -301,6 +321,8 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             UpdateAnimatorParameters();
             UpdateHealthBar();
+            UpdateAggressionBasedSpeed();
+            UpdatePlayerGuardingAggression();
         }
 
         private void UpdateAnimatorParameters()
@@ -318,6 +340,23 @@ namespace EnemyBehavior.Boss.Cleanser
             if (healthBar == null) return;
             displayedHealth = Mathf.MoveTowards(displayedHealth, currentHealth, healthBarLerpSpeed * Time.deltaTime * maxHealth);
             healthBar.SetHealth(displayedHealth, maxHealth);
+        }
+
+        private void UpdateAggressionBasedSpeed()
+        {
+            if (agent == null || aggressionSystem == null) return;
+            
+            float speedMultiplier = aggressionSystem.GetSpeedMultiplier();
+            agent.speed = baseAgentSpeed * speedMultiplier;
+        }
+
+        private void UpdatePlayerGuardingAggression()
+        {
+            // Guard detection is now handled internally by CleanserAggressionSystem
+            // when detectPlayerGuarding is enabled (default: true).
+            // This method is kept for backwards compatibility but does nothing.
+            // If you need to manually control guard detection, disable detectPlayerGuarding
+            // on the CleanserAggressionSystem and call aggressionSystem.OnPlayerGuarding(Time.deltaTime) here.
         }
 
         private void CachePlayerReference()
@@ -485,6 +524,13 @@ namespace EnemyBehavior.Boss.Cleanser
                 {
                     yield return null;
                 }
+
+                // Check if aggression system is countering
+                if (aggressionSystem != null && aggressionSystem.IsCountering)
+                {
+                    yield return null;
+                    continue;
+                }
                 
                 if (ShouldTriggerUltimate())
                 {
@@ -509,13 +555,77 @@ namespace EnemyBehavior.Boss.Cleanser
                     }
                     else
                     {
-                        yield return MoveTowardPlayer(0.3f);
+                        // Use aggression-based movement when no combo available
+                        yield return ExecuteAggressionBasedMovement(0.3f);
                     }
                 }
                 else
                 {
                     yield return null;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Executes movement behavior based on current aggression level.
+        /// </summary>
+        private IEnumerator ExecuteAggressionBasedMovement(float duration)
+        {
+            if (player == null) yield break;
+
+            // Check if we should use gap-closing dash at high aggression
+            if (aggressionSystem != null && aggressionSystem.CanUseDash())
+            {
+                float dist = Vector3.Distance(transform.position, player.position);
+                if (dist >= GapCloseDashSettings.MinDistanceToUse)
+                {
+                    yield return ExecuteGapClosingDash();
+                    yield break;
+                }
+            }
+
+            // Get movement behavior from aggression system
+            AggressionMovementConfig movementConfig = aggressionSystem?.GetCurrentMovementConfig();
+            
+            if (movementConfig != null && movementConfig.AggressivelyClosesDistance)
+            {
+                // Aggressively close distance
+                yield return MoveTowardPlayer(duration);
+            }
+            else if (movementConfig != null)
+            {
+                // More passive/observant movement - strafe or maintain distance
+                float dist = Vector3.Distance(transform.position, player.position);
+                float preferredDist = movementConfig.PreferredDistance;
+
+                if (dist < preferredDist - 1f)
+                {
+                    // Too close, back off slightly
+                    yield return MoveAwayFromPlayer(duration * 0.5f);
+                }
+                else if (dist > preferredDist + 2f)
+                {
+                    // Too far, approach slowly
+                    yield return MoveTowardPlayer(duration * 0.5f);
+                }
+                else
+                {
+                    // In range - strafe or idle based on strafe chance
+                    if (Random.value < movementConfig.StrafeChance)
+                    {
+                        yield return StrafeAroundPlayer(duration);
+                    }
+                    else
+                    {
+                        // Face player and wait (observant behavior)
+                        yield return FaceTarget(player, duration);
+                    }
+                }
+            }
+            else
+            {
+                // Fallback to basic movement
+                yield return MoveTowardPlayer(duration);
             }
         }
 
@@ -614,6 +724,12 @@ namespace EnemyBehavior.Boss.Cleanser
                     break;
                 case CleanserBasicAttack.LegSweep:
                     yield return ExecuteAttackWithAnimationEvents(LegSweepAttack);
+                    break;
+                case CleanserBasicAttack.Knockback:
+                    yield return ExecuteKnockbackAttack();
+                    break;
+                case CleanserBasicAttack.MiniCrescentWave:
+                    yield return ExecuteMiniCrescentWave();
                     break;
             }
             
@@ -1094,6 +1210,178 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return new WaitForSeconds(0.8f);
         }
 
+        /// <summary>
+        /// Executes the knockback attack that pushes player away using external force.
+        /// </summary>
+        private IEnumerator ExecuteKnockbackAttack()
+        {
+            if (player == null || playerMovement == null) yield break;
+
+            yield return FaceTarget(player, 0.15f);
+
+            TriggerAnimation(KnockbackSettings.AnimationTrigger);
+            PlaySFX(KnockbackSettings.AttackSFX);
+
+            // Wait for animation wind-up
+            yield return new WaitForSeconds(0.3f);
+
+            float dist = Vector3.Distance(transform.position, player.position);
+            if (dist <= KnockbackSettings.KnockbackRadius)
+            {
+                // Calculate knockback direction (away from Cleanser)
+                Vector3 knockbackDir = (player.position - transform.position).normalized;
+                knockbackDir.y = 0;
+                
+                // Apply knockback using external force system
+                Vector3 knockbackImpulse = knockbackDir * KnockbackSettings.KnockbackForce;
+                knockbackImpulse.y = KnockbackSettings.VerticalForce;
+                
+                playerMovement.ApplyKnockback(knockbackImpulse);
+
+                // Deal damage
+                if (player.TryGetComponent<IHealthSystem>(out var health))
+                {
+                    health.LoseHP(KnockbackSettings.Damage);
+                }
+
+                // Notify aggression system that player blocked (if they did)
+                if (CombatManager.isGuarding && aggressionSystem != null)
+                {
+                    aggressionSystem.OnPlayerBlocks();
+                }
+
+                // Spawn impact VFX
+                if (KnockbackSettings.ImpactVFX != null)
+                {
+                    Instantiate(KnockbackSettings.ImpactVFX, player.position, Quaternion.identity);
+                }
+                PlaySFX(KnockbackSettings.ImpactSFX);
+
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Knockback applied: {knockbackImpulse}");
+#endif
+            }
+
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        /// <summary>
+        /// Executes the mini crescent wave ranged attack.
+        /// </summary>
+        private IEnumerator ExecuteMiniCrescentWave()
+        {
+            if (player == null) yield break;
+
+            yield return FaceTarget(player, 0.2f);
+
+            TriggerAnimation(MiniCrescentSettings.AnimationTrigger);
+            PlaySFX(MiniCrescentSettings.SlashSFX);
+
+            // Wait for animation slash point
+            yield return new WaitForSeconds(0.25f);
+
+            // Spawn crescent wave projectile
+            if (MiniCrescentSettings.WavePrefab != null)
+            {
+                Vector3 spawnPos = transform.position;
+                spawnPos.y += MiniCrescentSettings.WaveHeight;
+
+                var waveObj = Instantiate(MiniCrescentSettings.WavePrefab, spawnPos, transform.rotation);
+
+                // Configure wave movement
+                var rb = waveObj.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    Vector3 dir = (player.position - spawnPos).normalized;
+                    dir.y = 0;
+                    rb.linearVelocity = dir * MiniCrescentSettings.WaveSpeed;
+                }
+
+                // Set up damage on the wave if it has a damage component
+                var waveDamage = waveObj.GetComponent<CleanserProjectile>();
+                if (waveDamage != null)
+                {
+                    // Configure using existing projectile system
+                    var config = new SpareTossConfig
+                    {
+                        UseStraightPath = true,
+                        ReturnsOnStraightPath = false,
+                        ProjectileSpeedRange = new Vector2(MiniCrescentSettings.WaveSpeed, MiniCrescentSettings.WaveSpeed)
+                    };
+                    waveDamage.Initialize(player, transform, config);
+                }
+
+                // Auto-destroy after max distance travel time
+                float travelTime = MiniCrescentSettings.MaxDistance / MiniCrescentSettings.WaveSpeed;
+                Destroy(waveObj, travelTime);
+
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Mini crescent wave fired!");
+#endif
+            }
+            else
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), "[Cleanser] Mini crescent wave prefab not assigned!");
+#endif
+            }
+
+            yield return new WaitForSeconds(0.4f);
+        }
+
+        /// <summary>
+        /// Executes the gap-closing dash (no hitbox, pure movement).
+        /// </summary>
+        private IEnumerator ExecuteGapClosingDash()
+        {
+            if (player == null) yield break;
+
+            float dist = Vector3.Distance(transform.position, player.position);
+            if (dist < GapCloseDashSettings.MinDistanceToUse) yield break;
+
+            yield return FaceTarget(player, 0.1f);
+
+            TriggerAnimation(GapCloseDashSettings.AnimationTrigger);
+            PlaySFX(GapCloseDashSettings.DashSFX);
+
+            if (GapCloseDashSettings.DashVFX != null)
+            {
+                Instantiate(GapCloseDashSettings.DashVFX, transform.position, transform.rotation, transform);
+            }
+
+            // Calculate target position (stop at TargetStopDistance from player)
+            Vector3 dirToPlayer = (player.position - transform.position).normalized;
+            float dashDistance = Mathf.Min(dist - GapCloseDashSettings.TargetStopDistance, 
+                                           GapCloseDashSettings.DashSpeed * GapCloseDashSettings.DashDuration);
+            Vector3 targetPos = transform.position + dirToPlayer * dashDistance;
+
+            // Execute dash movement (no hitbox)
+            float elapsed = 0f;
+            agent.enabled = false;
+
+            while (elapsed < GapCloseDashSettings.DashDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / GapCloseDashSettings.DashDuration;
+                
+                // Smooth dash curve
+                float smoothT = Mathf.SmoothStep(0f, 1f, t);
+                Vector3 newPos = Vector3.Lerp(transform.position, targetPos, smoothT * Time.deltaTime * 10f);
+                transform.position = Vector3.MoveTowards(transform.position, targetPos, GapCloseDashSettings.DashSpeed * Time.deltaTime);
+                
+                yield return null;
+            }
+
+            agent.enabled = true;
+            agent.Warp(transform.position);
+
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Gap-closing dash completed. Distance closed: {dashDistance:F2}");
+#endif
+
+            yield return new WaitForSeconds(0.2f);
+        }
+
         #endregion
 
         #region Ultimate Attack
@@ -1198,9 +1486,21 @@ namespace EnemyBehavior.Boss.Cleanser
             if (!canceled)
             {
                 yield return ExecuteMassiveStrike();
+                
+                // Notify aggression system that ultimate completed
+                if (aggressionSystem != null)
+                {
+                    aggressionSystem.OnUltimateCompleted();
+                }
             }
             else
             {
+                // Notify aggression system that ultimate was canceled
+                if (aggressionSystem != null)
+                {
+                    aggressionSystem.OnUltimateCanceled();
+                }
+                
                 yield return ApplyStun(AerialFinisherStunDuration);
             }
             
@@ -1297,6 +1597,57 @@ namespace EnemyBehavior.Boss.Cleanser
 
         #endregion
 
+        #region Public Counter Interface
+
+        /// <summary>
+        /// Called by external systems when the player initiates a counter attack against the Cleanser.
+        /// This triggers the Cleanser's chance-based counter response.
+        /// </summary>
+        /// <param name="playerStacks">Current counter stacks the player has.</param>
+        /// <param name="maxStacks">Maximum counter stacks possible.</param>
+        /// <param name="hasJustParried">Whether the player just parried (for max counter check).</param>
+        public void OnPlayerInitiatesCounter(int playerStacks, int maxStacks, bool hasJustParried)
+        {
+            if (aggressionSystem == null)
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), "[Cleanser] AggressionSystem not found, cannot process counter!");
+#endif
+                return;
+            }
+
+            aggressionSystem.OnPlayerCounter(playerStacks, maxStacks, hasJustParried);
+        }
+
+        /// <summary>
+        /// Called by external systems when the player attacks near the boss (proximity check, no hit needed).
+        /// </summary>
+        public void OnPlayerAttackNearby()
+        {
+            if (aggressionSystem != null)
+            {
+                aggressionSystem.OnPlayerAttackProximity();
+            }
+        }
+
+        /// <summary>
+        /// Gets the current aggression level of the Cleanser.
+        /// </summary>
+        public AggressionLevel GetAggressionLevel()
+        {
+            return aggressionSystem != null ? aggressionSystem.CurrentLevel : AggressionLevel.Level1;
+        }
+
+        /// <summary>
+        /// Gets the current aggression value (0-100).
+        /// </summary>
+        public float GetAggressionValue()
+        {
+            return aggressionSystem != null ? aggressionSystem.AggressionValue : 0f;
+        }
+
+        #endregion
+
         #region Helper Methods
 
         private IEnumerator MoveTowardPlayer(float duration)
@@ -1308,6 +1659,49 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 elapsed += Time.deltaTime;
                 agent.SetDestination(player.position);
+                yield return null;
+            }
+        }
+
+        private IEnumerator MoveAwayFromPlayer(float duration)
+        {
+            if (player == null) yield break;
+
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                
+                // Calculate position away from player
+                Vector3 awayDir = (transform.position - player.position).normalized;
+                Vector3 targetPos = transform.position + awayDir * 3f;
+                
+                agent.SetDestination(targetPos);
+                yield return null;
+            }
+        }
+
+        private IEnumerator StrafeAroundPlayer(float duration)
+        {
+            if (player == null) yield break;
+
+            float elapsed = 0f;
+            // Randomly choose strafe direction
+            float strafeDir = Random.value > 0.5f ? 1f : -1f;
+            
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                
+                // Calculate strafe position (perpendicular to player direction)
+                Vector3 toPlayer = (player.position - transform.position).normalized;
+                Vector3 strafeVector = Vector3.Cross(Vector3.up, toPlayer) * strafeDir;
+                Vector3 targetPos = transform.position + strafeVector * 3f;
+                
+                // Face player while strafing
+                transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
+                
+                agent.SetDestination(targetPos);
                 yield return null;
             }
         }

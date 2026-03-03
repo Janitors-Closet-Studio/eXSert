@@ -5,6 +5,7 @@
  * 
  */
 
+using System;
 using UnityEngine;
 
 namespace Progression.Encounters
@@ -23,15 +24,13 @@ namespace Progression.Encounters
 
         [SerializeField]
         public ProgressionZone encounterToEnable;
-
-        [SerializeField, Tooltip("Seconds to wait before enabling the next encounter."), Range(0, 60)]
-        protected float enableNextEncounterDelaySeconds = 0f;
         #endregion
 
         /// <summary>
         /// Indicates whether the encounter has been completed
         /// </summary>
-        public abstract bool isCompleted { get; }
+        public bool isCompleted { get; private set; } = false;
+        public event Action OnEncounterCompleted;
 
         public bool isSetup => !isCleanedUp;
 
@@ -121,20 +120,18 @@ namespace Progression.Encounters
 
         protected void HandleEncounterCompleted()
         {
-            if (!enableZoneOnComplete || encounterToEnable == null) return;
+            if (debugMessagesEnabled) Debug.Log($"[BasicEncounter] Encounter completed: {name}");
 
-            if (enableNextEncounterDelaySeconds > 0f) StartCoroutine(EnableEncounterAfterDelay());
-            else  encounterToEnable.EnableZone();
+            OnEncounterCompleted?.Invoke();
+
+            isCompleted = true;
+
+            if (!enableZoneOnComplete || encounterToEnable == null)
+                encounterToEnable.EnableZone();
+            else
+            {
+                Debug.LogWarning($"[BasicEncounter] Encounter {name} is set to enable another encounter on completion, but that encounter is not assigned. Enabling this encounter's own zone instead.");
+            }
         }
-
-        private System.Collections.IEnumerator EnableEncounterAfterDelay()
-        {
-            yield return new WaitForSeconds(enableNextEncounterDelaySeconds);
-            encounterToEnable.EnableZone();
-        }
-
-        protected void SetEnableNextEncounterDelaySeconds(float seconds) =>
-            enableNextEncounterDelaySeconds = Mathf.Max(0f, seconds);
-        
     }
 }

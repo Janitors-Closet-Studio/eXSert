@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4040499885938229563}
+  - component: {fileID: 1312774618551408896}
   m_Layer: 0
   m_Name: FireDoor
   m_TagString: Untagged
@@ -37,6 +38,30 @@ Transform:
   - {fileID: 7345336077322379242}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1312774618551408896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1085308482033720079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172d7939803324443ac613ca63aa457c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoorHandler
+  currentDoorState: 0
+  doorLockState: 0
+  doorType: 0
+  doorParts:
+  - partObject: {fileID: 2920193197431514756}
+    moveX: 0
+    moveY: 1
+    moveZ: 0
+    distToOpenParts: 1.45
+    closedLocalPosition: {x: 0, y: 0, z: 0}
+  openSpeed: 2
+  hingePivot: {fileID: 0}
 --- !u!1 &2920193197431514756
 GameObject:
   m_ObjectHideFlags: 0
@@ -50,7 +75,7 @@ GameObject:
   - component: {fileID: 3273887832788132843}
   - component: {fileID: 7635440093297083064}
   - component: {fileID: 6087097837354047076}
-  - component: {fileID: 3017442858068533644}
+  - component: {fileID: 1809632372684515057}
   m_Layer: 0
   m_Name: FIreDoorSlide
   m_TagString: Untagged
@@ -370,8 +395,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2920193197431514756}
   m_Mesh: {fileID: 0}
---- !u!64 &3017442858068533644
-MeshCollider:
+--- !u!65 &1809632372684515057
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -388,10 +413,9 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 3
+  m_Size: {x: 6, y: 4.5, z: 0.15}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &1108604823645479458
 PrefabInstance:
   m_ObjectHideFlags: 0

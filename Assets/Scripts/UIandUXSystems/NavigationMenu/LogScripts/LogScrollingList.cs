@@ -30,16 +30,24 @@ public class LogScrollingList : MonoBehaviour
 
         if (log.info.isFound)
         {
+            Debug.Log($"Log {log.info.logID} is marked as found, checking if button exists...");
             if (!idToButtonMap.ContainsKey(log.info.logID))
+            {
+                Debug.Log($"Creating button for log {log.info.logID}");
                 logButton = InstantiateLogButton(log, selectAction, isRead);
+            }
             else
+            {
+                Debug.Log($"Button for log {log.info.logID} already exists");
                 logButton = idToButtonMap[log.info.logID];
-
+            }
             return logButton;
         }
         else
+        {
+            Debug.Log($"Log {log.info.logID} is NOT marked as found (isFound={log.info.isFound}), skipping button creation");
             return logButton;
-        
+        }
     }
 
     //Used by the function above to instantiate the button into the content parent in the scroll list

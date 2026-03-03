@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class PauseManager : Singletons.Singleton<PauseManager>
 {
@@ -27,20 +28,21 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     [Header("Input Actions")]
     [SerializeField] private InputActionReference _navigationMenuActionReference;
     [SerializeField] private InputActionReference _swapMenuActionReference;
-    [SerializeField] internal InputActionReference _pauseActionReference;
+    [SerializeField] private InputActionReference _pauseActionReference;
+
 
     private MenuListManager menuListManager;
 
     public static bool IsPaused { get; private set; } = false;
     
-    internal enum ActiveMenu
+    private enum ActiveMenu
     {
         None,
         PauseMenu,
         NavigationMenu
     }
     
-    internal ActiveMenu currentActiveMenu = ActiveMenu.None;
+    private ActiveMenu currentActiveMenu = ActiveMenu.None;
     private bool settingsMenuOpen = false;
 
     protected override void Awake()
@@ -98,6 +100,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnPauseOrBack(InputAction.CallbackContext context)
     {
+        if(CranePuzzle.IsCranePuzzleActive || Hint.isHintActive)
+        {
+            Debug.Log("[PauseManager] OnPauseOrBack ignored - crane puzzle active");
+            return;
+        }
+
         if (ConfirmationDialog.AnyOpen)
         {
             Debug.Log("[PauseManager] OnPauseOrBack ignored - confirmation dialog open");
@@ -183,6 +191,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         menuListManager.SelectFirstSelectOnBack(menuListManager.menusToManage[0]);
     }
 
+    
+
     /// <summary>
     /// Closes the settings menu and returns to the pause menu.
     /// Call this from your Settings "Back" button as well.
@@ -250,7 +260,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         }
     }
 
-    internal void ShowNavigationMenu()
+    private void ShowNavigationMenu()
     {
         Time.timeScale = 0f;
         IsPaused = true;
@@ -341,13 +351,14 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void SetMenuStates(bool showPause, bool showNavigation, bool showSettings)
     {
+        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
         settingsMenuOpen = showSettings;
 
         if (pauseMenuHolder != null)
-            pauseMenuHolder.SetActive(showPause);
+            StartCoroutine(fadeMenus.FadeMenu(pauseMenuHolder, fadeMenus.fadeDuration, showPause));
 
         if (navigationMenuHolder != null)
-            navigationMenuHolder.SetActive(showNavigation);
+            StartCoroutine(fadeMenus.FadeMenu(navigationMenuHolder, fadeMenus.fadeDuration, showNavigation));
 
         if (settingsMenuContainer != null)
             settingsMenuContainer.SetActive(showSettings);
@@ -381,6 +392,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         CacheHudRootName();
         return true;
     }
+
+    
 
     private void CacheHudRootName()
     {

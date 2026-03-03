@@ -9,37 +9,51 @@
 
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-
+//Once the pieces are in the list, you can set which axes they move on and their min/max positions
+[System.Serializable]
+public class DoorPartMovement
+{
+    [Tooltip("GameObject to move")]
+    public GameObject partObject;
+    
+    [Tooltip("Enable movement on X axis")]
+    public bool moveX = false;
+    [Tooltip("Enable movement on Y axis")]
+    public bool moveY = false;
+    [Tooltip("Enable movement on Z axis")]
+    public bool moveZ = false;
+    
+    public float distToOpenParts = 2.0f;
+    [HideInInspector] public Vector3 closedLocalPosition;
+}
 public class DoorHandler : MonoBehaviour
 {
     public enum DoorState { Open, Closed }
 
     public enum DoorLockState { Locked, Unlocked }
 
-    public enum DoorType { OpenUp, OpenOut, OpenIn }
+    public enum DoorType { OpenUnconvential, OpenOut, OpenIn }
 
     public DoorState currentDoorState;
     public DoorLockState doorLockState = DoorLockState.Locked;
     public DoorType doorType;
     
 
-    private Vector3 doorPosOrigin;
+    internal Vector3 doorPosOrigin;
     private Quaternion doorRotOrigin;
     private Vector3 targetDoorPos;
     private Quaternion targetDoorRot;
     private Vector3 targetPos;
 
-    [Tooltip("Height to which the door will open when using OpenUp door type.")]
-    [ShowIfDoorType(DoorType.OpenUp)]
-    [SerializeField] private GameObject topDoorPart;
-    [ShowIfDoorType(DoorType.OpenUp)]
-    [SerializeField] private GameObject bottomDoorPart;
-    [ShowIfDoorType(DoorType.OpenUp)]
-    [SerializeField] private float distToOpenParts = 2.0f;
+    [Tooltip("Only used for OpenUnconvential door type. List of door parts to move and their movement settings.")]
+    public List<DoorPartMovement> doorParts = new List<DoorPartMovement>();
+    
     [SerializeField] private float openSpeed = 2f;
 
     private bool isOpening = false;
@@ -96,8 +110,8 @@ public class DoorHandler : MonoBehaviour
 
         switch (doorType)
         {
-            case DoorType.OpenUp:
-                OpenUp();
+            case DoorType.OpenUnconvential:
+                OpenUnconvential();
                 break;
             case DoorType.OpenOut:
                 OpenOut();
@@ -115,8 +129,8 @@ public class DoorHandler : MonoBehaviour
 
         switch (doorType)
         {
-            case DoorType.OpenUp:
-                CloseUp();
+            case DoorType.OpenUnconvential:
+                CloseUnconvential();
                 break;
             case DoorType.OpenOut:
                 EnsurePivot();
@@ -148,16 +162,22 @@ public class DoorHandler : MonoBehaviour
     }
 
     // These two functions handle the OpenUp door type
-    private void OpenUp()
+    private void OpenUnconvential()
     {
+        // Store closed local positions at the moment of opening
+        foreach (var partMove in doorParts)
+        {
+            if (partMove.partObject != null)
+                partMove.closedLocalPosition = partMove.partObject.transform.localPosition;
+        }
         StopAllCoroutines();
-        StartCoroutine(OpenUpCoroutine());
+        StartCoroutine(OpenUnconventialCoroutine());
     }
 
-    private void CloseUp()
+    private void CloseUnconvential()
     {
         StopAllCoroutines();
-        StartCoroutine(CloseUpCoroutine());
+        StartCoroutine(CloseUnconventialCoroutine());
     }
 
     // Ensure the hinge pivot exists and is parent of the door
@@ -216,88 +236,98 @@ public class DoorHandler : MonoBehaviour
     }
 
     // Coroutines for opening and closing the door upwards
-    private IEnumerator OpenUpCoroutine()
+    private IEnumerator OpenUnconventialCoroutine()
     {
-        if(topDoorPart == null && bottomDoorPart == null)
+        if (doorParts == null || doorParts.Count == 0)
         {
             yield break;
         }
 
-        if (topDoorPart != null)
+        // Prepare target local positions for each part
+        List<GameObject> movingParts = new List<GameObject>();
+        List<Vector3> targetLocalPositions = new List<Vector3>();
+
+        foreach (var partMove in doorParts)
         {
-            topTartetPos = topDoorPart.transform.position + new Vector3(0f, distToOpenParts, 0f);
-        }
-        if (bottomDoorPart != null)
-        {
-            bottomTargetPos = bottomDoorPart.transform.position - new Vector3(0f, distToOpenParts, 0f);
+            if (partMove.partObject == null) continue;
+            Vector3 offset = new Vector3(
+                partMove.moveX ? partMove.distToOpenParts : 0f,
+                partMove.moveY ? partMove.distToOpenParts : 0f,
+                partMove.moveZ ? partMove.distToOpenParts : 0f
+            );
+            movingParts.Add(partMove.partObject);
+            // Use closedLocalPosition as base
+            targetLocalPositions.Add(partMove.closedLocalPosition + offset);
         }
 
-        // Check if already at target positions
-        bool topAtTarget = topDoorPart == null || topDoorPart.transform.position == topTartetPos;
-        bool bottomAtTarget = bottomDoorPart == null || bottomDoorPart.transform.position == bottomTargetPos;
-
-        if (topAtTarget && bottomAtTarget)
+        if (movingParts.Count == 0)
         {
-            isOpened = true;
             yield break;
         }
 
-        // Animate the door parts to their target positions
-        while ((topDoorPart != null && Vector3.Distance(topDoorPart.transform.position, topTartetPos) > 0.01f) ||
-               (bottomDoorPart != null && Vector3.Distance(bottomDoorPart.transform.position, bottomTargetPos) > 0.01f))
+        bool allAtTarget = false;
+        while (!allAtTarget)
         {
-            float t = Mathf.Clamp01(openSpeed * Time.deltaTime);
-            if (topDoorPart != null)
+            allAtTarget = true;
+            for (int i = 0; i < movingParts.Count; i++)
             {
-                topDoorPart.transform.position = Vector3.Lerp(topDoorPart.transform.position, topTartetPos, t);
-            }
-            if (bottomDoorPart != null)
-            {
-                bottomDoorPart.transform.position = Vector3.Lerp(bottomDoorPart.transform.position, bottomTargetPos, t);
+                var part = movingParts[i];
+                var target = targetLocalPositions[i];
+                if (part == null) continue;
+                if (Vector3.Distance(part.transform.localPosition, target) > 0.01f)
+                {
+                    float t = Mathf.Clamp01(openSpeed * Time.deltaTime);
+                    part.transform.localPosition = Vector3.Lerp(part.transform.localPosition, target, t);
+                    allAtTarget = false;
+                }
             }
             yield return null;
         }
-        // mark opened when finished
         isOpened = true;
         yield return null;
     }
 
-    private IEnumerator CloseUpCoroutine()
+    private IEnumerator CloseUnconventialCoroutine()
     {
-        if(topDoorPart == null && bottomDoorPart == null)
+        if (doorParts == null || doorParts.Count == 0)
         {
             yield break;
         }
 
-        Vector3 topClosePos = doorPosOrigin;
-        Vector3 bottomClosePos = doorPosOrigin;
+        // Prepare closed local positions for each part (return to closedLocalPosition)
+        List<GameObject> movingParts = new List<GameObject>();
+        List<Vector3> closedLocalPositions = new List<Vector3>();
 
-        // Check if already at closed positions
-        bool topAtTarget = topDoorPart == null || topDoorPart.transform.position == topClosePos;
-        bool bottomAtTarget = bottomDoorPart == null || bottomDoorPart.transform.position == bottomClosePos;
-
-        if (topAtTarget && bottomAtTarget)
+        foreach (var partMove in doorParts)
         {
-            isOpened = false;
+            if (partMove.partObject == null) continue;
+            movingParts.Add(partMove.partObject);
+            closedLocalPositions.Add(partMove.closedLocalPosition);
+        }
+
+        if (movingParts.Count == 0)
+        {
             yield break;
         }
 
-        // Animate the door parts to their closed positions
-        while ((topDoorPart != null && Vector3.Distance(topDoorPart.transform.position, topClosePos) > 0.01f) ||
-               (bottomDoorPart != null && Vector3.Distance(bottomDoorPart.transform.position, bottomClosePos) > 0.01f))
+        bool allAtClosed = false;
+        while (!allAtClosed)
         {
-            float t = Mathf.Clamp01(openSpeed * Time.deltaTime);
-            if (topDoorPart != null)
+            allAtClosed = true;
+            for (int i = 0; i < movingParts.Count; i++)
             {
-                topDoorPart.transform.position = Vector3.Lerp(topDoorPart.transform.position, topClosePos, t);
-            }
-            if (bottomDoorPart != null)
-            {
-                bottomDoorPart.transform.position = Vector3.Lerp(bottomDoorPart.transform.position, bottomClosePos, t);
+                var part = movingParts[i];
+                var target = closedLocalPositions[i];
+                if (part == null) continue;
+                if (Vector3.Distance(part.transform.localPosition, target) > 0.01f)
+                {
+                    float t = Mathf.Clamp01(openSpeed * Time.deltaTime);
+                    part.transform.localPosition = Vector3.Lerp(part.transform.localPosition, target, t);
+                    allAtClosed = false;
+                }
             }
             yield return null;
         }
-        // mark closed when finished
         isOpened = false;
         yield return null;
     }

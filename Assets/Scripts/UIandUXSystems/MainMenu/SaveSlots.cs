@@ -38,6 +38,10 @@ public class SaveSlots : MonoBehaviour
             noDataContent.SetActive(false);
             hasDataContent.SetActive(true);
         }
+        else
+        {
+            Debug.LogError("SaveSlots: Data is null for " + gameObject.name);
+        }
     }
 
     //Gathers the individual profileId being used
@@ -56,5 +60,7 @@ public class SaveSlots : MonoBehaviour
     {
         if (saveSlotButton != null)
             saveSlotButton.interactable = interactable;
+        else
+            Debug.LogError("SaveSlots: Button component missing on " + gameObject.name);
     }
 }

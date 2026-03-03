@@ -5,6 +5,8 @@
 */
 
 
+using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 
 /// <summary>
@@ -131,13 +133,75 @@ public class WarningButtonFunctionality : MonoBehaviour
         return WarningAction.None;
     }
 
+    private MusicBox FindSceneMusicBox()
+    {
+        MusicBox musicBox;
+        string foundSceneName;
+
+        List<string> additiveScenes =  new List<string>()
+        {
+            "Elevator",
+            "CargoBay",
+            "Hangar",
+            "CrewQuarters",
+            "Boss"
+        };
+        List<string> loadedAdditiveScenes = new List<string>();
+
+        foreach (var sceneName in additiveScenes)
+        {
+            Scene scene = SceneManager.GetSceneByName(sceneName);
+            if (scene.isLoaded)
+            {
+                loadedAdditiveScenes.Add(sceneName);
+            }
+        }
+
+        if(loadedAdditiveScenes.Count == 0)
+        {
+            Debug.LogWarning("[WarningButtonFunctionality] No additive scenes loaded. Cannot find MusicBox.");
+            return null;
+        } 
+        else
+        {
+            foundSceneName = loadedAdditiveScenes[0];
+        }
+
+        string musicBoxName = foundSceneName + "MusicBox";
+        musicBox = GameObject.Find(musicBoxName).GetComponent<MusicBox>();
+        
+
+        return musicBox;
+
+    }
+
+    private void FadeOutLevelMusic()
+    {
+        MusicBox musicBox = FindSceneMusicBox();
+        if (musicBox != null)
+        {
+            StopCoroutine(musicBox.FadeOutMusic(1f));
+            StopCoroutine(musicBox.FadeOutAmbience(1f));
+            Debug.Log("[WarningButtonFunctionality] Fading out music and ambience.");
+            Debug.Log("Music Box reference: " + musicBox);
+            musicBox.StartCoroutine(musicBox.FadeOutMusic(1f));
+            musicBox.StartCoroutine(musicBox.FadeOutAmbience(1f));
+        }
+        else
+        {
+            Debug.LogWarning("[WarningButtonFunctionality] No MusicBox found in scene to fade out music.");
+        }
+    }
+
     private void ExecuteAction(WarningAction action)
     {
         var handler = ResolveActionHandler();
 
         switch (action)
         {
+
             case WarningAction.RestartCheckpoint:
+                FadeOutLevelMusic();
                 if (handler != null)
                 {
                     handler.RestartFromCheckpoint();
@@ -153,6 +217,7 @@ public class WarningButtonFunctionality : MonoBehaviour
                 break;
 
             case WarningAction.ReturnToMainMenu:
+                FadeOutLevelMusic();
                 if (handler != null)
                 {
                     handler.ReturnToMainMenu();
@@ -172,6 +237,7 @@ public class WarningButtonFunctionality : MonoBehaviour
                 break;
 
             case WarningAction.QuitGame:
+                FadeOutLevelMusic();
                 if (handler != null)
                 {
                     handler.QuitGame();

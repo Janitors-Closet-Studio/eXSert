@@ -229,7 +229,6 @@ namespace EnemyBehavior.Boss
             currentWaypointIndex = 0;
 
 
-
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] SuctionCoroutine started - duration={duration}, player={player?.name}, playerMovement={playerMovement != null}");
 #endif
