@@ -8,7 +8,6 @@
 */
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.ProBuilder.Shapes;
 
 public class DoorInteractions : UnlockableInteraction
 {
@@ -28,20 +27,12 @@ public class DoorInteractions : UnlockableInteraction
                     doorHandler.doorLockState = DoorHandler.DoorLockState.Unlocked;
                 }
                 
+
                 doorHandler.Interact();
-                
+                doorHandler.FadeColorIntoEachother(doorHandler.lockedLightColor, doorHandler.unlockedClosedLightColor, doorHandler.lightFadeSpeed);
 
             }
 
         }
-    }
-
-    private bool CheckIfDoorIsMoving(DoorHandler doorHandler)
-    {
-        if (doorHandler.doorPosOrigin != doorHandler.transform.position)
-        {
-            return true;
-        }
-        return false;
     }
 }

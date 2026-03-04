@@ -10,6 +10,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+
 
 
 #if UNITY_EDITOR
@@ -63,6 +65,12 @@ public class DoorHandler : MonoBehaviour
     [ShowIfDoorType(DoorHandler.DoorType.OpenOut, DoorHandler.DoorType.OpenIn)]
     [SerializeField] private Transform hingePivot;
 
+    public Light doorLight;
+    public Color lockedLightColor;
+    public Color unlockedOpenLightColor;
+    public Color unlockedClosedLightColor;
+    public float lightFadeSpeed = 2f;
+
     // Hinge variables that are used for OpenIn and OpenOut door types
     private Quaternion hingeStartRot;
     private Quaternion hingeTargetRot;
@@ -84,6 +92,8 @@ public class DoorHandler : MonoBehaviour
         {
             hingeOriginalRot = hingePivot.rotation;
         }
+
+        StartingLightColor();
     }
 
     /// <summary>
@@ -103,10 +113,45 @@ public class DoorHandler : MonoBehaviour
         }
     }
 
+    // Intializes the door light color based on the current lock and door state
+    private void StartingLightColor()
+    {
+        if (DoorLockState.Locked == doorLockState)
+        {
+            doorLight.color = lockedLightColor;
+        }
+        else
+        {
+            if (currentDoorState == DoorState.Open)
+                doorLight.color = unlockedOpenLightColor;
+            else
+                doorLight.color = unlockedClosedLightColor;
+        }
+    }
+
+    // Fade Color into eachother over time, used for light color transitions when opening/closing and locking/unlocking the door
+    internal IEnumerator FadeColorIntoEachother(Color fromColor, Color toColor, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            doorLight.color = Color.Lerp(fromColor, toColor, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        doorLight.color = toColor;
+    }
+
     private void OpenDoor()
     {
         Debug.Log("Opening the door.");
         currentDoorState = DoorState.Open;
+
+        if (doorLockState == DoorLockState.Locked)
+            doorLockState = DoorLockState.Unlocked;
+        
+        StartCoroutine(FadeColorIntoEachother(unlockedClosedLightColor, unlockedOpenLightColor, lightFadeSpeed));
 
         switch (doorType)
         {
@@ -126,6 +171,8 @@ public class DoorHandler : MonoBehaviour
     {
         Debug.Log("Closing the door.");
         currentDoorState = DoorState.Closed;
+
+        StartCoroutine(FadeColorIntoEachother(unlockedOpenLightColor, unlockedClosedLightColor, lightFadeSpeed));
 
         switch (doorType)
         {

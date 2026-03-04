@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(BoxCollider))]
 public class ElevatorLift : PuzzleInteraction
 {
     [SerializeField] private GameObject elevatorLift;
@@ -20,12 +21,20 @@ public class ElevatorLift : PuzzleInteraction
     [SerializeField] private InputActionReference secondFloorAction;
     [SerializeField] private InputActionReference thirdFloorAction;
 
+    [Header("Death Collider")]
+    [Tooltip("A collider below the elevator that will kill the player if they are below it when the elevator is in the death position. Make sure to set the position of this collider to match the death position calculated by the FindDeathPosition method.")]
+    [SerializeField] private BoxCollider deathCollider;
+    [SerializeField] private bool killPlayerOnContact = true;
+    private Vector3 positionToKillPlayer;
+    private GameObject playerReference;
+    private PlayerHealthBarManager healthBarManager;
+
+
     private int currentFloor = 0;
     private bool isMoving = false;
-
     private void OnEnable()
     {
-        backToGameplayAction.action.performed += ReturnToGameplay;
+        backToGameplayAction.action.performed += ReturnToGameplayAction;
         firstFloorAction.action.performed += MoveToFirstFloor;
         secondFloorAction.action.performed += MoveToSecondFloor;
         thirdFloorAction.action.performed += MoveToThirdFloor;
@@ -33,10 +42,38 @@ public class ElevatorLift : PuzzleInteraction
 
     private void OnDisable()
     {
-        backToGameplayAction.action.performed -= ReturnToGameplay;
+        backToGameplayAction.action.performed -= ReturnToGameplayAction;
         firstFloorAction.action.performed -= MoveToFirstFloor;
         secondFloorAction.action.performed -= MoveToSecondFloor;
         thirdFloorAction.action.performed -= MoveToThirdFloor;
+    }
+
+    // Gets point to kill player
+    private Vector3 FindDeathPosition()
+    {
+        positionToKillPlayer = desiredLiftPosition[0] + new Vector3(0, FindPlayerHeight(), 0);
+
+        return positionToKillPlayer;
+    }
+
+    private float FindPlayerHeight()
+    {
+        var playerRenderer = playerReference.GetComponentInChildren<Renderer>();
+        if (playerRenderer != null)
+        {
+            return playerRenderer.bounds.size.y;
+        }
+        else
+        {
+            Debug.LogWarning("Player Renderer not found, size couldnt be calculated. Make sure the player has a Renderer component in its children.");
+            return 0f;
+        }
+    }
+
+    private void FindPlayerReference()
+    {
+     if (playerReference == null)
+            playerReference = GameObject.FindGameObjectWithTag("Player");
     }
 
     private void Start()
@@ -47,13 +84,25 @@ public class ElevatorLift : PuzzleInteraction
             if (button != null)
                 button.SetActive(false);
         }
+
+        FindPlayerReference();
     }
 
     public void EnterElevatorLiftMenu()
     {
         SwapActionMaps("ElevatorLift");
+
+        ParentPlayerToLift(true);
     
         ManageElevatorButtons(currentFloor);
+    }
+
+    private void ParentPlayerToLift(bool shouldParent)
+    {
+        if (playerReference != null)
+        {
+            playerReference.transform.SetParent(shouldParent ? elevatorLift.transform : null);
+        }
     }
 
     private void ManageElevatorButtons(int currentFloor)
@@ -70,9 +119,15 @@ public class ElevatorLift : PuzzleInteraction
         }
     }
 
-    private void ReturnToGameplay(InputAction.CallbackContext context)
+    private void ReturnToGameplayAction(InputAction.CallbackContext context)
+    {
+        ReturnToGameplay();
+    }
+
+    private void ReturnToGameplay()
     {
         SwapActionMaps("Gameplay");
+        ParentPlayerToLift(false);
         // Deactivate floor button UI
         foreach (var button in floorButtonUI)
         {
@@ -109,6 +164,7 @@ public class ElevatorLift : PuzzleInteraction
 
     private IEnumerator MoveLift(int targetFloor)
     {
+        ReturnToGameplay();
         isMoving = true;
         Vector3 startPosition = elevatorLift.transform.position;
         Vector3 targetPosition = desiredLiftPosition[targetFloor];
@@ -122,5 +178,29 @@ public class ElevatorLift : PuzzleInteraction
         }
         isMoving = false;
         currentFloor = targetFloor;
+    }
+
+    private void TryKillPlayer()
+    {
+        if (healthBarManager == null)
+        {
+            healthBarManager = playerReference.GetComponent<PlayerHealthBarManager>();
+        }
+
+        healthBarManager.HandleDeath(true);
+    }
+
+
+    protected override void OnTriggerEnter(Collider other)
+    {
+        base.OnTriggerEnter(other);
+
+        if (killPlayerOnContact && playerReference != null)
+        {
+            if (other.gameObject == playerReference && deathCollider.transform.position == FindDeathPosition())
+            {
+                TryKillPlayer();
+            }
+        }
     }
 }
