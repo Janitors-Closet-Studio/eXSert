@@ -762,5 +762,11 @@ public enum KeybindAction
     // Crane actions moved to the bottom for inspector readability.
     CraneExit = 12,
     CraneConfirm = 13,
-    CraneMove = 14
+    CraneMove = 14,
+
+    // Elevator Lift actions
+    BackToGameplay = 20,
+    FloorOne = 21,
+    FloorTwo = 22,
+    FloorThree = 23
 }
