@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace Progression.Checkpoints
 {
+    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?tab=t.0#bookmark=id.gqgefvoh0b90")]
     public class CheckpointBehavior : ProgressionZone
     {
         #region Inspector Setup
