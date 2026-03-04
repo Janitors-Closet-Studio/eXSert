@@ -11,11 +11,6 @@ namespace Progression.Encounters
         #region Inspector Setup
         [Header("Combat Encounter Settings")]
 
-        [Header("Progression")]
-        [SerializeField] private bool autoFindByTag = false;
-        [SerializeField] private string enemyTag = "Enemy";
-
-
         [SerializeField] private bool dropObjectOnClear = false;
         [SerializeField] private GameObject objectToDrop;
         private bool dropAtLastEnemyPosition = true;
@@ -92,6 +87,9 @@ namespace Progression.Encounters
         protected override void CleanupEncounter()
         {
             base.CleanupEncounter();
+
+            foreach (Wave wave in allWaves)
+                CleanupWave(wave);
 
             OnEncounterCompleted -= DropItem;
         }

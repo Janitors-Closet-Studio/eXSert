@@ -32,7 +32,7 @@ public class GameActionHandler : MonoBehaviour
 
         PrepareForSceneLoad(resumeImmediately: false);
         
-        CheckpointBehavior.RespawnPlayer();
+        Player.TriggerRespawn();
     }
 
     /// <summary>

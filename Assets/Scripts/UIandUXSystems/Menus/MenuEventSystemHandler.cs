@@ -99,9 +99,7 @@ public class MenuEventSystemHandler : MonoBehaviour
         {
             EventSystem found = FindObjectOfType<EventSystem>();
             if (found != null)
-            {
                 EventSystem.current = found;
-            }
         }
 
         if (EventSystem.current == null)

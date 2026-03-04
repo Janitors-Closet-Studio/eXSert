@@ -90,23 +90,14 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool deathInputLockOwned;
     private bool suppressNextFlinch;
 
+    #region Unity MonoBehaviour Functions
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Debug.LogWarning($"Duplicate {nameof(PlayerHealthBarManager)} detected on {name}. Destroying duplicate component.");
-            Destroy(this);
-            return;
-        }
-
         Instance = this;
 
-        if (animationController == null)
-            animationController = GetComponentInChildren<PlayerAnimationController>();
-        if (playerMovement == null)
-            playerMovement = GetComponent<PlayerMovement>();
-        if (attackManager == null)
-            attackManager = GetComponent<PlayerAttackManager>();
+        if (animationController == null) animationController = GetComponentInChildren<PlayerAnimationController>();
+        if (playerMovement == null) playerMovement = GetComponent<PlayerMovement>();
+        if (attackManager == null) attackManager = GetComponent<PlayerAttackManager>();
 
         if (currentHealth < 0f)
         {
@@ -125,6 +116,24 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             OnPlayerHealthRegistered?.Invoke(null);
         }
     }
+
+    /*
+     * OnEnable and OnDisable are used to set up event subscriptions for revive functionality.
+     * It also checks the boolean in Player to determine whether the player is considered active or not.
+     */
+    private void OnEnable() 
+    {
+        Player.SetActive(true);
+        Player.RespawnPlayer += Revive;
+        CheckpointBehavior.SubscribeToPlayerRespawn();
+    }
+    private void OnDisable() 
+    { 
+        Player.SetActive(false); 
+        Player.RespawnPlayer -= Revive;
+        CheckpointBehavior.UnsubscribeFromPlayerRespawn();
+    }
+    #endregion
 
     public void HealHP(float hp)
     {
@@ -180,7 +189,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         }
     }
 
-    public void Revive(float percentOfMax = 1f)
+    private void Revive() => Revive(1f);
+    private void Revive(float percentOfMax = 1f)
     {
         ResetDeathSequenceState();
         isDead = false;
@@ -318,7 +328,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         yield return WaitForDeathFadeTiming();
 
-        if (restartFromCheckpointOnDeath) CheckpointBehavior.RespawnPlayer();
+        if (restartFromCheckpointOnDeath) Player.TriggerRespawn();
 
         else if (destroyPlayerOnDeath)
             Destroy(gameObject);

@@ -17,6 +17,7 @@ namespace Progression
     using Encounters;
     using Checkpoints;
     using SceneManagement;
+    using System.Runtime.CompilerServices;
 
     [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.ba7p6f215mok")]
     [DefaultExecutionOrder(0)] // Ensure this executes before any encounters or progression zones, which may rely on it to register themselves in Awake
@@ -35,12 +36,22 @@ namespace Progression
         private CheckpointBehavior firstCheckpoint;
         #endregion
 
-        private int totalEncountersInScene = 0;
+#if UNITY_EDITOR
+        /*
+         * This variable determines if the scen is being loaded by itself in the editor.
+         * (Hitting play mode while just the scene is active)
+         * 
+         * If true, the manager will automatically load the player scene.
+         * It will also move the player to the first checkpoint's spawn point.
+         */
+        private static bool IsolatedLoad = true; // If the scene is being loaded by itself or not
+#endif
 
         /// <summary>
         /// Indicates whether all encounters in the scene have been completed
         /// </summary>
         private bool allZonesComplete = false;
+        private int totalEncountersInScene = 0;
 
         private readonly List<BasicEncounter> encounterCompletionMap = new();
         private readonly List<SceneLoadZone> loadZones = new();
@@ -74,8 +85,9 @@ namespace Progression
             // Automatically load the player scene while playing the level in editor.
             // This makes testing easier since you can just hit play on the level scene by itself
             // Without needing to manually adjust the player scene
-            if (!SceneAsset.PlayerLoaded)
-                SceneAsset.LoadPlayerScene(firstCheckpoint.SpawnPoint);
+            if (IsolatedLoad && SceneAsset.LoadedSceneCount == 1 && !SceneAsset.PlayerLoaded)
+                SceneAsset.LoadPlayerScene(firstCheckpoint.SpawnPoint, characterStartInactive: false);
+            IsolatedLoad = false;
 #endif
         }
 

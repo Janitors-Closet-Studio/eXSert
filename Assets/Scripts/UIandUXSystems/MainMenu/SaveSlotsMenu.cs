@@ -23,7 +23,7 @@ public class SaveSlotsMenu : Menu
     [SerializeField] internal SaveSlots currentSaveSlotSelected = null;
 
     [SerializeField, Tooltip("The first level to be loaded when a player starts a new game")]
-    private SceneAsset firstLevel = "Elevator";
+    private SceneAsset firstLevel;
     #endregion
 
     private SaveSlots[] saveSlots;

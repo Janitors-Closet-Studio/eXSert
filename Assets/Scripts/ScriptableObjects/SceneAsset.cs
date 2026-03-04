@@ -27,6 +27,11 @@ public class SceneAsset : ScriptableObject
 
     public static Action OnSceneReloaded { get; internal set; }
 
+    /// <summary>
+    /// Gets the number of currently loaded scenes in the application.
+    /// </summary>
+    public static int LoadedSceneCount => SceneManager.sceneCount;
+
     #region Loading and Unloading Functions
     /// <summary>
     /// Determines whether the scene specified by <c>sceneName</c> is currently loaded.
@@ -62,6 +67,10 @@ public class SceneAsset : ScriptableObject
     public SceneAsset Load(bool forceReload = false)
     {
         if (forceReload) OnSceneReloaded?.Invoke();
+
+        // If the scene is already loaded and forceReload is true,
+        // unload the scene first before loading it again.
+        if (IsLoaded() && forceReload) Unload();
 
         if (!IsLoaded() || forceReload)
             SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
@@ -107,7 +116,7 @@ public class SceneAsset : ScriptableObject
         SceneManager.LoadSceneAsync(firstScene.sceneName, LoadSceneMode.Additive).completed += _ =>
         {
             // Loads the player scene after the first scene has finished loading.
-            LoadPlayerScene();
+            LoadPlayerScene(characterStartInactive: false).completed += __ => Unload(mainMenuSceneName);
         };
     }
 
@@ -116,26 +125,62 @@ public class SceneAsset : ScriptableObject
     /// </summary>
     /// <remarks>If the player scene is not already loaded, or if <paramref name="forceReload"/> is <see
     /// langword="true"/>, the scene is loaded additively. After loading, the player object is moved to the given spawn
-    /// point's position and rotation.</remarks>
+    /// point's position and rotation. Callers can pass <paramref name="onLoaded"/> or subscribe to <see cref="OnPlayerSceneLoaded"/>
+    /// or attach to the returned <see cref="AsyncOperation"/>'s <c>completed</c> to run code after the player scene has finished loading.</remarks>
     /// <param name="spawnPoint">The <see cref="Transform"/> representing the location and orientation where the player should be placed after
     /// the scene loads. Cannot be <see langword="null"/>.</param>
     /// <param name="forceReload">If <see langword="true"/>, forces the player scene to reload even if it is already loaded; otherwise, loads the
     /// scene only if it is not loaded.</param>
-    public static void LoadPlayerScene(Transform spawnPoint = null, bool forceReload = false, bool characterStartInactive = true)
+    /// <param name="characterStartInactive">If <see langword="true"/>, the player GameObject will be set inactive after spawning to allow setup before activation.</param>
+    /// <param name="onLoaded">Optional callback invoked with the player GameObject after the player scene has finished loading (or immediately if already loaded).</param>
+    /// <returns>The AsyncOperation for the load when a load is started; returns <see langword="null"/> if no new scene load was started (scene already loaded and not forced).</returns>
+    public static AsyncOperation LoadPlayerScene(Transform spawnPoint = null, bool forceReload = false, bool characterStartInactive = true, Action<GameObject> onLoaded = null)
     {
-        var playerSceneAsset = (SceneAsset) playerSceneName;
-        if (playerSceneAsset.IsLoaded() && !forceReload) return;
+        var playerSceneAsset = (SceneAsset)playerSceneName;
+        // If already loaded and not forcing a reload, apply spawn/activation and invoke callbacks immediately.
+        if (playerSceneAsset.IsLoaded() && !forceReload)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null)
+            {
+                Debug.LogError("Player object not found in the scene while LoadPlayerScene was called. Ensure that the player scene contains a GameObject tagged 'Player'.");
+                onLoaded?.Invoke(null);
+                return null; // No AsyncOperation because no scene load occurred
+            }
 
-        SceneManager.LoadSceneAsync(playerSceneName, LoadSceneMode.Additive).completed += _ =>
+            player = player.transform.root.gameObject;
+            if (spawnPoint != null) player.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+            if (characterStartInactive) player.SetActive(false);
+
+            onLoaded?.Invoke(player);
+            return null; // No AsyncOperation because no scene load occurred
+        }
+
+        // Start an additive asynchronous load and return its AsyncOperation so callers can attach to .completed
+        AsyncOperation op = SceneManager.LoadSceneAsync(playerSceneName, LoadSceneMode.Additive);
+        op.completed += _ =>
         {
             // After loading the player scene, move the player to the specified spawn point
             GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player == null) throw new InvalidOperationException("Player object not found in the scene after loading the player scene. Ensure that the player scene contains a GameObject tagged 'Player'.");
+            if (player == null)
+            {
+                Debug.LogError("Player object not found in the scene after loading the player scene. Ensure that the player scene contains a GameObject tagged 'Player'.");
+                onLoaded?.Invoke(null);
+                return;
+            }
             player = player.transform.root.gameObject; // Get the root GameObject in case the player is a child of another object
             if (spawnPoint != null) player.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-            if (characterStartInactive) player.SetActive(false); // Optionally start the player inactive, allowing for setup before they become active
+
+            // Optionally start the player inactive, allowing for setup before they become active
+            if (characterStartInactive) player.SetActive(false);
+
+            // Invoke provided callback and global event for subscribers
+            onLoaded?.Invoke(player);
         };
+
+        return op;
     }
+
 
     /// <summary>
     /// Loads the main menu scene, unloading all currently loaded scenes first.

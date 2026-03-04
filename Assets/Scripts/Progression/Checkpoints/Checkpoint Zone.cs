@@ -1,9 +1,11 @@
 using System;
 using System.Runtime.CompilerServices;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Progression.Checkpoints
 {
+    [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?tab=t.0#bookmark=id.gqgefvoh0b90")]
     public class CheckpointBehavior : ProgressionZone
     {
         #region Inspector Setup
@@ -25,7 +27,7 @@ namespace Progression.Checkpoints
         private const float SPAWN_CAPSULE_RADIUS = 0.5f;
         private const float SPAWN_CAPSULE_HEIGHT = 1.8f;
 
-        private const bool RELOAD_SCENE_ON_DEATH = true;
+        private const bool RELOAD_SCENE_ON_RESPAWN = true;
 
         // Static reference to the current checkpoint. This allows any part of the code to query the current spawn position and rotation.
         private static CheckpointBehavior currentCheckpoint;
@@ -52,7 +54,12 @@ namespace Progression.Checkpoints
         public Vector3 GetSpawnPosition() => spawnPoint != null ? spawnPoint.position : transform.position;
         public Quaternion GetSpawnRotation() => spawnPoint != null ? spawnPoint.rotation : transform.rotation;
 
-        public static void RespawnPlayer()
+        public static void SubscribeToPlayerRespawn() => Player.RespawnPlayer += RespawnPlayer;
+        public static void UnsubscribeFromPlayerRespawn() => Player.RespawnPlayer -= RespawnPlayer;
+        
+        // Private method to handle the checkpoint's side of Respawning the player.
+        // Simply just moves the player to the current checkpoint's spawn position.
+        private static void RespawnPlayer()
         {
             if (currentCheckpoint == null)
             {
@@ -60,11 +67,11 @@ namespace Progression.Checkpoints
                 return;
             }
             
-            if (RELOAD_SCENE_ON_DEATH)
+            if (RELOAD_SCENE_ON_RESPAWN)
             {
                 SceneAsset.OnSceneReloaded += MovePlayerToCheckpoint; // Subscribe to the scene reloaded event to move the player after reload completes
                 // Reload the current scene to reset everything, then move the player to the checkpoint after reload
-                SceneAsset.Load(SceneAsset.GetSceneAssetOfObject(PlayerObject), forceReload: true);
+                SceneAsset.Load(SceneAsset.GetSceneAssetOfObject(currentCheckpoint.gameObject), forceReload: true);
             }
             else
             {

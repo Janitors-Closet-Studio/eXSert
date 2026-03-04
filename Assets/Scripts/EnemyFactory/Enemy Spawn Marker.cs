@@ -60,7 +60,7 @@ namespace Progression.Encounters
             }
 
             var rotation = useMarkerRotation ? transform.rotation : Quaternion.identity;
-            return EnemyFactory.RequestEnemy(enemyPrefab, transform.position, rotation, parentOverride);
+            return EnemyFactory.RequestEnemy(enemyPrefab, transform.position, rotation, transform.parent);
         }
     }
 

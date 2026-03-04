@@ -12,6 +12,7 @@ namespace Progression.Encounters
         public string WaveObjectiveText = "Defeat all enemies in this wave!";
 
         #endregion
+
         private readonly List<EnemySpawnMarker> spawnMarkers = new();
         private readonly List<BaseEnemyCore> enemies = new();
 
@@ -83,9 +84,7 @@ namespace Progression.Encounters
         public void ResetEnemies()
         {
             foreach (BaseEnemyCore enemy in enemies)
-            {
                 enemy.ResetEnemy();
-            }
 
             waveCompleted = false;
         }

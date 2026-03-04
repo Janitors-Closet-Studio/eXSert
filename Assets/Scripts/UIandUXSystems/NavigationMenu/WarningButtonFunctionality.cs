@@ -204,7 +204,7 @@ public class WarningButtonFunctionality : MonoBehaviour
             case WarningAction.RestartCheckpoint:
                 FadeOutLevelMusic();
                 if (handler != null) handler.RestartFromCheckpoint();
-                else CheckpointBehavior.RespawnPlayer();
+                else Player.TriggerRespawn();
                 break;
 
             case WarningAction.ReturnToMainMenu:
