@@ -20,15 +20,9 @@ public class MainMenu : Menu
     private void Start()
     {
         // Disable load game button if no save data exists
-        if (!DataPersistenceManager.instance.HasGameData())
-        {
-            loadGame.interactable = false;
-        }
+        if (!DataPersistenceManager.HasGameData()) loadGame.interactable = false;
         
-        if (quitButton != null)
-        {
-            quitButton.onClick.AddListener(OnQuitGameClicked);
-        }
+        if (quitButton != null) quitButton.onClick.AddListener(OnQuitGameClicked);
     }
 
     protected override void OnEnable()
@@ -45,9 +39,7 @@ public class MainMenu : Menu
     private void OnDisable()
     {
         if (backButtonInputAction != null && backButtonInputAction.action != null)
-        {
             backButtonInputAction.action.performed -= OnBackButtonPressed;
-        }
     }
 
     private void OnBackButtonPressed(InputAction.CallbackContext context)

@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 using System.IO;
 using Singletons;
 
-public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManager>
+public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
 {
     [Header("Debugging")]
@@ -24,41 +24,33 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
 
     [SerializeField] private string testSelectedProfile = "test";
 
-    private GameData gameData;
+    private static GameData gameData;
 
     // Defaults to the value set on the DataPersistenceManager prefab.
     // Keeping this non-empty ensures the singleton can safely auto-create if the prefab is missing from a scene.
     [SerializeField] private string fileName = "save.game";
 
-    private string selectedProfileId = "";
-    // Backwards-compatible accessor used throughout the project.
-    // Uses the base Singleton Instance so it can't be null just because the prefab wasn't placed in a scene.
-    public static DataPersistenceManager instance => Instance;
+    private static string selectedProfileId = "";
 
-    public List<IDataPersistenceManager> dataPersistenceObjects;
+    public static List<IDataPersistenceManager> dataPersistenceObjects;
 
-    private FileDataHandler fileDataHandler;
+    private static FileDataHandler fileDataHandler;
 
-    private string lastSavedScene = "";
-
-    
+    private static SceneAsset lastSavedScene;
 
     protected override void Awake()
     {
         base.Awake();
 
-        if (Instance != this)
-            return;
-
         //Defines the save file
-        this.fileDataHandler = new FileDataHandler(Application.persistentDataPath, fileName);
+        fileDataHandler = new FileDataHandler(Application.persistentDataPath, fileName);
 
-        this.selectedProfileId = fileDataHandler.GetMostRecentUpdatedProfile();
+        selectedProfileId = fileDataHandler.GetMostRecentUpdatedProfile();
 
         //If the editor is using a test profile, it will warn them so they are aware
         if (overrideSelectedProfileId)
         {
-            this.selectedProfileId = testSelectedProfile;
+            selectedProfileId = testSelectedProfile;
         }
     }
 
@@ -72,21 +64,22 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    // When a scene is loaded, the function below is called
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         //Defines the variable dataPersistenceObjects to be the function below
-        this.dataPersistenceObjects = FindAllDataPersistenceObjects();
+        dataPersistenceObjects = FindAllDataPersistenceObjects();
         LoadGame();
     }
 
-    public void ChangeSelectedProfileId(string newProfileId)
+    public static void ChangeSelectedProfileId(string newProfileId)
     { 
-        this.selectedProfileId = newProfileId;
+        selectedProfileId = newProfileId;
         LoadGame();
     }
 
     //When selecting a new game, new game data is created
-    public void NewGame()
+    public static void NewGame()
     {
         // Delete the existing save for the currently selected profile (clean reset)
         if (fileDataHandler != null && !string.IsNullOrEmpty(selectedProfileId))
@@ -95,40 +88,32 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         }
 
         // Create fresh data with defaults
-        this.gameData = new GameData();
+        gameData = new GameData();
 
         // Immediately persist the new defaults so the next scene load reads them
-        if (!disableDataPersistence)
+        if (!Instance.disableDataPersistence)
         {
             // Initialize lastSavedScene for the new profile
-            this.gameData.lastSavedScene = SceneManager.GetActiveScene().name;
-            this.lastSavedScene = this.gameData.lastSavedScene;
-            fileDataHandler.Save(this.gameData, selectedProfileId);
+            gameData.lastSavedScene = SceneManager.GetActiveScene().name;
+            lastSavedScene = gameData.lastSavedScene;
+            fileDataHandler.Save(gameData, selectedProfileId);
         }
     }
 
-    public void LoadGame()
+    public static void LoadGame()
     {
-        if (disableDataPersistence)
-        {
-            return;
-        }
+        if (Instance.disableDataPersistence) return;
 
         //Loads the game data if it exists
-        this.gameData = fileDataHandler.Load(selectedProfileId);
+        gameData = fileDataHandler.Load(selectedProfileId);
 
-        if(this.gameData == null && initializeDataIfNull)
-        {
-            NewGame();
-        }
+        if(gameData == null && Instance.initializeDataIfNull) NewGame();
 
         //If it doesnt, it will call the NewGame function
-        if(this.gameData == null)
-        {
-            return;
-        }
+        if (gameData == null) return;
+
         // Keep the manager's cached lastSavedScene in sync with the loaded profile
-        this.lastSavedScene = this.gameData.lastSavedScene;
+        lastSavedScene = gameData.lastSavedScene;
         //Goes through each of the found items that needs to be loaded and loads them
         foreach (IDataPersistenceManager dataPersistenceObj in dataPersistenceObjects)
         {
@@ -136,25 +121,20 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         }
     }
 
-    public void SaveGame()
+    public static void SaveGame()
     {
-        if (disableDataPersistence)
-        {
-            return;
-        }
+        if (Instance.disableDataPersistence) return;
 
         //Goes through each of the found items that needs to be saved and saves them
         foreach (IDataPersistenceManager dataPersistenceObj in dataPersistenceObjects)
-        {
             dataPersistenceObj.SaveData(gameData);
-        }
 
         //Saves the current time, converts to binary, and assigns the data to gameData
         gameData.lastUpdated = System.DateTime.Now.ToBinary();
 
         // Record the active scene as the last saved scene for the current profile
         gameData.lastSavedScene = SceneManager.GetActiveScene().name;
-        this.lastSavedScene = gameData.lastSavedScene;
+        lastSavedScene = gameData.lastSavedScene;
 
         fileDataHandler.Save(gameData, selectedProfileId);
     }
@@ -162,21 +142,14 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
     /// <summary>
     /// Returns the last saved scene for the currently-selected profile (or empty string if none).
     /// </summary>
-    public string GetLastSavedScene()
-    {
-        if (gameData != null)
-            return gameData.lastSavedScene ?? string.Empty;
-
-        return lastSavedScene ?? string.Empty;
-    }
+    public static SceneAsset GetLastSavedScene() => gameData != null ? gameData.lastSavedScene : lastSavedScene;
 
     /// <summary>
     /// Deletes the save file for the given profile id and refreshes menu data.
     /// </summary>
-    public void DeleteProfile(string profileId)
+    public static void DeleteProfile(string profileId)
     {
-        if (disableDataPersistence) return;
-        if (fileDataHandler == null || string.IsNullOrEmpty(profileId)) return;
+        if (Instance.disableDataPersistence || fileDataHandler == null || string.IsNullOrEmpty(profileId)) return;
 
         fileDataHandler.DeleteProfile(profileId);
 
@@ -188,7 +161,6 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
         }
     }
 
-
     //Defines a list that will find any instances of game data that needs to be loaded/saved
     private List<IDataPersistenceManager> FindAllDataPersistenceObjects()
     {
@@ -199,13 +171,7 @@ public class DataPersistenceManager : Singletons.Singleton<DataPersistenceManage
     }
 
     //Returns true or false if there is game data
-    public bool HasGameData()
-    {
-        return gameData != null;
-    }
+    public static bool HasGameData() => gameData != null;
 
-    public Dictionary<string, GameData> GetAllProfilesGameData()
-    {
-        return fileDataHandler.LoadAllProfiles();
-    }
+    public static Dictionary<string, GameData> GetAllProfilesGameData() => fileDataHandler.LoadAllProfiles();
 }

@@ -8,6 +8,7 @@
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine;
+using Progression.Checkpoints;
 
 /// <summary>
 /// Centralizes the warning prompt logic so buttons no longer need to wire up multiple GameObject.SetActive calls.
@@ -202,18 +203,8 @@ public class WarningButtonFunctionality : MonoBehaviour
 
             case WarningAction.RestartCheckpoint:
                 FadeOutLevelMusic();
-                if (handler != null)
-                {
-                    handler.RestartFromCheckpoint();
-                }
-                else if (SceneLoader.Instance != null)
-                {
-                    SceneLoader.Instance.RestartFromCheckpoint();
-                }
-                else
-                {
-                    Debug.LogWarning("[WarningButtonFunctionality] Restart requested but no SceneLoader/GameActionHandler available.");
-                }
+                if (handler != null) handler.RestartFromCheckpoint();
+                else CheckpointBehavior.RespawnPlayer();
                 break;
 
             case WarningAction.ReturnToMainMenu:
@@ -225,14 +216,7 @@ public class WarningButtonFunctionality : MonoBehaviour
                 else
                 {
                     PauseManager.Instance?.ResumeGame();
-                    if (SceneLoader.Instance != null)
-                    {
-                        SceneLoader.Instance.LoadMainMenu();
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[WarningButtonFunctionality] Return to menu requested but no SceneLoader/GameActionHandler available.");
-                    }
+                    SceneAsset.LoadMainMenu();
                 }
                 break;
 

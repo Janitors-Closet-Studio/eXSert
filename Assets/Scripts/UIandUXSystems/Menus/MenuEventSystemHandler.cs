@@ -93,6 +93,29 @@ public class MenuEventSystemHandler : MonoBehaviour
     protected virtual IEnumerator SelectAfterDelay()
     {
         yield return null;
+
+        // Ensure there's an EventSystem to use. When scenes load, EventSystem.current can be null for a frame.
+        if (EventSystem.current == null)
+        {
+            EventSystem found = FindObjectOfType<EventSystem>();
+            if (found != null)
+            {
+                EventSystem.current = found;
+            }
+        }
+
+        if (EventSystem.current == null)
+        {
+            Debug.LogError($"No EventSystem found in scene to select first selectable for menu \"{name}\".");
+            yield break;
+        }
+
+        if (_firstSelected == null)
+        {
+            Debug.LogError($"First selected is null for menu \"{name}\".");
+            yield break;
+        }
+
         EventSystem.current.SetSelectedGameObject(_firstSelected.gameObject);
     }
 
@@ -210,6 +233,10 @@ public class MenuEventSystemHandler : MonoBehaviour
 
     protected virtual void OnNavigate(InputAction.CallbackContext context)
     {
+        // Guard against missing EventSystem (can be null for frames during scene load)
+        if (EventSystem.current == null)
+            return;
+
         if (EventSystem.current.currentSelectedGameObject == null && _lastSelected != null)
         {
             EventSystem.current.SetSelectedGameObject(_lastSelected.gameObject);

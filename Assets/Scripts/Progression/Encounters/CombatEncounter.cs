@@ -11,9 +11,6 @@ namespace Progression.Encounters
         #region Inspector Setup
         [Header("Combat Encounter Settings")]
 
-        [SerializeField, Tooltip("Seconds to wait before advancing to the next wave.")]
-        private float nextWaveDelaySeconds = 0.15f;
-
         [Header("Progression")]
         [SerializeField] private bool autoFindByTag = false;
         [SerializeField] private string enemyTag = "Enemy";

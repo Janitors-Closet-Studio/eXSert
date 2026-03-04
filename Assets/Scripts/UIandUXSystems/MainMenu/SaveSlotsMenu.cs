@@ -13,28 +13,25 @@ using UnityEngine.UI;
 
 public class SaveSlotsMenu : Menu
 {
+    #region Inspector References
     [Header("Menu Navigation")]
     [SerializeField] private MainMenu mainMenu;
 
     [SerializeField] private Button backButton;
     [SerializeField] private Button playButton;
 
-    private SaveSlots[] saveSlots;
-
     [SerializeField] internal SaveSlots currentSaveSlotSelected = null;
 
-    [SerializeField] private string SceneName = "PlayerScene";
+    [SerializeField, Tooltip("The first level to be loaded when a player starts a new game")]
+    private SceneAsset firstLevel = "Elevator";
+    #endregion
 
-    // Must match a scene name included in Build Settings.
-    [SerializeField] private string DefaultSceneName = "Elevator";
+    private SaveSlots[] saveSlots;
 
     private bool isLoadingGame = false;
     private bool hasStartedSceneTransition = false;
 
-    private void Awake()
-    {
-        EnsureReferences();
-    }
+    private void Awake() => EnsureReferences();
 
     private void EnsureReferences()
     {
@@ -84,28 +81,18 @@ public class SaveSlotsMenu : Menu
     {
         EnsureReferences();
 
-        if (hasStartedSceneTransition)
-            return;
-
+        if (hasStartedSceneTransition) return;
         hasStartedSceneTransition = true;
-        if (playButton != null)
-            playButton.interactable = false; // Prevent multiple clicks
+        playButton.interactable = false; // Prevent multiple clicks
 
         DisableMenuButtons();
-
-        // Safety check for SceneLoader
-        if (SceneLoader.Instance == null)
-        {
-            hasStartedSceneTransition = false;
-            return;
-        }
 
         // Ensure a slot is selected; if not, pick a sensible default
         if (currentSaveSlotSelected == null)
         {
             // Try to auto-select the first valid slot
-            var profiles = DataPersistenceManager.instance != null
-                ? DataPersistenceManager.instance.GetAllProfilesGameData()
+            var profiles = DataPersistenceManager.Instance != null
+                ? DataPersistenceManager.GetAllProfilesGameData()
                 : null;
             SaveSlots fallback = null;
             if (isLoadingGame)
@@ -140,7 +127,7 @@ public class SaveSlotsMenu : Menu
             }
         }
 
-        if (DataPersistenceManager.instance == null)
+        if (DataPersistenceManager.Instance == null)
         {
             RestoreMenuButtons();
             hasStartedSceneTransition = false;
@@ -155,105 +142,46 @@ public class SaveSlotsMenu : Menu
             return;
         }
 
-        DataPersistenceManager.instance.ChangeSelectedProfileId(selectedProfileId);
+        DataPersistenceManager.ChangeSelectedProfileId(selectedProfileId);
 
-        if (!isLoadingGame)
-        { 
-            // NEW GAME - Create fresh save data
-            DataPersistenceManager.instance.NewGame();
-            if (CheckpointSystem.Instance != null)
-            {
-                CheckpointSystem.Instance.ResetProgress();
-            }
-
-            string configuredGameplay = string.IsNullOrWhiteSpace(SceneName) ? "PlayerScene" : SceneName;
-            string configuredDefault = string.IsNullOrWhiteSpace(DefaultSceneName) ? configuredGameplay : DefaultSceneName;
-
-            string primaryScene = ResolveLoadableSceneOrFallback(configuredDefault, "Elevator");
-            string secondaryScene = ResolveLoadableSceneOrFallback(configuredGameplay, null);
-
-            if (string.IsNullOrWhiteSpace(primaryScene))
-            {
-                RestoreMenuButtons();
-                hasStartedSceneTransition = false;
-                return;
-            }
-
-            // Secondary scene is optional; only load if valid.
-            if (string.IsNullOrWhiteSpace(secondaryScene))
-            {
-                secondaryScene = null;
-            }
-
-            if (string.Equals(primaryScene, secondaryScene))
-            {
-                secondaryScene = null;
-            }
-
-            string spawnId = CheckpointSystem.Instance != null
-                ? CheckpointSystem.Instance.GetCurrentSpawnPointID()
-                : "default";
-
-            // Pause gameplay while the default scene loads first, then the gameplay scene second
-            SceneLoader.Instance.LoadInitialGameScene(
-                primaryScene,
-                secondaryScene,
-                pauseUntilLoaded: true,
-                spawnPointIdOverride: spawnId,
-                updateCheckpointAfterLoad: true);
-        }
-        else
-        {
-            // LOAD GAME - Load existing save data first
-            DataPersistenceManager.instance.LoadGame();
-            
-            // Get checkpoint from the loaded profile's game data
-            string savedScene = DataPersistenceManager.instance.GetLastSavedScene();
-            
-            // Get the profile data we just loaded
-            Dictionary<string, GameData> profilesGameData = DataPersistenceManager.instance.GetAllProfilesGameData();
-            GameData loadedData = null;
-            
-            if (profilesGameData.TryGetValue(currentSaveSlotSelected.GetProfileId(), out loadedData))
-            {
-                if (!string.IsNullOrEmpty(loadedData.currentSceneName))
-                {
-                    savedScene = loadedData.currentSceneName;
-                }
-            }
-
-            savedScene = ResolveLoadableSceneOrFallback(savedScene, "Elevator");
-            if (string.IsNullOrWhiteSpace(savedScene))
-            {
-                RestoreMenuButtons();
-                hasStartedSceneTransition = false;
-                return;
-            }
-
-            string savedSpawnPoint = loadedData != null && !string.IsNullOrWhiteSpace(loadedData.currentSpawnPointID)
-                ? loadedData.currentSpawnPointID
-                : CheckpointSystem.Instance != null
-                    ? CheckpointSystem.Instance.GetCurrentSpawnPointID()
-                    : "default";
-            
-            // Load the saved checkpoint scene
-            SceneLoader.Instance.LoadInitialGameScene(
-                savedScene,
-                additiveSceneName: null,
-                pauseUntilLoaded: true,
-                spawnPointIdOverride: savedSpawnPoint,
-                updateCheckpointAfterLoad: false);
-        }
+        if (isLoadingGame) LoadGame();
+        else StartNewGame();
     }
 
-    private static string ResolveLoadableSceneOrFallback(string sceneName, string fallbackSceneName)
+    private void StartNewGame()
     {
-        if (!string.IsNullOrWhiteSpace(sceneName) && Application.CanStreamedLevelBeLoaded(sceneName))
-            return sceneName;
+        DataPersistenceManager.NewGame();
 
-        if (!string.IsNullOrWhiteSpace(fallbackSceneName) && Application.CanStreamedLevelBeLoaded(fallbackSceneName))
-            return fallbackSceneName;
+        // Potentially consider adding the ability to reset progress here
 
+        SceneAsset.LoadIntoGame(firstLevel);
+    }
+
+    private void LoadGame()
+    {
+        DataPersistenceManager.LoadGame();
+
+        // Get checkpoint from the loaded profile's game data
+        SceneAsset savedScene = DataPersistenceManager.GetLastSavedScene();
+
+        // Get the profile data we just loaded
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData();
+
+        if (profilesGameData.TryGetValue(currentSaveSlotSelected.GetProfileId(), out GameData loadedData) 
+            && !string.IsNullOrEmpty(loadedData.currentSceneName)) savedScene = loadedData.currentSceneName;
+
+        savedScene = ResolveLoadableSceneOrFallback(savedScene, firstLevel);
+
+        SceneAsset.LoadIntoGame(savedScene);
+    }
+
+    private static SceneAsset ResolveLoadableSceneOrFallback(SceneAsset scene, SceneAsset fallbackScene)
+    {
+        if (scene != null && Application.CanStreamedLevelBeLoaded(scene)) return scene;
+
+        if (fallbackScene != null && Application.CanStreamedLevelBeLoaded(fallbackScene)) return fallbackScene;
+
+        Debug.LogError($"Neither the saved scene '{scene}' nor the fallback scene '{fallbackScene}' could be loaded. Check that they are included in the build settings and that the saved scene name is correct.");
         return null;
     }
 
@@ -291,7 +219,7 @@ public class SaveSlotsMenu : Menu
 
 
         // Delete save file for this slot
-        DataPersistenceManager.instance.DeleteProfile(profileId);
+        DataPersistenceManager.DeleteProfile(profileId);
 
         // Refresh displayed slots
         currentSaveSlotSelected = null;
@@ -318,11 +246,11 @@ public class SaveSlotsMenu : Menu
 
         GameObject firstSelected = backButton != null ? backButton.gameObject : null;
 
-        if (DataPersistenceManager.instance == null)
+        if (DataPersistenceManager.Instance == null)
             return;
         
 
-        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.instance.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
 
         // Validate slot profile ids (common merge issue: ids cleared)
         if (saveSlots == null || saveSlots.Length == 0)

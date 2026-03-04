@@ -15,9 +15,11 @@ using UIandUXSystems.HUD;
 namespace Progression
 {
     using Encounters;
+    using Checkpoints;
     using SceneManagement;
 
     [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.ba7p6f215mok")]
+    [DefaultExecutionOrder(0)] // Ensure this executes before any encounters or progression zones, which may rely on it to register themselves in Awake
     public class ProgressionManager : SceneSingleton<ProgressionManager>
     {
         #region Inspector Setup
@@ -28,6 +30,9 @@ namespace Progression
         [SerializeField, Tooltip("If true, the manager will prewarm the specified prefabs at the start of the scene. This can help reduce lag spikes when those prefabs are first instantiated.")]
         private GameObject[] prefabsToPrewarm;
 
+        [Header("Checkpoint Settings")]
+        [SerializeField, CriticalReference, Tooltip("Checkpoint to use as the initial spawn point for this scene. Assign one of the scene's CheckpointBehavior objects.")]
+        private CheckpointBehavior firstCheckpoint;
         #endregion
 
         private int totalEncountersInScene = 0;
@@ -38,17 +43,40 @@ namespace Progression
         private bool allZonesComplete = false;
 
         private readonly List<BasicEncounter> encounterCompletionMap = new();
+        private readonly List<SceneLoadZone> loadZones = new();
+        private readonly List<CheckpointBehavior> checkpoints = new();
 
-        private readonly List<SceneLoadZone> zonesLoaded = new();
+        /// <summary>
+        /// Public accessor for the configured first checkpoint.
+        /// At runtime the checkpoints list will be populated during Awake; this returns the serialized selection.
+        /// </summary>
+        public CheckpointBehavior FirstCheckpoint => firstCheckpoint;
 
         #region Monobehavior Methods
         protected override void Awake()
         {
             base.Awake(); // Singleton behavior
 
-            this.gameObject.name = $"[{SceneAsset.GetSceneAssetOfObject(this.gameObject).name}] Progression Manager";
+            this.gameObject.name = $"[{SceneAsset.GetSceneAssetOfObject(this.gameObject)}] Progression Manager";
+
+            encounterCompletionMap.Clear();
+            loadZones.Clear();
+            checkpoints.Clear();
+
+            CheckpointBehavior.OverrideCurrentCheckpoint(firstCheckpoint);
 
             if (usePrewarmer) PrewarmEnemies();
+        }
+
+        private void Start()
+        {
+#if UNITY_EDITOR
+            // Automatically load the player scene while playing the level in editor.
+            // This makes testing easier since you can just hit play on the level scene by itself
+            // Without needing to manually adjust the player scene
+            if (!SceneAsset.PlayerLoaded)
+                SceneAsset.LoadPlayerScene(firstCheckpoint.SpawnPoint);
+#endif
         }
 
         private void OnDisable()
@@ -90,7 +118,11 @@ namespace Progression
                     break;
 
                 case SceneLoadZone loadZone:
-                    manager.zonesLoaded.Add(loadZone);
+                    manager.loadZones.Add(loadZone);
+                    break;
+
+                case CheckpointBehavior checkpoint:
+                    manager.checkpoints.Add(checkpoint);
                     break;
 
                 default:

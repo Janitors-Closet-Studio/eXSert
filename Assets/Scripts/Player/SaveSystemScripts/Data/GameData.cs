@@ -30,7 +30,7 @@ public class GameData
     public string currentSceneName;
     public string currentSpawnPointID;
     // Last scene that was saved for this profile (persisted per-profile)
-    public string lastSavedScene;
+    public SceneAsset lastSavedScene;
 
 
     //Base variable definitions should be here
