@@ -43,7 +43,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 11
   m_Type: 2
-  m_Color: {r: 1, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 1
   m_Range: 1.93
   m_SpotAngle: 30
@@ -141,7 +141,7 @@ GameObject:
   - component: {fileID: 4660671860925423099}
   - component: {fileID: 7622018774058524696}
   m_Layer: 0
-  m_Name: NavigationEntry
+  m_Name: LogEntry
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -155,15 +155,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3744882089859573523}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -3.089, y: -0.0063727, z: 0.00057679}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2.2728, y: 2.2728, z: 2.2728}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4263739790572315362}
   - {fileID: 5935609796589278558}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!33 &1256927475297716259
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -257,13 +257,13 @@ MonoBehaviour:
   _interactAnimation: {fileID: 0}
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 5311eee9c9986724c91de6aa7dde1649, type: 3}
-  _interactionPrompt: Press to Interact
+  _interactionPrompt: Press to PickUp
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   collectID: 
   uiDisplayDuration: 4
   uiFadeDuration: 2
   bottomFlavorText: Press Pause to View
-  entryData: {fileID: 11400000, guid: 58b00db1641c211448ac89d50730c985, type: 2}
+  entryData: {fileID: 11400000, guid: 57251ddbae89b5e46b556008cf3278c8, type: 2}
   isDiary: 0
   isLog: 1
 --- !u!1 &7595601498576949995
@@ -293,7 +293,7 @@ Transform:
   m_GameObject: {fileID: 7595601498576949995}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -0.0041050822, y: 0.0045348234, z: 0.17884234}
+  m_LocalPosition: {x: -0.0041050822, y: 0.005, z: 0.079}
   m_LocalScale: {x: 1.0999649, y: 1.0999646, z: 1.0999646}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -316,7 +316,13 @@ VisualEffect:
   m_ResourceVersion: 1
   m_PropertySheet:
     m_Float:
-      m_Array: []
+      m_Array:
+      - m_Value: 0.18
+        m_Name: Size
+        m_Overridden: 1
+      - m_Value: 5
+        m_Name: ParticleRate
+        m_Overridden: 1
     m_Vector2f:
       m_Array: []
     m_Vector3f:
@@ -335,9 +341,9 @@ VisualEffect:
       m_Array:
       - m_Value:
           serializedVersion: 2
-          key0: {r: 0.35813692, g: 2.778706, b: 0.23277114, a: 0}
-          key1: {r: 0.8679245, g: 0, b: 0, a: 1}
-          key2: {r: 0, g: 0, b: 0, a: 0.8}
+          key0: {r: 3.7097907, g: 3.7097907, b: 3.7097907, a: 0}
+          key1: {r: 1, g: 1, b: 1, a: 0.8784314}
+          key2: {r: 0, g: 0, b: 0, a: 0.8509804}
           key3: {r: 0, g: 0, b: 0, a: 0}
           key4: {r: 0, g: 0, b: 0, a: 0}
           key5: {r: 0, g: 0, b: 0, a: 0}
