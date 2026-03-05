@@ -138,7 +138,7 @@ public class DoorHandler : MonoBehaviour
         }
         else
         {
-            if (currentDoorState == DoorState.Open)
+            if (currentDoorState == DoorState.Unlocked)
                 doorLight.color = unlockedLightColor;
         }
     }
