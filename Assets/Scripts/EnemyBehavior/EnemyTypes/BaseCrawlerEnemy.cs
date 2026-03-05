@@ -62,6 +62,8 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
 
     protected override void Awake()
     {
+        // Ensure the pooled object includes any wrapper parents (e.g., crawler IK rig roots).
+        AdoptWrapperParentsForPooling();
         base.Awake();
 
         foreach (var helper in helperRootsToCleanup)
