@@ -29,10 +29,8 @@ public class DoorInteractions : UnlockableInteraction
                 
 
                 doorHandler.Interact();
-                doorHandler.FadeColorIntoEachother(doorHandler.lockedLightColor, doorHandler.unlockedLightColor, doorHandler.GetLightMeshRenderer(), doorHandler.lightFadeSpeed);
-
+                doorHandler.DoorHandlerCoroutines();
             }
-
         }
     }
 }

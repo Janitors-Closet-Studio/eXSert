@@ -11,6 +11,8 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEngine.ProBuilder.Shapes;
+
 
 
 
@@ -67,13 +69,19 @@ public class DoorHandler : MonoBehaviour
 
     [Header("Door Light Settings")]
     [Tooltip("Light bulb to change color")]
-    public GameObject doorLightObject;
+    public GameObject lightBulb;
+    [Tooltip("Color of the light bulb when the door is locked")]
+    public Color lockedLightBulbColor;
+    [Tooltip("Color of the light bulb when the door is unlocked")]
+    public Color unlockedLightBulbColor;
+
     [Tooltip("Light component on the door to change color")]
     public Light doorLight;
     [Tooltip("Color of the light when the door is locked")]
     public Color lockedLightColor;
     [Tooltip("Color of the light when the door is unlocked")]
     public Color unlockedLightColor;
+
     [Tooltip("Speed of the light color transition")]
     public float lightFadeSpeed = 2f;
 
@@ -117,6 +125,7 @@ public class DoorHandler : MonoBehaviour
                 OpenDoor();
                 break;
         }
+
     }
 
     // Intializes the door light color based on the current lock and door state
@@ -135,9 +144,9 @@ public class DoorHandler : MonoBehaviour
 
     internal MeshRenderer GetLightMeshRenderer()
     {
-        if (doorLightObject != null)
+        if (lightBulb != null)
         {
-            MeshRenderer meshRenderer = doorLightObject.GetComponent<MeshRenderer>();
+            MeshRenderer meshRenderer = lightBulb.GetComponent<MeshRenderer>();
             if (meshRenderer != null)
             {
                 return meshRenderer;
@@ -155,19 +164,38 @@ public class DoorHandler : MonoBehaviour
         }
     }
 
+    public void DoorHandlerCoroutines()
+    {
+        StartCoroutine(FadeLightBulbHDRColor(lockedLightBulbColor, unlockedLightBulbColor, lightFadeSpeed));
+        StartCoroutine(FadeColorIntoEachother(lockedLightColor, unlockedLightColor, lightFadeSpeed));
+    }
+
+    private IEnumerator FadeLightBulbHDRColor(Color fromColor, Color toColor, float duration)
+    {
+        MeshRenderer meshRenderer = GetLightMeshRenderer();
+        if (meshRenderer == null)
+            yield break;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            Color currentColor = Color.Lerp(fromColor, toColor, t);
+            meshRenderer.material.SetColor("_EmissionColor", currentColor);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        meshRenderer.material.SetColor("_EmissionColor", toColor);
+    }
+
     // Fade Color into eachother over time, used for light color transitions when opening/closing and locking/unlocking the door
-    internal IEnumerator FadeColorIntoEachother(Color fromColor, Color toColor, MeshRenderer lightMeshRenderer, float duration)
+    private IEnumerator FadeColorIntoEachother(Color fromColor, Color toColor, float duration)
     {
         float elapsed = 0f;
         while (elapsed < duration)
         {
             float t = Mathf.Clamp01(elapsed / duration);
             doorLight.color = Color.Lerp(fromColor, toColor, t);
-    
-            Material mat = lightMeshRenderer.material;
-
-            mat.color = Color.Lerp(fromColor, toColor, t);
-
             elapsed += Time.deltaTime;
             yield return null;
         }
