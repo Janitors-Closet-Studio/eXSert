@@ -153,6 +153,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     [SerializeField, Tooltip("Audio clip to play when the enemy is hit.")]
     private AudioClip[] hitSFX;
     
+    
     [Header("Movement SFX")]
     [SerializeField, Tooltip("Audio clip to loop while the enemy is moving.")]
     private AudioClip movementSFXClip;
@@ -164,14 +165,15 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private float movementSFXFadeOutDuration = 0.3f;
     [SerializeField, Tooltip("Minimum speed threshold to consider the enemy as moving.")]
     private float movementSFXSpeedThreshold = 0.1f;
-    [SerializeField, Tooltip("Keeps the clip playing nonstop; used for enemies that will allows play movement sfx like drone.")]
-    private bool keepPlayingClip = false;
+    [SerializeField, Tooltip("When enabled, the movement SFX loops continuously regardless of movement state. Use for drones (always moving) or turrets (stationary but need ambient sound).")]
+    private bool loopSFXContinuously = false;
     
     // Movement SFX runtime state
     private AudioSource movementAudioSource;
     private float originalMovementSFXVolume;
     private bool wasMovingForSFX;
     private Coroutine movementSFXFadeCoroutine;
+    
     
     [Header("Behavior Profile")]
     [SerializeField, Tooltip("Optional behavior profile for NavMeshAgent settings. If assigned, these settings will be applied on Awake.")]
@@ -1071,6 +1073,17 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     {
         if (movementSFXClip == null) return;
         
+        // For continuous looping (drones, turrets), start once and never stop based on movement
+        if (loopSFXContinuously)
+        {
+            if (!wasMovingForSFX)
+            {
+                StartMovementSFX();
+                wasMovingForSFX = true;
+            }
+            return;
+        }
+        
         bool isMoving = currentSpeed > movementSFXSpeedThreshold;
         
         if (isMoving && !wasMovingForSFX)
@@ -1078,7 +1091,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             // Started moving - play movement SFX
             StartMovementSFX();
         }
-        else if (!isMoving && wasMovingForSFX && !keepPlayingClip)
+        else if (!isMoving && wasMovingForSFX)
         {
             // Stopped moving - fade out and play stop clip
             StopMovementSFX();
