@@ -126,6 +126,7 @@ public class DoorHandler : MonoBehaviour
                 break;
         }
 
+
     }
 
     // Intializes the door light color based on the current lock and door state
@@ -181,6 +182,7 @@ public class DoorHandler : MonoBehaviour
         {
             float t = Mathf.Clamp01(elapsed / duration);
             Color currentColor = Color.Lerp(fromColor, toColor, t);
+            meshRenderer.material.EnableKeyword("_EMISSION");
             meshRenderer.material.SetColor("_EmissionColor", currentColor);
             elapsed += Time.deltaTime;
             yield return null;

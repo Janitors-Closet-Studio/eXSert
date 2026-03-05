@@ -25,11 +25,11 @@ public class DoorInteractions : UnlockableInteraction
                 if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
                 {
                     doorHandler.doorLockState = DoorHandler.DoorLockState.Unlocked;
+                    doorHandler.DoorHandlerCoroutines();
                 }
                 
 
                 doorHandler.Interact();
-                doorHandler.DoorHandlerCoroutines();
             }
         }
     }
