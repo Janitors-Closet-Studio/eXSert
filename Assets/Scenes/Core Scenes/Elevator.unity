@@ -35948,6 +35948,13 @@ MonoBehaviour:
     closedLocalPosition: {x: 0, y: 0, z: 0}
   openSpeed: 1
   hingePivot: {fileID: 0}
+  lightBulb: {fileID: 0}
+  lockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  unlockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  doorLight: {fileID: 0}
+  lockedLightColor: {r: 0, g: 0, b: 0, a: 0}
+  unlockedLightColor: {r: 0, g: 0, b: 0, a: 0}
+  lightFadeSpeed: 2
 --- !u!4 &1066649023
 Transform:
   m_ObjectHideFlags: 0
@@ -54989,6 +54996,76 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 962fd702d24d9c54fb10cab0fdb270bc, type: 3}
   m_PrefabInstance: {fileID: 1672069477}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1683466560
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1683466563}
+  - component: {fileID: 1683466562}
+  - component: {fileID: 1683466561}
+  m_Layer: 0
+  m_Name: CargoLoad
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1683466561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683466560}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 142f5308075829342b0dbab7b16e4c76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Progression.SceneManagement.SceneLoadZone
+  startEnabled: 1
+  SendDebugMessages: 0
+  loadScene: 1
+  sceneToManage: {fileID: 11400000, guid: 248abdb68d5b5464eabe3268014145e2, type: 2}
+--- !u!65 &1683466562
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683466560}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 8.31, y: 4.22, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!4 &1683466563
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1683466560}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.43, y: 0.81, z: 12.61}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1691672873
 GameObject:
   m_ObjectHideFlags: 0
@@ -68388,3 +68465,4 @@ SceneRoots:
   - {fileID: 535528796}
   - {fileID: 1822240846}
   - {fileID: 9017540021125526058}
+  - {fileID: 1683466563}
