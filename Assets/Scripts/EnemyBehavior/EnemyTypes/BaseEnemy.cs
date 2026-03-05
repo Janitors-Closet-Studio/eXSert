@@ -292,6 +292,53 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
     }
 
+    /// <summary>
+    /// Some enemy prefabs use a parent wrapper GameObject (e.g., a turret base / crawler IK rig root)
+    /// while the <see cref="BaseEnemyCore"/>-derived script lives on a child. The pooling factory
+    /// operates on the <see cref="BaseEnemyCore"/>'s Transform, so returning only the child would
+    /// leave wrapper siblings behind in the scene.
+    ///
+    /// This method safely inverts the hierarchy chain so this enemy object becomes the pooled root,
+    /// adopting eligible parent wrappers as children. It intentionally avoids touching external
+    /// scene containers like spawn markers/pockets.
+    ///
+    /// Call this from derived enemy classes that are known to have wrapper parents.
+    /// </summary>
+    protected void AdoptWrapperParentsForPooling()
+    {
+        // Safety: only adjust a limited number of ancestor levels.
+        const int maxSteps = 32;
+        int steps = 0;
+
+        while (transform.parent != null && steps++ < maxSteps)
+        {
+            var parent = transform.parent;
+
+            // If the parent is itself an enemy core, the factory already tracks the correct root.
+            if (parent.GetComponent<BaseEnemyCore>() != null)
+                break;
+
+            // Avoid consuming external scene containers.
+            // Use string-based GetComponent to avoid hard dependencies on encounter/progression assemblies.
+            if (parent.GetComponent("Progression.Encounters.EnemySpawnMarker") != null)
+                break;
+            if (parent.GetComponent<CrawlerPocket>() != null)
+                break;
+
+            // Only adopt parents that look like they belong to this enemy's prefab hierarchy.
+            // (Commonly they share layer/tag with the enemy object.)
+            bool parentLooksLikeEnemyWrapper = parent.CompareTag("Enemy") || parent.gameObject.layer == gameObject.layer;
+            if (!parentLooksLikeEnemyWrapper)
+                break;
+
+            var grandparent = parent.parent;
+
+            // Detach self to grandparent first to avoid creating a parent-child cycle.
+            transform.SetParent(grandparent, worldPositionStays: true);
+            parent.SetParent(transform, worldPositionStays: true);
+        }
+    }
+
     // Awake is called when the script instance is being loaded
     protected virtual void Awake()
     {

@@ -117,6 +117,8 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
     protected override void Awake()
     {
+        // Ensure the pooled object includes any wrapper parents (e.g., turret base/box siblings).
+        AdoptWrapperParentsForPooling();
         base.Awake();
 
         // Turret is stationary. Remove NavMeshAgent added by base.
