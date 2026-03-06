@@ -15,6 +15,8 @@ using UnityEngine;
 
 public class PuzzleInteraction : UnlockableInteraction
 {
+
+    private GameObject playerReference;
     private bool inProgress;
 
     [Header("Console Settings")]
@@ -26,9 +28,38 @@ public class PuzzleInteraction : UnlockableInteraction
 
     public int ConsoleIndex => consoleIndex;
 
+    private void Start()
+    {
+        FindPlayerReference();
+    }
+
     protected override void ExecuteInteraction()
     {
         ButtonPressed?.Invoke();
         ButtonPressedWithSender?.Invoke(this);
+        GetPlayerAnimator().PlayIdle();
+    }
+
+    private void FindPlayerReference()
+    {
+        playerReference = GameObject.FindGameObjectWithTag("Player");
+        if (playerReference == null)
+        {
+            Debug.LogWarning("[PuzzleInteraction] Player reference not found. Make sure the player has the 'Player' tag assigned.");
+        }
+    }
+
+    private PlayerAnimationController GetPlayerAnimator()
+    {
+        if (playerReference != null)
+        {
+            var animator = playerReference.GetComponentInChildren<PlayerAnimationController>();
+            if (animator == null)
+            {
+                Debug.LogWarning("[PuzzleInteraction] Player Animator not found. Make sure the player has an Animator component in its children.");
+            }
+            return animator;
+        }
+        return null;
     }
 }
