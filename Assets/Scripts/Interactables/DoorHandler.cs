@@ -98,8 +98,8 @@ public class DoorHandler : MonoBehaviour
 
     private void Awake()
     {
-        doorPosOrigin = this.transform.position;
-        doorRotOrigin = this.transform.rotation;
+        doorPosOrigin = this.transform.localPosition;
+        doorRotOrigin = this.transform.localRotation;
         
         // If a hinge pivot is provided, store its original rotation
         if (hingePivot != null)
@@ -125,8 +125,6 @@ public class DoorHandler : MonoBehaviour
                 OpenDoor();
                 break;
         }
-
-
     }
 
     // Intializes the door light color based on the current lock and door state
