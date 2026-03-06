@@ -150,7 +150,7 @@ public class PlayerAttackManager : MonoBehaviour
     {
         if (CombatManager.isGuarding)
         {
-            HandleGuardStateAttacks();
+            ClearBufferedAttack();
             return;
         }
 
@@ -172,13 +172,8 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void HandleGuardStateAttacks()
     {
+        // Guard attacks are disabled. Kept for backwards compatibility if referenced elsewhere.
         ClearBufferedAttack();
-
-        if (InputReader.inputBusy)
-            return;
-
-        if (InputReader.LightAttackTriggered)
-            TryExecuteGuardAttack();
     }
 
     private void ProcessAttackInput(bool lightAttack)
