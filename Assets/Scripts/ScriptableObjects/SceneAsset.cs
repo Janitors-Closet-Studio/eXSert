@@ -6,6 +6,7 @@
  * Improved to be able to find the SceneAssets gameobjects are contained within
  */
 
+using Progression.Checkpoints;
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -90,6 +91,7 @@ public class SceneAsset : ScriptableObject
     /// langword="null"/>.</returns>
     public static SceneAsset Load(SceneAsset scene, bool forceReload = false)
     {
+        Debug.Log($"[Scene Loader] Request to load scene '{scene}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
         if (scene == null)
         {
             Debug.LogError("Cannot load a null SceneAsset.");
@@ -134,51 +136,106 @@ public class SceneAsset : ScriptableObject
     /// <param name="characterStartInactive">If <see langword="true"/>, the player GameObject will be set inactive after spawning to allow setup before activation.</param>
     /// <param name="onLoaded">Optional callback invoked with the player GameObject after the player scene has finished loading (or immediately if already loaded).</param>
     /// <returns>The AsyncOperation for the load when a load is started; returns <see langword="null"/> if no new scene load was started (scene already loaded and not forced).</returns>
-    public static AsyncOperation LoadPlayerScene(Transform spawnPoint = null, bool forceReload = false, bool characterStartInactive = true, Action<GameObject> onLoaded = null)
+    public static AsyncOperation LoadPlayerScene(
+        CheckpointBehavior spawnPoint = null, // The checkpoint to use as the player's spawn point.
+        bool forceReload = false, // Whether to force a reload of the player scene
+        bool characterStartInactive = true)  // Whether to disable the player GameObject after loading
     {
+        // Diagnostic entry log to confirm the method is being invoked at runtime.
+        Debug.Log($"[Scene Loader] LoadPlayerScene CALLED. spawnPoint={(spawnPoint != null ? spawnPoint : "null")}, forceReload={forceReload}, characterStartInactive={characterStartInactive}, LoadedSceneCount={LoadedSceneCount}");
+
+        // Try to get the SceneAsset from resources (implicit operator may return null if missing)
         var playerSceneAsset = (SceneAsset)playerSceneName;
-        // If already loaded and not forcing a reload, apply spawn/activation and invoke callbacks immediately.
-        if (playerSceneAsset.IsLoaded() && !forceReload)
+
+        // If SceneAsset couldn't be found in Resources, warn but continue using scene name.
+        if (playerSceneAsset == null)
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player == null)
-            {
-                Debug.LogError("Player object not found in the scene while LoadPlayerScene was called. Ensure that the player scene contains a GameObject tagged 'Player'.");
-                onLoaded?.Invoke(null);
-                return null; // No AsyncOperation because no scene load occurred
-            }
-
-            player = player.transform.root.gameObject;
-            if (spawnPoint != null) player.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-            if (characterStartInactive) player.SetActive(false);
-
-            onLoaded?.Invoke(player);
-            return null; // No AsyncOperation because no scene load occurred
+            Debug.LogWarning($"[Scene Loader] SceneAsset for '{playerSceneName}' not found in Resources/Scene Assets. Will attempt to load by scene name from Build settings.");
         }
 
-        // Start an additive asynchronous load and return its AsyncOperation so callers can attach to .completed
-        AsyncOperation op = SceneManager.LoadSceneAsync(playerSceneName, LoadSceneMode.Additive);
-        op.completed += _ =>
+        // Determine whether the player scene is already loaded.
+        bool isLoaded;
+        try
         {
-            // After loading the player scene, move the player to the specified spawn point
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            isLoaded = playerSceneAsset != null ? playerSceneAsset.IsLoaded() : SceneManager.GetSceneByName(playerSceneName).isLoaded;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[Scene Loader] Error checking loaded state for '{playerSceneName}': {ex.Message}\n{ex.StackTrace}");
+            // Fallback to false so we attempt a load.
+            isLoaded = false;
+        }
+
+        // If already loaded and we're not forcing a reload, move player immediately and return null.
+        if (isLoaded && !forceReload)
+        {
+            Debug.Log($"[Scene Loader] Player scene '{playerSceneName}' already loaded. Skipping load and applying spawn now.");
+
+            // If a spawnPoint was provided, set it as current checkpoint before moving the player.
+            if (spawnPoint != null)
+                CheckpointBehavior.OverrideCurrentCheckpoint(spawnPoint, false);
+            else
+                Debug.LogWarning("[Scene Loader] No spawn point provided for player scene load. Player will remain at current position.");
+
+            // Try to move player right away (will log if player is missing)
+            CheckpointBehavior.InitialSpawnPlayer();
+
+            // Optionally start player inactive
+            if (characterStartInactive)
+            {
+                var player = Player.PlayerObject;
+                if (player != null)
+                    player.SetActive(false);
+                else
+                    Debug.LogWarning("[Scene Loader] Player object not found when attempting to deactivate after immediate spawn.");
+            }
+
+            return null;
+        }
+
+        Debug.Log($"[Scene Loader] Loading player scene '{playerSceneName}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
+
+        // Start an additive asynchronous load and return its AsyncOperation so callers can attach to .completed
+        AsyncOperation Operation;
+        try
+        {
+            Operation = SceneManager.LoadSceneAsync(playerSceneName, LoadSceneMode.Additive);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[Scene Loader] Exception starting async load for '{playerSceneName}': {ex.Message}\n{ex.StackTrace}");
+            return null;
+        }
+
+        Operation.completed += _ =>
+        {
+            Debug.Log($"[Scene Loader] Player scene '{playerSceneName}' load completed callback fired. LoadedSceneCount now: {LoadedSceneCount}.");
+
+            GameObject player = Player.PlayerObject;
+
+            // Player Null Check
             if (player == null)
             {
-                Debug.LogError("Player object not found in the scene after loading the player scene. Ensure that the player scene contains a GameObject tagged 'Player'.");
-                onLoaded?.Invoke(null);
+                Debug.LogError("[Scene Loader] Player object not found in the scene after loading the player scene. " +
+                               "Ensure that the player scene contains a GameObject tagged 'Player' and that SceneAsset points to the correct scene.");
                 return;
             }
-            player = player.transform.root.gameObject; // Get the root GameObject in case the player is a child of another object
-            if (spawnPoint != null) player.transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
+
+            Debug.Log($"[Scene Loader] Player object found: {player.name}. Moving player to spawn point {(spawnPoint != null ? spawnPoint.name : "null")}.");
+
+            if (spawnPoint != null)
+                CheckpointBehavior.OverrideCurrentCheckpoint(spawnPoint, false);
+            else
+                Debug.LogWarning("[Scene Loader] No spawn point provided for player scene load. Player will be placed at the default position in the player scene.");
+
+            CheckpointBehavior.InitialSpawnPlayer();
 
             // Optionally start the player inactive, allowing for setup before they become active
-            if (characterStartInactive) player.SetActive(false);
-
-            // Invoke provided callback and global event for subscribers
-            onLoaded?.Invoke(player);
+            if (characterStartInactive)
+                player.SetActive(false);
         };
 
-        return op;
+        return Operation;
     }
 
 
