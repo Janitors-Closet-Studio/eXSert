@@ -8592,6 +8592,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4119839093308741906}
+  - component: {fileID: 1670749406741769633}
+  - component: {fileID: 5616243074537824121}
+  - component: {fileID: 2043449410682325222}
+  - component: {fileID: 6499608910825327414}
+  - component: {fileID: 8538692178904831450}
+  - component: {fileID: 4109895899566118951}
+  - component: {fileID: 3402071617396780965}
   - component: {fileID: 7339073060746803466}
   m_Layer: 0
   m_Name: Boss_Cleanser
@@ -8638,6 +8645,638 @@ Transform:
   - {fileID: 1849022443633775056}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!195 &1670749406741769633
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!114 &5616243074537824121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c5c625585bc7ba4e997fe09dfb85ef3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserBrain
+  inspectorHelp: 'CleanserBrain: Main AI controller for the Cleanser boss.
+
+    Manages
+    combo execution, dual-wield mechanics, and ultimate attacks.
+
+    Wing attacks
+    can be guarded but not parried.
+
+    Halberd attacks can be parried but guard
+    won''t help.'
+  profile: {fileID: 11400000, guid: de31b6f4202553541af11a7539cc903e, type: 2}
+  maxHealth: 500
+  currentHealth: 500
+  healthBar: {fileID: 0}
+  healthBarLerpSpeed: 8
+  exemptFromAttackQueue: 1
+  LungeAttack:
+    ID: Lunge
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 2
+    RangeMin: 3
+    RangeMax: 8
+    AnimationTrigger: Attack_Lunge
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 1
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  OverheadCleaveAttack:
+    ID: OverheadCleave
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  SlashIntoSlapAttack:
+    ID: SlashIntoSlap
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  RakeIntoSpinSlashAttack:
+    ID: RakeIntoSpinSlash
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  SpinSlashOnlyAttack:
+    ID: SpinSlashOnly
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  LegSweepAttack:
+    ID: LegSweep
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  SpareTossSettings:
+    AnimationTrigger: Attack_SpareToss
+    ThrowSequentially: 1
+    ProjectileCount: 1
+    AllowedPathTypes: 7
+    UseStraightPath: 1
+    ReturnsOnStraightPath: 0
+    UseCurvedBoomerang: 0
+    CurveWidthRange: {x: 5, y: 10}
+    OvershootDistanceRange: {x: 3, y: 8}
+    ProjectileSpeedRange: {x: 15, y: 25}
+    UseHoming: 1
+    HomingUpdateInterval: 0.3
+    HomingStrength: 0.5
+    WallLayerMask:
+      serializedVersion: 2
+      m_Bits: 0
+    DestroyOnWallHit: 1
+    ThrowSFX: {fileID: 0}
+    HitSFX: {fileID: 0}
+  ProjectilePrefab: {fileID: 0}
+  ProjectileSpawnPoint: {fileID: 0}
+  SpinDashSettings:
+    AnimationTrigger: Attack_SpinDash
+    RandomDashCount: 1
+    AlwaysTripleDash: 0
+    DashSpeed: 20
+    DashDuration: 0.4
+    DelayBetweenDashes: 0.3
+    DashSFX: {fileID: 0}
+    DashVFX: {fileID: 0}
+  KnockbackSettings:
+    KnockbackForce: 15
+    VerticalForce: 5
+    KnockbackRadius: 4
+    Damage: 15
+    AnimationTrigger: Attack_Knockback
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  MiniCrescentSettings:
+    WaveSpeed: 20
+    Damage: 20
+    WaveWidth: 8
+    WaveHeight: 1.5
+    MaxDistance: 25
+    AnimationTrigger: Attack_MiniCrescent
+    SlashSFX: {fileID: 0}
+    WavePrefab: {fileID: 0}
+  GapCloseDashSettings:
+    DashSpeed: 25
+    DashDuration: 0.3
+    MinDistanceToUse: 8
+    TargetStopDistance: 3
+    MinAggressionLevel: 4
+    AnimationTrigger: Dash_GapClose
+    DashSFX: {fileID: 0}
+    DashVFX: {fileID: 0}
+  HighDiveAttack:
+    ID: HighDive
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  AnimeDashSlashAttack:
+    ID: AnimeDashSlash
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  WhirlwindSettings:
+    AnimationTrigger: Attack_Whirlwind
+    SuctionDuration: 4
+    SuctionStrength: 12
+    MaxSuctionStrength: 20
+    SuctionRadius: 15
+    DamageTickInterval: 0.5
+    DamagePerTick: 5
+    LeapDistance: 8
+    LeapDuration: 0.6
+    SlamAoERadius: 5
+    SlamDamage: 30
+    SpinSFX: {fileID: 0}
+    SlamSFX: {fileID: 0}
+    SpinVFX: {fileID: 0}
+    SlamVFX: {fileID: 0}
+  UltimateSettings:
+    WaveSpeed: 25
+    LowSweepHeight: 0.5
+    MidSweepHeight: 3
+    WaveWidth: 20
+    SweepDamage: 25
+    ChargeUpTime: 8
+    AerialHitDelay: 2
+    RequiredAerialHits: 2
+    PlatformRiseHeight: 6
+    PlatformOrbitRadius: 4
+    PlatformOrbitSpeed: 30
+    PlatformRiseTime: 1.5
+    MassiveStrikeDamage: 80
+    GuardMitigationCap: 0.3
+    MassiveStrikeRadius: 20
+    PlayCutsceneOnFirstUse: 1
+    CutsceneDuration: 4
+    InitiateSFX: {fileID: 0}
+    SweepSFX: {fileID: 0}
+    ChargeSFX: {fileID: 0}
+    MassiveStrikeSFX: {fileID: 0}
+    MassiveStrikeVFX: {fileID: 0}
+  CrescentWavePrefab: {fileID: 0}
+  WallJumpPositions: []
+  FallbackSpeed: 8
+  FallbackAngularSpeed: 120
+  FallbackAcceleration: 8
+  FallbackStoppingDistance: 2
+  SpareWeaponPickupChance: 0.3
+  AlwaysPickupForSpecialAttacks: 1
+  UseDamageReductionEvents: 1
+  AerialFinisherStunDuration: 3
+  UltimateHealthThreshold: 0.5
+  MinAttacksBetweenUltimates: 999
+  UltimateTriggeredByHealth: 0
+  comboSystem: {fileID: 0}
+  dualWieldSystem: {fileID: 0}
+  platformController: {fileID: 0}
+  aggressionSystem: {fileID: 0}
+  suctionEffect: {fileID: 0}
+  animator: {fileID: 0}
+  sfxSource: {fileID: 0}
+  paramMoveSpeed: MoveSpeed
+  paramIsMoving: IsMoving
+  triggerStunned: Stunned
+  triggerDeath: Death
+  attackIndicatorPrefab: {fileID: 0}
+  attackIndicatorOffset: {x: 0, y: 0.5, z: 2}
+  attackIndicatorLeadTime: 0.4
+  attackIndicatorDuration: 0
+  attackIndicatorFollowsBoss: 1
+  attackIndicatorScale: 1
+--- !u!114 &2043449410682325222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17ee5e6a31023954b9db577b013524f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserComboSystem
+  Combos:
+  - ComboName: TestCombo
+    SelectionWeight: 5
+    MinRange: 0
+    MaxRange: 15
+    ComboCooldown: 2
+    MinAggressionLevel: 1
+    MaxAggressionLevel: 5
+    Steps:
+    - BasicAttack: 1
+      IsFinisher: 0
+      StrongAttack: 0
+      PreDelay: 0
+      PickupSpareWeaponBefore: 0
+    - BasicAttack: 2
+      IsFinisher: 0
+      StrongAttack: 0
+      PreDelay: 0
+      PickupSpareWeaponBefore: 0
+    - BasicAttack: 0
+      IsFinisher: 1
+      StrongAttack: 1
+      PreDelay: 0
+      PickupSpareWeaponBefore: 0
+  PostFinisherRecovery: 3
+  VulnerableDuringRecovery: 1
+  RecoveryDamageMultiplier: 1.5
+  AutoPickupBeforeStrongAttack: 1
+--- !u!114 &6499608910825327414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62ae44156d573124c8e098f0eccdda2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserAggressionSystem
+  aggressionValue: 0
+  minAggressionValue: 0
+  maxAggressionValue: 100
+  forceMaxAggressionOnLowHealth: 1
+  forceMaxAggressionHealthThreshold: 0.25
+  permanentForceMaxAggression: 0
+  aggressionRangeRadius: 10
+  playerLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  detectPlayerGuarding: 1
+  guardCheckInterval: 0.1
+  modifiers:
+    PlayerAttackProximity: 1
+    PlayerHitsBoss: 3
+    PlayerRetreats: 2
+    PlayerGuardingPerSecond: 0.5
+    PlayerBlocks: 1
+    PlayerParries: 2
+    PlayerCounters: 3
+    PlayerMaxStacksCounter: 5
+    UltimateCanceled: 10
+    UltimateCompleted: 5
+    IdleDecayPerSecond: 1
+    CleanserCounterDecay: 5
+    IdleEscalationThreshold: 5
+    IdleEscalationBase: 2
+    IdleEscalationLogMultiplier: 3
+  levelMultipliers:
+    Level1Multiplier: 1
+    Level2Multiplier: 2
+    Level3Multiplier: 3
+    Level4Multiplier: 4
+    Level5Multiplier: 5
+  counterChances:
+  - Level: 1
+    ChanceAtZeroStacks: 0.02
+    ChanceAtMediumStacks: 0.02
+    ChanceAtMaxStacks: 0
+  - Level: 2
+    ChanceAtZeroStacks: 0.15
+    ChanceAtMediumStacks: 0.05
+    ChanceAtMaxStacks: 0
+  - Level: 3
+    ChanceAtZeroStacks: 0.35
+    ChanceAtMediumStacks: 0.1
+    ChanceAtMaxStacks: 0
+  - Level: 4
+    ChanceAtZeroStacks: 0.6
+    ChanceAtMediumStacks: 0.2
+    ChanceAtMaxStacks: 0.02
+  - Level: 5
+    ChanceAtZeroStacks: 1
+    ChanceAtMediumStacks: 0.35
+    ChanceAtMaxStacks: 0.1
+  movementConfigs:
+  - Level: 1
+    SpeedMultiplier: 0.7
+    PreferredDistance: 8
+    RepositionInterval: 3
+    AggressivelyClosesDistance: 0
+    CanUseDash: 0
+    StrafeChance: 0.7
+  - Level: 2
+    SpeedMultiplier: 0.85
+    PreferredDistance: 6
+    RepositionInterval: 2.5
+    AggressivelyClosesDistance: 0
+    CanUseDash: 0
+    StrafeChance: 0.5
+  - Level: 3
+    SpeedMultiplier: 1
+    PreferredDistance: 5
+    RepositionInterval: 2
+    AggressivelyClosesDistance: 1
+    CanUseDash: 0
+    StrafeChance: 0.3
+  - Level: 4
+    SpeedMultiplier: 1.15
+    PreferredDistance: 4
+    RepositionInterval: 1.5
+    AggressivelyClosesDistance: 1
+    CanUseDash: 1
+    StrafeChance: 0.2
+  - Level: 5
+    SpeedMultiplier: 1.3
+    PreferredDistance: 3
+    RepositionInterval: 1
+    AggressivelyClosesDistance: 1
+    CanUseDash: 1
+    StrafeChance: 0.1
+  counterAnimationTrigger: Counter
+  counterDamage: 25
+  counterParryWindow: 0.4
+  showAggressionRangeGizmo: 1
+--- !u!114 &8538692178904831450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c389ff2b8d82cdd469f3ac705c22bca2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserDualWieldSystem
+  SpareWeapons: []
+  PickupAnimationDuration: 0.5
+  PickupCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  PickupVFXPrefab: {fileID: 0}
+  PickupSFX: {fileID: 0}
+  ReturnAnimationDuration: 1.5
+  ReturnCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  ReturnArcHeight: 3
+  ReturnVFXPrefab: {fileID: 0}
+  ReturnSFX: {fileID: 0}
+  ReturnSpinSpeed: 360
+  ShatterVFXPrefab: {fileID: 0}
+  ShatterSFX: {fileID: 0}
+  SFXSource: {fileID: 0}
+--- !u!114 &4109895899566118951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b4b50c6d5448f2489cfbba9e7aa7f82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserPlatformController
+  Platforms: []
+  RiseHeight: 8
+  RiseTime: 1.5
+  RiseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  OrbitRadius: 4
+  OrbitSpeed: 30
+  OrbitCenter: {fileID: 0}
+  PlayerLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  MountCheckHeight: 1
+  MountCheckRadius: 1
+  RiseVFXPrefab: {fileID: 0}
+  LowerVFXPrefab: {fileID: 0}
+--- !u!114 &3402071617396780965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb0a441f2a746b34586e1c51cf0a87c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.VacuumSuctionEffect
+  BasePullStrength: 8
+  MaxPullStrength: 15
+  EffectiveRadius: 25
+  MaxStrengthRadius: 3
+  RampUpSpeed: 0.3
+  BlockSuctionBehindPillars: 0
+  PillarBlockingLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  UseHeightThreshold: 0
+  HeightThreshold: 5
+  UsePathfinding: 1
+  PathRecalculateInterval: 0.15
+  WaypointReachedThreshold: 1.5
+  NavMeshAreaMask: -1
+  ObstacleLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  ObstacleAvoidanceRadius: 1
+  SuctionVFX: {fileID: 0}
+  VacuumAudioSource: {fileID: 0}
+  SuctionTarget: {fileID: 0}
+  ArenaManager: {fileID: 0}
 --- !u!95 &7339073060746803466
 Animator:
   serializedVersion: 7
@@ -12400,6 +13039,7 @@ Transform:
   - {fileID: 604776123191526446}
   - {fileID: 5975083950475058053}
   - {fileID: 2738490328029991005}
+  - {fileID: 7013322031023464175}
   m_Father: {fileID: 4268867301483941545}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6743119227808949036
@@ -17540,3 +18180,81 @@ Transform:
   - {fileID: 8795221550275930648}
   m_Father: {fileID: 2348639748037503220}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &7159414263877924267
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5421561954232782935}
+    m_Modifications:
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.009000003
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.009
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.0090000015
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.17771555
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.07250422
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.2916956
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.07954525
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.9409976
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.3269336
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.036200896
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -13.238
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 31.309
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -51.737
+      objectReference: {fileID: 0}
+    - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6310707696098034248, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_Name
+      value: Halberd_Main
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+--- !u!4 &7013322031023464175 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+  m_PrefabInstance: {fileID: 7159414263877924267}
+  m_PrefabAsset: {fileID: 0}

@@ -72,6 +72,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &1424872913861444014
 GameObject:
   m_ObjectHideFlags: 0
@@ -142,6 +143,8 @@ MonoBehaviour:
   bossBrain: {fileID: 2753735861455747003}
   armSide: 1
   colliderSearchRoot: {fileID: 2096385667496298712}
+  applyKnockback: 0
+  knockbackForceOverride: 0
 --- !u!1 &1424956362356893592
 GameObject:
   m_ObjectHideFlags: 0
@@ -214,6 +217,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &2593929003106360870
 GameObject:
   m_ObjectHideFlags: 0
@@ -378,6 +382,12 @@ MonoBehaviour:
   profile: {fileID: 11400000, guid: bde38455278affd49a4c71866bc59335, type: 2}
   alarm: {fileID: 0}
   AlarmAutoActivateTime: 15
+  AlarmActivationDelayRange: {x: 3, y: 5}
+  AlarmMaxHealth: 100
+  alarmCurrentHealth: 0
+  AlarmDamageMultiplier: 0.5
+  AlarmFallsOffWhenDestroyed: 1
+  AlarmBreakOffForce: 200
   droneSpawnPoints:
   - {fileID: 0}
   - {fileID: 0}
@@ -393,10 +403,14 @@ MonoBehaviour:
   maxCrawlers: 2
   dronesPerSpawn: 4
   crawlersPerSpawn: 2
+  AddFleeSpeedMultiplier: 2.5
+  AddFleeArrivalThreshold: 2
+  AddFleeDestroyDelay: 1.5
   suctionRadius: 5
   suctionStrength: 10
   dashSpeedMultiplier: 5
   MinStoppingDistance: 2.5
+  CombatDistanceOffset: 2
   EnsureKinematicRigidbody: 1
   ManualColliderSetup: 1
   ApproachHysteresis: 0.75
@@ -441,6 +455,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Swipe_Active
     AnimatorTriggerOnRecovery: Swipe_Recovery
     RequiresArms: 1
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   ArmSweep:
     Id: ArmSweep
     Parryable: 1
@@ -457,6 +473,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Sweep_Active
     AnimatorTriggerOnRecovery: Sweep_Recovery
     RequiresArms: 1
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   BasicSwipeLeft:
     Id: BasicSwipeLeft
     Parryable: 0
@@ -473,6 +491,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Swipe_L_Active
     AnimatorTriggerOnRecovery: Swipe_L_Recovery
     RequiresArms: 1
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   BasicSwipeRight:
     Id: BasicSwipeRight
     Parryable: 0
@@ -489,6 +509,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Swipe_R_Active
     AnimatorTriggerOnRecovery: Swipe_R_Recovery
     RequiresArms: 1
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   ArmSweepLeft:
     Id: ArmSweepLeft
     Parryable: 1
@@ -505,6 +527,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Sweep_L_Active
     AnimatorTriggerOnRecovery: Sweep_L_Recovery
     RequiresArms: 1
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   ArmSweepRight:
     Id: ArmSweepRight
     Parryable: 1
@@ -521,6 +545,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Sweep_R_Active
     AnimatorTriggerOnRecovery: Sweep_R_Recovery
     RequiresArms: 1
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   DashLungeLeft:
     Id: DashLungeLeft
     Parryable: 1
@@ -537,6 +563,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Dash_L_Active
     AnimatorTriggerOnRecovery: Dash_L_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   DashLungeRight:
     Id: DashLungeRight
     Parryable: 1
@@ -553,6 +581,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Dash_R_Active
     AnimatorTriggerOnRecovery: Dash_R_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   DashLungeNoArms:
     Id: DashLungeNoArms
     Parryable: 0
@@ -569,6 +599,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Dash_N_Active
     AnimatorTriggerOnRecovery: Dash_N_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   ArmPoke:
     Id: ArmPoke
     Parryable: 1
@@ -585,6 +617,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Poke_Active
     AnimatorTriggerOnRecovery: Poke_Recovery
     RequiresArms: 1
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   KnockOffSpin:
     Id: KnockOffSpin
     Parryable: 0
@@ -601,6 +635,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Knockoff_Active
     AnimatorTriggerOnRecovery: Knockoff_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   VacuumSuction:
     Id: Vacuum
     Parryable: 0
@@ -617,6 +653,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Vacuum_Active
     AnimatorTriggerOnRecovery: Vacuum_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   StaticCharge:
     Id: StaticCharge
     Parryable: 0
@@ -633,6 +671,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Charge_N_Active
     AnimatorTriggerOnRecovery: Charge_N_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   StaticChargeLeft:
     Id: StaticCharge_Left
     Parryable: 0
@@ -649,6 +689,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Charge_L_Active
     AnimatorTriggerOnRecovery: Charge_L_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   StaticChargeRight:
     Id: StaticCharge_Right
     Parryable: 0
@@ -665,6 +707,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Charge_R_Active
     AnimatorTriggerOnRecovery: Charge_R_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   TargetedCharge:
     Id: TargetedCharge
     Parryable: 0
@@ -681,6 +725,8 @@ MonoBehaviour:
     AnimatorTriggerOnActive: Charge_N_Active
     AnimatorTriggerOnRecovery: Charge_N_Recovery
     RequiresArms: 0
+    AttackSFX: {fileID: 0}
+    SFXVolume: 1
   ArmsDeployTrigger: Arms_Deploy
   ArmsRetractTrigger: Arms_Retract
   ArmsDeployTimeoutSeconds: 1
@@ -690,6 +736,21 @@ MonoBehaviour:
   HornsLowerTrigger: Horns_Lower
   HornsRaiseDuration: 0.8
   HornsLowerDuration: 0.8
+  ArmsDeploySFX: {fileID: 0}
+  ArmsRetractSFX: {fileID: 0}
+  HornsRaiseSFX: {fileID: 0}
+  HornsLowerSFX: {fileID: 0}
+  StunSFX: {fileID: 0}
+  DamagedSFX: {fileID: 0}
+  PanelBreakSFX: {fileID: 0}
+  VacuumSuctionSFX: {fileID: 0}
+  MasterSFXVolume: 1
+  attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
+  attackIndicatorOffset: {x: 0, y: 0.5, z: 3}
+  attackIndicatorLeadTime: 0.5
+  attackIndicatorDuration: 0
+  attackIndicatorFollowsBoss: 1
+  attackIndicatorScale: 1
   ParryStaggerSeconds: 3
   PillarStunSeconds: 2
   DefensesDownMultiplier: 1.2
@@ -698,17 +759,61 @@ MonoBehaviour:
   SpinAfterLastPokeDelay: 0.75
   MountedGraceSeconds: 0.35
   FlingForceRange: {x: 800, y: 1200}
+  SpinKnockbackForce: 20
+  SpinKnockbackRadius: 5
   AttackCountForVacuumRange: {x: 8, y: 12}
   VacuumPosition: {fileID: 0}
   ArenaCenterBounds: {fileID: 0}
   ArenaManager: {fileID: 0}
   PlayerManager: {fileID: 0}
-  ChargeSpeedMultiplier: 2.5
-  ChargeOvershootDistance: 5
-  ChargeRestDuration: 1.5
-  StaticChargeCount: 3
+  VacuumSuctionController: {fileID: 0}
+  VacuumSuctionDuration: 4
+  VacuumPullStrength: 10
+  VacuumMaxPullStrength: 18
+  VacuumEffectiveRadius: 30
+  VacuumApproachSpeedMultiplier: 3
+  VacuumPositionThreshold: 2
+  _duelistFormHelp: Settings specific to the duelist/summoner form.
+  _duelistFormMovementHelp: Overrides the base speed settings during duelist form.
+  DuelistFollowSpeed: 12
+  DuelistAngularSpeed: 120
+  DuelistAcceleration: 8
+  DuelistTurnSpeedMultiplier: 1
   DashSpeed: 20
   DashOvershootDistance: 10
+  ValidateDashDestination: 1
+  DashNavMeshSampleRadius: 2
+  DashKnockbackForce: 15
+  DashKnockbackUpwardForce: 3
+  KnockbackAttackDirectionWeight: 0.8
+  EnableAttackLunge: 1
+  AttackLungeDistance: 3
+  AttackLungeSpeed: 8
+  ReturnAfterLunge: 1
+  LungeReturnSpeed: 4
+  TopWanderSpeed: 8
+  TopWanderAngularSpeed: 90
+  _cageBullFormHelp: Settings specific to cage bull form.
+  ChargeApproachSpeedMultiplier: 2.5
+  StaticChargeSpeedMultiplier: 4
+  TargetedChargeSpeedMultiplier: 3
+  StaticChargeAngularMultiplier: 3
+  TargetedChargeAngularMultiplier: 0.15
+  MaxDelayAtChargeStart: 0.5
+  ChargeOvershootDistance: 5
+  ChargeRestDuration: 1.5
+  StaticChargeCountRange: {x: 3, y: 5}
+  ChargeArrivalThreshold: 1.5
+  ChargeKnockbackForce: 25
+  ChargeKnockbackUpwardForce: 8
+  ComboApproachDecelerationDistance: 5
+  ComboDecelerationMinSpeedMultiplier: 0.15
+  ComboPointWaitDuration: 0.3
+  ComboTurnSpeedMultiplier: 1.5
+  TargetedChargeTurnSpeedMultiplier: 1
+  _baseSpeed: 12
+  _baseAngularSpeed: 120
+  _baseAcceleration: 8
   SidePanels:
   - panelVisualMesh: {fileID: 5063240771178045586}
     maxHealth: 0
@@ -816,7 +921,11 @@ MonoBehaviour:
   damageReductionPerPanel: 0.1
   maxDamageReduction: 0.8
   minimumDamageThreshold: 1
+  damageSFX: []
+  defeatSFX: {fileID: 0}
   brain: {fileID: 2753735861455747003}
+  healthBar: {fileID: 0}
+  healthBarLerpSpeed: 8
   showDebugLogs: 1
 --- !u!114 &200851258585206296
 MonoBehaviour:
@@ -902,6 +1011,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &4707707912532503696
 GameObject:
   m_ObjectHideFlags: 0
@@ -1009,6 +1119,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &5007266496286305745
 GameObject:
   m_ObjectHideFlags: 0
@@ -1134,6 +1245,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &5564993544517007229
 GameObject:
   m_ObjectHideFlags: 0
@@ -1183,6 +1295,8 @@ MonoBehaviour:
   bossBrain: {fileID: 2753735861455747003}
   armSide: 2
   colliderSearchRoot: {fileID: 0}
+  applyKnockback: 0
+  knockbackForceOverride: 0
 --- !u!64 &8820986701158288917
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1331,6 +1445,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &6739596763020961211
 GameObject:
   m_ObjectHideFlags: 0
@@ -1403,6 +1518,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &7470240419559467308
 GameObject:
   m_ObjectHideFlags: 0
@@ -1475,6 +1591,7 @@ MonoBehaviour:
   hitAudioSource: {fileID: 0}
   panelHitSounds: []
   vulnerableHitSounds: []
+  panelBreakSounds: []
 --- !u!1 &7759009645897687345
 GameObject:
   m_ObjectHideFlags: 0
@@ -1598,6 +1715,8 @@ MonoBehaviour:
   bossBrain: {fileID: 2753735861455747003}
   armSide: 0
   colliderSearchRoot: {fileID: 1300834901216319587}
+  applyKnockback: 0
+  knockbackForceOverride: 0
 --- !u!1 &8317306986999877945
 GameObject:
   m_ObjectHideFlags: 0
@@ -1911,6 +2030,8 @@ MonoBehaviour:
   bossBrain: {fileID: 2753735861455747003}
   armSide: 2
   colliderSearchRoot: {fileID: 0}
+  applyKnockback: 0
+  knockbackForceOverride: 0
 --- !u!4 &6827231175664723454 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}

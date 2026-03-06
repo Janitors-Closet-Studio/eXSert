@@ -20,6 +20,19 @@ namespace EnemyBehavior.Boss.Cleanser
     }
 
     /// <summary>
+    /// Possible path types for the Spare Toss projectile.
+    /// Used as flags to allow multiple path types to be selected.
+    /// </summary>
+    [System.Flags]
+    public enum SpareTossPathType
+    {
+        None = 0,
+        Straight = 1 << 0,              // Direct path to target, no return
+        StraightReturn = 1 << 1,        // Direct path, returns like boomerang
+        CurvedBoomerang = 1 << 2        // Curved path, always returns
+    }
+
+    /// <summary>
     /// All basic attack types for the Cleanser boss.
     /// </summary>
     public enum CleanserBasicAttack
@@ -72,6 +85,10 @@ namespace EnemyBehavior.Boss.Cleanser
     [System.Serializable]
     public class SpareTossConfig
     {
+        [Header("Animation")]
+        [Tooltip("Animation trigger for the spare toss attack.")]
+        public string AnimationTrigger = "Attack_SpareToss";
+
         [Header("Throw Type")]
         [Tooltip("If true, throws sequentially (one after another). If false, throws simultaneously.")]
         public bool ThrowSequentially = true;
@@ -79,14 +96,18 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Number of weapons to throw (1 or 2).")]
         [Range(1, 2)] public int ProjectileCount = 1;
 
-        [Header("Path Type")]
-        [Tooltip("Straight path to target.")]
+        [Header("Path Type Selection")]
+        [Tooltip("Which path types are allowed. One will be randomly selected at runtime.")]
+        public SpareTossPathType AllowedPathTypes = SpareTossPathType.Straight | SpareTossPathType.StraightReturn | SpareTossPathType.CurvedBoomerang;
+
+        [Header("Path Type (Runtime - Read Only)")]
+        [Tooltip("Straight path to target. Set at runtime based on AllowedPathTypes.")]
         public bool UseStraightPath = true;
         
-        [Tooltip("If true, projectile returns like a boomerang even on straight path.")]
+        [Tooltip("If true, projectile returns like a boomerang even on straight path. Set at runtime.")]
         public bool ReturnsOnStraightPath = false;
         
-        [Tooltip("Curved boomerang path (goes past player, curves back).")]
+        [Tooltip("Curved boomerang path (goes past player, curves back). Set at runtime.")]
         public bool UseCurvedBoomerang = false;
 
         [Header("Boomerang Settings")]
@@ -122,6 +143,52 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("Sound effect when projectile hits something.")]
         public AudioClip HitSFX;
+
+        /// <summary>
+        /// Randomly selects a path type from the allowed types and sets the corresponding bools.
+        /// Call this before each throw to randomize the behavior.
+        /// </summary>
+        public void RandomizePathType()
+        {
+            // Build list of allowed path types
+            var allowedTypes = new System.Collections.Generic.List<SpareTossPathType>();
+            
+            if ((AllowedPathTypes & SpareTossPathType.Straight) != 0)
+                allowedTypes.Add(SpareTossPathType.Straight);
+            if ((AllowedPathTypes & SpareTossPathType.StraightReturn) != 0)
+                allowedTypes.Add(SpareTossPathType.StraightReturn);
+            if ((AllowedPathTypes & SpareTossPathType.CurvedBoomerang) != 0)
+                allowedTypes.Add(SpareTossPathType.CurvedBoomerang);
+
+            // Default to straight if nothing selected
+            if (allowedTypes.Count == 0)
+                allowedTypes.Add(SpareTossPathType.Straight);
+
+            // Randomly select one
+            var selected = allowedTypes[Random.Range(0, allowedTypes.Count)];
+
+            // Reset all
+            UseStraightPath = false;
+            ReturnsOnStraightPath = false;
+            UseCurvedBoomerang = false;
+
+            // Set based on selection
+            switch (selected)
+            {
+                case SpareTossPathType.Straight:
+                    UseStraightPath = true;
+                    ReturnsOnStraightPath = false;
+                    break;
+                case SpareTossPathType.StraightReturn:
+                    UseStraightPath = true;
+                    ReturnsOnStraightPath = true;
+                    break;
+                case SpareTossPathType.CurvedBoomerang:
+                    UseStraightPath = false;
+                    UseCurvedBoomerang = true;
+                    break;
+            }
+        }
     }
 
     /// <summary>
@@ -130,6 +197,11 @@ namespace EnemyBehavior.Boss.Cleanser
     [System.Serializable]
     public class SpinDashConfig
     {
+        [Header("Animation")]
+        [Tooltip("Animation trigger for the spin dash attack.")]
+        public string AnimationTrigger = "Attack_SpinDash";
+
+        [Header("Dash Count")]
         [Tooltip("If true, randomly chooses between 1 or 3 dashes. If false, uses TripleDash setting.")]
         public bool RandomDashCount = true;
         
@@ -159,6 +231,10 @@ namespace EnemyBehavior.Boss.Cleanser
     [System.Serializable]
     public class WhirlwindConfig
     {
+        [Header("Animation")]
+        [Tooltip("Animation trigger for the whirlwind attack.")]
+        public string AnimationTrigger = "Attack_Whirlwind";
+
         [Header("Suction")]
         [Tooltip("Duration of the spinning suction phase.")]
         public float SuctionDuration = 4f;

@@ -971,6 +971,35 @@ MonoBehaviour:
     m_RotationOrder: 4
   PickupVFXPrefab: {fileID: 0}
   PickupSFX: {fileID: 0}
+  ReturnAnimationDuration: 1.5
+  ReturnCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  ReturnArcHeight: 3
+  ReturnVFXPrefab: {fileID: 0}
+  ReturnSFX: {fileID: 0}
+  ReturnSpinSpeed: 360
   ShatterVFXPrefab: {fileID: 0}
   ShatterSFX: {fileID: 0}
   SFXSource: {fileID: 0}
@@ -1157,8 +1186,10 @@ MonoBehaviour:
     AttackVFX: {fileID: 0}
     ImpactVFX: {fileID: 0}
   SpareTossSettings:
+    AnimationTrigger: Attack_SpareToss
     ThrowSequentially: 1
     ProjectileCount: 1
+    AllowedPathTypes: 7
     UseStraightPath: 1
     ReturnsOnStraightPath: 0
     UseCurvedBoomerang: 0
@@ -1177,6 +1208,7 @@ MonoBehaviour:
   ProjectilePrefab: {fileID: 0}
   ProjectileSpawnPoint: {fileID: 0}
   SpinDashSettings:
+    AnimationTrigger: Attack_SpinDash
     RandomDashCount: 1
     AlwaysTripleDash: 0
     DashSpeed: 20
@@ -1250,6 +1282,7 @@ MonoBehaviour:
     AttackVFX: {fileID: 0}
     ImpactVFX: {fileID: 0}
   WhirlwindSettings:
+    AnimationTrigger: Attack_Whirlwind
     SuctionDuration: 4
     SuctionStrength: 12
     MaxSuctionStrength: 20
@@ -1594,7 +1627,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4119839093308741906, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.83918047
+      value: -0.761
       objectReference: {fileID: 0}
     - target: {fileID: 4119839093308741906, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1628,11 +1661,159 @@ PrefabInstance:
       propertyPath: m_Name
       value: Boss_Cleanser
       objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: animator
+      value: 
+      objectReference: {fileID: 1453178036}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: comboSystem
+      value: 
+      objectReference: {fileID: 1453178039}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: suctionEffect
+      value: 
+      objectReference: {fileID: 1453178046}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: dualWieldSystem
+      value: 
+      objectReference: {fileID: 1453178038}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: aggressionSystem
+      value: 
+      objectReference: {fileID: 2142191635}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: platformController
+      value: 
+      objectReference: {fileID: 1453178037}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: attackIndicatorPrefab
+      value: 
+      objectReference: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: HighDiveAttack.AnimationTrigger
+      value: Attack_HighDive
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LegSweepAttack.AnimationTrigger
+      value: Attack_LegSweep
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: OverheadCleaveAttack.BaseDamage
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareTossSettings.ProjectileCount
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareTossSettings.AllowedPathTypes
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareTossSettings.DestroyOnWallHit
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SlashIntoSlapAttack.AnimationTrigger
+      value: Attack_SlashSlap
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpinSlashOnlyAttack.AnimationTrigger
+      value: Attack_SpinSlash
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: AnimeDashSlashAttack.AnimationTrigger
+      value: Attack_AnimeDash
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: OverheadCleaveAttack.AnimationTrigger
+      value: Attack_OverheadCleave
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: RakeIntoSpinSlashAttack.AnimationTrigger
+      value: Attack_RakeSpin
+      objectReference: {fileID: 0}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.size
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[0].WeaponObject
+      value: 
+      objectReference: {fileID: 1969385466790910519, guid: 48e6d1e32a34b4648b6c479df69aee08, type: 3}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[1].WeaponObject
+      value: 
+      objectReference: {fileID: 6058742149546682505, guid: 284133d77ce6366479f4a599f8129243, type: 3}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[2].WeaponObject
+      value: 
+      objectReference: {fileID: 9219172920572301526, guid: 450d3ab54a15772489cb6674d54504be, type: 3}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[3].WeaponObject
+      value: 
+      objectReference: {fileID: 5780321713066805294, guid: 258dbe9097e9a1642b79e005860c4819, type: 3}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[4].WeaponObject
+      value: 
+      objectReference: {fileID: 5271982162765659307, guid: bf3d9c592e636f4418b48a0003be4313, type: 3}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[5].WeaponObject
+      value: 
+      objectReference: {fileID: 4829361000171287212, guid: 68b005baca02913489d3b11f0e5c5ff5, type: 3}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[6].WeaponObject
+      value: 
+      objectReference: {fileID: 8904149331881654928, guid: 2ebaa46b5ef29a3489c6d50e714b8ee3, type: 3}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[0].HandAttachPoint
+      value: 
+      objectReference: {fileID: 2142191636}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[1].HandAttachPoint
+      value: 
+      objectReference: {fileID: 2142191636}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[2].HandAttachPoint
+      value: 
+      objectReference: {fileID: 2142191636}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[3].HandAttachPoint
+      value: 
+      objectReference: {fileID: 2142191636}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[4].HandAttachPoint
+      value: 
+      objectReference: {fileID: 2142191636}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[5].HandAttachPoint
+      value: 
+      objectReference: {fileID: 2142191636}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SpareWeapons.Array.data[6].HandAttachPoint
+      value: 
+      objectReference: {fileID: 2142191636}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+--- !u!114 &2142191635 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6499608910825327414, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62ae44156d573124c8e098f0eccdda2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserAggressionSystem
+--- !u!4 &2142191636 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4280692127862393939, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
