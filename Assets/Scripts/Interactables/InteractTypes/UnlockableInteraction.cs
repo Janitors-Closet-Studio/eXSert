@@ -41,27 +41,46 @@ public abstract class UnlockableInteraction : InteractionManager
 
     protected override void Interact()
     {
+        // Defensive null checks
+        if (needsItem && InternalPlayerInventory.Instance == null)
+        {
+            Debug.LogWarning("[UnlockableInteraction] InternalPlayerInventory.Instance is null. Cannot check for required item.");
+            return;
+        }
+
         if (!needsItem)
-        { 
+        {
+            if (onInteractionExecuted == null)
+            {
+                Debug.LogWarning("[UnlockableInteraction] onInteractionExecuted event is not assigned.");
+            }
             ExecuteInteraction();
             onInteractionExecuted?.Invoke();
-            if(_interactionSFX != null)
-            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+            // if(_interactionSFX != null)
+            //SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
             return;
         }
 
         if (canUnlock)
         {
+            if (onInteractionExecuted == null)
+            {
+                Debug.LogWarning("[UnlockableInteraction] onInteractionExecuted event is not assigned.");
+            }
             ExecuteInteraction();
             onInteractionExecuted?.Invoke();
-            if(_interactionSFX != null)
-            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+            if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
+                SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
         }
         else
         {
-            if (errorSFXClip != null)
+            if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.puzzleSource != null)
             {
                 SoundManager.Instance.puzzleSource.PlayOneShot(errorSFXClip);
+            }
+            else if (errorSFXClip != null)
+            {
+                Debug.LogWarning("[UnlockableInteraction] SoundManager.Instance or puzzleSource is null. Cannot play error SFX.");
             }
         }
     }

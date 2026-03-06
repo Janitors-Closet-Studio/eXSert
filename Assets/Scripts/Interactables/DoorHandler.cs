@@ -38,18 +38,26 @@ public class DoorPartMovement
 }
 public class DoorHandler : MonoBehaviour
 {
+
     public enum DoorState { Open, Closed }
-
     public enum DoorLockState { Locked, Unlocked }
-
     public enum DoorType { OpenUnconvential, OpenOut, OpenIn }
+    public enum CanGoBothWays { Yes, No }
 
+    [Header("Door State & Type")]
+    [Tooltip("Current state of the door (Open/Closed)")]
     public DoorState currentDoorState;
+    [Tooltip("Current lock state of the door (Locked/Unlocked)")]
     public DoorLockState doorLockState = DoorLockState.Locked;
+    [Tooltip("Type of door movement")]
     public DoorType doorType;
-    
+    [Tooltip("Can the door be opened and closed multiple times?")]
+    public CanGoBothWays canGoBothWays;
 
+    [Header("Door Movement Settings")]
+    [Tooltip("Original position of the door (auto-set)")]
     internal Vector3 doorPosOrigin;
+    [Tooltip("Original rotation of the door (auto-set)")]
     private Quaternion doorRotOrigin;
     private Vector3 targetDoorPos;
     private Quaternion targetDoorRot;
@@ -57,18 +65,26 @@ public class DoorHandler : MonoBehaviour
 
     [Tooltip("Only used for OpenUnconvential door type. List of door parts to move and their movement settings.")]
     public List<DoorPartMovement> doorParts = new List<DoorPartMovement>();
-    
+
+    [Tooltip("Speed at which the door opens/closes")]
     [SerializeField] private float openSpeed = 2f;
 
     private bool isOpening = false;
     private bool isOpened = false;
 
+    [Header("One Way Door Settings")]
+    [Tooltip("For one-way doors, track if the door has been opened once to prevent reopening")]
+    private bool oneWayDoorLocked = false;
+    [Tooltip("Track if the player is currently inside the door area for one-way doors")]
+    [SerializeField, ReadOnly] private bool isPlayerInside = false;
+
+    [Header("Hinge Settings (for OpenOut/OpenIn)")]
     [Tooltip("Optional hinge pivot. If null, a pivot GameObject will be created at the door origin.")]
     [ShowIfDoorType(DoorHandler.DoorType.OpenOut, DoorHandler.DoorType.OpenIn)]
     [SerializeField] private Transform hingePivot;
 
     [Header("Door Light Settings")]
-    [Tooltip("Light bulb to change color")]
+    [Tooltip("Light bulb GameObject to change color")]
     public GameObject lightBulb;
     [Tooltip("Color of the light bulb when the door is locked")]
     public Color lockedLightBulbColor;
@@ -116,6 +132,11 @@ public class DoorHandler : MonoBehaviour
     /// </summary>
     public void Interact()
     {
+        if (canGoBothWays == CanGoBothWays.No && oneWayDoorLocked)
+        {
+            Debug.Log("This one-way door cannot be opened again.");
+            return;
+        }
         switch (currentDoorState)
         {
             case DoorState.Open:
@@ -123,6 +144,7 @@ public class DoorHandler : MonoBehaviour
                 break;
             case DoorState.Closed:
                 OpenDoor();
+                StartCoroutine(NotAllowReentry());
                 break;
         }
     }
@@ -137,6 +159,36 @@ public class DoorHandler : MonoBehaviour
         else
         {
             doorLight.color = unlockedLightColor;
+        }
+    }
+
+    private IEnumerator NotAllowReentry()
+    {
+        float delayAfterExit = 1.0f; // seconds to wait before closing
+        bool waitingToClose = false;
+        float exitTimer = 0f;
+        Debug.Log(isPlayerInside ? "Player is inside the door area." : "Player is outside the door area.");
+        while(isOpened)
+        {
+            if (canGoBothWays == CanGoBothWays.No && isPlayerInside)
+            {
+                if (!waitingToClose)
+                {
+                    waitingToClose = true;
+                    exitTimer = 0f;
+                }
+                exitTimer += Time.deltaTime;
+                if (exitTimer >= delayAfterExit)
+                {
+                    CloseDoor();
+                    yield break;
+                }
+            }
+            else
+            {
+                waitingToClose = false;
+            }
+            yield return null;
         }
     }
 
@@ -221,12 +273,18 @@ public class DoorHandler : MonoBehaviour
                 OpenIn();
                 break;
         }
+        isOpened = true;
     }
 
     private void CloseDoor()
     {
         Debug.Log("Closing the door.");
         currentDoorState = DoorState.Closed;
+
+        if (canGoBothWays == CanGoBothWays.No)
+        {
+            oneWayDoorLocked = true;
+        }
 
         switch (doorType)
         {
@@ -242,6 +300,8 @@ public class DoorHandler : MonoBehaviour
                 StartHingeAnimation(hingePivot.rotation, hingeOriginalRot, 1f / openSpeed);
                 break;
         }
+
+        isOpened = false;
     }
 
     private void OpenOut()
@@ -433,4 +493,22 @@ public class DoorHandler : MonoBehaviour
         yield return null;
     }
 
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (canGoBothWays == CanGoBothWays.No && other.CompareTag("Player"))
+        {
+            Debug.Log("Player entered the door area.");
+            isPlayerInside = true;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (canGoBothWays == CanGoBothWays.No && other.CompareTag("Player"))
+        {
+            Debug.Log("Player exited the door area.");
+            isPlayerInside = false;
+        }
+        }
 }

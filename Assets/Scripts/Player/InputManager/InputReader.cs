@@ -526,7 +526,7 @@ public class InputReader : Singleton<InputReader>
     }
 
     // Helper: enable/disable every tracked action in one place to reduce duplication
-    private void SetAllActionsEnabled(bool enabled)
+    public void SetAllActionsEnabled(bool enabled)
     {
         var actions = new InputAction[]
         {
