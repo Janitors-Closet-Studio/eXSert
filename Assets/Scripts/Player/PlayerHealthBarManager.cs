@@ -61,6 +61,12 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [SerializeField, Range(0f, 1f)] private float flinchChance = 0.2f;
     [SerializeField, Range(0f, 2f)] private float flinchLockSeconds = 0.35f;
 
+    [Header("Defense")]
+    [SerializeField, Tooltip("When enabled, dashing grants brief invincibility (i-frames).")]
+    private bool enableDashInvincibility = true;
+    [SerializeField, Range(0f, 1f), Tooltip("Real-time seconds of invincibility granted as soon as a dash starts.")]
+    private float dashInvincibilitySeconds = 0.35f;
+
     [Header("References")]
     [SerializeField] private PlayerAnimationController animationController;
     [SerializeField] private PlayerMovement playerMovement;
@@ -89,6 +95,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private Coroutine deathSequenceRoutine;
     private bool deathInputLockOwned;
     private bool suppressNextFlinch;
+    private float invincibleUntilUnscaledTime;
 
     #region Unity MonoBehaviour Functions
     private void Awake()
@@ -126,12 +133,22 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Player.SetActive(true);
         Player.RespawnPlayer += Revive;
         CheckpointBehavior.SubscribeToPlayerRespawn();
+
+        if (playerMovement != null)
+        {
+            playerMovement.DashPerformed += HandleDashPerformed;
+        }
     }
     private void OnDisable() 
     { 
         Player.SetActive(false); 
         Player.RespawnPlayer -= Revive;
         CheckpointBehavior.UnsubscribeFromPlayerRespawn();
+
+        if (playerMovement != null)
+        {
+            playerMovement.DashPerformed -= HandleDashPerformed;
+        }
     }
     #endregion
 
@@ -152,7 +169,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     public void LoseHP(float damage)
     {
-        if (isDead || invulnerable || damage <= 0f)
+        if (isDead || invulnerable || IsTemporarilyInvincible() || damage <= 0f)
             return;
 
         float previous = currentHealth;
@@ -219,6 +236,26 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     public void SuppressNextFlinch()
     {
         suppressNextFlinch = true;
+    }
+
+    private void HandleDashPerformed()
+    {
+        if (!enableDashInvincibility)
+            return;
+
+        if (dashInvincibilitySeconds <= 0f)
+            return;
+
+        float until = Time.unscaledTime + dashInvincibilitySeconds;
+        if (until > invincibleUntilUnscaledTime)
+        {
+            invincibleUntilUnscaledTime = until;
+        }
+    }
+
+    private bool IsTemporarilyInvincible()
+    {
+        return Time.unscaledTime < invincibleUntilUnscaledTime;
     }
 
     public void LoadData(GameData data)

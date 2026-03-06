@@ -1311,7 +1311,8 @@ Transform:
   m_LocalPosition: {x: 1.3877787e-19, y: 0.1840229, z: 0.0058710794}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1545110694085676553}
   m_Father: {fileID: 8778177161744926744}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7827617336109945043
@@ -1345,6 +1346,37 @@ Transform:
   m_Children:
   - {fileID: 6704919423463585099}
   m_Father: {fileID: 8778177161744926744}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7995936061939373729
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1545110694085676553}
+  m_Layer: 8
+  m_Name: VFXTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1545110694085676553
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7995936061939373729}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.0445, y: 0.0433, z: 0.236}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4464010747367151025}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8803038315881533679
 GameObject:
@@ -1542,11 +1574,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.55685
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.011473
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1861,7 +1893,8 @@ MonoBehaviour:
   canBeParried: 1
   useAnimationEventAttacks: 1
   attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
-  attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
+  attackIndicatorAnchor: {fileID: 1545110694085676553}
+  attackIndicatorOffset: {x: 0, y: 0, z: 0}
   attackIndicatorLeadTime: 0.5
   attackIndicatorDuration: 0
   attackIndicatorFollowsEnemy: 1

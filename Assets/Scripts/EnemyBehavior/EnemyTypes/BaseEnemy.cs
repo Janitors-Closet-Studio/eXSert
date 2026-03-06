@@ -69,13 +69,15 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     [Header("Attack Indicator VFX")]
     [SerializeField, Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
     protected GameObject attackIndicatorPrefab;
+    [SerializeField, Tooltip("Optional: Transform on the rig to spawn/follow the indicator from (hand tip, muzzle/nozzle, fangs, etc.). If null, uses the enemy root transform.")]
+    protected Transform attackIndicatorAnchor;
     [SerializeField, Tooltip("Position offset from the enemy's transform where the indicator spawns (local space).")]
     protected Vector3 attackIndicatorOffset = new Vector3(0f, 0f, 1.5f);
     [SerializeField, Tooltip("Seconds before the attack lands that the indicator appears. Adjust per-enemy for timing.")]
     protected float attackIndicatorLeadTime = 0.5f;
     [SerializeField, Tooltip("How long the indicator stays visible. Set to 0 to auto-hide when attack starts.")]
     protected float attackIndicatorDuration = 0f;
-    [SerializeField, Tooltip("If true, indicator follows the enemy's position/rotation. If false, spawns at fixed world position.")]
+    [SerializeField, Tooltip("If true, indicator follows the anchor transform (enemy root by default). If false, spawns at fixed world position.")]
     protected bool attackIndicatorFollowsEnemy = true;
     [SerializeField, Tooltip("Scale multiplier for the indicator VFX.")]
     protected float attackIndicatorScale = 1f;
@@ -876,17 +878,28 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     /// <param name="customDuration">Optional: Override the default duration for this specific attack.</param>
     public virtual void ShowAttackIndicator(Vector3? customOffset = null, float? customDuration = null)
     {
-        if (attackIndicatorPrefab == null) return;
+        ShowAttackIndicatorAt(GetAttackIndicatorAnchorTransform(), customOffset, customDuration);
+    }
+
+    /// <summary>
+    /// Shows the attack indicator VFX at a specific anchor transform (hand tip, muzzle/nozzle, etc.).
+    /// Offset is interpreted in the anchor's local space.
+    /// </summary>
+    public virtual void ShowAttackIndicatorAt(Transform anchor, Vector3? customOffset = null, float? customDuration = null)
+    {
+        GameObject prefab = GetAttackIndicatorPrefab();
+        if (prefab == null) return;
 
         // Clean up any existing indicator
         HideAttackIndicator();
 
+        Transform effectiveAnchor = anchor != null ? anchor : transform;
         Vector3 offset = customOffset ?? attackIndicatorOffset;
-        Vector3 spawnPos = transform.TransformPoint(offset);
-        Quaternion spawnRot = transform.rotation;
+        Vector3 spawnPos = effectiveAnchor.TransformPoint(offset);
+        Quaternion spawnRot = effectiveAnchor.rotation;
 
-        attackIndicatorInstance = Instantiate(attackIndicatorPrefab, spawnPos, spawnRot);
-        
+        attackIndicatorInstance = Instantiate(prefab, spawnPos, spawnRot);
+
         if (attackIndicatorScale != 1f)
         {
             attackIndicatorInstance.transform.localScale *= attackIndicatorScale;
@@ -894,7 +907,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
 
         if (attackIndicatorFollowsEnemy)
         {
-            attackIndicatorInstance.transform.SetParent(transform);
+            attackIndicatorInstance.transform.SetParent(effectiveAnchor);
             attackIndicatorInstance.transform.localPosition = offset;
             attackIndicatorInstance.transform.localRotation = Quaternion.identity;
         }
@@ -906,8 +919,16 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
 
 #if UNITY_EDITOR
-        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Attack indicator shown at offset {offset}");
+        EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Attack indicator shown at anchor '{effectiveAnchor.name}' offset {offset}");
 #endif
+    }
+
+    /// <summary>
+    /// Shows the attack indicator VFX at a specific anchor GameObject.
+    /// </summary>
+    public virtual void ShowAttackIndicatorAt(GameObject anchorGameObject, Vector3? customOffset = null, float? customDuration = null)
+    {
+        ShowAttackIndicatorAt(anchorGameObject != null ? anchorGameObject.transform : null, customOffset, customDuration);
     }
 
     /// <summary>
@@ -984,7 +1005,17 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     /// </summary>
     protected virtual Vector3 GetAttackIndicatorWorldPosition()
     {
-        return transform.TransformPoint(attackIndicatorOffset);
+        Transform anchor = GetAttackIndicatorAnchorTransform();
+        return (anchor != null ? anchor : transform).TransformPoint(attackIndicatorOffset);
+    }
+
+    /// <summary>
+    /// Returns the anchor transform used for indicator spawning/parenting.
+    /// Override per-enemy if you want to dynamically pick an anchor (e.g., left vs right hand).
+    /// </summary>
+    protected virtual Transform GetAttackIndicatorAnchorTransform()
+    {
+        return attackIndicatorAnchor != null ? attackIndicatorAnchor : transform;
     }
 
     /// <summary>

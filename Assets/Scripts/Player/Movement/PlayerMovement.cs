@@ -48,6 +48,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PlayerAttackManager attackManager;
 
     public event Action DoubleJumpPerformed;
+    public event Action DashPerformed;
     public event Action AirDashPerformed;
 
     [Header("Input")]
@@ -685,6 +686,8 @@ public class PlayerMovement : MonoBehaviour
         if (!dashAllowed)
             return;
 
+        DashPerformed?.Invoke();
+
         if (InputReader.inputBusy)
             attackManager?.ForceCancelCurrentAttack();
 
@@ -814,6 +817,8 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isDashing || direction.sqrMagnitude < 0.0001f)
             return false;
+
+        DashPerformed?.Invoke();
 
         StartCoroutine(
             DashCoroutine(
