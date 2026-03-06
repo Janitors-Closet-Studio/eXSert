@@ -14247,6 +14247,9 @@ MonoBehaviour:
       m_Calls: []
   doorHandlers:
   - {fileID: 872644021}
+  usePuzzleCameraOnInteraction: 0
+  puzzleCamera: {fileID: 0}
+  puzzleCameraDurationSeconds: 2
 --- !u!65 &389852969
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -30468,6 +30471,13 @@ MonoBehaviour:
   doorParts: []
   openSpeed: 3
   hingePivot: {fileID: 0}
+  lightBulb: {fileID: 0}
+  lockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  unlockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  doorLight: {fileID: 0}
+  lockedLightColor: {r: 0, g: 0, b: 0, a: 0}
+  unlockedLightColor: {r: 0, g: 0, b: 0, a: 0}
+  lightFadeSpeed: 2
 --- !u!43 &875705137
 Mesh:
   m_ObjectHideFlags: 0
@@ -72938,7 +72948,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3308009278746904747, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_Name
-      value: Boss_Roomba
+      value: Boss_Augur
       objectReference: {fileID: 0}
     - target: {fileID: 3308009278746904747, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_TagString

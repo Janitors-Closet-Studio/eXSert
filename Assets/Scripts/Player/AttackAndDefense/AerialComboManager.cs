@@ -21,6 +21,14 @@ public class AerialComboManager : MonoBehaviour
     [SerializeField, Range(0.5f, 2f)] private float comboResetTime = 1.0f;
     [SerializeField] private bool debugMode = false;
 
+    [Header("Plunge Damage Scaling")]
+    [SerializeField, Tooltip("Damage multiplier applied per completed aerial light combo chain (AX1+AX2). Final multiplier = multiplier^count.")]
+    [Range(1f, 5f)] private float plungeDamageMultiplierPerCombo = 1.25f;
+    [SerializeField, Tooltip("When enabled, uses per-aerial-attack counting (AX1 and AX2 each count). Useful if designers want scaling even for partial chains.")]
+    private bool useAttackBasedPlungeScaling = false;
+    [SerializeField, Tooltip("Damage multiplier applied per aerial light attack used (AX1/AX2). Only used when 'Use Attack Based Plunge Scaling' is enabled. Final multiplier = multiplier^count.")]
+    [Range(1f, 5f)] private float plungeDamageMultiplierPerAerialAttack = 1.12f;
+
     [Header("References")]
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerAnimationController animationController;
@@ -48,10 +56,22 @@ public class AerialComboManager : MonoBehaviour
     private float lastAerialAttackTime = -999f;
     private bool pendingAutoFall = false;
 
+    // Plunge scaling counters (reset on landing or plunge execution)
+    private int plungeScalingComboCount;
+    private int plungeScalingAttackCount;
+    private float pendingPlungeDamageMultiplier = 1f;
+
     private const int MAX_AERIAL_FAST_ATTACKS = 2;
 
     // Public property for external checks
     public bool HasUsedAerialHeavy => hasUsedAerialHeavy;
+
+    public float ConsumePendingPlungeDamageMultiplier()
+    {
+        float multiplier = Mathf.Max(1f, pendingPlungeDamageMultiplier);
+        pendingPlungeDamageMultiplier = 1f;
+        return multiplier;
+    }
 
     private void Awake()
     {
@@ -107,6 +127,7 @@ public class AerialComboManager : MonoBehaviour
         }
 
         aerialFastCount++;
+        plungeScalingAttackCount++;
         lastAerialAttackTime = Time.time;
         isInAerialCombo = true;
 
@@ -114,10 +135,14 @@ public class AerialComboManager : MonoBehaviour
         if (attackData == null)
         {
             aerialFastCount = Mathf.Max(0, aerialFastCount - 1);
+            plungeScalingAttackCount = Mathf.Max(0, plungeScalingAttackCount - 1);
             if (debugMode)
                 Debug.LogWarning("Aerial light attack data missing. Ensure PlayerAttack is assigned or exists in AttackDatabase.");
             return null;
         }
+
+        if (aerialFastCount >= MAX_AERIAL_FAST_ATTACKS)
+            plungeScalingComboCount++;
 
         if (aerialFastCount >= MAX_AERIAL_FAST_ATTACKS && !hasUsedAirDash)
             pendingAutoFall = true;
@@ -152,12 +177,22 @@ public class AerialComboManager : MonoBehaviour
         isInAerialCombo = true;
         pendingAutoFall = false;
 
+        // Compute a one-shot multiplier for the plunge attack based on aerial attacks performed earlier this airtime.
+        int count = useAttackBasedPlungeScaling ? plungeScalingAttackCount : plungeScalingComboCount;
+        float stepMultiplier = useAttackBasedPlungeScaling ? plungeDamageMultiplierPerAerialAttack : plungeDamageMultiplierPerCombo;
+        pendingPlungeDamageMultiplier = Mathf.Pow(Mathf.Max(1f, stepMultiplier), Mathf.Max(0, count));
+
+        // Reset counters after plunge is executed (per design).
+        plungeScalingComboCount = 0;
+        plungeScalingAttackCount = 0;
+
         PlayerAttack heavyAttack = ResolveHeavyAttack();
         if (heavyAttack == null)
         {
             if (debugMode)
                 Debug.LogWarning("No PlayerAttack assigned for aerial plunge.");
             hasUsedAerialHeavy = false;
+            pendingPlungeDamageMultiplier = 1f;
             return null;
         }
 
@@ -211,6 +246,9 @@ public class AerialComboManager : MonoBehaviour
         if (characterController != null && characterController.isGrounded)
             return false;
 
+        if (playerMovement != null && !playerMovement.CanStartAerialCombat())
+            return false;
+
         if (InputReader.inputBusy)
             return false;
 
@@ -220,6 +258,9 @@ public class AerialComboManager : MonoBehaviour
     private bool CanPerformAerialHeavyAttack()
     {
         if (characterController != null && characterController.isGrounded)
+            return false;
+
+        if (playerMovement != null && !playerMovement.CanStartAerialCombat())
             return false;
 
         if (hasUsedAerialHeavy)
@@ -249,6 +290,10 @@ public class AerialComboManager : MonoBehaviour
         hasUsedAerialHeavy = false;  // Reset heavy flag for next airtime
         isInAerialCombo = false;
         pendingAutoFall = false;
+
+        plungeScalingComboCount = 0;
+        plungeScalingAttackCount = 0;
+        pendingPlungeDamageMultiplier = 1f;
 
         if (debugMode)
             Debug.Log("Aerial combo reset");

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -117,6 +118,9 @@ public class PlayerAnimationController : MonoBehaviour
     private Animator animator;
     private string currentState;
 
+    private Coroutine hardLockCoroutine;
+    private string hardLockedState;
+
     private void Awake()
     {
         animator = GetComponent<Animator>();
@@ -184,6 +188,28 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayGuardDashRight() => CrossFade(PlayerAnim.Guard.DashRight, 0.02f, true);
     public void PlayParry() => CrossFade(PlayerAnim.Guard.Parry, 0.01f, true);
 
+    /// <summary>
+    /// Plays the Parry animation and prevents other animation requests from overriding it
+    /// until the Parry state finishes.
+    /// </summary>
+    public void PlayParryNonCancelable()
+    {
+        if (animator == null)
+            return;
+
+        StartHardLock(PlayerAnim.Guard.Parry);
+
+        if (!StateExists(PlayerAnim.Guard.Parry))
+        {
+            Debug.LogWarning($"[PlayerAnimationController] State '{PlayerAnim.Guard.Parry}' not found on Animator layer {layerIndex}.", this);
+            ClearHardLock();
+            return;
+        }
+
+        animator.Play(PlayerAnim.Guard.Parry, layerIndex, 0f);
+        currentState = PlayerAnim.Guard.Parry;
+    }
+
     public void PlayJump() => CrossFade(PlayerAnim.Air.Jump);
     public void PlayFalling() => CrossFade(PlayerAnim.Air.Falling, fallingTransition);
     public void PlayFallingHigh() => CrossFade(PlayerAnim.Air.FallingHigh, fallingTransition);
@@ -238,6 +264,18 @@ public class PlayerAnimationController : MonoBehaviour
         if (string.IsNullOrWhiteSpace(stateName) || animator == null)
             return;
 
+        if (!string.IsNullOrEmpty(hardLockedState))
+        {
+            if (stateName == PlayerAnim.Reactions.Death)
+            {
+                ClearHardLock();
+            }
+            else if (stateName != hardLockedState)
+            {
+                return;
+            }
+        }
+
         if (!forceRestart && currentState == stateName)
             return;
 
@@ -250,6 +288,62 @@ public class PlayerAnimationController : MonoBehaviour
         float crossFade = transition >= 0f ? transition : defaultTransition;
         animator.CrossFadeInFixedTime(stateName, crossFade, layerIndex, 0f);
         currentState = stateName;
+    }
+
+    private void StartHardLock(string stateName)
+    {
+        hardLockedState = stateName;
+
+        if (hardLockCoroutine != null)
+            StopCoroutine(hardLockCoroutine);
+
+        hardLockCoroutine = StartCoroutine(HardLockUntilStateCompletes(stateName));
+    }
+
+    private void ClearHardLock()
+    {
+        hardLockedState = null;
+        if (hardLockCoroutine != null)
+        {
+            StopCoroutine(hardLockCoroutine);
+            hardLockCoroutine = null;
+        }
+    }
+
+    private IEnumerator HardLockUntilStateCompletes(string stateName)
+    {
+        const float maxWaitSeconds = 10f;
+
+        float timer = 0f;
+        while (timer < maxWaitSeconds)
+        {
+            var info = animator.GetCurrentAnimatorStateInfo(layerIndex);
+            if (info.IsName(stateName))
+                break;
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        timer = 0f;
+        while (timer < maxWaitSeconds)
+        {
+            var info = animator.GetCurrentAnimatorStateInfo(layerIndex);
+
+            if (!info.IsName(stateName))
+                break;
+
+            if (info.normalizedTime >= 1f && !animator.IsInTransition(layerIndex))
+                break;
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        if (hardLockedState == stateName)
+            hardLockedState = null;
+
+        hardLockCoroutine = null;
     }
 
     private bool StateExists(string stateName)

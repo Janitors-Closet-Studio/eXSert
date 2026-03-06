@@ -48,6 +48,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PlayerAttackManager attackManager;
 
     public event Action DoubleJumpPerformed;
+    public event Action DashPerformed;
     public event Action AirDashPerformed;
 
     [Header("Input")]
@@ -67,9 +68,6 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField]
     private float sprintSpeed = 5.5f;
-
-    [SerializeField, Range(0.5f, 10f)]
-    private float jogDelaySeconds = 3.5f;
 
     [SerializeField, Range(0.2f, 1f)]
     private float joystickWalkThreshold = 0.8f;
@@ -133,6 +131,14 @@ public class PlayerMovement : MonoBehaviour
     [Range(0f, 0.3f)] private float plungeHoverTime = 0.06f;
     [SerializeField, Tooltip("Downward speed applied during plunge phase")] 
     [Range(10f, 60f)] private float plungeDownSpeed = 32f;
+
+    [Header("Aerial Combat Height Gate")]
+    [SerializeField, Tooltip("Minimum distance above ground required to start aerial attacks/plunge. If 0, uses (basic jump height + extra).")]
+    [Range(0f, 20f)] private float aerialCombatMinHeightAboveGroundOverride = 0f;
+    [SerializeField, Tooltip("Extra height added on top of the computed basic jump height when no override is provided. Suggested: 1-2.")]
+    [Range(0f, 5f)] private float aerialCombatHeightAboveBasicJump = 1.5f;
+    [SerializeField, Tooltip("How far down we probe for ground when evaluating aerial height. If no ground is found, aerial combat is allowed.")]
+    [Range(1f, 50f)] private float aerialCombatGroundProbeDistance = 12f;
 
     [Header("GroundCheck Variables")]
     [SerializeField]
@@ -203,7 +209,6 @@ public class PlayerMovement : MonoBehaviour
     private bool isDashing;
     private Vector3 dashVelocity = Vector3.zero;
     private bool wasGrounded;
-    private float walkToJogTimer;
     private float jogToSprintTimer;
     private bool sprintChargeActive;
     private bool wasMoving;
@@ -310,6 +315,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 previousKeyboardInput = Vector2.zero;
 
     private GroundMoveState moveState = GroundMoveState.Walk;
+    private bool keyboardWalkToggleActive;
     private float CurrentSpeed => moveState switch
     {
         GroundMoveState.Walk => walkSpeed,
@@ -432,6 +438,25 @@ public class PlayerMovement : MonoBehaviour
 
         if (InputReader.DashTriggered)
             OnDash();
+
+        if (!isDashing && InputReader.ToggleWalkTriggered && IsKeyboardMouseControlSchemeActive())
+        {
+            // Walk toggle is keyboard-only: default is Jog, toggle enables Walk.
+            // Sprinting still cancels walk-toggle when sprint begins, but the player can
+            // also press ToggleWalk during sprint to immediately drop to Walk.
+            keyboardWalkToggleActive = !keyboardWalkToggleActive;
+            keyboardJogOverride = false;
+
+            if (keyboardWalkToggleActive)
+            {
+                TrySetMoveState(GroundMoveState.Walk, force: true);
+            }
+            else
+            {
+                if (InputReader.MoveInput.sqrMagnitude > 0.01f)
+                    TrySetMoveState(GroundMoveState.Jog, force: true);
+            }
+        }
 
         if (pendingJump != PendingJumpType.None && pendingJumpTimer > 0f)
         {
@@ -661,6 +686,8 @@ public class PlayerMovement : MonoBehaviour
         if (!dashAllowed)
             return;
 
+        DashPerformed?.Invoke();
+
         if (InputReader.inputBusy)
             attackManager?.ForceCancelCurrentAttack();
 
@@ -790,6 +817,8 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isDashing || direction.sqrMagnitude < 0.0001f)
             return false;
+
+        DashPerformed?.Invoke();
 
         StartCoroutine(
             DashCoroutine(
@@ -1110,11 +1139,27 @@ public class PlayerMovement : MonoBehaviour
 
     private void ResetMoveState()
     {
-        walkToJogTimer = 0f;
         jogToSprintTimer = 0f;
-        sprintChargeActive = false;
-        moveState = GroundMoveState.Walk;
         keyboardJogOverride = false;
+
+        if (IsKeyboardMouseControlSchemeActive())
+        {
+            if (keyboardWalkToggleActive)
+            {
+                sprintChargeActive = false;
+                moveState = GroundMoveState.Walk;
+            }
+            else
+            {
+                sprintChargeActive = true;
+                moveState = GroundMoveState.Jog;
+            }
+        }
+        else
+        {
+            sprintChargeActive = false;
+            moveState = GroundMoveState.Walk;
+        }
     }
 
     private bool TrySetMoveState(GroundMoveState state, bool force = false)
@@ -1127,7 +1172,6 @@ public class PlayerMovement : MonoBehaviour
         switch (state)
         {
             case GroundMoveState.Walk:
-                walkToJogTimer = 0f;
                 jogToSprintTimer = 0f;
                 sprintChargeActive = false;
                 break;
@@ -1137,6 +1181,8 @@ public class PlayerMovement : MonoBehaviour
                 break;
             case GroundMoveState.Sprint:
                 sprintChargeActive = false;
+                if (keyboardWalkToggleActive && IsKeyboardMouseControlSchemeActive())
+                    keyboardWalkToggleActive = false;
                 break;
         }
 
@@ -1158,6 +1204,46 @@ public class PlayerMovement : MonoBehaviour
         return scheme.Contains("gamepad") || scheme.Contains("controller");
     }
 
+    public bool CanStartAerialCombat()
+    {
+        // Must be in the air; grounded attacks are handled separately.
+        if (characterController != null && characterController.isGrounded)
+            return false;
+
+        float gravityMagnitude = Mathf.Max(0.01f, Mathf.Abs(gravity));
+        float basicJumpHeight = (jumpForce * jumpForce) / (2f * gravityMagnitude);
+        float minHeight = aerialCombatMinHeightAboveGroundOverride > 0f
+            ? aerialCombatMinHeightAboveGroundOverride
+            : (basicJumpHeight + aerialCombatHeightAboveBasicJump);
+
+        float probeDistance = Mathf.Max(0.1f, aerialCombatGroundProbeDistance);
+
+        Vector3 origin = transform.position;
+        if (characterController != null)
+        {
+            Bounds b = characterController.bounds;
+            origin = new Vector3(b.center.x, b.min.y + 0.05f, b.center.z);
+        }
+
+        if (!Physics.Raycast(origin, Vector3.down, out RaycastHit hit, probeDistance, layerMask, QueryTriggerInteraction.Ignore))
+            return true;
+
+        return hit.distance >= minHeight;
+    }
+
+    private bool IsKeyboardMouseControlSchemeActive()
+    {
+        if (InputReader.Instance == null)
+            return false;
+
+        string scheme = InputReader.activeControlScheme;
+        if (string.IsNullOrEmpty(scheme))
+            return false;
+
+        scheme = scheme.ToLowerInvariant();
+        return scheme.Contains("keyboard");
+    }
+
     private bool UpdateMoveState(bool useAnalogThresholds, float inputMagnitude)
     {
         bool stateChanged = false;
@@ -1173,12 +1259,20 @@ public class PlayerMovement : MonoBehaviour
                 stateChanged |= TrySetMoveState(GroundMoveState.Jog);
             }
         }
-        else if (moveState == GroundMoveState.Walk && !keyboardJogOverride)
+        else if (IsKeyboardMouseControlSchemeActive())
         {
-            walkToJogTimer += Time.deltaTime;
-            if (walkToJogTimer >= jogDelaySeconds)
+            if (keyboardWalkToggleActive)
             {
-                stateChanged |= TrySetMoveState(GroundMoveState.Jog);
+                keyboardJogOverride = false;
+                if (moveState != GroundMoveState.Walk)
+                    stateChanged |= TrySetMoveState(GroundMoveState.Walk, force: true);
+                return stateChanged;
+            }
+
+            // Keyboard default: start at Jog (Walk only when toggled)
+            if (moveState == GroundMoveState.Walk)
+            {
+                stateChanged |= TrySetMoveState(GroundMoveState.Jog, force: true);
             }
         }
 
@@ -1260,7 +1354,7 @@ public class PlayerMovement : MonoBehaviour
         if (!pressedThisFrame)
             return;
 
-        if (now - lastTapTime <= keyboardDoubleTapWindow)
+        if (!keyboardWalkToggleActive && now - lastTapTime <= keyboardDoubleTapWindow)
         {
             ActivateKeyboardJogOverride();
         }

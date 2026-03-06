@@ -86,10 +86,41 @@ public class GuidelineLightRow : MonoBehaviour
     [SerializeField]
     private float latchedLightIntensity = 0.05f;
 
+    [Header("Start")]
+    [Tooltip("If enabled, starts the chase automatically when this component is enabled (Play Mode only).")]
+    [SerializeField] private bool startBlinkOnEnable = false;
+
     private Coroutine _playRoutine;
+    private Coroutine _autoStartRoutine;
 
     // True while the chase coroutine is running.
     public bool IsPlaying => _playRoutine != null;
+
+    private void OnEnable()
+    {
+        if (!Application.isPlaying)
+            return;
+
+        if (!startBlinkOnEnable)
+            return;
+
+        if (_autoStartRoutine != null)
+        {
+            StopCoroutine(_autoStartRoutine);
+            _autoStartRoutine = null;
+        }
+
+        // Delay by 1 frame so other scripts can finish Start() / initialization,
+        // and so any initial TurnOff/Stop calls don't permanently cancel our auto-start.
+        _autoStartRoutine = StartCoroutine(AutoStartRoutine());
+    }
+
+    private IEnumerator AutoStartRoutine()
+    {
+        yield return null;
+        PlayIndefinitely();
+        _autoStartRoutine = null;
+    }
 
     // Starts the chase for the configured number of passes.
     public void Play()

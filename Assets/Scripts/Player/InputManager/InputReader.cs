@@ -121,7 +121,8 @@ public class InputReader : Singleton<InputReader>
     private InputAction moveAction, jumpAction, lookAction, changeStanceAction, guardAction,
                         lightAttackAction, heavyAttackAction, dashAction, navigationMenuAction,
                         interactAction, escapePuzzleAction, lockOnAction, leftTargetAction,
-                        rightTargetAction, loadingLookAction, loadingZoomAction, pauseAction;
+                        rightTargetAction, loadingLookAction, loadingZoomAction, pauseAction,
+                        toggleWalkAction;
 
     private bool callbacksRegistered = false;
     [SerializeField, Range(0f, 0.5f)] private float lockOnDashSuppressionWindow = 0.18f;
@@ -164,6 +165,7 @@ public class InputReader : Singleton<InputReader>
         public const string LoadingLook = "LoadingLook";
         public const string LoadingZoom = "LoadingZoom";
         public const string Pause = "Pause";
+        public const string ToggleWalk = "ToggleWalk";
     }
 
     #region Action Accessors
@@ -177,6 +179,11 @@ public class InputReader : Singleton<InputReader>
         Instance != null
         && Instance.dashAction != null
         && Instance.dashAction.triggered;
+
+    public static bool ToggleWalkTriggered =>
+        Instance != null
+        && Instance.toggleWalkAction != null
+        && Instance.toggleWalkAction.triggered;
 
     public static bool JumpHeld =>
         Instance != null
@@ -374,6 +381,7 @@ public class InputReader : Singleton<InputReader>
             lightAttackAction = GetAction(ActionNames.LightAttack);
             heavyAttackAction = GetAction(ActionNames.HeavyAttack);
             dashAction = GetAction(ActionNames.Dash);
+            toggleWalkAction = GetAction(ActionNames.ToggleWalk);
             interactAction = GetAction(ActionNames.Interact);
             escapePuzzleAction = GetAction(ActionNames.EscapePuzzle);
             lockOnAction = GetAction(ActionNames.LockOn);
@@ -518,14 +526,15 @@ public class InputReader : Singleton<InputReader>
     }
 
     // Helper: enable/disable every tracked action in one place to reduce duplication
-    private void SetAllActionsEnabled(bool enabled)
+    public void SetAllActionsEnabled(bool enabled)
     {
         var actions = new InputAction[]
         {
             moveAction, jumpAction, lookAction, changeStanceAction, guardAction,
             lightAttackAction, heavyAttackAction, dashAction, navigationMenuAction,
             interactAction, escapePuzzleAction, lockOnAction, leftTargetAction,
-            rightTargetAction, loadingLookAction, loadingZoomAction, pauseAction
+            rightTargetAction, loadingLookAction, loadingZoomAction, pauseAction,
+            toggleWalkAction
         };
 
         foreach (var a in actions)

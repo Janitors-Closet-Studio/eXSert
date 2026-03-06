@@ -808,28 +808,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9feb184afd5d593458cb994febd2c03c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuCheatLoader
-  requireCtrl: 1
-  requireShift: 1
-  onlyFromMainMenu: 1
-  mainMenuSceneName: MainMenu
-  debugLogging: 0
-  debugStatusIntervalSeconds: 2
-  entries:
-  - key: 49
-    sceneName: CargoBay
-    spawnPointId: cargo
-  - key: 50
-    sceneName: CrewQuarters
-    spawnPointId: crewquarters
-  - key: 51
-    sceneName: Hangar
-    spawnPointId: hangar
-  - key: 52
-    sceneName: Boss
-    spawnPointId: boss
-  - key: 53
-    sceneName: Conservatory
-    spawnPointId: conservatory
 --- !u!4 &317748736
 Transform:
   m_ObjectHideFlags: 0
@@ -923,6 +901,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f9e64a10678743f49bbbf51de3c03358, type: 2}
   - {fileID: 11400000, guid: 5869579b54ec19246887b26cc357a841, type: 2}
   - {fileID: 11400000, guid: 852980b321f88034e928368dcbe87d7c, type: 2}
+  - {fileID: 11400000, guid: 975167a28de74124e9e2902e52729d37, type: 2}
+  - {fileID: 11400000, guid: bd509d5fde27add4d97ea00939204039, type: 2}
+  - {fileID: 11400000, guid: 02029b018bb49b8419831f4a844e32fc, type: 2}
+  - {fileID: 11400000, guid: e7a174990e5ebb14eab7544e7ac7e159, type: 2}
+  - {fileID: 11400000, guid: 3efee11574e229a4c9145e0875b85623, type: 2}
+  - {fileID: 11400000, guid: 87ed5d0f7a820d446b9550b5feabcd2b, type: 2}
+  - {fileID: 11400000, guid: 7303023e5c66bda4890071ed7298234f, type: 2}
+  - {fileID: 11400000, guid: b7ec257d1092db0418d09adb7dcd26c0, type: 2}
+  - {fileID: 11400000, guid: 8f85f064df7d7e44485cd169257eb2a1, type: 2}
+  - {fileID: 11400000, guid: bfcc4680795260a4680df9955dc5453a, type: 2}
   propImage: {fileID: 1970855045}
   preserveAspect: 1
   descriptionLabel: {fileID: 1619567302}
@@ -1598,8 +1586,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 565, y: -0.000015259}
-  m_SizeDelta: {x: 684.994, y: 676.3307}
+  m_AnchoredPosition: {x: 492.16345, y: -0.000015259}
+  m_SizeDelta: {x: 830.6671, y: 676.3307}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1619567302
 MonoBehaviour:

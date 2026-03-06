@@ -43,6 +43,11 @@ public class PlayerAttackManager : MonoBehaviour
     [SerializeField, Tooltip("Cross-fade duration when exiting a plunge into combat idle.")]
     [Range(0f, 1f)] private float plungeIdleBlendTime = 0.25f;
 
+    [Header("Debug")]
+    [SerializeField, Tooltip("When enabled, logs plunge hitbox damage (base x multiplier) when the hitbox spawns, even if no enemy is hit.")]
+    private bool debugPlungeDamage = true;
+    [SerializeField, HideInInspector] private bool debugPlungeDamageInitialized;
+
     [Header("Audio")]
     [SerializeField, Tooltip("Primary AudioSource for attack and stance SFX. Defaults to SoundManager's SFX source when unset.")]
     private AudioSource attackAudioSource;
@@ -56,6 +61,7 @@ public class PlayerAttackManager : MonoBehaviour
     private Coroutine specialAttackAutoCancelRoutine;
     private Coroutine heavyMoveRoutine;
     private bool lastAttackWasAoe;
+    private float currentAttackDamageMultiplier = 1f;
 
     [Header("Input Buffering")]
     [SerializeField, Range(0.05f, 0.6f)] private float inputBufferWindow = 0.25f;
@@ -68,6 +74,8 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Awake()
     {
+        EnsureDebugDefaultsApplied();
+
         animationController ??= GetComponent<PlayerAnimationController>() ?? GetComponentInChildren<PlayerAnimationController>();
         tierComboManager ??= GetComponent<TierComboManager>() ?? GetComponentInChildren<TierComboManager>() ?? GetComponentInParent<TierComboManager>();
         aerialComboManager ??= GetComponent<AerialComboManager>() ?? GetComponentInChildren<AerialComboManager>() ?? GetComponentInParent<AerialComboManager>();
@@ -81,6 +89,20 @@ public class PlayerAttackManager : MonoBehaviour
             if (attackDatabase == null)
                 Debug.LogWarning("[PlayerAttackManager] AttackDatabase reference is missing.");
         }
+    }
+
+    private void OnValidate()
+    {
+        EnsureDebugDefaultsApplied();
+    }
+
+    private void EnsureDebugDefaultsApplied()
+    {
+        if (debugPlungeDamageInitialized)
+            return;
+
+        debugPlungeDamage = true;
+        debugPlungeDamageInitialized = true;
     }
 
     private void Start()
@@ -128,7 +150,7 @@ public class PlayerAttackManager : MonoBehaviour
     {
         if (CombatManager.isGuarding)
         {
-            HandleGuardStateAttacks();
+            ClearBufferedAttack();
             return;
         }
 
@@ -150,13 +172,8 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void HandleGuardStateAttacks()
     {
+        // Guard attacks are disabled. Kept for backwards compatibility if referenced elsewhere.
         ClearBufferedAttack();
-
-        if (InputReader.inputBusy)
-            return;
-
-        if (InputReader.LightAttackTriggered)
-            TryExecuteGuardAttack();
     }
 
     private void ProcessAttackInput(bool lightAttack)
@@ -306,6 +323,13 @@ public class PlayerAttackManager : MonoBehaviour
         }
         else
         {
+            if (playerMovement != null && !playerMovement.CanStartAerialCombat())
+            {
+                // Prevent "barely off the ground" aerial attacks. Attacks are only allowed
+                // on ground, or when sufficiently high to commit to aerial combat.
+                return;
+            }
+
             attackData = ResolveAerialAttack(lightAttack);
             attackId = attackData != null ? attackData.attackId : null;
 
@@ -389,6 +413,22 @@ public class PlayerAttackManager : MonoBehaviour
         bool playDefaultAnimation = true)
     {
         currentAttack = attackData;
+        currentAttackDamageMultiplier = 1f;
+
+        if (currentAttack != null
+            && currentAttack.attackType == AttackType.HeavyAerial
+            && aerialComboManager != null)
+        {
+            currentAttackDamageMultiplier = Mathf.Max(1f, aerialComboManager.ConsumePendingPlungeDamageMultiplier());
+
+            if (debugPlungeDamage)
+            {
+                float scaledDamage = currentAttack.damage * currentAttackDamageMultiplier;
+                Debug.Log(
+                    $"[PlayerAttackManager] Plunge execute: '{currentAttack.attackId}' base={currentAttack.damage} x{currentAttackDamageMultiplier:0.##} => {scaledDamage:0.##}"
+                );
+            }
+        }
         InputReader.inputBusy = true;
 
         UpdateLastAttackType(attackData);
@@ -529,6 +569,24 @@ public class PlayerAttackManager : MonoBehaviour
         activeHitbox = attack.CreateHitBoxAt(spawnPosition, spawnRotation);
         if (activeHitbox != null)
             activeHitbox.transform.SetParent(transform, worldPositionStays: true);
+
+        if (activeHitbox != null
+            && currentAttack != null
+            && ReferenceEquals(attack, currentAttack)
+            && currentAttack.attackType == AttackType.HeavyAerial
+            && activeHitbox.TryGetComponent<HitboxDamageManager>(out var damageManager))
+        {
+            float multiplier = Mathf.Max(1f, currentAttackDamageMultiplier);
+            float scaledDamage = currentAttack.damage * multiplier;
+            damageManager.Configure(currentAttack.attackName, scaledDamage, currentAttack.maxTargetsPerActivation);
+
+            if (debugPlungeDamage)
+            {
+                Debug.Log(
+                    $"[PlayerAttackManager] Plunge hitbox spawned: '{currentAttack.attackId}' base={currentAttack.damage} x{multiplier:0.##} => {scaledDamage:0.##}"
+                );
+            }
+        }
 
         PlayAttackVfx(attack, spawnPosition, spawnRotation);
     }
@@ -759,6 +817,7 @@ public class PlayerAttackManager : MonoBehaviour
         }
 
         currentAttack = null;
+        currentAttackDamageMultiplier = 1f;
 
         if (TryConsumeBufferedAttack())
             return;
@@ -844,6 +903,7 @@ public class PlayerAttackManager : MonoBehaviour
         StopSpecialAttackAutoCancelRoutine();
         ClearHitbox();
         currentAttack = null;
+        currentAttackDamageMultiplier = 1f;
         InputReader.inputBusy = false;
         playerMovement?.ForceLocomotionRefresh();
 

@@ -158,6 +158,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleWalk",
+                    "type": "Button",
+                    "id": "1a826be8-4984-46a2-bf46-89dc15df4bec",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -460,19 +469,8 @@
                 },
                 {
                     "name": "",
-                    "id": "48168113-4519-4fec-8b46-17a387a888c9",
-                    "path": "<Gamepad>/rightStickPress",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Gamepad",
-                    "action": "LockOn",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "20a889fd-97e7-4f4f-8d5d-3c3e02cda16e",
-                    "path": "<Keyboard>/ctrl",
+                    "path": "<Keyboard>/c",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
@@ -493,11 +491,11 @@
                 },
                 {
                     "name": "",
-                    "id": "8c5d8d67-0e8b-4722-8efe-0143ba8e0fd9",
-                    "path": "<Gamepad>/rightStick/left",
+                    "id": "386b0863-b619-48f8-a779-ba152d183a5a",
+                    "path": "<Keyboard>/tab",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";Gamepad",
+                    "groups": ";Keyboard&Mouse",
                     "action": "LeftTarget",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -515,11 +513,11 @@
                 },
                 {
                     "name": "",
-                    "id": "0cba0e89-504f-4187-8fce-e18ee2a5b898",
-                    "path": "<Gamepad>/rightStick/right",
+                    "id": "bb5cbd94-d323-48c1-a736-8cf93e78d810",
+                    "path": "<Keyboard>/x",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";Gamepad",
+                    "groups": ";Keyboard&Mouse",
                     "action": "RightTarget",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -543,6 +541,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "ResetControls",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "072149da-b83d-4fc5-84a4-87ce5009a49b",
+                    "path": "<Keyboard>/ctrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "ToggleWalk",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

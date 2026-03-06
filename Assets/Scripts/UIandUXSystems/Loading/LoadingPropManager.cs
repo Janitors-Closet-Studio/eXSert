@@ -75,10 +75,10 @@ namespace UI.Loading
             if (descriptionLabel != null)
             {
                 if (string.IsNullOrEmpty(definition.displayName))
-                    descriptionLabel.text = definition.description;
+                    descriptionLabel.text = $"<size=28>{definition.description}</size>";
                 else
                     descriptionLabel.text =
-                        $"<b>{definition.displayName}</b>\n{definition.description}";
+                        $"<size=36><b>{definition.displayName}</b></size>\n\n<size=28>{definition.description}</size>";
             }
         }
 

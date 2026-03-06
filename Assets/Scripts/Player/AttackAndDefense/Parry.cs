@@ -20,13 +20,49 @@ public class Parry : MonoBehaviour
     [SerializeField, Range(.01f, 1f)] private float parryPauseDuration = 0.05f;
     [SerializeField, Range(0f, 1f)] private float howSlowTimeScales = 0.5f;
 
+    [Header("Animation")]
+    [SerializeField] private PlayerAnimationController animationController;
+
     private void Awake()
+    {
+        if (animationController == null)
+        {
+            animationController = GetComponent<PlayerAnimationController>()
+                ?? GetComponentInChildren<PlayerAnimationController>()
+                ?? GetComponentInParent<PlayerAnimationController>();
+        }
+    }
+
+    private void OnEnable()
     {
         CombatManager.OnSuccessfulParry += HandleSuccessfulParry;
     }
 
+    private void OnDisable()
+    {
+        CombatManager.OnSuccessfulParry -= HandleSuccessfulParry;
+    }
+
     private void HandleSuccessfulParry(BaseEnemy<EnemyState, EnemyTrigger> enemy)
     {
+        if (animationController == null)
+        {
+            animationController = GetComponent<PlayerAnimationController>()
+                ?? GetComponentInChildren<PlayerAnimationController>()
+                ?? GetComponentInParent<PlayerAnimationController>();
+
+            if (animationController == null)
+            {
+#if UNITY_2022_2_OR_NEWER
+                animationController = FindAnyObjectByType<PlayerAnimationController>();
+#else
+                animationController = FindObjectOfType<PlayerAnimationController>();
+#endif
+            }
+        }
+
+        animationController?.PlayParryNonCancelable();
+
         if (parrySoundEffect != null)
             AudioSource.PlayClipAtPoint(parrySoundEffect, transform.position);
 
@@ -45,8 +81,6 @@ public class Parry : MonoBehaviour
         {
             StartCoroutine(PauseTimeOnParry(parryPauseDuration));
         }
-
-        
     }
 
     private void DestroyVFX(GameObject vfxInstance, float delay)

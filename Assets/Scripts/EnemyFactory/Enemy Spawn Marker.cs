@@ -39,7 +39,8 @@ namespace Progression.Encounters
 
         private bool Validate()
         {
-            if (enemyPrefab != null && !enemyPrefab.TryGetComponent<BaseEnemyCore>(out _))
+            // Support prefabs where the BaseEnemyCore lives on a child object.
+            if (enemyPrefab != null && enemyPrefab.GetComponentInChildren<BaseEnemyCore>(includeInactive: true) == null)
             {
                 Debug.LogWarning($"[EnemySpawnMarker] Assigned prefab '{enemyPrefab.name}' on marker '{name}' does not contain a BaseEnemyCore component. This marker will not spawn an enemy.");
                 return false;
@@ -60,7 +61,8 @@ namespace Progression.Encounters
             }
 
             var rotation = useMarkerRotation ? transform.rotation : Quaternion.identity;
-            return EnemyFactory.RequestEnemy(enemyPrefab, transform.position, rotation, transform.parent);
+            var parent = parentOverride != null ? parentOverride : transform.parent;
+            return EnemyFactory.RequestEnemy(enemyPrefab, transform.position, rotation, parent);
         }
     }
 

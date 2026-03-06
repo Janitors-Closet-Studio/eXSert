@@ -1,19 +1,31 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Singletons;
+using UnityEngine;
 
 namespace Progression.Encounters
 {
     public class EnemyFactory : Singleton<EnemyFactory>
     {
+        private sealed class PooledEnemy
+        {
+            public readonly GameObject Root;
+            public readonly BaseEnemyCore Core;
+
+            public PooledEnemy(GameObject root, BaseEnemyCore core)
+            {
+                Root = root;
+                Core = core;
+            }
+        }
+
         /// <summary>
         /// Represents a collection of object pools for enemy instances, organized by their associated <see
         /// cref="GameObject"/> prefab.
         /// </summary>
         /// <remarks>Each entry in the dictionary maps a <see cref="GameObject"/> to a queue of <see
         /// cref="BaseEnemyCore"/> objects, enabling efficient reuse of enemy instances for that game object.</remarks>
-        private readonly Dictionary<GameObject, Queue<BaseEnemyCore>> pools = new();
+        private readonly Dictionary<GameObject, Queue<PooledEnemy>> pools = new();
 
         /// <summary>
         /// Maintains a mapping between enemy core instances and their associated prefab <see cref="GameObject"/>s.
@@ -23,7 +35,15 @@ namespace Progression.Encounters
         /// lookup of enemy prefabs.</remarks>
         private readonly Dictionary<BaseEnemyCore, GameObject> instanceToPrefab = new();
 
-        public override string ToString() => $"EnemyFactory with {pools.Count} pools and {instanceToPrefab.Count} instances";
+        /// <summary>
+        /// Tracks the instantiated prefab root GameObject for each core.
+        /// </summary>
+        private readonly Dictionary<BaseEnemyCore, GameObject> instanceToRoot = new();
+
+        public override string ToString()
+        {
+            return $"EnemyFactory with {pools.Count} pools and {instanceToPrefab.Count} instances";
+        }
 
         /// <summary>
         /// Instantiates and stores a specified number of inactive enemy instances for the given prefab, preparing them for
@@ -39,18 +59,28 @@ namespace Progression.Encounters
         public static void Prewarm(GameObject prefab, int count)
         {
             // Validate input parameters
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
-            if (prefab == null) throw new ArgumentNullException(nameof(prefab));
-            if (!prefab.TryGetComponent<BaseEnemyCore>(out _))
+            if (count < 0)
             {
-                Debug.LogError($"[EnemyFactory] Prefab {prefab.name} does not contain a BaseEnemyCore. Cannot prewarm.");
+                throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative.");
+            }
+
+            if (prefab == null)
+            {
+                throw new ArgumentNullException(nameof(prefab));
+            }
+            // Support prefabs where the BaseEnemyCore lives on a child object.
+            if (prefab.GetComponentInChildren<BaseEnemyCore>(includeInactive: true) == null)
+            {
+                Debug.LogError(
+                    $"[EnemyFactory] Prefab {prefab.name} does not contain a BaseEnemyCore. Cannot prewarm."
+                );
                 return;
             }
 
             if (!Instance.pools.TryGetValue(prefab, out var queue))
             {
                 // Create a new pool for this prefab if it doesn't exist
-                queue = new Queue<BaseEnemyCore>();
+                queue = new Queue<PooledEnemy>();
                 Instance.pools[prefab] = queue;
             }
 
@@ -59,15 +89,20 @@ namespace Progression.Encounters
             for (int i = 0; i < difference; i++)
             {
                 var go = Instantiate(prefab, Instance.transform);
-                go.SetActive(false);
-                if (!go.TryGetComponent<BaseEnemyCore>(out var core))
+                // Resolve core even if it lives on a child.
+                var core = go.GetComponentInChildren<BaseEnemyCore>(includeInactive: true);
+                if (core == null)
                 {
                     Destroy(go);
                     continue;
                 }
 
+                // Deactivate the prefab root so we don't leave active wrapper/sibling objects in the scene.
+                go.SetActive(false);
+
                 Instance.instanceToPrefab[core] = prefab;
-                queue.Enqueue(core);
+                Instance.instanceToRoot[core] = go;
+                queue.Enqueue(new PooledEnemy(go, core));
             }
 
             UpdateName();
@@ -92,13 +127,24 @@ namespace Progression.Encounters
         /// langword="null"/> if the prefab does not contain a <see cref="BaseEnemyCore"/> component or if instantiation
         /// fails.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="prefab"/> is <see langword="null"/>.</exception>
-        public static BaseEnemyCore RequestEnemy(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent = null)
+        public static BaseEnemyCore RequestEnemy(
+            GameObject prefab,
+            Vector3 position,
+            Quaternion rotation,
+            Transform parent = null
+        )
         {
             // Validate input parameters
-            if (prefab == null) throw new ArgumentNullException(nameof(prefab));
-            if (!prefab.TryGetComponent<BaseEnemyCore>(out _))
+            if (prefab == null)
             {
-                Debug.LogError($"[EnemyFactory] Prefab {prefab.name} does not contain a BaseEnemyCore.");
+                throw new ArgumentNullException(nameof(prefab));
+            }
+            // Support prefabs where the BaseEnemyCore lives on a child object.
+            if (prefab.GetComponentInChildren<BaseEnemyCore>(includeInactive: true) == null)
+            {
+                Debug.LogError(
+                    $"[EnemyFactory] Prefab {prefab.name} does not contain a BaseEnemyCore."
+                );
                 return null;
             }
 
@@ -106,14 +152,18 @@ namespace Progression.Encounters
             {
                 // Instantiate a new instance when pool is empty
                 var go = Instantiate(prefab, position, rotation, parent);
-                if (!go.TryGetComponent<BaseEnemyCore>(out var core))
+                var core = go.GetComponentInChildren<BaseEnemyCore>(includeInactive: true);
+                if (core == null)
                 {
-                    Debug.LogError($"[EnemyFactory] Instance of {prefab.name} missing BaseEnemyCore.");
+                    Debug.LogError(
+                        $"[EnemyFactory] Instance of {prefab.name} missing BaseEnemyCore."
+                    );
                     Destroy(go);
                     return null;
                 }
 
                 Instance.instanceToPrefab[core] = prefab;
+                Instance.instanceToRoot[core] = go;
                 core.OnDeath += Instance.HandleEnemyDeath;
                 core.Spawn(); // factory returns an already-spawned instance
 
@@ -123,27 +173,38 @@ namespace Progression.Encounters
             }
 
             // Reuse pooled instance
-            var enemy = queue.Dequeue();
-            if (enemy == null)
+            var pooled = queue.Dequeue();
+            if (pooled == null || pooled.Core == null || pooled.Root == null)
                 return RequestEnemy(prefab, position, rotation, parent); // defensive
 
-            enemy.transform.SetParent(parent);
-            enemy.transform.SetPositionAndRotation(position, rotation);
-            enemy.gameObject.SetActive(true);
-            enemy.ResetEnemy();
-            enemy.OnDeath += Instance.HandleEnemyDeath;
-            enemy.Spawn(); // ensure it's active and initialized
+            // Keep the instance inactive during reset. BaseEnemy.ResetEnemy() will disable the
+            // core GameObject if it's currently active, which would leave the spawned enemy inert.
+            pooled.Root.transform.SetParent(parent);
+            pooled.Root.transform.SetPositionAndRotation(position, rotation);
+            pooled.Core.ResetEnemy();
+
+            pooled.Root.SetActive(true);
+            // If a death sequence disabled only the core child, ensure it comes back.
+            pooled.Core.gameObject.SetActive(true);
+            pooled.Core.OnDeath += Instance.HandleEnemyDeath;
+            pooled.Core.Spawn(); // ensure it's active and initialized
+
+            // Re-apply spawn pose after Spawn/Reset for safety.
+            pooled.Root.transform.SetPositionAndRotation(position, rotation);
 
             UpdateName();
 
-            return enemy;
+            return pooled.Core;
         }
 
         private void HandleEnemyDeath(BaseEnemyCore enemy) => ReturnToPool(enemy);
 
         public void ReturnToPool(BaseEnemyCore enemy)
         {
-            if (enemy == null) return;
+            if (enemy == null)
+            {
+                return;
+            }
 
             Debug.Log("[EnemyFactory] Returning enemy to pool: " + enemy.name);
 
@@ -153,24 +214,34 @@ namespace Progression.Encounters
             if (!instanceToPrefab.TryGetValue(enemy, out var prefab))
             {
                 // Unknown origin; destroy to avoid leaks
-                Destroy(enemy.gameObject);
+                if (instanceToRoot.TryGetValue(enemy, out var unknownRoot) && unknownRoot != null)
+                    Destroy(unknownRoot);
+                else
+                    Destroy(enemy.gameObject);
                 return;
+            }
+
+            if (!instanceToRoot.TryGetValue(enemy, out var root) || root == null)
+            {
+                // Fallback: at least don't leave the core hanging around.
+                root = enemy.gameObject;
+                instanceToRoot[enemy] = root;
             }
 
             // Reset and deactivate
             enemy.ResetEnemy();
-            //enemy.gameObject.SetActive(false);
-            enemy.transform.SetParent(transform);
+            root.SetActive(false);
+            root.transform.SetParent(transform);
 
             if (!pools.TryGetValue(prefab, out var queue))
             {
                 // This should not happen if all enemies are properly tracked,
                 // but create a new pool if needed to avoid losing returned enemies
-                queue = new Queue<BaseEnemyCore>();
+                queue = new Queue<PooledEnemy>();
                 Instance.pools[prefab] = queue;
             }
 
-            queue.Enqueue(enemy);
+            queue.Enqueue(new PooledEnemy(root, enemy));
 
             UpdateName();
         }
@@ -181,13 +252,14 @@ namespace Progression.Encounters
             {
                 while (kv.Value.Count > 0)
                 {
-                    var e = kv.Value.Dequeue();
-                    if (e != null)
-                        Destroy(e.gameObject);
+                    var pooled = kv.Value.Dequeue();
+                    if (pooled != null && pooled.Root != null)
+                        Destroy(pooled.Root);
                 }
             }
             Instance.pools.Clear();
             Instance.instanceToPrefab.Clear();
+            Instance.instanceToRoot.Clear();
         }
     }
 }

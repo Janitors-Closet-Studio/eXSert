@@ -164,7 +164,7 @@ namespace Progression
 
                     intendedPrefab = marker.EnemyPrefab;
 
-                    if (!intendedPrefab.TryGetComponent<BaseEnemyCore>(out _))
+                    if (intendedPrefab.GetComponentInChildren<BaseEnemyCore>(includeInactive: true) == null)
                     {
                         Debug.LogError($"[ProgressionManager] Nevermind. The prefab that is in the marker isn't even a proper enemy. " +
                             $"Did you even learn how to use any of this? " +
@@ -173,7 +173,7 @@ namespace Progression
                     }
                 }
 
-                else if (prefab.GetComponent<BaseEnemyCore>() == null)
+                else if (prefab.GetComponentInChildren<BaseEnemyCore>(includeInactive: true) == null)
                 {
                     Debug.LogWarning($"[ProgressionManager] Prefab {prefab.name} does not have a BaseEnemyCore component and will be skipped in prewarming.");
                     continue;
