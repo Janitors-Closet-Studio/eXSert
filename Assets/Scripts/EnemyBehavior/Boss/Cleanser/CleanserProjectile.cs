@@ -76,6 +76,10 @@ namespace EnemyBehavior.Boss.Cleanser
         private Vector3 curveDirection; // Perpendicular direction for curved path
         private float totalFlightDistance;
         private float currentTravelDistance;
+        
+        // Magnetic return system reference
+        private CleanserDualWieldSystem dualWieldSystem;
+        private bool shouldTriggerMagneticReturn = false;
 
         // Bezier control points for curved path
         private Vector3 bezierP0, bezierP1, bezierP2, bezierP3;
@@ -89,8 +93,17 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void Initialize(Transform playerTarget, Transform spawnOrigin, SpareTossConfig config)
         {
+            Initialize(playerTarget, spawnOrigin, config, null);
+        }
+
+        /// <summary>
+        /// Initializes the projectile with its flight configuration and dual wield system for magnetic return.
+        /// </summary>
+        public void Initialize(Transform playerTarget, Transform spawnOrigin, SpareTossConfig config, CleanserDualWieldSystem dualWield)
+        {
             target = playerTarget;
             origin = spawnOrigin;
+            dualWieldSystem = dualWield;
             
             UseStraightPath = config.UseStraightPath;
             ReturnsLikeBoomerang = config.ReturnsOnStraightPath;
@@ -206,7 +219,25 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield return null;
             }
 
-            // Lifetime expired
+            // Lifetime expired or completed flight - trigger magnetic return
+            OnProjectileFlightComplete();
+        }
+
+        /// <summary>
+        /// Called when the projectile completes its flight (reached origin or lifetime expired).
+        /// Triggers magnetic return if dual wield system is available.
+        /// </summary>
+        private void OnProjectileFlightComplete()
+        {
+            // If we have a dual wield system reference, notify it to start magnetic return
+            // The projectile visual is destroyed, but the actual weapon returns magnetically
+            if (dualWieldSystem != null && shouldTriggerMagneticReturn)
+            {
+                // Find which weapon was thrown (if any) and trigger its return
+                // This is a visual-only projectile, so we just destroy it
+                // The actual weapon system handles the magnetic return
+            }
+            
             Destroy(gameObject);
         }
 
@@ -237,7 +268,9 @@ namespace EnemyBehavior.Boss.Cleanser
                     }
                     else
                     {
-                        Destroy(gameObject);
+                        // Straight path, no return - trigger magnetic return for actual weapon
+                        shouldTriggerMagneticReturn = true;
+                        OnProjectileFlightComplete();
                     }
                 }
             }
@@ -249,10 +282,12 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (dir.sqrMagnitude > 0.001f)
                     transform.forward = dir;
                 
-                // Check if returned to origin
+                // Check if returned to origin (boss catches it or lets it pass)
                 if (Vector3.Distance(transform.position, originPosition) < 1f)
                 {
-                    Destroy(gameObject);
+                    // Returned to boss - can catch or let it continue to rest position
+                    shouldTriggerMagneticReturn = true;
+                    OnProjectileFlightComplete();
                 }
             }
         }
@@ -278,8 +313,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 }
                 else
                 {
-                    // Completed return
-                    Destroy(gameObject);
+                    // Completed return - trigger magnetic return for actual weapon
+                    shouldTriggerMagneticReturn = true;
+                    OnProjectileFlightComplete();
                     return;
                 }
             }

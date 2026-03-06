@@ -55,7 +55,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Header("Spare Toss Configuration")]
         public SpareTossConfig SpareTossSettings = new SpareTossConfig();
-        [Tooltip("Prefab for the thrown weapon projectile.")]
+        [Tooltip("Prefab for the thrown weapon projectile (visual only - the actual spare weapon returns magnetically).")]
         public GameObject ProjectilePrefab;
         [Tooltip("Transform where projectiles spawn from (hand).")]
         public Transform ProjectileSpawnPoint;
@@ -63,17 +63,23 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Spin Dash Configuration")]
         public SpinDashConfig SpinDashSettings = new SpinDashConfig();
 
-        [Header("New Attack Configurations")]
+        [Header("Knockback Attack Configuration")]
         [Tooltip("Configuration for the knockback attack that pushes player away.")]
         public KnockbackAttackConfig KnockbackSettings = new KnockbackAttackConfig();
+        
+        [Header("Mini Crescent Wave Configuration")]
         [Tooltip("Configuration for the mini crescent wave ranged attack.")]
         public MiniCrescentWaveConfig MiniCrescentSettings = new MiniCrescentWaveConfig();
+        
+        [Header("Gap-Closing Dash Configuration")]
         [Tooltip("Configuration for the gap-closing dash (no hitbox).")]
         public GapClosingDashConfig GapCloseDashSettings = new GapClosingDashConfig();
 
         [Header("Strong Attack Configurations")]
         public CleanserAttackDescriptor HighDiveAttack;
         public CleanserAttackDescriptor AnimeDashSlashAttack;
+        
+        [Header("Whirlwind Configuration")]
         public WhirlwindConfig WhirlwindSettings = new WhirlwindConfig();
 
         [Header("Ultimate Attack Configuration")]
@@ -790,10 +796,10 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield return null;
             }
             
-            // Shatter spare weapon at END of combo
+            // Release spare weapon at END of combo (returns magnetically to rest position)
             if (pickedUpWeaponThisCombo && dualWieldSystem != null && dualWieldSystem.IsHoldingSpareWeapon)
             {
-                dualWieldSystem.ShatterCurrentWeapon();
+                dualWieldSystem.ReleaseCurrentWeapon();
             }
         }
 
@@ -1058,7 +1064,11 @@ namespace EnemyBehavior.Boss.Cleanser
 
             yield return FaceTarget(player, 0.3f);
             
-            TriggerAnimation("Attack_SpareToss");
+            // Randomize path type before throw
+            SpareTossSettings.RandomizePathType();
+            
+            // Use animation trigger from config
+            TriggerAnimation(SpareTossSettings.AnimationTrigger);
             PlaySFX(SpareTossSettings.ThrowSFX);
             
             // Wait for throw animation event or fallback
@@ -1071,7 +1081,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 
                 if (proj != null)
                 {
-                    proj.Initialize(player, transform, SpareTossSettings);
+                    // Pass the dual wield system for magnetic return callback
+                    proj.Initialize(player, transform, SpareTossSettings, dualWieldSystem);
                 }
                 
                 if (SpareTossSettings.ThrowSequentially && i < SpareTossSettings.ProjectileCount - 1)
@@ -1096,7 +1107,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 dashCount = 3;
             }
 
-            TriggerAnimation("Attack_SpinDash");
+            // Use animation trigger from config
+            TriggerAnimation(SpinDashSettings.AnimationTrigger);
             PlaySFX(SpinDashSettings.DashSFX);
             
             if (SpinDashSettings.DashVFX != null)
@@ -1245,7 +1257,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ExecuteWhirlwind()
         {
-            TriggerAnimation("Attack_Whirlwind");
+            // Use animation trigger from config
+            TriggerAnimation(WhirlwindSettings.AnimationTrigger);
             PlaySFX(WhirlwindSettings.SpinSFX);
             
             if (WhirlwindSettings.SpinVFX != null)
@@ -1616,10 +1629,10 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield return ApplyStun(AerialFinisherStunDuration);
             }
             
-            // Shatter spare weapon after ultimate
+            // Release spare weapon after ultimate (returns magnetically to rest position)
             if (dualWieldSystem != null && dualWieldSystem.IsHoldingSpareWeapon)
             {
-                dualWieldSystem.ShatterCurrentWeapon();
+                dualWieldSystem.ReleaseCurrentWeapon();
             }
             
             isExecutingUltimate = false;
