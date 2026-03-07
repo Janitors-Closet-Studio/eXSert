@@ -38,7 +38,7 @@ namespace Progression
 
 #if UNITY_EDITOR
         /*
-         * This variable determines if the scen is being loaded by itself in the editor.
+         * This variable determines if the scene is being loaded by itself in the editor.
          * (Hitting play mode while just the scene is active)
          * 
          * If true, the manager will automatically load the player scene.
@@ -86,7 +86,14 @@ namespace Progression
             // This makes testing easier since you can just hit play on the level scene by itself
             // Without needing to manually adjust the player scene
             if (IsolatedLoad && SceneAsset.LoadedSceneCount == 1 && !SceneAsset.PlayerLoaded)
-                SceneAsset.LoadPlayerScene(firstCheckpoint.SpawnPoint, characterStartInactive: false);
+            {
+                SceneLoader.LoadPlayerScene().completed += _ =>
+                {
+                    CheckpointBehavior.InitialSpawnPlayer();
+                    Player.PlayerObject.GetComponent<PlayerMovement>().enabled = true;
+                    Player.PlayerObject.SetActive(true);
+                };
+            }
             IsolatedLoad = false;
 #endif
         }

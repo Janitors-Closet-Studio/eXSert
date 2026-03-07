@@ -1,7 +1,4 @@
-using NUnit.Framework;
-using System.Runtime.CompilerServices;
 using UnityEngine;
-using Utility.SceneManagement;
 using System.Collections.Generic;
 
 public class UISceneManager : MonoBehaviour

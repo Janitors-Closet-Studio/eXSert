@@ -216,7 +216,7 @@ public class WarningButtonFunctionality : MonoBehaviour
                 else
                 {
                     PauseManager.Instance?.ResumeGame();
-                    SceneAsset.LoadMainMenu();
+                    SceneLoader.LoadMainMenu();
                 }
                 break;
 

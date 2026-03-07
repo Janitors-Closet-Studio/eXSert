@@ -43,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    #region Inspector Setup
     [Header("Player Animator")]
     [SerializeField] private PlayerAnimationController animationController;
     [SerializeField] private PlayerAttackManager attackManager;
@@ -204,6 +205,7 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField, Range(1f, 100f)]
     private float highFallGroundProbeDistance = 25f;
+    #endregion
 
     private bool canDash = true;
     private bool isDashing;
@@ -358,7 +360,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         doubleJumpAvailable = canDoubleJump;
-        airborneStartHeight = transform.position.y;
+        //airborneStartHeight = transform.position.y;
         airDashAvailable = true;
         suspendGravityDuringDash = false;
     }

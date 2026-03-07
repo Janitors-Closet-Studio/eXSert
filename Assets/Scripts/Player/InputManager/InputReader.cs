@@ -26,7 +26,6 @@ internal enum ActionMap
     Loading
 }
 
-[Serializable]
 public class InputReader : Singleton<InputReader>
 {
     public override string ToString() => "Input Reader";

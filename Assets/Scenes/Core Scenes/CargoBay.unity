@@ -281,6 +281,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1357911731733883350, guid: 24dfe058bf31c0f419fe6e1dbef78c54, type: 3}
   m_PrefabInstance: {fileID: 4678394}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &16105013 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 450791400980430630, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+  m_PrefabInstance: {fileID: 971533559}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &24156367
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16411,6 +16416,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: spawnPoint
+      value: 
+      objectReference: {fileID: 16105013}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: checkpointName
+      value: First CP CargoBay
+      objectReference: {fileID: 0}
     - target: {fileID: 5754393107080565433, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.28
