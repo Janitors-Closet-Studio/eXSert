@@ -18,6 +18,7 @@ namespace Progression
     using Checkpoints;
     using SceneManagement;
     using System.Runtime.CompilerServices;
+    using UnityEngine.SceneManagement;
 
     [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.ba7p6f215mok")]
     [DefaultExecutionOrder(0)] // Ensure this executes before any encounters or progression zones, which may rely on it to register themselves in Awake
@@ -87,6 +88,8 @@ namespace Progression
             // Without needing to manually adjust the player scene
             if (IsolatedLoad && SceneAsset.LoadedSceneCount == 1 && !SceneAsset.PlayerLoaded)
             {
+                // Ensure the SceneLoader is initialized so that it can properly load the player scene
+                SceneLoader.Initialize(); 
                 SceneLoader.LoadPlayerScene().completed += _ =>
                 {
                     Player.SpawnPlayerAtCheckpoint();

@@ -33,6 +33,27 @@ public static class SceneLoader
         }
     }
 
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"[Scene Loader] Scene loaded callback: '{scene.name}' with mode {mode}. LoadedSceneCount now: {LoadedSceneCount}.");
+        if (scene.name == PLAYER_SCENE)
+        {
+            GameObject player = Player.PlayerObject;
+            if (player == null) // Player null check. Shouldn't occur if set up properly
+                Debug.LogError("[Scene Loader] Player object not found in the scene after loading the player scene. " +
+                               "Ensure that the player scene contains a GameObject tagged 'Player' and that SceneAsset points to the correct scene.");
+        }
+        else
+        {
+            SceneManager.SetActiveScene(scene);
+        }
+    }
+
+    public static void Initialize()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
     /// <summary>Event invoked when a forced scene reload is requested.</summary>
     public static Action OnSceneReloaded { get; internal set; }
 
@@ -72,7 +93,7 @@ public static class SceneLoader
         // If the scene is loaded and forceReload is true, unload it first before loading again.
         if (scene.IsLoaded())
         {
-            SceneManager.UnloadSceneAsync(scene).completed += 
+            SceneManager.UnloadSceneAsync((Scene)scene).completed += 
                 operation => SceneManager.LoadSceneAsync(scene, LoadSceneMode.Additive);
         }
         
@@ -89,6 +110,8 @@ public static class SceneLoader
             Debug.LogError("Cannot load a null SceneAsset into the game.");
             return;
         }
+
+        Initialize();
 
         Load(firstScene).completed += static _ =>
         {

@@ -20,6 +20,7 @@ public class SceneAsset : ScriptableObject
     public string SceneName { get => this.name; }
     public static implicit operator string(SceneAsset asset) => asset.SceneName; // Allow implicit conversion to string for easy use in SceneManager functions
     public static implicit operator SceneAsset(string name) => GetSceneAsset(name); // Allow implicit conversion from string to SceneAsset for easy retrieval
+    public static implicit operator Scene(SceneAsset asset) => SceneManager.GetSceneByName(asset.SceneName);
     public override string ToString() => SceneName;
 
     // Forwarders kept for backward compatibility; prefer SceneLoader API.
