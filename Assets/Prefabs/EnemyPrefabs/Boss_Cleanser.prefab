@@ -8689,6 +8689,8 @@ MonoBehaviour:
 
     Halberd attacks can be parried but guard
     won''t help.'
+  betaDummyMode: 1
+  dummyModeStoppingDistance: 3
   profile: {fileID: 11400000, guid: de31b6f4202553541af11a7539cc903e, type: 2}
   maxHealth: 500
   currentHealth: 500
@@ -8717,11 +8719,11 @@ MonoBehaviour:
   OverheadCleaveAttack:
     ID: OverheadCleave
     Category: 0
-    BaseDamage: 10
+    BaseDamage: 25
     Cooldown: 1
     RangeMin: 0
     RangeMax: 5
-    AnimationTrigger: 
+    AnimationTrigger: Attack_OverheadCleave
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8740,7 +8742,7 @@ MonoBehaviour:
     Cooldown: 1
     RangeMin: 0
     RangeMax: 5
-    AnimationTrigger: 
+    AnimationTrigger: Attack_SlashSlap
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8759,7 +8761,7 @@ MonoBehaviour:
     Cooldown: 1
     RangeMin: 0
     RangeMax: 5
-    AnimationTrigger: 
+    AnimationTrigger: Attack_RakeSpin
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8778,7 +8780,7 @@ MonoBehaviour:
     Cooldown: 1
     RangeMin: 0
     RangeMax: 5
-    AnimationTrigger: 
+    AnimationTrigger: Attack_SpinSlash
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8797,7 +8799,7 @@ MonoBehaviour:
     Cooldown: 1
     RangeMin: 0
     RangeMax: 5
-    AnimationTrigger: 
+    AnimationTrigger: Attack_LegSweep
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8813,7 +8815,7 @@ MonoBehaviour:
     AnimationTrigger: Attack_SpareToss
     ThrowSequentially: 1
     ProjectileCount: 1
-    AllowedPathTypes: 7
+    AllowedPathTypes: -1
     UseStraightPath: 1
     ReturnsOnStraightPath: 0
     UseCurvedBoomerang: 0
@@ -8826,7 +8828,7 @@ MonoBehaviour:
     WallLayerMask:
       serializedVersion: 2
       m_Bits: 0
-    DestroyOnWallHit: 1
+    DestroyOnWallHit: 0
     ThrowSFX: {fileID: 0}
     HitSFX: {fileID: 0}
   ProjectilePrefab: {fileID: 0}
@@ -8874,7 +8876,7 @@ MonoBehaviour:
     Cooldown: 1
     RangeMin: 0
     RangeMax: 5
-    AnimationTrigger: 
+    AnimationTrigger: Attack_HighDive
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8893,7 +8895,7 @@ MonoBehaviour:
     Cooldown: 1
     RangeMin: 0
     RangeMax: 5
-    AnimationTrigger: 
+    AnimationTrigger: Attack_AnimeDash
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8960,7 +8962,7 @@ MonoBehaviour:
   comboSystem: {fileID: 0}
   dualWieldSystem: {fileID: 0}
   platformController: {fileID: 0}
-  aggressionSystem: {fileID: 0}
+  aggressionSystem: {fileID: 6499608910825327414}
   suctionEffect: {fileID: 0}
   animator: {fileID: 0}
   sfxSource: {fileID: 0}
@@ -8968,7 +8970,7 @@ MonoBehaviour:
   paramIsMoving: IsMoving
   triggerStunned: Stunned
   triggerDeath: Death
-  attackIndicatorPrefab: {fileID: 0}
+  attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
   attackIndicatorOffset: {x: 0, y: 0.5, z: 2}
   attackIndicatorLeadTime: 0.4
   attackIndicatorDuration: 0
@@ -9133,7 +9135,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c389ff2b8d82cdd469f3ac705c22bca2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserDualWieldSystem
-  SpareWeapons: []
+  SpareWeapons:
+  - WeaponObject: {fileID: 1969385466790910519, guid: 48e6d1e32a34b4648b6c479df69aee08, type: 3}
+    RestPosition: {fileID: 0}
+    HandAttachPoint: {fileID: 4280692127862393939}
+    IsHeld: 0
+    IsReturning: 0
+    IsAtRest: 0
+  - WeaponObject: {fileID: 6058742149546682505, guid: 284133d77ce6366479f4a599f8129243, type: 3}
+    RestPosition: {fileID: 0}
+    HandAttachPoint: {fileID: 4280692127862393939}
+    IsHeld: 0
+    IsReturning: 0
+    IsAtRest: 0
+  - WeaponObject: {fileID: 9219172920572301526, guid: 450d3ab54a15772489cb6674d54504be, type: 3}
+    RestPosition: {fileID: 0}
+    HandAttachPoint: {fileID: 4280692127862393939}
+    IsHeld: 0
+    IsReturning: 0
+    IsAtRest: 0
+  - WeaponObject: {fileID: 5780321713066805294, guid: 258dbe9097e9a1642b79e005860c4819, type: 3}
+    RestPosition: {fileID: 0}
+    HandAttachPoint: {fileID: 4280692127862393939}
+    IsHeld: 0
+    IsReturning: 0
+    IsAtRest: 0
+  - WeaponObject: {fileID: 5271982162765659307, guid: bf3d9c592e636f4418b48a0003be4313, type: 3}
+    RestPosition: {fileID: 0}
+    HandAttachPoint: {fileID: 4280692127862393939}
+    IsHeld: 0
+    IsReturning: 0
+    IsAtRest: 0
+  - WeaponObject: {fileID: 4829361000171287212, guid: 68b005baca02913489d3b11f0e5c5ff5, type: 3}
+    RestPosition: {fileID: 0}
+    HandAttachPoint: {fileID: 4280692127862393939}
+    IsHeld: 0
+    IsReturning: 0
+    IsAtRest: 0
+  - WeaponObject: {fileID: 8904149331881654928, guid: 2ebaa46b5ef29a3489c6d50e714b8ee3, type: 3}
+    RestPosition: {fileID: 0}
+    HandAttachPoint: {fileID: 4280692127862393939}
+    IsHeld: 0
+    IsReturning: 0
+    IsAtRest: 0
   PickupAnimationDuration: 0.5
   PickupCurve:
     serializedVersion: 2
