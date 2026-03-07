@@ -89,9 +89,7 @@ namespace Progression
             {
                 SceneLoader.LoadPlayerScene().completed += _ =>
                 {
-                    CheckpointBehavior.InitialSpawnPlayer();
-                    Player.PlayerObject.GetComponent<PlayerMovement>().enabled = true;
-                    Player.PlayerObject.SetActive(true);
+                    Player.SpawnPlayerAtCheckpoint();
                 };
             }
             IsolatedLoad = false;

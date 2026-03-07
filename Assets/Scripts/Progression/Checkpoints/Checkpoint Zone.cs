@@ -31,7 +31,7 @@ namespace Progression.Checkpoints
         private const bool RELOAD_SCENE_ON_RESPAWN = true;
 
         // Static reference to the current checkpoint. This allows any part of the code to query the current spawn position and rotation.
-        private static CheckpointBehavior currentCheckpoint;
+        public static CheckpointBehavior currentCheckpoint { get; private set; }
 
         private static GameObject PlayerObject => Player.PlayerObject;
 
@@ -48,8 +48,6 @@ namespace Progression.Checkpoints
             if (currentCheckpoint != null && !overrideIfNull) return;
             currentCheckpoint = newCheckpoint;
         }
-
-        public static void InitialSpawnPlayer() => MovePlayerToCheckpoint();
 
         public static void SubscribeToPlayerRespawn() => Player.RespawnPlayer += RespawnPlayer;
         public static void UnsubscribeFromPlayerRespawn() => Player.RespawnPlayer -= RespawnPlayer;
@@ -77,21 +75,21 @@ namespace Progression.Checkpoints
                 // Just move the player to the checkpoint without reloading the scene
                 MovePlayerToCheckpoint();
             }
-        }
 
-        private static void MovePlayerToCheckpoint()
-        {
-            if (PlayerObject == null)
+            static void MovePlayerToCheckpoint()
             {
-                Debug.LogError("Cannot respawn player because the player object could not be found.");
-                return;
+                if (PlayerObject == null)
+                {
+                    Debug.LogError("Cannot respawn player because the player object could not be found.");
+                    return;
+                }
+
+                Debug.Log($"[Checkpoint] Moving {PlayerObject.name} to checkpoint: {currentCheckpoint}");
+
+                Player.SpawnPlayerAtCheckpoint(); // This will internally use the currentCheckpoint reference to get the spawn position and rotation
+
+                SceneLoader.OnSceneReloaded -= MovePlayerToCheckpoint; // Unsubscribe after moving the player
             }
-
-            Debug.Log($"[Checkpoint] Moving {PlayerObject.name} to checkpoint: {currentCheckpoint}");
-
-            PlayerObject.transform.SetPositionAndRotation(currentCheckpoint.GetSpawnPosition(), currentCheckpoint.GetSpawnRotation());
-            
-            SceneLoader.OnSceneReloaded -= MovePlayerToCheckpoint; // Unsubscribe after moving the player
         }
 
         private void TriggerCheckpoint()

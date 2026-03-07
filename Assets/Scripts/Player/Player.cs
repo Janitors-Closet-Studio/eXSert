@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using Progression.Checkpoints;
 
 /// <summary>
 /// Static class for managing the player.
@@ -25,6 +26,15 @@ public static class Player
         }
     }
 
+    private static CheckpointBehavior currentCheckpoint => CheckpointBehavior.currentCheckpoint;
+
     public static event Action RespawnPlayer;
     public static void TriggerRespawn() => RespawnPlayer?.Invoke();
+
+    public static void SpawnPlayerAtCheckpoint()
+    {
+        PlayerObject.transform.SetPositionAndRotation(currentCheckpoint.GetSpawnPosition(), currentCheckpoint.GetSpawnRotation());
+        Player.PlayerObject.GetComponent<PlayerMovement>().enabled = true;
+        Player.PlayerObject.SetActive(true);
+    }
 }

@@ -11,7 +11,6 @@ public static class SceneLoader
 {
     private const string PLAYER_SCENE = "PlayerScene"; // The name of the player scene
     private const string MAIN_MENU_SCENE = "MainMenu"; // The name of the main menu scene
-    private const string LOADING_SCENE = "LoadingScene"; // The name of the loading scene
 
     /// <summary>Number of currently loaded scenes.</summary>
     public static int LoadedSceneCount => SceneManager.sceneCount;
@@ -38,7 +37,7 @@ public static class SceneLoader
     public static Action OnSceneReloaded { get; internal set; }
 
     /// <summary>Loads a SceneAsset (additive). Returns the SceneAsset or null on error.</summary>
-    public static SceneAsset Load(SceneAsset scene, bool forceReload = false)
+    public static AsyncOperation Load(SceneAsset scene, bool forceReload = false, bool loadScreen = true)
     {
         Debug.Log($"[Scene Loader] Request to load scene '{scene}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
         if (scene == null)
@@ -49,26 +48,44 @@ public static class SceneLoader
 
         if (forceReload) OnSceneReloaded?.Invoke();
 
-        if (scene.IsLoaded() && forceReload) SceneManager.UnloadSceneAsync(scene.SceneName);
+        // Async Operation Setup
+        AsyncOperation operation = null;
 
-        if (!scene.IsLoaded() || forceReload)
-            SceneManager.LoadSceneAsync(scene.SceneName, LoadSceneMode.Additive);
+        // Check if the scene is already loaded before attempting to load it again.
+        // If forceReload is false, exit with a warning.
+        if (scene.IsLoaded() && !forceReload)
+        {
+            Debug.LogWarning($"Scene '{scene.SceneName}' is already loaded. Use forceReload=true to reload it.");
+            return null;
+        }
 
-        return scene;
+        // If the scene is loaded and forceReload is true, unload it first before loading again.
+        if (scene.IsLoaded())
+        {
+            SceneManager.UnloadSceneAsync(scene).completed += 
+                operation => SceneManager.LoadSceneAsync(scene, LoadSceneMode.Additive);
+        }
+        
+        else operation = SceneManager.LoadSceneAsync(scene.SceneName, LoadSceneMode.Additive);
+
+        return operation;
     }
 
+    /*
     /// <summary>Attempts to load a scene by name. If a SceneAsset exists it will be used; otherwise a direct additive load is attempted.</summary>
-    public static SceneAsset Load(string sceneName)
+    public static AsyncOperation Load(string sceneName)
     {
         var asset = SceneAsset.GetSceneAsset(sceneName);
         if (asset == null)
         {
-            Debug.LogWarning($"[Scene Loader] SceneAsset for '{sceneName}' not found, attempting direct scene load.");
-            SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            Debug.LogError($"[Scene Loader] SceneAsset for '{sceneName}' not found, attempting direct scene load.");
             return null;
         }
-        return Load(asset, false);
+        AsyncOperation operation = SceneManager.LoadSceneAsync(asset, LoadSceneMode.Additive);
+
+        return operation;
     }
+    */
 
     /// <summary>Load the first gameplay scene then the player scene.</summary>
     public static void LoadIntoGame(SceneAsset firstScene)
@@ -79,10 +96,16 @@ public static class SceneLoader
             return;
         }
 
-        SceneManager.LoadSceneAsync(firstScene.SceneName, LoadSceneMode.Additive).completed += static _ =>
+        Load(firstScene).completed += static _ =>
         {
-            LoadPlayerScene(characterStartInactive: false).completed += static __ => Unload(MAIN_MENU_SCENE);
+            LoadPlayerScene().completed += static __ =>
+            {
+                Player.SpawnPlayerAtCheckpoint();
+                Unload(MAIN_MENU_SCENE);
+            };
         };
+
+        return;
     }
 
     /// <summary>Loads the player scene and optionally positions/initializes the player.</summary>
@@ -143,33 +166,20 @@ public static class SceneLoader
     }
 
     /// <summary>Unload SceneAsset if loaded.</summary>
-    public static SceneAsset Unload(SceneAsset scene)
+    public static AsyncOperation Unload(SceneAsset scene)
     {
+        AsyncOperation operation = null;
+
         if (scene == null)
         {
-            Debug.LogError("Cannot unload a null SceneAsset.");
+            Debug.LogError("[Scene Loader] Cannot unload a null SceneAsset.");
             return null;
         }
 
-        if (scene.IsLoaded()) SceneManager.UnloadSceneAsync(scene.SceneName);
+        if (scene.IsLoaded()) operation = SceneManager.UnloadSceneAsync(scene.SceneName);
         else Debug.LogWarning($"Scene '{scene.SceneName}' is not loaded, cannot unload.");
 
-        return scene;
-    }
-
-    /// <summary>Unload by scene name (tries SceneAsset first, then direct scene name unload).</summary>
-    public static void Unload(string sceneName)
-    {
-        var asset = SceneAsset.GetSceneAsset(sceneName);
-        if (asset != null)
-        {
-            Unload(asset);
-            return;
-        }
-
-        var scene = SceneManager.GetSceneByName(sceneName);
-        if (scene.isLoaded) SceneManager.UnloadSceneAsync(scene);
-        else Debug.LogWarning($"Scene '{sceneName}' is not loaded, cannot unload.");
+        return operation;
     }
 
     /// <summary>Unloads all loaded scenes except the player scene.</summary>
