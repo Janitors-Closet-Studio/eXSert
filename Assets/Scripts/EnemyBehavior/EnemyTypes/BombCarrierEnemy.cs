@@ -11,7 +11,8 @@ public enum BombAttackBehavior
 {
     ChargeAndExplode,   // Default: charge straight, explode on contact/timer
     StopAndLeap,        // Stop, leap at player, explode by proximity
-    ZigZag              // Zig-zag quickly toward player, explode on contact/timer
+    ZigZag,             // Zig-zag quickly toward player, explode on contact/timer
+    TriggerCountdown    // Move until the player enters the trigger zone, then stop and count down in place
 }
 
 public enum BombStates
@@ -257,9 +258,34 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             case BombAttackBehavior.ZigZag:
                 yield return StartCoroutine(ZigZagRoutine());
                 break;
+            case BombAttackBehavior.TriggerCountdown:
+                yield return StartCoroutine(TriggerCountdownRoutine());
+                break;
         }
         // After attack, trigger explosion
         if (canExplode)
+            enemyAI.Fire(BombTriggers.Explode);
+    }
+
+    private IEnumerator TriggerCountdownRoutine()
+    {
+        if (agent != null && agent.enabled)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+        }
+
+        float timer = 0f;
+        while (!isExploding && timer < explodeTimer)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        while (!canExplode && !isExploding)
+            yield return null;
+
+        if (!isExploding)
             enemyAI.Fire(BombTriggers.Explode);
     }
 
@@ -439,10 +465,18 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     protected override void OnTriggerEnter(Collider other)
     {
         base.OnTriggerEnter(other);
-        if (!isExploding && canExplode && other.CompareTag("Player"))
+        if (isExploding || !canExplode || !other.CompareTag("Player"))
+            return;
+
+        if (attackBehavior == BombAttackBehavior.TriggerCountdown)
         {
-            enemyAI.Fire(BombTriggers.Explode);
+            if (enemyAI.State == BombStates.Approaching)
+                enemyAI.Fire(BombTriggers.InAttackRange);
+
+            return;
         }
+
+        enemyAI.Fire(BombTriggers.Explode);
     }
     protected override void OnTriggerStay(Collider other)
     {
@@ -524,8 +558,12 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
                 }
             }
 
+            float attackStartDistance = attackBehavior == BombAttackBehavior.TriggerCountdown
+                ? triggerRadius
+                : chargeStartDistance;
+
             // Only allow attacking if cooldown is over
-            if (canExplode && dist <= chargeStartDistance)
+            if (canExplode && dist <= attackStartDistance)
             {
                 // Fire the InAttackRange trigger to enter Attacking state
                 enemyAI.Fire(BombTriggers.InAttackRange);
