@@ -63,6 +63,7 @@ public class CutsceneManager : Singleton<CutsceneManager>
     private static void OnCutsceneStarted(VideoPlayer source)
     {
         Time.timeScale = 0f; // Pause the game while the cutscene plays
+        InputReader.inputBusy = true; // Prevent player input during the cutscene
         videoScreenInstance.SetActive(true); // Show the video screen when the cutscene starts
         source.started -= OnCutsceneStarted; // Unsubscribe from the event to prevent multiple triggers
     }
@@ -70,6 +71,7 @@ public class CutsceneManager : Singleton<CutsceneManager>
     private static void OnCutsceneFinished(VideoPlayer source)
     {
         Time.timeScale = 1f; // Resume the game when the cutscene finishes
+        InputReader.inputBusy = false; // Allow player input again
         videoScreenInstance.SetActive(false); // Hide the video screen when the cutscene finishes
         source.Stop();
         source.loopPointReached -= OnCutsceneFinished; // Unsubscribe from the event

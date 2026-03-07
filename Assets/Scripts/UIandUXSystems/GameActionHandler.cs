@@ -29,8 +29,6 @@ public class GameActionHandler : MonoBehaviour
     public void RestartFromCheckpoint()
     {
         Debug.Log("[GameActionHandler] Restarting from checkpoint...");
-
-        PrepareForSceneLoad(resumeImmediately: false);
         
         Player.TriggerRespawn();
     }

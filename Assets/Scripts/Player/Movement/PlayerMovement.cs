@@ -1427,8 +1427,51 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.y = Mathf.Min(currentMovement.y, 0f);
         }
 
+        // Clear any residual movement so FixedUpdate/ApplyMovement won't move the player back
         currentMovement.x = 0f;
         currentMovement.z = 0f;
+
+        // Stop dash state
+        dashVelocity = Vector3.zero;
+        isDashing = false;
+        dashForceStop = false;
+        suspendGravityDuringDash = false;
+        airDashInProgress = false;
+        if (dashRoutine != null)
+        {
+            try { StopCoroutine(dashRoutine); } catch { }
+            dashRoutine = null;
+        }
+        if (dashInputLockOwned)
+        {
+            InputReader.inputBusy = false;
+            dashInputLockOwned = false;
+        }
+
+        // Clear external velocity injection
+        externalVelocity = Vector3.zero;
+        externalVelocityActive = false;
+
+        // Stop attack forward-move
+        attackMoveVelocity = Vector3.zero;
+        attackMoveActive = false;
+        if (attackMoveRoutine != null)
+        {
+            try { StopCoroutine(attackMoveRoutine); } catch { }
+            attackMoveRoutine = null;
+        }
+
+        // Clear knockback state
+        isKnockbackActive = false;
+        knockbackVelocity = Vector3.zero;
+
+        // Clear pending jump
+        pendingJump = PendingJumpType.None;
+        pendingJumpTimer = 0f;
+
+        // Release external stun input lock if we own it
+        if (externalStunOwnsInput)
+            ReleaseExternalStunInputLock();
 
         return true;
     }

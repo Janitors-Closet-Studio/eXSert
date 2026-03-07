@@ -33,9 +33,9 @@ namespace UI.Loading
         private InputAction loadingZoomAction;
         private bool usingFallbackControls;
         private PlayerControls fallbackLoadingControls;
-        private Coroutine activeRoutine;
-        private bool isLoadingSequenceRunning;
-        private float resumeTimeScale = 1f;
+        private static Coroutine activeRoutine;
+        private static bool isLoadingSequenceRunning;
+        private static float resumeTimeScale = 1f;
 
         private void Awake()
         {
@@ -71,22 +71,19 @@ namespace UI.Loading
                 Instance = null;
         }
 
-        /*
+        
         /// <summary>
         /// Begins the loading workflow. The supplied routine performs the actual scene loading work.
         /// </summary>
-        public void BeginLoading(IEnumerator loadSteps, bool pauseGame = true, float? minimumDisplayOverride = null)
+        public static void BeginLoading(IEnumerator loadSteps, bool pauseGame = true, float? minimumDisplayOverride = null)
         {
-            if (!isActiveAndEnabled)
+            if (!Instance.isActiveAndEnabled)
             {
                 if (loadSteps != null)
                 {
-                    if (SceneLoader.Instance != null)
-                        SceneLoader.Instance.StartCoroutine(loadSteps);
-                    else
-                        StartCoroutine(loadSteps);
+                    Instance.StartCoroutine(loadSteps);
                 }
-                return;
+                // return;
             }
 
             if (isLoadingSequenceRunning)
@@ -98,10 +95,9 @@ namespace UI.Loading
             // Defensive: if a previous coroutine reference remained for any reason, clear it now.
             activeRoutine = null;
 
-            float targetMinimumDisplay = minimumDisplayOverride ?? minimumDisplaySeconds;
-            activeRoutine = StartCoroutine(RunLoadingSequence(loadSteps, pauseGame, targetMinimumDisplay));
+            float targetMinimumDisplay = minimumDisplayOverride ?? Instance.minimumDisplaySeconds;
+            activeRoutine = Instance.StartCoroutine(Instance.RunLoadingSequence(loadSteps, pauseGame, targetMinimumDisplay));
         }
-        */
 
         private IEnumerator RunLoadingSequence(IEnumerator loadSteps, bool pauseGame, float minimumDisplayDuration)
         {

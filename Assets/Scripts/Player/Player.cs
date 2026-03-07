@@ -33,8 +33,9 @@ public static class Player
 
     public static void SpawnPlayerAtCheckpoint()
     {
-        PlayerObject.transform.SetPositionAndRotation(currentCheckpoint.GetSpawnPosition(), currentCheckpoint.GetSpawnRotation());
-        Player.PlayerObject.GetComponent<PlayerMovement>().enabled = true;
-        Player.PlayerObject.SetActive(true);
+        PlayerMovement move = PlayerObject.GetComponent<PlayerMovement>();
+        move.enabled = true;
+        move.TrySnapToSoftLock(currentCheckpoint.GetSpawnPosition(), currentCheckpoint.GetSpawnRotation());
+        PlayerObject.SetActive(true);
     }
 }
