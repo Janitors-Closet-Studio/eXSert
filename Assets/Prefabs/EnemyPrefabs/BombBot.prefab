@@ -895,6 +895,37 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   isStepping: 0
+--- !u!1 &5041628733732403760
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4541140919715010361}
+  m_Layer: 8
+  m_Name: VFXTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4541140919715010361
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5041628733732403760}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.0109, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8971395851681967121}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5564106284195610736
 GameObject:
   m_ObjectHideFlags: 0
@@ -2268,6 +2299,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7629155587992802520}
+    - targetCorrespondingSourceObject: {fileID: -1085341173257131196, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4541140919715010361}
     - targetCorrespondingSourceObject: {fileID: -1019855395760606327, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: 0
       addedObject: {fileID: 3716948083463717113}
@@ -2422,15 +2456,15 @@ MonoBehaviour:
   attackInterval: 1
   attackActiveDuration: 0.5
   showAttackGizmo: 1
-  canBeParried: 1
+  canBeParried: 0
   useAnimationEventAttacks: 0
-  attackIndicatorPrefab: {fileID: 0}
-  attackIndicatorAnchor: {fileID: 0}
-  attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
+  attackIndicatorPrefab: {fileID: 5546006425814447105, guid: 78306cf130216f84ba796c52ee006b1c, type: 3}
+  attackIndicatorAnchor: {fileID: 4541140919715010361}
+  attackIndicatorOffset: {x: 0, y: 0, z: 0}
   attackIndicatorLeadTime: 0.5
   attackIndicatorDuration: 0
   attackIndicatorFollowsEnemy: 1
-  attackIndicatorScale: 1
+  attackIndicatorScale: 1.5
   healthBarPrefab: {fileID: 5126943973119965438, guid: 07e119a181a9f3b48be33765f2c7cca7, type: 3}
   healthBarAnchor: {fileID: 7629155587992802520}
   healthBarInstance: {fileID: 0}
@@ -2481,8 +2515,13 @@ MonoBehaviour:
   zigZagSpeed: 10
   zigZagFrequency: 8
   zigZagAmplitude: 2
-  showExplosionVisual: 0
-  explosionVisualDuration: 0.5
+  explosionVfxPrefab: {fileID: 2706563569258749630, guid: b36ecd158a34aba49848b903c9b66575, type: 3}
+  explosionVfxAnchor: {fileID: 0}
+  explosionVfxOffset: {x: 0, y: 0, z: 0}
+  explosionVfxScale: 1
+  explosionVfxFollowsEnemy: 1
+  showExplosionRadiusGizmo: 1
+  explosionVisualDuration: 1
   originalPrefab: {fileID: 0}
 --- !u!136 &1816273575239652059
 CapsuleCollider:

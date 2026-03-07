@@ -358,6 +358,37 @@ Transform:
   - {fileID: 4082974826009936122}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2863714406665249524
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1197649947736831404}
+  m_Layer: 8
+  m_Name: VFXTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1197649947736831404
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2863714406665249524}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.101, y: 0.047, z: 0.272}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5751955931125845077}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2903901945170837014
 GameObject:
   m_ObjectHideFlags: 0
@@ -2365,6 +2396,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -1085341173257131196, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: 0
       addedObject: {fileID: 653618753472580192}
+    - targetCorrespondingSourceObject: {fileID: -1085341173257131196, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1197649947736831404}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: -1
@@ -2599,11 +2633,12 @@ MonoBehaviour:
   canBeParried: 1
   useAnimationEventAttacks: 1
   attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
-  attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
+  attackIndicatorAnchor: {fileID: 1197649947736831404}
+  attackIndicatorOffset: {x: 0, y: 0, z: 0}
   attackIndicatorLeadTime: 0.5
   attackIndicatorDuration: 0
   attackIndicatorFollowsEnemy: 1
-  attackIndicatorScale: 1
+  attackIndicatorScale: 2
   healthBarPrefab: {fileID: 5126943973119965438, guid: 07e119a181a9f3b48be33765f2c7cca7, type: 3}
   healthBarAnchor: {fileID: 6087566551674551161}
   healthBarInstance: {fileID: 0}

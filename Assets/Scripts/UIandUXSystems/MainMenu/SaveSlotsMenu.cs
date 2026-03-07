@@ -194,10 +194,10 @@ public class SaveSlotsMenu : Menu
 
     private void LoadMusicScene()
     {
-        SceneAsset musicScene = SceneAsset.Load("MusicScene");
+        SceneAsset musicScene = SceneAsset.GetSceneAsset("MusicScene");
         if (musicScene != null && !IsLoaded(musicScene))
         {
-            SceneManager.LoadScene(musicScene, LoadSceneMode.Additive);
+            SceneManager.LoadScene(musicScene.SceneName, LoadSceneMode.Additive);
         }
         else
         {
@@ -207,9 +207,9 @@ public class SaveSlotsMenu : Menu
 
     private static SceneAsset ResolveLoadableSceneOrFallback(SceneAsset scene, SceneAsset fallbackScene)
     {
-        if (scene != null && Application.CanStreamedLevelBeLoaded(scene)) return scene;
+        if (scene != null && Application.CanStreamedLevelBeLoaded(scene.SceneName)) return scene;
 
-        if (fallbackScene != null && Application.CanStreamedLevelBeLoaded(fallbackScene)) return fallbackScene;
+        if (fallbackScene != null && Application.CanStreamedLevelBeLoaded(fallbackScene.SceneName)) return fallbackScene;
 
         Debug.LogError($"Neither the saved scene '{scene}' nor the fallback scene '{fallbackScene}' could be loaded. Check that they are included in the build settings and that the saved scene name is correct.");
         return null;

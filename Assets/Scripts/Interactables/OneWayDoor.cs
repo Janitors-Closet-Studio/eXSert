@@ -14,7 +14,7 @@ public class OneWayDoor : DoorHandler
         public ScenePair(SceneAsset a, SceneAsset b)
         {
             // Always store in sorted order for equality
-            if (string.Compare(a?.sceneName, b?.sceneName) <= 0)
+            if (string.Compare(a?.SceneName, b?.SceneName, System.StringComparison.Ordinal) <= 0)
             {
                 sceneA = a;
                 sceneB = b;
@@ -41,8 +41,8 @@ public class OneWayDoor : DoorHandler
         // Generate a hash code that is order-insensitive
         public override int GetHashCode()
         {
-            int hashA = sceneA ? sceneA.sceneName.GetHashCode() : 0;
-            int hashB = sceneB ? sceneB.sceneName.GetHashCode() : 0;
+            int hashA = sceneA ? sceneA.SceneName.GetHashCode() : 0;
+            int hashB = sceneB ? sceneB.SceneName.GetHashCode() : 0;
             // Order-insensitive hash
             return hashA ^ hashB;
         }
