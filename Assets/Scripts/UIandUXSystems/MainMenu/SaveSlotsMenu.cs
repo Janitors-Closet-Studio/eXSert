@@ -144,6 +144,8 @@ public class SaveSlotsMenu : Menu
 
         DataPersistenceManager.ChangeSelectedProfileId(selectedProfileId);
 
+        LoadMusicScene();
+
         if (isLoadingGame) LoadGame();
         else StartNewGame();
     }
@@ -173,6 +175,34 @@ public class SaveSlotsMenu : Menu
         savedScene = ResolveLoadableSceneOrFallback(savedScene, firstLevel);
 
         SceneAsset.LoadIntoGame(savedScene);
+    }
+
+    private bool IsLoaded(SceneAsset scene)
+    {
+        if (scene == null) return false;
+
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            Scene loadedScene = SceneManager.GetSceneAt(i);
+            if (string.Equals(loadedScene.name, scene.sceneName, System.StringComparison.InvariantCultureIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void LoadMusicScene()
+    {
+        SceneAsset musicScene = SceneAsset.Load("MusicScene");
+        if (musicScene != null && !IsLoaded(musicScene))
+        {
+            SceneManager.LoadScene(musicScene, LoadSceneMode.Additive);
+        }
+        else
+        {
+            Debug.LogError("MusicScene could not be loaded. Check that it exists and is included in the build settings.");
+        }
     }
 
     private static SceneAsset ResolveLoadableSceneOrFallback(SceneAsset scene, SceneAsset fallbackScene)

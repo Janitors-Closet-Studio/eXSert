@@ -243,6 +243,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         Debug.Log(Time.timeScale + "is the current timescale when showing pause menu.");  
         Time.timeScale = 0f;
         IsPaused = true;
+        MufffleMusicForMenu(true);
         currentActiveMenu = ActiveMenu.PauseMenu;
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
@@ -300,6 +301,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         Time.timeScale = 1f;
         IsPaused = false;
         currentActiveMenu = ActiveMenu.None;
+
+        MufffleMusicForMenu(false);
 
         HideAllMenus();
 
@@ -393,7 +396,32 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         return true;
     }
 
-    
+    private void MufffleMusicForMenu(bool shouldMuffle)
+    {
+        if(SoundManager.Instance == null || SoundManager.Instance.levelMusicSource == null)
+            return;
+
+        var lowPassFilter = SoundManager.Instance.levelMusicSource.GetComponent<AudioLowPassFilter>();
+        var oldCutoff = lowPassFilter != null ? lowPassFilter.cutoffFrequency : 22000f;
+
+
+        if (shouldMuffle)
+        {
+            Debug.Log("Muffling music for menu");
+            SoundManager.Instance.levelMusicSource.volume *= 0.5f; // Muffle music
+            if (lowPassFilter != null)
+                lowPassFilter.cutoffFrequency = 500f; // Apply low-pass filter
+            else
+                Debug.LogWarning("No AudioLowPassFilter found on level music source. Music will be muffled by volume reduction only.");
+        }
+        else
+        {
+            Debug.Log("Restoring music after menu");
+            SoundManager.Instance.levelMusicSource.volume /= 0.5f; // Restore music volume
+            if (lowPassFilter != null)
+                lowPassFilter.cutoffFrequency = oldCutoff; // Revert low-pass filter
+        }
+    }
 
     private void CacheHudRootName()
     {

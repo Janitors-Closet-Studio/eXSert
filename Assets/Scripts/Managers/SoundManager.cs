@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using Singletons;
-
+using System.Collections;
 public class SoundManager : Singleton<SoundManager>
 {
     [SerializeField] protected override bool ShouldPersistAcrossScenes => true;
@@ -105,5 +105,34 @@ public class SoundManager : Singleton<SoundManager>
             return 0f;
 
         return Mathf.Clamp01(scaledVolume / masterVolume);
+    }
+
+    public void FadeOutMusic(float duration)
+    {
+        if (musicSource != null)
+        {
+            StartCoroutine(FadeOutCoroutine(musicSource, duration));
+        }
+    }
+    public IEnumerator FadeOutCoroutine(AudioSource musicSource, float fadeDuration)
+    {
+        if (musicSource == null || fadeDuration <= 0f)
+            yield break;
+
+
+        Debug.Log("Starting fade out coroutine for music source: " + musicSource.name);
+        float startVolume = musicSource.volume;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < fadeDuration)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            float newVolume = Mathf.Lerp(startVolume, 0f, elapsedTime / fadeDuration);
+            musicSource.volume = newVolume;
+            yield return null;
+        }
+
+        musicSource.volume = 0f;
+        musicSource.Stop();
     }
 }

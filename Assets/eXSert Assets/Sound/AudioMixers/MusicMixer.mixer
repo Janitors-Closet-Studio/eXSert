@@ -29,7 +29,9 @@ AudioMixerController:
   m_SuspendThreshold: -80
   m_EnableSuspend: 1
   m_UpdateMode: 0
-  m_ExposedParameters: []
+  m_ExposedParameters:
+  - guid: 37454be0197d55145a91e41b73c2ec0c
+    name: CutoffFreq
   m_AudioMixerGroupViews:
   - guids:
     - 4b1b847130253c546b7a36c3dbb9d316
@@ -84,6 +86,24 @@ AudioMixerSnapshotController:
   m_SnapshotID: 5bfc9050ff3df904cbc2bad03a41b245
   m_FloatValues: {}
   m_TransitionOverrides: {}
+--- !u!244 &1584253494936082825
+AudioMixerEffectController:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_EffectID: d79989b85206f27418036b914977b31a
+  m_EffectName: Lowpass
+  m_MixLevel: dd1adfa36e3d56a4ab07f1249c665f39
+  m_Parameters:
+  - m_ParameterName: Cutoff freq
+    m_GUID: 37454be0197d55145a91e41b73c2ec0c
+  - m_ParameterName: Resonance
+    m_GUID: 43950e7d3d1c7a24f84c4b325e48f979
+  m_SendTarget: {fileID: 0}
+  m_EnableWetMix: 0
+  m_Bypass: 0
 --- !u!243 &1637922808686332862
 AudioMixerGroupController:
   m_ObjectHideFlags: 0
@@ -99,6 +119,7 @@ AudioMixerGroupController:
   m_Send: 00000000000000000000000000000000
   m_Effects:
   - {fileID: -4128488100423762512}
+  - {fileID: 1584253494936082825}
   m_UserColorIndex: 0
   m_Mute: 0
   m_Solo: 0

@@ -264,6 +264,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Load Game
+
+'
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -420,12 +426,6 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Load Game
-
-'
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -439,6 +439,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Quit
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -574,10 +578,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Quit
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2715,6 +2715,66 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
+--- !u!1 &945756354
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 945756356}
+  - component: {fileID: 945756355}
+  m_Layer: 0
+  m_Name: OneWayDoor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &945756355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945756354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e64a328f4a379d34abce1779ffbbc156, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OneWayDoor
+  currentDoorState: 0
+  doorLockState: 0
+  doorType: 0
+  doorParts: []
+  openSpeed: 2
+  hingePivot: {fileID: 0}
+  lightBulb: {fileID: 0}
+  lockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  unlockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  doorLight: {fileID: 0}
+  lockedLightColor: {r: 0, g: 0, b: 0, a: 0}
+  unlockedLightColor: {r: 0, g: 0, b: 0, a: 0}
+  lightFadeSpeed: 2
+  scene1: {fileID: 0}
+  scene2: {fileID: 0}
+  isPlayerInside: 0
+--- !u!4 &945756356
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 945756354}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 14.081, y: 6.77786, z: 5.257}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &952250542
 GameObject:
   m_ObjectHideFlags: 0
@@ -2860,6 +2920,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Credits
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 0
@@ -2980,10 +3044,6 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Credits
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3088,6 +3148,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -3251,12 +3317,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5682,6 +5742,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -5845,12 +5911,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -7458,3 +7518,4 @@ SceneRoots:
   - {fileID: 1878817953}
   - {fileID: 598797933}
   - {fileID: 478252685}
+  - {fileID: 945756356}
