@@ -1,8 +1,7 @@
 using UnityEngine;
-using Singletons;
 using UnityEngine.Video;
-using System.Runtime.CompilerServices;
-using System;
+using Managers.TimeLord;
+using Singletons;
 
 [RequireComponent(typeof(VideoPlayer))]
 public class CutsceneManager : Singleton<CutsceneManager>
@@ -13,6 +12,8 @@ public class CutsceneManager : Singleton<CutsceneManager>
     public override string ToString() => $"Cutscene Manager";
 
     private VideoPlayer _videoPlayer;
+    private static string _pauseToken;
+
     public static VideoPlayer VideoPlayer
     {
         get
@@ -62,7 +63,9 @@ public class CutsceneManager : Singleton<CutsceneManager>
 
     private static void OnCutsceneStarted(VideoPlayer source)
     {
-        Time.timeScale = 0f; // Pause the game while the cutscene plays
+        // Request pause via the coordinator rather than directly changing Time.timeScale.
+        _pauseToken = PauseCoordinator.RequestPause("CutsceneManager");
+
         InputReader.inputBusy = true; // Prevent player input during the cutscene
         videoScreenInstance.SetActive(true); // Show the video screen when the cutscene starts
         source.started -= OnCutsceneStarted; // Unsubscribe from the event to prevent multiple triggers
@@ -70,7 +73,13 @@ public class CutsceneManager : Singleton<CutsceneManager>
 
     private static void OnCutsceneFinished(VideoPlayer source)
     {
-        Time.timeScale = 1f; // Resume the game when the cutscene finishes
+        // Release our pause request; PauseCoordinator will only unpause if there are no remaining owners.
+        if (!string.IsNullOrWhiteSpace(_pauseToken))
+        {
+            PauseCoordinator.ReleaseTimeScale(_pauseToken);
+            _pauseToken = null;
+        }
+
         InputReader.inputBusy = false; // Allow player input again
         videoScreenInstance.SetActive(false); // Hide the video screen when the cutscene finishes
         source.Stop();

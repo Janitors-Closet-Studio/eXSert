@@ -211,7 +211,7 @@ public class WarningButtonFunctionality : MonoBehaviour
             case WarningAction.ReturnToMainMenu:
                 // FadeOutLevelMusic();
                 PauseManager.Instance?.ResumeGame();
-                SceneLoader.LoadMainMenu();
+                SceneLoader.LoadMainMenuCoroutine();
                 break;
 
             case WarningAction.QuitGame:

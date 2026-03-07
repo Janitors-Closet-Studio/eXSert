@@ -41,13 +41,13 @@ namespace Progression.SceneManagement
         private void LoadScene()
         {
             Debug.Log($"Loading scene {sceneToManage.name} due to player entering zone {this.gameObject.name}.");
-            SceneLoader.Load(sceneToManage);
+            SceneLoader.LoadCoroutine(sceneToManage, loadScreen: false);
         }
 
         private void UnloadScene()
         {
             Debug.Log($"Unloading scene {sceneToManage.name} due to player entering zone {this.gameObject.name}.");
-            SceneLoader.Unload(sceneToManage);
+            SceneLoader.UnloadCoroutine(sceneToManage);
         }
     }
 }

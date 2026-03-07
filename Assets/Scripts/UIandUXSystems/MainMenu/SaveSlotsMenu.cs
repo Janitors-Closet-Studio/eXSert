@@ -154,7 +154,7 @@ public class SaveSlotsMenu : Menu
 
         // Potentially consider adding the ability to reset progress here
 
-        SceneLoader.LoadIntoGame(firstLevel);
+        SceneLoader.LoadIntoGame(firstLevel, newGame: true);
     }
 
     private void LoadGame()
@@ -172,7 +172,7 @@ public class SaveSlotsMenu : Menu
 
         savedScene = ResolveLoadableSceneOrFallback(savedScene, firstLevel);
 
-        SceneLoader.LoadIntoGame(savedScene);
+        SceneLoader.LoadIntoGame(savedScene, newGame: false);
     }
 
     private static SceneAsset ResolveLoadableSceneOrFallback(SceneAsset scene, SceneAsset fallbackScene)
