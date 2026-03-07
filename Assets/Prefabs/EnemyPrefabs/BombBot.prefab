@@ -2287,6 +2287,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1816273575239652059}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6155096684473301143}
   m_SourcePrefab: {fileID: 100100000, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
 --- !u!1 &50017726441241092 stripped
 GameObject:
@@ -2422,6 +2425,7 @@ MonoBehaviour:
   canBeParried: 1
   useAnimationEventAttacks: 0
   attackIndicatorPrefab: {fileID: 0}
+  attackIndicatorAnchor: {fileID: 0}
   attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
   attackIndicatorLeadTime: 0.5
   attackIndicatorDuration: 0
@@ -2455,6 +2459,7 @@ MonoBehaviour:
   movementSFXVolume: 0.5
   movementSFXFadeOutDuration: 0.3
   movementSFXSpeedThreshold: 0.1
+  loopSFXContinuously: 0
   behaviorProfile: {fileID: 11400000, guid: 8f489f728ce25194a9e402d75d029140, type: 2}
   patrolColor: {r: 0, g: 1, b: 0, a: 1}
   chaseColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
@@ -2464,8 +2469,8 @@ MonoBehaviour:
   explosionRadius: 3
   explosionDamage: 100
   randomizeBehavior: 0
-  attackBehavior: 0
-  explodeTimer: 1.5
+  attackBehavior: 3
+  explodeTimer: 5
   fleeDistanceFromPlayer: 30
   postPocketExplodeCooldown: 1.5
   chargeStartDistance: 6
@@ -2502,6 +2507,28 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!195 &6155096684473301143
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 50017726441241092}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!4 &266319535536035153 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8087634531222105596, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
