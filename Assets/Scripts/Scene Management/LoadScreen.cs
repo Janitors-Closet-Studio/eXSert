@@ -1,5 +1,6 @@
 using UnityEngine;
 using Singletons;
+using UI.Loading;
 
 /// <summary>
 /// Static class responsible for managing the loading screen UI and behavior during scene transitions.
@@ -19,6 +20,11 @@ public class LoadScreen : Singleton<LoadScreen>
         loadScren = Instantiate(loadScreenPrefab);
 
         loadScreenPrefab.SetActive(false); // Ensure the load screen is hidden at the start
+    }
+
+    public static void StartLoading()
+    {
+        LoadingScreenController.BeginLoading(null);
     }
 
 }
