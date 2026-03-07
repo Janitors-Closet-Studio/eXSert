@@ -13,6 +13,7 @@ namespace Progression.Encounters
 
         [SerializeField] private bool dropObjectOnClear = false;
         [SerializeField] private GameObject objectToDrop;
+        [SerializeField] private bool fightInElevator = false;
         private bool dropAtLastEnemyPosition = true;
         #endregion
 
@@ -108,7 +109,8 @@ namespace Progression.Encounters
             if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter started: {name} with {wavesQueue.Count} wave/s");
 
             encounterStarted = true;
-            SpawnNextWave();
+            float startDelay = fightInElevator ? 7f : 0f; // Optional delay for elevator fights
+            SpawnNextWave(startDelay);
         }
 
         private void DropItem()

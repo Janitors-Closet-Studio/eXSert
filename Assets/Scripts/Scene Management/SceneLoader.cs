@@ -48,6 +48,16 @@ public static class SceneLoader
 
         if (forceReload) OnSceneReloaded?.Invoke();
 
+        if (loadScreen)
+        {
+            if (!SceneAsset.GetSceneAsset("LoadingScene").IsLoaded())
+            {
+                AsyncOperation loadingScreenOp = SceneManager.LoadSceneAsync("LoadingScene", LoadSceneMode.Additive);
+                loadingScreenOp.completed += static _ => LoadScreen.StartLoading();
+            }
+            else LoadScreen.StartLoading();
+        }
+
         // Async Operation Setup
         AsyncOperation operation = null;
 
@@ -70,22 +80,6 @@ public static class SceneLoader
 
         return operation;
     }
-
-    /*
-    /// <summary>Attempts to load a scene by name. If a SceneAsset exists it will be used; otherwise a direct additive load is attempted.</summary>
-    public static AsyncOperation Load(string sceneName)
-    {
-        var asset = SceneAsset.GetSceneAsset(sceneName);
-        if (asset == null)
-        {
-            Debug.LogError($"[Scene Loader] SceneAsset for '{sceneName}' not found, attempting direct scene load.");
-            return null;
-        }
-        AsyncOperation operation = SceneManager.LoadSceneAsync(asset, LoadSceneMode.Additive);
-
-        return operation;
-    }
-    */
 
     /// <summary>Load the first gameplay scene then the player scene.</summary>
     public static void LoadIntoGame(SceneAsset firstScene, bool newGame = false)
