@@ -35,6 +35,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     public static bool IsPaused { get; private set; } = false;
     
+    /// <summary>
+    /// Fired when the game is paused. Subscribe to this to pause audio sources, animations, etc.
+    /// </summary>
+    public static event System.Action OnPaused;
+    
+    /// <summary>
+    /// Fired when the game is resumed. Subscribe to this to resume audio sources, animations, etc.
+    /// </summary>
+    public static event System.Action OnResumed;
+    
     private enum ActiveMenu
     {
         None,
@@ -243,6 +253,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         Debug.Log(Time.timeScale + "is the current timescale when showing pause menu.");  
         Time.timeScale = 0f;
         IsPaused = true;
+        OnPaused?.Invoke();
         MufffleMusicForMenu(true);
         currentActiveMenu = ActiveMenu.PauseMenu;
 
@@ -265,6 +276,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         Time.timeScale = 0f;
         IsPaused = true;
+        OnPaused?.Invoke();
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
@@ -300,6 +312,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         Time.timeScale = 1f;
         IsPaused = false;
+        OnResumed?.Invoke();
         currentActiveMenu = ActiveMenu.None;
 
         MufffleMusicForMenu(false);

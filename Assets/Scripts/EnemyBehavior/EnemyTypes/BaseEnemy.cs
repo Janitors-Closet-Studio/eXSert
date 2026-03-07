@@ -410,6 +410,20 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         // Register with the attack queue system
         RegisterWithAttackQueue();
     }
+    
+    protected virtual void OnEnable()
+    {
+        // Subscribe to pause events for audio handling
+        PauseManager.OnPaused += PauseAllAudioSources;
+        PauseManager.OnResumed += ResumeAllAudioSources;
+    }
+    
+    protected virtual void OnDisable()
+    {
+        // Unsubscribe from pause events
+        PauseManager.OnPaused -= PauseAllAudioSources;
+        PauseManager.OnResumed -= ResumeAllAudioSources;
+    }
 
     // Update is called once per frame
     protected virtual void Update()
@@ -420,6 +434,29 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         {
             float currentSpeed = agent.velocity.magnitude;
             UpdateMovementSFX(currentSpeed);
+        }
+    }
+    
+    /// <summary>
+    /// Pauses all audio sources on this enemy. Override in derived classes to pause additional sources.
+    /// </summary>
+    protected virtual void PauseAllAudioSources()
+    {
+        if (movementAudioSource != null && movementAudioSource.isPlaying)
+        {
+            movementAudioSource.Pause();
+        }
+    }
+    
+    /// <summary>
+    /// Resumes all audio sources on this enemy. Override in derived classes to resume additional sources.
+    /// </summary>
+    protected virtual void ResumeAllAudioSources()
+    {
+        // Only resume movement audio if we were moving (wasMovingForSFX tracks this)
+        if (movementAudioSource != null && wasMovingForSFX)
+        {
+            movementAudioSource.UnPause();
         }
     }
 

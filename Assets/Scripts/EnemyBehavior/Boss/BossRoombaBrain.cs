@@ -931,6 +931,10 @@ namespace EnemyBehavior.Boss
             
             // Register with attack queue system
             RegisterWithAttackQueue();
+            
+            // Subscribe to pause events for audio handling
+            PauseManager.OnPaused += OnGamePaused;
+            PauseManager.OnResumed += OnGameResumed;
         }
 
 
@@ -948,6 +952,10 @@ namespace EnemyBehavior.Boss
             
             // Unregister from attack queue system
             UnregisterFromAttackQueue();
+            
+            // Unsubscribe from pause events
+            PauseManager.OnPaused -= OnGamePaused;
+            PauseManager.OnResumed -= OnGameResumed;
         }
 
         void Update()
@@ -959,6 +967,28 @@ namespace EnemyBehavior.Boss
                 float t = Mathf.InverseLerp(0f, Mathf.Max(0.01f, MaxIdleSpeedForIntensity), speed);
                 float intensity = Mathf.Lerp(IdleIntensityMin, IdleIntensityMax, t);
                 animator.SetFloat(ParamIdleIntensity, intensity);
+            }
+        }
+        
+        /// <summary>
+        /// Called when the game is paused. Pauses audio sources.
+        /// </summary>
+        private void OnGamePaused()
+        {
+            if (AttackAudioSource != null && AttackAudioSource.isPlaying)
+            {
+                AttackAudioSource.Pause();
+            }
+        }
+        
+        /// <summary>
+        /// Called when the game is resumed. Resumes audio sources.
+        /// </summary>
+        private void OnGameResumed()
+        {
+            if (AttackAudioSource != null)
+            {
+                AttackAudioSource.UnPause();
             }
         }
 

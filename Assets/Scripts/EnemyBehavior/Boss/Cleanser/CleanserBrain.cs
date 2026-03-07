@@ -26,6 +26,12 @@ namespace EnemyBehavior.Boss.Cleanser
             "Wing attacks can be guarded but not parried.\n" +
             "Halberd attacks can be parried but guard won't help.";
 
+[Header("Beta Testing Mode")]
+        [Tooltip("When enabled, Cleanser becomes invulnerable and only follows the player. No attacks, no aggression system, no ultimate. For beta testing purposes.")]
+        [SerializeField] private bool betaDummyMode = false;
+        [Tooltip("Distance at which the Cleanser stops following the player in dummy mode.")]
+        [SerializeField] private float dummyModeStoppingDistance = 3f;
+
         [Header("Profile")]
         [Tooltip("Behavior profile containing movement settings. If null, uses fallback values below.")]
         [SerializeField] private EnemyBehaviorProfile profile;
@@ -129,6 +135,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private CleanserPlatformController platformController;
         [SerializeField] private CleanserAggressionSystem aggressionSystem;
         [SerializeField] private VacuumSuctionEffect suctionEffect;
+        [SerializeField] private CleanserAnimController animController;
         [SerializeField] private Animator animator;
         [SerializeField] private AudioSource sfxSource;
 
@@ -226,6 +233,9 @@ namespace EnemyBehavior.Boss.Cleanser
         public void LoseHP(float damage)
         {
             if (isDefeated) return;
+            
+            // Invulnerable in dummy mode
+            if (betaDummyMode) return;
             
             float finalDamage = damage;
             if (isDamageReductionActive)
@@ -347,6 +357,7 @@ namespace EnemyBehavior.Boss.Cleanser
             dualWieldSystem = dualWieldSystem ?? GetComponent<CleanserDualWieldSystem>();
             platformController = platformController ?? GetComponent<CleanserPlatformController>();
             aggressionSystem = aggressionSystem ?? GetComponent<CleanserAggressionSystem>();
+            animController = animController ?? GetComponent<CleanserAnimController>() ?? GetComponentInChildren<CleanserAnimController>();
             animator = animator ?? GetComponentInChildren<Animator>();
             
             ApplyMovementSettings();
@@ -401,6 +412,10 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             RegisterWithAttackQueue();
             
+            // Subscribe to pause events for audio handling
+            PauseManager.OnPaused += OnGamePaused;
+            PauseManager.OnResumed += OnGameResumed;
+            
             if (mainLoopCoroutine != null)
                 StopCoroutine(mainLoopCoroutine);
             mainLoopCoroutine = StartCoroutine(MainCombatLoop());
@@ -409,6 +424,10 @@ namespace EnemyBehavior.Boss.Cleanser
         private void OnDisable()
         {
             UnregisterFromAttackQueue();
+            
+            // Unsubscribe from pause events
+            PauseManager.OnPaused -= OnGamePaused;
+            PauseManager.OnResumed -= OnGameResumed;
             
             if (mainLoopCoroutine != null)
             {
@@ -427,15 +446,51 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             UpdateAnimatorParameters();
             UpdateHealthBar();
-            UpdateAggressionBasedSpeed();
-            UpdatePlayerGuardingAggression();
+            
+            // Skip aggression updates in dummy mode
+            if (!betaDummyMode)
+            {
+                UpdateAggressionBasedSpeed();
+                UpdatePlayerGuardingAggression();
+            }
+        }
+        
+        /// <summary>
+        /// Called when the game is paused. Pauses audio sources.
+        /// </summary>
+        private void OnGamePaused()
+        {
+            if (sfxSource != null && sfxSource.isPlaying)
+            {
+                sfxSource.Pause();
+            }
+        }
+        
+        /// <summary>
+        /// Called when the game is resumed. Resumes audio sources.
+        /// </summary>
+        private void OnGameResumed()
+        {
+            if (sfxSource != null)
+            {
+                sfxSource.UnPause();
+            }
         }
 
         private void UpdateAnimatorParameters()
         {
-            if (animator != null && agent != null)
+            if (agent == null) return;
+            
+            float speed = agent.velocity.magnitude;
+            float normalizedSpeed = agent.speed > 0f ? speed / agent.speed : 0f;
+            
+            // Use animation controller if available, otherwise fall back to direct animator
+            if (animController != null)
             {
-                float speed = agent.velocity.magnitude;
+                animController.PlayLocomotion(normalizedSpeed);
+            }
+            else if (animator != null)
+            {
                 animator.SetFloat(paramMoveSpeed, speed);
                 animator.SetBool(paramIsMoving, speed > 0.1f);
             }
@@ -626,6 +681,13 @@ namespace EnemyBehavior.Boss.Cleanser
             
             while (!isDefeated)
             {
+                // Beta dummy mode: just follow the player, no attacks
+                if (betaDummyMode)
+                {
+                    yield return ExecuteDummyModeFollow();
+                    continue;
+                }
+                
                 while (isStunned)
                 {
                     yield return null;
@@ -733,6 +795,32 @@ namespace EnemyBehavior.Boss.Cleanser
                 // Fallback to basic movement
                 yield return MoveTowardPlayer(duration);
             }
+        }
+
+        /// <summary>
+        /// Simple follow behavior for beta dummy mode. 
+        /// Follows the player and stops at a reasonable distance. No attacks.
+        /// </summary>
+        private IEnumerator ExecuteDummyModeFollow()
+        {
+            if (player == null) yield break;
+
+            float dist = Vector3.Distance(transform.position, player.position);
+            
+            if (dist > dummyModeStoppingDistance)
+            {
+                // Move toward player
+                agent.SetDestination(player.position);
+                agent.stoppingDistance = dummyModeStoppingDistance;
+            }
+            else
+            {
+                // Stop and face player
+                agent.ResetPath();
+                yield return FaceTarget(player, 0.1f);
+            }
+            
+            yield return null;
         }
 
         private IEnumerator ExecuteCombo(CleanserCombo combo)
@@ -1931,8 +2019,18 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void TriggerAnimation(string triggerName)
         {
-            if (animator == null || string.IsNullOrEmpty(triggerName)) return;
-            animator.SetTrigger(triggerName);
+            if (string.IsNullOrEmpty(triggerName)) return;
+            
+            // Use animation controller if available (preferred)
+            if (animController != null)
+            {
+                animController.PlayAttack(triggerName);
+            }
+            else if (animator != null)
+            {
+                // Fallback to direct animator trigger
+                animator.SetTrigger(triggerName);
+            }
         }
 
         private void PlaySFX(AudioClip clip)
