@@ -135,6 +135,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private CleanserPlatformController platformController;
         [SerializeField] private CleanserAggressionSystem aggressionSystem;
         [SerializeField] private VacuumSuctionEffect suctionEffect;
+        [SerializeField] private CleanserAnimController animController;
         [SerializeField] private Animator animator;
         [SerializeField] private AudioSource sfxSource;
 
@@ -356,6 +357,7 @@ namespace EnemyBehavior.Boss.Cleanser
             dualWieldSystem = dualWieldSystem ?? GetComponent<CleanserDualWieldSystem>();
             platformController = platformController ?? GetComponent<CleanserPlatformController>();
             aggressionSystem = aggressionSystem ?? GetComponent<CleanserAggressionSystem>();
+            animController = animController ?? GetComponent<CleanserAnimController>() ?? GetComponentInChildren<CleanserAnimController>();
             animator = animator ?? GetComponentInChildren<Animator>();
             
             ApplyMovementSettings();
@@ -447,9 +449,18 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void UpdateAnimatorParameters()
         {
-            if (animator != null && agent != null)
+            if (agent == null) return;
+            
+            float speed = agent.velocity.magnitude;
+            float normalizedSpeed = agent.speed > 0f ? speed / agent.speed : 0f;
+            
+            // Use animation controller if available, otherwise fall back to direct animator
+            if (animController != null)
             {
-                float speed = agent.velocity.magnitude;
+                animController.PlayLocomotion(normalizedSpeed);
+            }
+            else if (animator != null)
+            {
                 animator.SetFloat(paramMoveSpeed, speed);
                 animator.SetBool(paramIsMoving, speed > 0.1f);
             }
@@ -1978,8 +1989,18 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void TriggerAnimation(string triggerName)
         {
-            if (animator == null || string.IsNullOrEmpty(triggerName)) return;
-            animator.SetTrigger(triggerName);
+            if (string.IsNullOrEmpty(triggerName)) return;
+            
+            // Use animation controller if available (preferred)
+            if (animController != null)
+            {
+                animController.PlayAttack(triggerName);
+            }
+            else if (animator != null)
+            {
+                // Fallback to direct animator trigger
+                animator.SetTrigger(triggerName);
+            }
         }
 
         private void PlaySFX(AudioClip clip)

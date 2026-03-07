@@ -3603,6 +3603,7 @@ Transform:
   - {fileID: 3439708993080574878}
   - {fileID: 2305301482217641234}
   - {fileID: 6069593360214277365}
+  - {fileID: 7013322031023464175}
   m_Father: {fileID: 5619892136756566092}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1717064890579678596
@@ -8599,6 +8600,7 @@ GameObject:
   - component: {fileID: 8538692178904831450}
   - component: {fileID: 4109895899566118951}
   - component: {fileID: 3402071617396780965}
+  - component: {fileID: 6942533847747032520}
   - component: {fileID: 7339073060746803466}
   m_Layer: 0
   m_Name: Boss_Cleanser
@@ -8964,6 +8966,7 @@ MonoBehaviour:
   platformController: {fileID: 0}
   aggressionSystem: {fileID: 6499608910825327414}
   suctionEffect: {fileID: 0}
+  animController: {fileID: 0}
   animator: {fileID: 0}
   sfxSource: {fileID: 0}
   paramMoveSpeed: MoveSpeed
@@ -9321,6 +9324,23 @@ MonoBehaviour:
   VacuumAudioSource: {fileID: 0}
   SuctionTarget: {fileID: 0}
   ArenaManager: {fileID: 0}
+--- !u!114 &6942533847747032520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4557741119611530341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25bc7e41ffc59d94dba3c7d8ab64176a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserAnimController
+  layerIndex: 0
+  defaultTransition: 0.15
+  attackTransition: 0.05
+  cleanserBrain: {fileID: 5616243074537824121}
+  logAnimationEvents: 0
 --- !u!95 &7339073060746803466
 Animator:
   serializedVersion: 7
@@ -13083,7 +13103,6 @@ Transform:
   - {fileID: 604776123191526446}
   - {fileID: 5975083950475058053}
   - {fileID: 2738490328029991005}
-  - {fileID: 7013322031023464175}
   m_Father: {fileID: 4268867301483941545}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6743119227808949036
@@ -18230,11 +18249,11 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 5421561954232782935}
+    m_TransformParent: {fileID: 9161943510287696900}
     m_Modifications:
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.009000003
+      value: 0.009000005
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.y
@@ -18242,35 +18261,35 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.0090000015
+      value: 0.009
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.17771555
+      value: -1.1713171
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.07250422
+      value: 1.0493454
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.2916956
+      value: -1.0753753
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.07954525
+      value: 0.87421477
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.9409976
+      value: -0.21682097
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.3269336
+      value: 0.19275454
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.036200896
+      value: -0.38933668
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
