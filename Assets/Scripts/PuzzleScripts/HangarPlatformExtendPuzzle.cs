@@ -10,6 +10,9 @@ using UnityEngine;
 public class HangarPlatformExtendPuzzle : PuzzlePart
 {
     [SerializeField] private float lerpSpeed = 10f;
+    [SerializeField] private Vector3 moveDirection = Vector3.right;
+    [SerializeField] private float moveDistance = 1.5f;
+
     private bool isExtending = false;
     private Vector3 startPos;
     private Vector3 targetPos;
@@ -18,21 +21,31 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
 
     private void Awake()
     {
-        origin = this.transform.position;
+        origin = transform.localPosition;
     }
 
     public override void ConsoleInteracted()
     {
-        throw new System.NotImplementedException();
+        Interact();
+    }
+
+    public void Extend()
+    {
+        StartPuzzle();
+    }
+
+    public void Retract()
+    {
+        EndPuzzle();
     }
 
     // Extends platform out to desired point
     public override void StartPuzzle()
     {
-        if(!isCompleted)
+        if (!isCompleted && !isExtending)
         {
             startPos = origin;
-            targetPos = new Vector3(startPos.x - 10, startPos.y, startPos.z);
+            targetPos = startPos + GetMoveOffset();
             isExtending = true;
             isCompleted = true;
         }
@@ -41,13 +54,30 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
     // If the platform is already extended, if it is clicked again it will revert
     public override void EndPuzzle()
     {
-        if(isCompleted)
+        if (isCompleted && !isExtending)
         {
-            startPos = this.transform.position;
+            startPos = transform.localPosition;
             targetPos = origin;
             isExtending = true;
             isCompleted = false;
         }
+    }
+
+    public void Interact()
+    {
+        if (isExtending)
+            return;
+
+        if (isCompleted)
+            EndPuzzle();
+        else
+            StartPuzzle();
+    }
+
+    private Vector3 GetMoveOffset()
+    {
+        Vector3 direction = moveDirection.sqrMagnitude > 0.0001f ? moveDirection.normalized : Vector3.right;
+        return direction * moveDistance;
     }
 
     // to reduce performance impact, change this to be a coroutine
@@ -55,12 +85,15 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
     {
         if (isExtending)
         {
-            float t = Mathf.Clamp01(lerpSpeed * Time.deltaTime);
-            this.transform.position = Vector3.Lerp(this.transform.position, targetPos, t);
+            transform.localPosition = Vector3.MoveTowards(
+                transform.localPosition,
+                targetPos,
+                lerpSpeed * Time.deltaTime
+            );
 
-            if (Vector3.Distance(this.transform.position, targetPos) < 0.01f)
+            if (Vector3.Distance(transform.localPosition, targetPos) < 0.0001f)
             {
-                this.transform.position = targetPos;
+                transform.localPosition = targetPos;
                 isExtending = false;
             }
         }

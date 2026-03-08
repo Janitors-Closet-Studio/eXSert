@@ -37,7 +37,12 @@ public class PuzzleInteraction : UnlockableInteraction
     {
         ButtonPressed?.Invoke();
         ButtonPressedWithSender?.Invoke(this);
-        GetPlayerAnimator().PlayIdle();
+
+        PlayerAnimationController playerAnimator = GetPlayerAnimator();
+        if (playerAnimator != null)
+        {
+            playerAnimator.PlayIdle();
+        }
     }
 
     private void FindPlayerReference()
@@ -51,6 +56,11 @@ public class PuzzleInteraction : UnlockableInteraction
 
     private PlayerAnimationController GetPlayerAnimator()
     {
+        if (playerReference == null)
+        {
+            FindPlayerReference();
+        }
+
         if (playerReference != null)
         {
             var animator = playerReference.GetComponentInChildren<PlayerAnimationController>();

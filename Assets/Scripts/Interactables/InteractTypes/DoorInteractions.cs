@@ -69,7 +69,7 @@ public class DoorInteractions : UnlockableInteraction
         enabled = false;
     }
 
-    public void SetInteractionEnabled(bool isEnabled)
+    public override void SetInteractionEnabled(bool isEnabled)
     {
         enabled = isEnabled;
     }

@@ -400,6 +400,11 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             playerHUDRoot.SetActive(visible);
     }
 
+    public void SetGameplayHUDVisible(bool visible)
+    {
+        SetHUDVisible(visible);
+    }
+
     private bool TryResolveHudRoot()
     {
         if (playerHUDRoot != null)

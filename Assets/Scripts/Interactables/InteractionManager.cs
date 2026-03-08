@@ -111,6 +111,38 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         InteractionUI.Instance?.HideInteractPrompt();
     }
 
+    public virtual void SetInteractionEnabled(bool isEnabled)
+    {
+        interactable = isEnabled;
+
+        if (!isEnabled)
+        {
+            if (isPlayerNearby)
+            {
+                InteractionUI.Instance?.HideInteractPrompt();
+            }
+
+            return;
+        }
+
+        if (!isPlayerNearby)
+        {
+            return;
+        }
+
+        SwapBasedOnInputMethod();
+
+        if (InteractionUI.Instance._interactText != null)
+        {
+            InteractionUI.Instance._interactText.gameObject.SetActive(true);
+            if (InteractionUI.Instance._interactText.transform.parent != null)
+                InteractionUI.Instance._interactText.transform.parent.gameObject.SetActive(true);
+        }
+
+        if (InteractionUI.Instance._interactIcon != null)
+            InteractionUI.Instance._interactIcon.gameObject.SetActive(true);
+    }
+
     private void OnInteract(InputAction.CallbackContext context)
     {
         OnInteractButtonPressed();

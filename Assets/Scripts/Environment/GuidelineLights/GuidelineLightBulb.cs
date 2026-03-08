@@ -137,6 +137,40 @@ public class GuidelineLightBulb : MonoBehaviour
         }
     }
 
+    public void SetPowerValue(float normalizedValue, float poweredOnLightIntensity)
+    {
+        if (!_hasCachedIds)
+            CachePropertyIds();
+
+        float clampedValue = Mathf.Clamp01(normalizedValue);
+        bool isPowered = clampedValue > 0.001f;
+        IsOn = isPowered;
+
+        ApplyEmission(Color.Lerp(offEmissionColor, onEmissionColor, clampedValue));
+
+        if (targetLights != null)
+        {
+            float targetIntensity = Mathf.Lerp(0f, Mathf.Max(0f, poweredOnLightIntensity), clampedValue);
+            for (int i = 0; i < targetLights.Length; i++)
+            {
+                if (targetLights[i] == null)
+                    continue;
+
+                targetLights[i].intensity = targetIntensity;
+                targetLights[i].enabled = isPowered;
+            }
+        }
+
+        if (targetVolumetricLights != null)
+        {
+            for (int i = 0; i < targetVolumetricLights.Length; i++)
+            {
+                if (targetVolumetricLights[i] != null)
+                    targetVolumetricLights[i].enabled = isPowered;
+            }
+        }
+    }
+
     // Sets intensity on the referenced Light components (does not enable/disable them).
     // Used by completion/latched states to dim lights without reauthoring prefabs.
     public void SetLightIntensity(float intensity)

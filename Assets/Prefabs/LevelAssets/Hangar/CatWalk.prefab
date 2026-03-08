@@ -359,7 +359,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 29575
+  m_VersionIndex: 29584
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -944,6 +944,67 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.05557312, y: 3.3029203, z: 1.0582591}
   m_Center: {x: 0, y: 0, z: 0.00000023841858}
+--- !u!1 &4097652478524601276
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6394004629939317406}
+  - component: {fileID: 6196645056363157000}
+  m_Layer: 0
+  m_Name: GuideLightController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6394004629939317406
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4097652478524601276}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 3.3026867, y: 1.004632, z: -223.8001}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 462992915508755321}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6196645056363157000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4097652478524601276}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bcf96b4427c01147adde640d4aaa682, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GuidelineLightRow
+  bulbs:
+  - {fileID: 1055077467873838688}
+  - {fileID: 8806735086097028934}
+  - {fileID: 3921993471664246733}
+  - {fileID: 2943049254981398980}
+  bulbsPerStep: 2
+  keepOnSteps: 2
+  stepSeconds: 0.14
+  passes: 1
+  direction: 0
+  resetAllOffOnPlay: 1
+  restartIfAlreadyPlaying: 1
+  pauseAtRowEnd: 1
+  rowEndPauseSeconds: 1
+  dimLightsWhenLatched: 1
+  latchedLightIntensity: 0.05
+  startBlinkOnEnable: 0
 --- !u!1 &4244711718951667766
 GameObject:
   m_ObjectHideFlags: 0
@@ -1303,7 +1364,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 33359
+  m_VersionIndex: 33368
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -1584,6 +1645,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 6394004629939317406}
   - {fileID: 5441168716851798052}
   - {fileID: 2332356334950962440}
   - {fileID: 1750360046597238220}
@@ -1954,7 +2016,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 33359
+  m_VersionIndex: 33368
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
