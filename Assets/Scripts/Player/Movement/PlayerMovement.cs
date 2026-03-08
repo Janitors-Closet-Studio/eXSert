@@ -691,7 +691,9 @@ public class PlayerMovement : MonoBehaviour
         DashPerformed?.Invoke();
 
         if (InputReader.inputBusy)
-            attackManager?.ForceCancelCurrentAttack();
+            attackManager?.ForceCancelCurrentAttack(resetCombo: false);
+
+        CancelPlungeState();
 
         canDash = false;
 
@@ -996,6 +998,14 @@ public class PlayerMovement : MonoBehaviour
         currentMovement.x *= 0.5f;
         currentMovement.z *= 0.5f;
         plungeLandingPending = false;
+    }
+
+    public void CancelPlungeState()
+    {
+        isPlunging = false;
+        plungeLandingPending = false;
+        plungeTimer = 0f;
+        aerialAttackLockTimer = 0f;
     }
 
     private void ApplyMovement()

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic; 
+using UnityEngine.Serialization;
 
 public class OneWayDoor : DoorHandler
 {
@@ -52,12 +53,15 @@ public class OneWayDoor : DoorHandler
     public static Dictionary<ScenePair, OneWayDoor> doorsByScenePair = new Dictionary<ScenePair, OneWayDoor>();
 
     [Header("One Way Door Scene Pair")]
-    [Tooltip("Scene 1 should be the scene the player is coming from This is used to ensure only one door exists between two scenes and to manage door state across scenes.")]
-    public SceneAsset scene1;
-    [Tooltip("Scene 2 should be the scene the player is going to This is used to ensure only one door exists between two scenes and to manage door state across scenes.")]
-    public SceneAsset scene2;
+    [FormerlySerializedAs("scene1")]
+    [Tooltip("The scene the player is currently in when using this doorway.")]
+    public SceneAsset playerCurrentScene;
 
-    private ScenePair myPair => new ScenePair(scene1, scene2);
+    [FormerlySerializedAs("scene2")]
+    [Tooltip("The scene the player is trying to move into through this doorway.")]
+    public SceneAsset playerDestinationScene;
+
+    private ScenePair myPair => new ScenePair(playerCurrentScene, playerDestinationScene);
 
     [Header("One Way Door Settings")]
     [Tooltip("For one-way doors, track if the door has been opened once to prevent reopening")]
@@ -65,58 +69,64 @@ public class OneWayDoor : DoorHandler
     [Tooltip("Track if the player is currently inside the door area for one-way doors")]
     [SerializeField, ReadOnly] private bool isPlayerInside = false;
 
+    [Tooltip("Optional secondary trigger that closes and locks the door once the player has fully passed through.")]
+    [SerializeField] private OneWayDoorCloseTrigger closeAndLockTrigger;
+
+    [Tooltip("Optional DoorInteractions controller to use when the close trigger should close the same linked door handlers as the interaction.")]
+    [SerializeField] private DoorInteractions controllingDoorInteraction;
+
+    [SerializeField, Min(0f)]
+    [Tooltip("Optional delay after crossing the close trigger before the door closes.")]
+    private float closeAfterPassingTriggerDelay = 0f;
+
+    private Coroutine closeAfterPassRoutine;
+
     private void Awake()
     {
+        if (closeAndLockTrigger != null)
+            closeAndLockTrigger.SetOwner(this);
+
         // Register this door in the static dictionary
-        if (scene1 != null && scene2 != null)
+        if (playerCurrentScene != null && playerDestinationScene != null)
         {
             var pair = myPair;
             if (doorsByScenePair.TryGetValue(pair, out var existingDoor) && existingDoor != null && existingDoor != this)
             {
-                // Unload the previous door
-                Debug.Log($"Duplicate OneWayDoor for scenes {pair.sceneA} and {pair.sceneB} found. Destroying previous instance.");
-                Destroy(existingDoor.gameObject);
+                Debug.Log(
+                    $"Duplicate OneWayDoor for scenes {pair.sceneA} and {pair.sceneB} found. Keeping existing instance '{existingDoor.name}' and destroying duplicate '{name}'."
+                );
+                Destroy(gameObject);
+                return;
             }
+
             doorsByScenePair[pair] = this;
         }
+
+    }
+
+    private void OnDestroy()
+    {
+        if (closeAfterPassRoutine != null)
+            StopCoroutine(closeAfterPassRoutine);
+
+        if (playerCurrentScene == null || playerDestinationScene == null)
+            return;
+
+        var pair = myPair;
+        if (doorsByScenePair.TryGetValue(pair, out var existingDoor) && existingDoor == this)
+            doorsByScenePair.Remove(pair);
     }
 
 
 
     public override IEnumerator NotAllowReentryCoroutine()
     {
-        float delayAfterExit = 1.0f; // seconds to wait before closing
-        bool waitingToClose = false;
-        float exitTimer = 0f;
-        Debug.Log(isPlayerInside ? "Player is inside the door area." : "Player is outside the door area.");
-        while(isOpened)
-        {
-            if (isPlayerInside && !oneWayDoorLocked)
-            {
-                if (!waitingToClose)
-                {
-                    waitingToClose = true;
-                    exitTimer = 0f;
-                }
-                exitTimer += Time.deltaTime;
-                if (exitTimer >= delayAfterExit)
-                {
-                    CloseDoor();
-                    oneWayDoorLocked = true;
-                    yield break;
-                }
-            }
-            else
-            {
-                waitingToClose = false;
-            }
-            yield return null;
-        }
+        yield break;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayerCollider(other))
         {
             Debug.Log("Player entered the door area.");
             isPlayerInside = true;
@@ -125,10 +135,80 @@ public class OneWayDoor : DoorHandler
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (IsPlayerCollider(other))
         {
             Debug.Log("Player exited the door area.");
             isPlayerInside = false;
         }
+    }
+
+    public void NotifyPassedCloseTrigger(Collider other)
+    {
+        if (!IsPlayerCollider(other))
+            return;
+
+        if (!isOpened || oneWayDoorLocked)
+            return;
+
+        if (closeAfterPassRoutine != null)
+            StopCoroutine(closeAfterPassRoutine);
+
+        closeAfterPassRoutine = StartCoroutine(CloseAfterPassingTriggerCoroutine());
+    }
+
+    private IEnumerator CloseAfterPassingTriggerCoroutine()
+    {
+        float delay = Mathf.Max(0f, closeAfterPassingTriggerDelay);
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        if (isOpened && !oneWayDoorLocked)
+        {
+            CloseControlledDoorHandlersOrSelf();
+            oneWayDoorLocked = true;
+        }
+
+        closeAfterPassRoutine = null;
+    }
+
+    private static bool IsPlayerCollider(Collider other)
+    {
+        return other != null && other.transform.root.CompareTag("Player");
+    }
+
+    private void CloseControlledDoorHandlersOrSelf()
+    {
+        DoorInteractions doorInteraction = ResolveControllingDoorInteraction();
+        if (doorInteraction != null)
+        {
+            doorInteraction.CloseAssignedDoors();
+            return;
+        }
+
+        CloseDoor();
+    }
+
+    private DoorInteractions ResolveControllingDoorInteraction()
+    {
+        if (controllingDoorInteraction != null)
+            return controllingDoorInteraction;
+
+#if UNITY_2022_3_OR_NEWER
+        DoorInteractions[] interactions = FindObjectsByType<DoorInteractions>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+        DoorInteractions[] interactions = FindObjectsOfType<DoorInteractions>(true);
+#endif
+
+        for (int i = 0; i < interactions.Length; i++)
+        {
+            DoorInteractions interaction = interactions[i];
+            if (interaction != null && interaction.ContainsDoorHandler(this))
+            {
+                controllingDoorInteraction = interaction;
+                return interaction;
+            }
+        }
+
+        return null;
     }
 }
