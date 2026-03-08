@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using Unity.VisualScripting;
+using NUnit.Framework;
+
 
 
 #if UNITY_EDITOR
@@ -60,6 +62,16 @@ public class MusicBox : MonoBehaviour
             cachedAmbienceVolume = SoundManager.Instance.ambienceSource.volume;
             cachedMusicVolume = SoundManager.Instance.musicSource.volume;
         }
+    }
+
+    private bool IsSceneLoaded(string sceneToCheck)
+    {
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            if (SceneManager.GetSceneAt(i).name == sceneToCheck)
+                return true;
+        }
+        return false;
     }
 
     private void PlayLevelMusic()
@@ -173,7 +185,7 @@ public class MusicBox : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && IsSceneLoaded(sceneName))
         {
             // If another box was active, stop its fade coroutines
             if (currentActiveBox != null && currentActiveBox != this)
