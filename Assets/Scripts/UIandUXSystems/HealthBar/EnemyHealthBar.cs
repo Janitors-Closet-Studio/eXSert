@@ -10,6 +10,8 @@ public class EnemyHealthBar : MonoBehaviour
 {
     [Header("Bindings")]
     [SerializeField] private Slider slider;
+    [SerializeField, Tooltip("Optional visual root to show/hide. Leave empty to auto-resolve a safe target.")]
+    private GameObject visibilityTarget;
     [SerializeField] private Vector3 worldOffset = new Vector3(0f, 2f, 0f);
     [SerializeField, Tooltip("Attempt to bind to the closest IHealthSystem in the parent hierarchy on Awake.")]
     private bool autoBindParentHealth = true;
@@ -31,11 +33,15 @@ public class EnemyHealthBar : MonoBehaviour
     private IHealthSystem health;
     private Transform enemyTransform;
     private Transform fallbackCameraTransform;
+    private CanvasGroup visibilityCanvasGroup;
+    private bool visualsVisible = true;
 
     private void Awake()
     {
         if (slider == null)
             slider = GetComponentInChildren<Slider>(true);
+
+        ResolveVisibilityTarget();
 
         if (autoBindParentHealth)
         {
@@ -70,6 +76,7 @@ public class EnemyHealthBar : MonoBehaviour
 
         slider.maxValue = health.maxHP;
         slider.value = health.currentHP;
+        UpdateVisibility(force: true);
     }
 
     private void UpdateSlider()
@@ -78,17 +85,58 @@ public class EnemyHealthBar : MonoBehaviour
         float target = Mathf.Clamp(health.currentHP, 0f, slider.maxValue);
         slider.value = Mathf.MoveTowards(slider.value, target, sliderLerpSpeed * Time.deltaTime * slider.maxValue);
 
+        UpdateVisibility();
+    }
+
+    private void UpdateVisibility(bool force = false)
+    {
+        if (slider == null)
+            return;
+
+        float target = Mathf.Clamp(slider.value, 0f, slider.maxValue);
         bool shouldHide = (hideWhenFull && Mathf.Approximately(target, slider.maxValue))
             || (hideWhenEmpty && Mathf.Approximately(target, 0f));
 
-        if (shouldHide)
+        bool shouldShow = !shouldHide;
+        if (!force && visualsVisible == shouldShow)
+            return;
+
+        visualsVisible = shouldShow;
+        SetVisualVisible(shouldShow);
+    }
+
+    private void ResolveVisibilityTarget()
+    {
+        if (visibilityTarget == null && slider != null)
         {
-            if (slider.gameObject.activeSelf)
-                slider.gameObject.SetActive(false);
+            visibilityTarget = slider.gameObject;
         }
-        else if (!slider.gameObject.activeSelf)
+
+        if (visibilityTarget == gameObject)
         {
-            slider.gameObject.SetActive(true);
+            visibilityCanvasGroup = GetComponent<CanvasGroup>();
+            if (visibilityCanvasGroup == null)
+                visibilityCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+        else if (visibilityTarget != null)
+        {
+            visibilityCanvasGroup = null;
+        }
+    }
+
+    private void SetVisualVisible(bool visible)
+    {
+        if (visibilityCanvasGroup != null)
+        {
+            visibilityCanvasGroup.alpha = visible ? 1f : 0f;
+            visibilityCanvasGroup.interactable = visible;
+            visibilityCanvasGroup.blocksRaycasts = visible;
+            return;
+        }
+
+        if (visibilityTarget != null && visibilityTarget.activeSelf != visible)
+        {
+            visibilityTarget.SetActive(visible);
         }
     }
 

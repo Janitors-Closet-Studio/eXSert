@@ -18,7 +18,6 @@ public class DoorInteractions : UnlockableInteraction
 
     [Header("Interaction")]
     [SerializeField] private bool onlyInteractableOnce = false;
-    [SerializeField] private string lockedInteractionPrompt = "LOCKED";
 
     [Header("Camera")]
     [SerializeField] private bool usePuzzleCameraOnInteraction = false;
@@ -29,6 +28,36 @@ public class DoorInteractions : UnlockableInteraction
     private Coroutine puzzleCameraRoutine;
     private int cachedPuzzleCameraPriority;
     private bool hasInteracted;
+
+    public bool ContainsDoorHandler(DoorHandler targetDoorHandler)
+    {
+        if (targetDoorHandler == null || doorHandlers == null)
+            return false;
+
+        for (int i = 0; i < doorHandlers.Count; i++)
+        {
+            if (doorHandlers[i] == targetDoorHandler)
+                return true;
+        }
+
+        return false;
+    }
+
+    public void CloseAssignedDoors()
+    {
+        if (doorHandlers == null)
+            return;
+
+        for (int i = 0; i < doorHandlers.Count; i++)
+        {
+            DoorHandler doorHandler = doorHandlers[i];
+            if (doorHandler == null)
+                continue;
+
+            if (doorHandler.currentDoorState != DoorHandler.DoorState.Closed)
+                doorHandler.CloseDoor();
+        }
+    }
 
     public void EnableInteraction()
     {
@@ -45,19 +74,26 @@ public class DoorInteractions : UnlockableInteraction
         enabled = isEnabled;
     }
 
-    protected override void OnTriggerEnter(Collider other)
+    protected override bool IsUnlockedWithoutRequiredItem()
     {
-        base.OnTriggerEnter(other);
+        if (doorHandlers == null || doorHandlers.Count == 0)
+            return false;
 
-        if (!other.transform.root.CompareTag("Player"))
-            return;
+        bool hasAssignedDoor = false;
 
-        if (needsItem && !canUnlock && InteractionUI.Instance != null && InteractionUI.Instance._interactText != null)
+        for (int i = 0; i < doorHandlers.Count; i++)
         {
-            InteractionUI.Instance._interactText.text = string.IsNullOrWhiteSpace(lockedInteractionPrompt)
-                ? "LOCKED"
-                : lockedInteractionPrompt;
+            DoorHandler doorHandler = doorHandlers[i];
+            if (doorHandler == null)
+                continue;
+
+            hasAssignedDoor = true;
+
+            if (doorHandler.doorLockState != DoorHandler.DoorLockState.Unlocked)
+                return false;
         }
+
+        return hasAssignedDoor;
     }
 
     protected override void ExecuteInteraction()

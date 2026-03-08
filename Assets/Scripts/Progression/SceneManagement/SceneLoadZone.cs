@@ -11,6 +11,9 @@ namespace Progression.SceneManagement
         [SerializeField, CriticalReference, Tooltip("The scene to load when the player enters this zone.")]
         private SceneAsset sceneToManage;
 
+        [SerializeField, Tooltip("Optional object to enable after this zone unloads its target scene. Useful for turning on a blocker in the current scene.")]
+        private GameObject enableObjectAfterUnload;
+
         protected override Color DebugColor => Color.yellow;
 
         private void OnValidate()
@@ -59,7 +62,27 @@ namespace Progression.SceneManagement
             }
 
             Debug.Log($"Unloading scene {sceneToManage.name} due to player entering zone {this.gameObject.name}.");
-            SceneLoader.Unload(sceneToManage);
+
+            AsyncOperation unloadOperation = SceneLoader.Unload(sceneToManage);
+            if (enableObjectAfterUnload == null)
+                return;
+
+            if (unloadOperation != null)
+            {
+                unloadOperation.completed += _ => EnableConfiguredObject();
+            }
+            else
+            {
+                EnableConfiguredObject();
+            }
+        }
+
+        private void EnableConfiguredObject()
+        {
+            if (enableObjectAfterUnload == null)
+                return;
+
+            enableObjectAfterUnload.SetActive(true);
         }
     }
 }

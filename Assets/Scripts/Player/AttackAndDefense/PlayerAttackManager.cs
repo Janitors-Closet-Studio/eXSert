@@ -922,9 +922,11 @@ public class PlayerAttackManager : MonoBehaviour
         StopGuardAttackFlowRoutine();
         StopSpecialAttackAutoCancelRoutine();
         ClearHitbox();
+        playerMovement?.CancelPlungeState();
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
         InputReader.inputBusy = false;
+        playerMovement?.SuppressLocomotionAnimations(false);
         playerMovement?.ForceLocomotionRefresh();
 
         if (resetCombo)

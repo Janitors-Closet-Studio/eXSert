@@ -394,7 +394,7 @@ public class DoorHandler : MonoBehaviour
         // Use hinge pivot to rotate outwards so the door stays locked in its socket
         EnsurePivot();
         hingeStartRot = hingePivot.rotation;
-        hingeTargetRot = hingeStartRot * Quaternion.Euler(0f, -90f, 0f);
+        hingeTargetRot = hingeOriginalRot * Quaternion.Euler(0f, -90f, 0f);
         StartHingeAnimation(hingeStartRot, hingeTargetRot, 1f / openSpeed);
     }
 
@@ -403,7 +403,7 @@ public class DoorHandler : MonoBehaviour
         // Use hinge pivot to rotate inwards so the door stays locked in its socket
         EnsurePivot();
         hingeStartRot = hingePivot.rotation;
-        hingeTargetRot = hingeStartRot * Quaternion.Euler(0f, 90f, 0f);
+        hingeTargetRot = hingeOriginalRot * Quaternion.Euler(0f, 90f, 0f);
         StartHingeAnimation(hingeStartRot, hingeTargetRot, 1f / openSpeed); 
     }
 
@@ -433,8 +433,8 @@ public class DoorHandler : MonoBehaviour
         if (hingePivot == null)
         {
             GameObject go = new GameObject(this.gameObject.name + "PivotPoint");
-            go.transform.position = doorPosOrigin;
-            go.transform.rotation = doorRotOrigin;
+            go.transform.position = transform.position;
+            go.transform.rotation = transform.rotation;
             // parent pivot to the door's original parent to keep hierarchy
             go.transform.SetParent(this.transform.parent, true);
             hingePivot = go.transform;

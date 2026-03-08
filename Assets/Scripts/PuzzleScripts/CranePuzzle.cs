@@ -80,6 +80,7 @@ public class CranePuzzle : PuzzlePart
 
     // Cache of the player's movement component so it can be re-enabled later
     private PlayerMovement cachedPlayerMovement;
+    private PlayerAnimationController cachedPlayerAnimationController;
 
     #region Serializable Fields
     [Header("Input Actions")]
@@ -260,13 +261,18 @@ public class CranePuzzle : PuzzlePart
 
         // Try to find PlayerMovement on the player, its children, or parent; fallback to any active instance
         var pm = FindPlayerMovement(player);
+        cachedPlayerAnimationController = FindPlayerAnimationController(player);
 
         // If found, disable movement and cache for restoration
         if (pm != null)
         {
             cachedPlayerMovement = pm;
+            pm.SuppressLocomotionAnimations(true);
+            pm.ForceLocomotionRefresh();
             pm.enabled = false;
         }
+
+        cachedPlayerAnimationController?.PlaySingleTargetIdleCombat(0.08f);
 
 
         SwitchPuzzleCamera();
@@ -365,6 +371,26 @@ public class CranePuzzle : PuzzlePart
             return pm;
 
         return FindObjectOfType<PlayerMovement>();
+    }
+
+    private PlayerAnimationController FindPlayerAnimationController(GameObject player)
+    {
+        if (player == null)
+            return null;
+
+        var animationController = player.GetComponent<PlayerAnimationController>();
+        if (animationController != null)
+            return animationController;
+
+        animationController = player.GetComponentInChildren<PlayerAnimationController>(true);
+        if (animationController != null)
+            return animationController;
+
+        animationController = player.GetComponentInParent<PlayerAnimationController>();
+        if (animationController != null)
+            return animationController;
+
+        return FindObjectOfType<PlayerAnimationController>();
     }
 
     protected void SetPuzzleCamera(CinemachineCamera camera)
@@ -667,6 +693,8 @@ public class CranePuzzle : PuzzlePart
             if (cachedPlayerMovement != null)
             {
                 cachedPlayerMovement.enabled = true;
+                cachedPlayerMovement.SuppressLocomotionAnimations(false);
+                cachedPlayerMovement.ForceLocomotionRefresh();
                 
                 var cc = cachedPlayerMovement.GetComponent<CharacterController>();
                 if (cc != null && !cc.enabled)
@@ -674,6 +702,10 @@ public class CranePuzzle : PuzzlePart
                     cc.enabled = true;
                 }
             }
+
+            cachedPlayerAnimationController?.PlayIdle();
+
+            cachedPlayerAnimationController = null;
             cachedPlayerMovement = null;
     }
 
