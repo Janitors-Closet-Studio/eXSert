@@ -57,9 +57,7 @@ public class GuidelineLightBulb : MonoBehaviour
 
     private void Awake()
     {
-        _mpb = new MaterialPropertyBlock();
-        CachePropertyIds();
-        CacheInitialLightIntensities();
+        EnsureInitialized();
     }
 
     private void OnEnable()
@@ -83,6 +81,18 @@ public class GuidelineLightBulb : MonoBehaviour
         CachePropertyIds();
     }
 
+    private void EnsureInitialized()
+    {
+        if (_mpb == null)
+            _mpb = new MaterialPropertyBlock();
+
+        if (!_hasCachedIds)
+            CachePropertyIds();
+
+        if (!_cachedInitialLightIntensities)
+            CacheInitialLightIntensities();
+    }
+
     private void CachePropertyIds()
     {
         _emissionColorPropId = Shader.PropertyToID(emissionColorProperty);
@@ -102,8 +112,7 @@ public class GuidelineLightBulb : MonoBehaviour
 
     public void SetState(bool on)
     {
-        if (!_hasCachedIds)
-            CachePropertyIds();
+        EnsureInitialized();
 
         IsOn = on;
 
@@ -139,8 +148,7 @@ public class GuidelineLightBulb : MonoBehaviour
 
     public void SetPowerValue(float normalizedValue, float poweredOnLightIntensity)
     {
-        if (!_hasCachedIds)
-            CachePropertyIds();
+        EnsureInitialized();
 
         float clampedValue = Mathf.Clamp01(normalizedValue);
         bool isPowered = clampedValue > 0.001f;
@@ -175,11 +183,10 @@ public class GuidelineLightBulb : MonoBehaviour
     // Used by completion/latched states to dim lights without reauthoring prefabs.
     public void SetLightIntensity(float intensity)
     {
+        EnsureInitialized();
+
         if (targetLights == null || targetLights.Length == 0)
             return;
-
-        if (!_cachedInitialLightIntensities)
-            CacheInitialLightIntensities();
 
         float clamped = Mathf.Max(0f, intensity);
 
