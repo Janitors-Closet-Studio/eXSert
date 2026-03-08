@@ -15,6 +15,8 @@ namespace UI.Loading
     {
         public static LoadingScreenController Instance { get; private set; }
         public static bool HasInstance => Instance != null;
+        public static event Action OnLoadingScreenShown;
+        public static event Action OnLoadingScreenContentShown;
 
         [Header("Scene References")]
         [SerializeField] private CanvasGroup blackoutCanvasGroup;
@@ -32,6 +34,7 @@ namespace UI.Loading
         private static bool isLoadingSequenceRunning;
 
         private const string PauseOwnerId = "LoadingScreenController";
+        private const string GameplayInputBlockOwnerId = "LoadingScreenController";
 
         private void Awake()
         {
@@ -103,9 +106,12 @@ namespace UI.Loading
         {
             isLoadingSequenceRunning = true;
             string pauseToken = null;
+            string gameplayInputBlockToken = null;
 
             try
             {
+                gameplayInputBlockToken = InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
+
                 // Request pause via coordinator so it becomes authoritative.
                 if (pauseGame)
                 {
@@ -121,12 +127,16 @@ namespace UI.Loading
                 if (loadingCanvasRoot != null)
                     loadingCanvasRoot.SetActive(true);
 
+                OnLoadingScreenShown?.Invoke();
+
                 CursorBySchemeAndMap.SetForceHidden(true);
 
                 propManager?.ShowRandomProp();
 
                 // Fade in loading content
                 yield return FadeBlack(1f, 0f);
+
+                OnLoadingScreenContentShown?.Invoke();
 
                 if (enforceMinimum)
                     minDisplayEndTime = Time.unscaledTime + minimumDisplayDuration;
@@ -150,6 +160,12 @@ namespace UI.Loading
                 if (loadingCanvasRoot != null)
                     loadingCanvasRoot.SetActive(false);
 
+                if (!string.IsNullOrWhiteSpace(gameplayInputBlockToken))
+                {
+                    InputReader.ReleaseGameplayInputBlock(gameplayInputBlockToken);
+                    gameplayInputBlockToken = null;
+                }
+
                 // Fade out and then release our pause request (if we had one)
                 yield return FadeOutAndReleasePause(pauseToken);
 
@@ -157,6 +173,9 @@ namespace UI.Loading
             }
             finally
             {
+                if (!string.IsNullOrWhiteSpace(gameplayInputBlockToken))
+                    InputReader.ReleaseGameplayInputBlock(gameplayInputBlockToken);
+
                 // Ensure our pause request is released even if something fails during the sequence.
                 if (!string.IsNullOrWhiteSpace(pauseToken))
                     PauseCoordinator.ReleaseTimeScale(pauseToken);
@@ -193,6 +212,12 @@ namespace UI.Loading
                 yield break;
             }
 
+            if (!string.IsNullOrWhiteSpace(pauseToken))
+            {
+                PauseCoordinator.ReleaseTimeScale(pauseToken);
+                pauseToken = null;
+            }
+
             float timer = 0f;
 
             while (timer < fadeDuration)
@@ -205,9 +230,6 @@ namespace UI.Loading
             }
 
             blackoutCanvasGroup.alpha = 0f;
-
-            if (!string.IsNullOrWhiteSpace(pauseToken))
-                PauseCoordinator.ReleaseTimeScale(pauseToken);
         }
     }
 }

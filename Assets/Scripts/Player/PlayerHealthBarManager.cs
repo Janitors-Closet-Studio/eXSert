@@ -132,7 +132,6 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     {
         Player.SetActive(true);
         Player.RespawnPlayer += Revive;
-        Player.RespawnPlayer += Player.SpawnPlayerAtCheckpoint;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
         if (playerMovement != null)
@@ -144,7 +143,6 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     { 
         Player.SetActive(false); 
         Player.RespawnPlayer -= Revive;
-        Player.RespawnPlayer -= Player.SpawnPlayerAtCheckpoint;
         CheckpointBehavior.UnsubscribeFromPlayerRespawn();
 
         if (playerMovement != null)

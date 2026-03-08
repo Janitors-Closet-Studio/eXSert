@@ -6,6 +6,8 @@ using Singletons;
 [RequireComponent(typeof(VideoPlayer))]
 public class CutsceneManager : Singleton<CutsceneManager>
 {
+    private const string GameplayInputBlockOwnerId = "CutsceneManager";
+
     [SerializeField]
     private GameObject videoScreenPrefab;
     private static GameObject videoScreenInstance;
@@ -66,7 +68,7 @@ public class CutsceneManager : Singleton<CutsceneManager>
         // Request pause via the coordinator rather than directly changing Time.timeScale.
         _pauseToken = PauseCoordinator.RequestPause("CutsceneManager");
 
-        InputReader.inputBusy = true; // Prevent player input during the cutscene
+        InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         videoScreenInstance.SetActive(true); // Show the video screen when the cutscene starts
         source.started -= OnCutsceneStarted; // Unsubscribe from the event to prevent multiple triggers
     }
@@ -80,7 +82,7 @@ public class CutsceneManager : Singleton<CutsceneManager>
             _pauseToken = null;
         }
 
-        InputReader.inputBusy = false; // Allow player input again
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         videoScreenInstance.SetActive(false); // Hide the video screen when the cutscene finishes
         source.Stop();
         source.loopPointReached -= OnCutsceneFinished; // Unsubscribe from the event

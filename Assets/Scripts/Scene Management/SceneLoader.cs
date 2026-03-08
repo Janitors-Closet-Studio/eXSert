@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UI.Loading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -12,6 +13,7 @@ public static class SceneLoader
 {
     private const string PLAYER_SCENE = "PlayerScene"; // The name of the player scene
     private const string MAIN_MENU_SCENE = "MainMenu"; // The name of the main menu scene
+    private const string LOADING_SCENE = "LoadingScene";
 
     /// <summary>Number of currently loaded scenes.</summary>
     public static int LoadedSceneCount => SceneManager.sceneCount;
@@ -189,41 +191,40 @@ public static class SceneLoader
 
         Initialize();
 
-        LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame));
+        CoroutineRunner.Run(LoadIntoGameTransitionRoutine(firstScene, newGame));
+    }
 
-        Load(firstScene).completed += static _ =>
+    private static IEnumerator LoadIntoGameTransitionRoutine(SceneAsset firstScene, bool newGame)
+    {
+        yield return EnsureLoadingSceneReady();
+
+        if (!LoadingScreenController.HasInstance)
         {
-            LoadPlayerScene().completed += static __ =>
-            {
-                Unload(MAIN_MENU_SCENE);
-
-                Player.SpawnPlayerAtCheckpoint();
-
-                CutsceneManager.PlayCutscene(Cutscene.GetCutscene("Opening Cutscene"));
-            };
-        };
-
-        return;
-
-        static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame)
-        {
-            // Play opening cutscene if this is a new game
-            if (newGame)
-                CutsceneManager.PlayCutscene(Cutscene.GetCutscene("Opening Cutscene"));
-
-            // Load first gameplay scene, wait for it
-            yield return LoadCoroutine(firstScene, loadScreen: false);
-
-            // Load player scene, wait for it
-            yield return LoadPlayerSceneCoroutine();
-
-            // Unload main menu (string overload)
-            var mainMenuAsset = (SceneAsset)MAIN_MENU_SCENE;
-            if (mainMenuAsset != null && mainMenuAsset.IsLoaded())
-                yield return UnloadCoroutine(mainMenuAsset);
-
-            Player.SpawnPlayerAtCheckpoint();
+            Debug.LogWarning("[Scene Loader] LoadingScreenController is unavailable. Falling back to direct game load.");
+            yield return LoadIntoGameCoroutine(firstScene, newGame);
+            yield break;
         }
+
+        LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame));
+    }
+
+    private static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame)
+    {
+        // Load first gameplay scene, wait for it
+        yield return LoadCoroutine(firstScene, loadScreen: false);
+
+        // Load player scene, wait for it
+        yield return LoadPlayerSceneCoroutine();
+
+        // Unload main menu (string overload)
+        var mainMenuAsset = (SceneAsset)MAIN_MENU_SCENE;
+        if (mainMenuAsset != null && mainMenuAsset.IsLoaded())
+            yield return UnloadCoroutine(mainMenuAsset);
+
+        Player.SpawnPlayerAtCheckpoint();
+
+        if (newGame)
+            CutsceneManager.PlayCutscene(Cutscene.GetCutscene("Opening Cutscene"));
     }
 
     /// <summary>Loads the player scene and optionally positions/initializes the player. (Legacy API)</summary>
@@ -326,15 +327,22 @@ public static class SceneLoader
     /// <summary>Unload everything except player then load the main menu.</summary>
     public static void LoadMainMenu()
     {
-        UnloadAllLoadedScenes();
-        Load(MAIN_MENU_SCENE);
+        CoroutineRunner.Run(LoadMainMenuTransitionRoutine());
     }
 
     /// <summary>Coroutine variant to load the main menu (unloads other scenes first).</summary>
     public static IEnumerator LoadMainMenuCoroutine()
     {
-        UnloadAllLoadedScenes();
-        yield return LoadCoroutine((SceneAsset)MAIN_MENU_SCENE);
+        yield return EnsureLoadingSceneReady();
+
+        if (!LoadingScreenController.HasInstance)
+        {
+            Debug.LogWarning("[Scene Loader] LoadingScreenController is unavailable. Falling back to direct main menu load.");
+            yield return LoadMainMenuSequenceCoroutine();
+            yield break;
+        }
+
+        LoadingScreenController.BeginLoading(LoadMainMenuSequenceCoroutine(), pauseGame: true);
     }
 
     /// <summary>Unload SceneAsset if loaded. (Legacy API)</summary>
@@ -388,5 +396,79 @@ public static class SceneLoader
             if (scene.name != PLAYER_SCENE)
                 SceneManager.UnloadSceneAsync(scene);
         }
+    }
+
+    private static IEnumerator LoadMainMenuTransitionRoutine()
+    {
+        yield return LoadMainMenuCoroutine();
+    }
+
+    private static IEnumerator EnsureLoadingSceneReady()
+    {
+        if (LoadingScreenController.HasInstance)
+            yield break;
+
+        Scene loadingScene = SceneManager.GetSceneByName(LOADING_SCENE);
+        if (!loadingScene.isLoaded)
+        {
+            AsyncOperation loadOp = SceneManager.LoadSceneAsync(LOADING_SCENE, LoadSceneMode.Additive);
+            if (loadOp == null)
+            {
+                Debug.LogError($"[Scene Loader] Failed to start async load for '{LOADING_SCENE}'.");
+                yield break;
+            }
+
+            yield return loadOp;
+        }
+
+        float timeoutAt = Time.unscaledTime + 5f;
+        while (!LoadingScreenController.HasInstance && Time.unscaledTime < timeoutAt)
+            yield return null;
+    }
+
+    private static IEnumerator LoadMainMenuSequenceCoroutine()
+    {
+        Initialize();
+
+        SceneAsset mainMenuAsset = (SceneAsset)MAIN_MENU_SCENE;
+        if (mainMenuAsset == null)
+        {
+            Debug.LogError($"[Scene Loader] Could not resolve scene asset for '{MAIN_MENU_SCENE}'.");
+            yield break;
+        }
+
+        if (!mainMenuAsset.IsLoaded())
+            yield return LoadCoroutine(mainMenuAsset, loadScreen: false);
+
+        yield return UnloadAllScenesExceptCoroutine(MAIN_MENU_SCENE, LOADING_SCENE);
+    }
+
+    private static IEnumerator UnloadAllScenesExceptCoroutine(params string[] sceneNamesToKeep)
+    {
+        HashSet<string> keepScenes = new(sceneNamesToKeep ?? Array.Empty<string>(), StringComparer.Ordinal);
+
+        bool unloadedAnyScene;
+        do
+        {
+            unloadedAnyScene = false;
+
+            for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded || keepScenes.Contains(scene.name))
+                    continue;
+
+                AsyncOperation unloadOp = SceneManager.UnloadSceneAsync(scene);
+                if (unloadOp == null)
+                {
+                    Debug.LogWarning($"[Scene Loader] Failed to start unload for '{scene.name}'.");
+                    continue;
+                }
+
+                unloadedAnyScene = true;
+                yield return unloadOp;
+            }
+        }
+        while (unloadedAnyScene);
     }
 }

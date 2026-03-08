@@ -29,6 +29,8 @@ public class GameActionHandler : MonoBehaviour
     public void RestartFromCheckpoint()
     {
         Debug.Log("[GameActionHandler] Restarting from checkpoint...");
+
+        PrepareForSceneLoad(resumeImmediately: false);
         
         Player.TriggerRespawn();
     }
@@ -43,7 +45,7 @@ public class GameActionHandler : MonoBehaviour
         
         PrepareForSceneLoad(resumeImmediately: false);
         
-        SceneLoader.Load("MainMenu");
+        SceneLoader.LoadMainMenu();
     }
 
     /// <summary>

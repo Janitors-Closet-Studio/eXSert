@@ -5,6 +5,8 @@ using System.Collections;
 
 public class PauseManager : Singletons.Singleton<PauseManager>
 {
+    private const string GameplayInputBlockOwnerId = "PauseManager";
+
     protected override bool ShouldPersistAcrossScenes => false;
 
     [Header("UI GameObjects")]
@@ -96,6 +98,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if (_swapMenuActionReference != null && _swapMenuActionReference.action != null)
             _swapMenuActionReference.action.performed -= OnSwapMenu;
+
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
 
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
@@ -252,6 +256,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         Debug.Log(Time.timeScale + "is the current timescale when showing pause menu.");  
         Time.timeScale = 0f;
+        InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         IsPaused = true;
         OnPaused?.Invoke();
         MufffleMusicForMenu(true);
@@ -275,6 +280,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void ShowNavigationMenu()
     {
         Time.timeScale = 0f;
+        InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         IsPaused = true;
         OnPaused?.Invoke();
         currentActiveMenu = ActiveMenu.NavigationMenu;
@@ -312,6 +318,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         Time.timeScale = 1f;
         IsPaused = false;
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         OnResumed?.Invoke();
         currentActiveMenu = ActiveMenu.None;
 
@@ -339,6 +346,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void HideMenusForSceneTransition()
     {
         IsPaused = false;
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
 

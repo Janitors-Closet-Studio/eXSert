@@ -19,7 +19,7 @@ public class MenuEventSystemHandler : MonoBehaviour
     [SerializeField] protected InputActionReference _navigateReference;
 
     [Header("Animations")]
-    [SerializeField] protected float _selectedAnimationScale = 1.1f;
+    [SerializeField] protected float _selectedAnimationScale = 1.0f;
     [SerializeField] protected float _scaleDuration = 0.25f;
     [SerializeField] protected List<GameObject> _animationExclusions = new List<GameObject>();
 

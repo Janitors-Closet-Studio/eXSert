@@ -2,6 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Unity.VisualScripting;
 using UnityEngine;
+using UI.Loading;
 
 namespace Progression.Checkpoints
 {
@@ -28,7 +29,7 @@ namespace Progression.Checkpoints
         private const float SPAWN_CAPSULE_RADIUS = 0.5f;
         private const float SPAWN_CAPSULE_HEIGHT = 1.8f;
 
-        private const bool RELOAD_SCENE_ON_RESPAWN = true;
+        private static readonly bool ReloadSceneOnRespawn = true;
 
         // Static reference to the current checkpoint. This allows any part of the code to query the current spawn position and rotation.
         public static CheckpointBehavior currentCheckpoint { get; private set; }
@@ -64,10 +65,10 @@ namespace Progression.Checkpoints
                 return;
             }
             
-            if (RELOAD_SCENE_ON_RESPAWN)
+            if (ReloadSceneOnRespawn)
             {
-                SceneLoader.OnSceneReloaded += MovePlayerToCheckpoint; // Subscribe to the scene reloaded event to move the player after reload completes
-                // Reload the current scene to reset everything, then move the player to the checkpoint after reload
+                LoadingScreenController.OnLoadingScreenContentShown += MovePlayerToCheckpoint;
+                // Reload the current scene to reset everything, then move the player once the loading content is visibly covering gameplay.
                 SceneLoader.Load(SceneAsset.GetSceneAssetOfObject(currentCheckpoint.gameObject), forceReload: true);
             }
             else
@@ -88,7 +89,7 @@ namespace Progression.Checkpoints
 
                 Player.SpawnPlayerAtCheckpoint(); // This will internally use the currentCheckpoint reference to get the spawn position and rotation
 
-                SceneLoader.OnSceneReloaded -= MovePlayerToCheckpoint; // Unsubscribe after moving the player
+                LoadingScreenController.OnLoadingScreenContentShown -= MovePlayerToCheckpoint;
             }
         }
 

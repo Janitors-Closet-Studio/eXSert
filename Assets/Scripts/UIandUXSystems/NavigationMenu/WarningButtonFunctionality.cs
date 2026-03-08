@@ -205,13 +205,20 @@ public class WarningButtonFunctionality : MonoBehaviour
             case WarningAction.RestartCheckpoint:
                 // FadeOutLevelMusic();
                 Debug.Log("[WarningButtonFunctionality] Restarting from checkpoint.");
-                Player.TriggerRespawn();
+                GameActionHandler restartHandler = ResolveActionHandler();
+                if (restartHandler != null)
+                    restartHandler.RestartFromCheckpoint();
+                else
+                    Player.TriggerRespawn();
                 break;
 
             case WarningAction.ReturnToMainMenu:
                 // FadeOutLevelMusic();
-                PauseManager.Instance?.ResumeGame();
-                SceneLoader.LoadMainMenuCoroutine();
+                GameActionHandler handler = ResolveActionHandler();
+                if (handler != null)
+                    handler.ReturnToMainMenu();
+                else
+                    SceneLoader.LoadMainMenu();
                 break;
 
             case WarningAction.QuitGame:

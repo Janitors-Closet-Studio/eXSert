@@ -148,6 +148,12 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Update()
     {
+        if (InputReader.IsGameplayInputBlocked)
+        {
+            ClearBufferedAttack();
+            return;
+        }
+
         if (CombatManager.isGuarding)
         {
             ClearBufferedAttack();
@@ -178,6 +184,12 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void ProcessAttackInput(bool lightAttack)
     {
+        if (InputReader.IsGameplayInputBlocked)
+        {
+            ClearBufferedAttack();
+            return;
+        }
+
         if (CombatManager.isGuarding)
             return;
 
@@ -866,6 +878,12 @@ public class PlayerAttackManager : MonoBehaviour
 
     private bool TryConsumeBufferedAttack()
     {
+        if (InputReader.IsGameplayInputBlocked)
+        {
+            ClearBufferedAttack();
+            return false;
+        }
+
         if (bufferedAttackButton == AttackButton.None)
             return false;
 

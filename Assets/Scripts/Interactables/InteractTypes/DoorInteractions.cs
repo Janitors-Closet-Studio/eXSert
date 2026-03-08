@@ -18,11 +18,16 @@ public class DoorInteractions : UnlockableInteraction
 
     [Header("Camera")]
     [SerializeField] private bool usePuzzleCameraOnInteraction = false;
-    [SerializeField] private CinemachineCamera puzzleCamera;
+    [SerializeField, Tooltip("Optional Cinemachine camera to use for the puzzle interaction.")]
+    private CinemachineCamera puzzleCinemachineCamera;
+    [SerializeField, Tooltip("Optional regular Camera to use for the puzzle interaction.")]
+    private Camera puzzleStandardCamera;
     [SerializeField, Min(0f)] private float puzzleCameraDurationSeconds = 2f;
 
     private Coroutine puzzleCameraRoutine;
     private int cachedPuzzleCameraPriority;
+    private bool cachedStandardCameraEnabled;
+    private bool cachedStandardCameraGameObjectActive;
 
     protected override void ExecuteInteraction()
     {
@@ -47,9 +52,9 @@ public class DoorInteractions : UnlockableInteraction
 
     private void BeginTemporaryPuzzleCamera()
     {
-        if (puzzleCamera == null)
+        if (puzzleCinemachineCamera == null && puzzleStandardCamera == null)
         {
-            Debug.LogWarning("[DoorInteractions] 'Use puzzle camera on interaction' is enabled but no Puzzle Camera is assigned.");
+            Debug.LogWarning("[DoorInteractions] 'Use puzzle camera on interaction' is enabled but no puzzle camera is assigned.");
             return;
         }
 
@@ -61,15 +66,37 @@ public class DoorInteractions : UnlockableInteraction
 
     private IEnumerator PuzzleCameraRoutine()
     {
-        cachedPuzzleCameraPriority = puzzleCamera.Priority;
-        puzzleCamera.Priority = 21;
+        if (puzzleCinemachineCamera != null)
+        {
+            cachedPuzzleCameraPriority = puzzleCinemachineCamera.Priority;
+            puzzleCinemachineCamera.Priority = 21;
+        }
+        else if (puzzleStandardCamera != null)
+        {
+            cachedStandardCameraGameObjectActive = puzzleStandardCamera.gameObject.activeSelf;
+            cachedStandardCameraEnabled = puzzleStandardCamera.enabled;
+
+            if (!puzzleStandardCamera.gameObject.activeSelf)
+                puzzleStandardCamera.gameObject.SetActive(true);
+
+            puzzleStandardCamera.enabled = true;
+        }
 
         float duration = Mathf.Max(0f, puzzleCameraDurationSeconds);
         if (duration > 0f)
             yield return new WaitForSeconds(duration);
 
-        if (puzzleCamera != null)
-            puzzleCamera.Priority = cachedPuzzleCameraPriority;
+        if (puzzleCinemachineCamera != null)
+        {
+            puzzleCinemachineCamera.Priority = cachedPuzzleCameraPriority;
+        }
+        else if (puzzleStandardCamera != null)
+        {
+            puzzleStandardCamera.enabled = cachedStandardCameraEnabled;
+
+            if (puzzleStandardCamera.gameObject.activeSelf != cachedStandardCameraGameObjectActive)
+                puzzleStandardCamera.gameObject.SetActive(cachedStandardCameraGameObjectActive);
+        }
 
         puzzleCameraRoutine = null;
     }
