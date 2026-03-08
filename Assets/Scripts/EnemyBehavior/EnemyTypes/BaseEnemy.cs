@@ -358,6 +358,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         EnsureAttackCollider();
         EnsurePlayerTargetReference();
         EnsureAudioSource();
+        EnsurePlayerSlideOffSurface();
 
         animator = GetComponentInChildren<Animator>();
         if (animator == null)
@@ -506,6 +507,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         externalHelperRoots.Clear();
     }
 
+
     private void EnsureAudioSource()
     {
         if (movementSFXClip == null)
@@ -519,6 +521,17 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             movementAudioSource.clip = movementSFXClip;
             movementAudioSource.volume = movementSFXVolume;
             originalMovementSFXVolume = movementSFXVolume;
+        }
+    }
+
+    /// <summary>
+    /// Ensures a PlayerSlideOffSurface component exists to prevent the player from getting stuck on top of this enemy.
+    /// </summary>
+    private void EnsurePlayerSlideOffSurface()
+    {
+        if (GetComponent<PlayerSlideOffSurface>() == null)
+        {
+            gameObject.AddComponent<PlayerSlideOffSurface>();
         }
     }
 

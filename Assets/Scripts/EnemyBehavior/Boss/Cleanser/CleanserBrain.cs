@@ -364,6 +364,7 @@ namespace EnemyBehavior.Boss.Cleanser
             InitializeHealthBar();
             CachePlayerReference();
             InitializeAttackDescriptors();
+            EnsurePlayerSlideOffSurface();
         }
 
         private void ApplyMovementSettings()
@@ -405,6 +406,17 @@ namespace EnemyBehavior.Boss.Cleanser
             if (healthBar != null)
             {
                 healthBar.SetHealth(currentHealth, maxHealth);
+            }
+        }
+
+        /// <summary>
+        /// Ensures a PlayerSlideOffSurface component exists to prevent the player from getting stuck on top of this boss.
+        /// </summary>
+        private void EnsurePlayerSlideOffSurface()
+        {
+            if (GetComponent<PlayerSlideOffSurface>() == null)
+            {
+                gameObject.AddComponent<PlayerSlideOffSurface>();
             }
         }
 
