@@ -28,6 +28,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [Header("Input Action Reference")]
     [SerializeField, CriticalReference] internal InputActionReference _interactInputAction;
 
+    private PlayerCombatIdleController _combatIdleController;
 
     protected virtual void Awake()
     {
@@ -68,6 +69,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (scene.isLoaded)
         {
             InteractionUI.Instance?.HideInteractPrompt();
+            CachePlayerCombatController();
         }
         else 
         {
@@ -75,7 +77,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             {
                 yield return null; // Wait until the scene is loaded
             }
+            CachePlayerCombatController();
             StopCoroutine(FindPlayerScene(sceneName)); // Stop the coroutine once the scene is loaded
+        }
+    }
+
+    private void CachePlayerCombatController()
+    {
+        if (_combatIdleController == null)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+                _combatIdleController = player.GetComponentInChildren<PlayerCombatIdleController>();
         }
     }
 
@@ -105,8 +118,11 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     public void OnInteractButtonPressed()
     {
-
         if (!isPlayerNearby || !interactable)
+            return;
+
+        // Don't allow interactions while player is in combat
+        if (_combatIdleController != null && _combatIdleController.IsInCombat)
             return;
 
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
