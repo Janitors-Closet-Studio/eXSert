@@ -27,8 +27,6 @@ public abstract class CollectableInteraction : InteractionManager
 
         StartCoroutine(FadeInAndFadeOutUI(uiFadeDuration, uiDisplayDuration));
         StartCoroutine(DeactivateInteractableCoroutine(this));
-        if(_interactionSFX != null)
-            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
     }
     protected abstract void ExecuteInteraction();
     protected virtual void AfterExecuteInteraction() { }
@@ -41,10 +39,19 @@ public abstract class CollectableInteraction : InteractionManager
 
         this.interactable = false;
 
-        this.GetComponent<Collider>().enabled = false;
+        Collider interactionCollider = GetComponent<Collider>();
+        if (interactionCollider != null)
+            interactionCollider.enabled = false;
 
-        InteractionUI.Instance._interactText.gameObject.SetActive(false);
-        InteractionUI.Instance._interactIcon.gameObject.SetActive(false);
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI != null)
+        {
+            if (interactionUI._interactText != null)
+                interactionUI._interactText.gameObject.SetActive(false);
+
+            if (interactionUI._interactIcon != null)
+                interactionUI._interactIcon.gameObject.SetActive(false);
+        }
 
         List<GameObject> interactionChildren = new List<GameObject>();
 
@@ -65,8 +72,12 @@ public abstract class CollectableInteraction : InteractionManager
 
     private IEnumerator FadeInUI(float fadeDuration, float displayDuration)
     {
-        var collectText = InteractionUI.Instance._collectText;
-        var collectBottomText = InteractionUI.Instance._collectBottomText;
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI == null)
+            yield break;
+
+        var collectText = interactionUI._collectText;
+        var collectBottomText = interactionUI._collectBottomText;
 
         if(collectText == null)
         {
@@ -82,8 +93,11 @@ public abstract class CollectableInteraction : InteractionManager
         collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, 0f);
         collectText.gameObject.SetActive(true);
 
-        collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, 0f);
-        collectBottomText.gameObject.SetActive(true);
+        if (collectBottomText != null)
+        {
+            collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, 0f);
+            collectBottomText.gameObject.SetActive(true);
+        }
 
         float elapsedTime = 0f;
 
@@ -92,15 +106,20 @@ public abstract class CollectableInteraction : InteractionManager
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(elapsedTime / fadeDuration);
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
-            collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
+            if (collectBottomText != null)
+                collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
             yield return null;
         }
     }
 
     private IEnumerator FadeOutUI(float fadeDuration)
     {
-        var collectText = InteractionUI.Instance._collectText;
-        var collectBottomText = InteractionUI.Instance._collectBottomText;
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI == null)
+            yield break;
+
+        var collectText = interactionUI._collectText;
+        var collectBottomText = interactionUI._collectBottomText;
 
         if (collectText == null)
         {
@@ -114,11 +133,13 @@ public abstract class CollectableInteraction : InteractionManager
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(1f - (elapsedTime / fadeDuration));
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
-            collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
+            if (collectBottomText != null)
+                collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
             yield return null;
         }
         collectText.gameObject.SetActive(false);
-        collectBottomText.gameObject.SetActive(false);
+        if (collectBottomText != null)
+            collectBottomText.gameObject.SetActive(false);
     }
 
     private IEnumerator FadeInAndFadeOutUI(float fadeDuration, float displayDuration)

@@ -85,6 +85,10 @@ public class AttackLockSystem : MonoBehaviour
     [Tooltip("Seconds it should take to align the camera towards the enemy.")]
     private float cameraSnapTime = 0.35f;
 
+    [SerializeField, Range(0f, 0.25f)]
+    [Tooltip("Viewport padding used when deciding whether an enemy counts as visible for hard lock selection.")]
+    private float hardLockViewportPadding = 0.05f;
+
     [SerializeField]
     [Tooltip("Camera manager reference. Defaults to CameraManager.Instance if left empty.")]
     private CameraManager cameraManager;
@@ -411,13 +415,8 @@ public class AttackLockSystem : MonoBehaviour
 
     private Transform FindBestHardLockTarget()
     {
-        // Hard lock uses camera-based targeting: find enemy most centered in camera view
-        Transform screenAligned = FindScreenAlignedEnemy(lockOnDistance);
-        if (screenAligned != null)
-            return screenAligned;
-
-        // Fallback: find nearest enemy within distance
-        return FindNearestEnemy(lockOnDistance);
+        // Hard lock only targets enemies that are currently visible in the camera view.
+        return FindScreenAlignedEnemy(lockOnDistance);
     }
 
     private Transform FindNearestEnemy(float radius, Transform ignore = null)
@@ -545,12 +544,13 @@ public class AttackLockSystem : MonoBehaviour
 
     private Transform FindScreenAlignedEnemy(float radius)
     {
-        if (!TryGetCameraBasis(out Vector3 camForward, out _))
+        if (!TryGetCameraBasis(out Vector3 camForward, out _) || !TryGetScreenCamera(out Camera screenCamera))
             return null;
 
         Collider[] hits = GetEnemyHits(radius);
         Transform best = null;
-        float smallestAngle = float.MaxValue;
+        float bestViewportScore = float.MaxValue;
+        float bestDistanceScore = float.MaxValue;
 
         foreach (Collider hit in hits)
         {
@@ -569,9 +569,18 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             float angle = Vector3.Angle(camForward, direction);
-            if (angle <= lockOnAngle * 2f && angle < smallestAngle)
+            if (angle > lockOnAngle * 2f)
+                continue;
+
+            if (!TryGetViewportScore(screenCamera, candidate, out float viewportScore))
+                continue;
+
+            float distanceScore = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (viewportScore < bestViewportScore
+                || (Mathf.Approximately(viewportScore, bestViewportScore) && distanceScore < bestDistanceScore))
             {
-                smallestAngle = angle;
+                bestViewportScore = viewportScore;
+                bestDistanceScore = distanceScore;
                 best = candidate;
             }
         }
@@ -581,13 +590,16 @@ public class AttackLockSystem : MonoBehaviour
 
     private Transform FindAdjacentTarget(int direction)
     {
-        if (!TryGetCameraBasis(out Vector3 camForward, out Vector3 camRight))
+        if (!TryGetCameraBasis(out Vector3 camForward, out Vector3 camRight) || !TryGetScreenCamera(out Camera screenCamera))
             return null;
 
         Collider[] hits = GetEnemyHits(lockOnDistance);
         Transform best = null;
         float bestScore = float.MaxValue;
         float sideThreshold = 0.05f;
+
+        if (!TryGetViewportPosition(screenCamera, currentTarget, out Vector3 currentViewportPosition))
+            return null;
 
         foreach (Collider hit in hits)
         {
@@ -617,9 +629,19 @@ public class AttackLockSystem : MonoBehaviour
             if (angle > lockOnAngle * 2f)
                 continue;
 
-            if (angle < bestScore)
+            if (!TryGetViewportPosition(screenCamera, candidate, out Vector3 candidateViewportPosition))
+                continue;
+
+            float horizontalDelta = candidateViewportPosition.x - currentViewportPosition.x;
+            if (direction < 0 && horizontalDelta >= -0.01f)
+                continue;
+            if (direction > 0 && horizontalDelta <= 0.01f)
+                continue;
+
+            float viewportDelta = Mathf.Abs(horizontalDelta) + Mathf.Abs(candidateViewportPosition.y - currentViewportPosition.y) * 0.25f;
+            if (viewportDelta < bestScore)
             {
-                bestScore = angle;
+                bestScore = viewportDelta;
                 best = candidate;
             }
         }
@@ -710,6 +732,44 @@ public class AttackLockSystem : MonoBehaviour
         right.Normalize();
 
         return true;
+    }
+
+    private bool TryGetScreenCamera(out Camera screenCamera)
+    {
+        screenCamera = Camera.main;
+        return screenCamera != null;
+    }
+
+    private bool TryGetViewportScore(Camera screenCamera, Transform candidate, out float viewportScore)
+    {
+        viewportScore = float.MaxValue;
+
+        if (!TryGetViewportPosition(screenCamera, candidate, out Vector3 viewportPosition))
+            return false;
+
+        Vector2 offsetFromCenter = new Vector2(viewportPosition.x - 0.5f, viewportPosition.y - 0.5f);
+        viewportScore = offsetFromCenter.sqrMagnitude;
+        return true;
+    }
+
+    private bool TryGetViewportPosition(Camera screenCamera, Transform candidate, out Vector3 viewportPosition)
+    {
+        viewportPosition = Vector3.zero;
+
+        if (screenCamera == null || candidate == null)
+            return false;
+
+        viewportPosition = screenCamera.WorldToViewportPoint(candidate.position);
+        if (viewportPosition.z <= 0f)
+            return false;
+
+        float min = 0f + hardLockViewportPadding;
+        float max = 1f - hardLockViewportPadding;
+
+        return viewportPosition.x >= min
+            && viewportPosition.x <= max
+            && viewportPosition.y >= min
+            && viewportPosition.y <= max;
     }
 
     private static bool IsSingleTargetAttack(PlayerAttack attack)
