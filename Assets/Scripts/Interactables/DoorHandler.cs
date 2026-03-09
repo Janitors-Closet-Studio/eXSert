@@ -25,6 +25,7 @@ public abstract class DoorHandler : MonoBehaviour
     private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
     private static readonly int LegacyColorProperty = Shader.PropertyToID("_Color");
     private static readonly int EmissionColorProperty = Shader.PropertyToID("_EmissionColor");
+	
 	private MaterialPropertyBlock lightBulbPropertyBlock;
 
     // enums
