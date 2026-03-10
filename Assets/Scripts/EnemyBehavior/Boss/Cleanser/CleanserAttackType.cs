@@ -87,7 +87,7 @@ namespace EnemyBehavior.Boss.Cleanser
     {
         [Header("Animation")]
         [Tooltip("Animation trigger for the spare toss attack.")]
-        public string AnimationTrigger = "Attack_SpareToss";
+        public string AnimationTrigger = "SpareToss";
 
         [Header("Throw Type")]
         [Tooltip("If true, throws sequentially (one after another). If false, throws simultaneously.")]
@@ -199,7 +199,7 @@ namespace EnemyBehavior.Boss.Cleanser
     {
         [Header("Animation")]
         [Tooltip("Animation trigger for the spin dash attack.")]
-        public string AnimationTrigger = "Attack_SpinDash";
+        public string AnimationTrigger = "SpinDash";
 
         [Header("Dash Count")]
         [Tooltip("If true, randomly chooses between 1 or 3 dashes. If false, uses TripleDash setting.")]
@@ -233,7 +233,7 @@ namespace EnemyBehavior.Boss.Cleanser
     {
         [Header("Animation")]
         [Tooltip("Animation trigger for the whirlwind attack.")]
-        public string AnimationTrigger = "Attack_Whirlwind";
+        public string AnimationTrigger = "Whirlwind";
 
         [Header("Suction")]
         [Tooltip("Duration of the spinning suction phase.")]
@@ -449,7 +449,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Header("Animation")]
         [Tooltip("Animation trigger for the knockback attack.")]
-        public string AnimationTrigger = "Attack_Knockback";
+        public string AnimationTrigger = "Knockback";
 
         [Header("SFX/VFX")]
         [Tooltip("Sound effect when attack starts.")]
@@ -487,7 +487,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Header("Animation")]
         [Tooltip("Animation trigger for the crescent wave slash.")]
-        public string AnimationTrigger = "Attack_MiniCrescent";
+        public string AnimationTrigger = "MiniCrescent";
 
         [Header("SFX/VFX")]
         [Tooltip("Sound effect when slashing.")]
@@ -522,7 +522,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Header("Animation")]
         [Tooltip("Animation trigger for the dash.")]
-        public string AnimationTrigger = "Dash_GapClose";
+        public string AnimationTrigger = "GapClose";
 
         [Header("SFX/VFX")]
         [Tooltip("Sound effect during dash.")]
