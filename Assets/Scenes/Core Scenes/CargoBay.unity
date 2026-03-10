@@ -1658,7 +1658,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 846889980243763403, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: m_Size.z
-      value: 34.82
+      value: 24.30101
+      objectReference: {fileID: 0}
+    - target: {fileID: 846889980243763403, guid: efc588e010d594a4c94830813166a9e0, type: 3}
+      propertyPath: m_Center.z
+      value: 3.304863
       objectReference: {fileID: 0}
     - target: {fileID: 3249310325923448568, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: m_Name
@@ -1723,7 +1727,7 @@ PrefabInstance:
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: encounterToEnable
       value: 
-      objectReference: {fileID: 1253390506}
+      objectReference: {fileID: 7397446371122704287}
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: enableZoneOnComplete
       value: 1
@@ -4943,7 +4947,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat all enemies in this wave!
+  WaveObjectiveText: Destroy those blocking your path!
+  TimeBeforeNextWaveStarts: 0
 --- !u!1 &357673280
 GameObject:
   m_ObjectHideFlags: 0
@@ -7054,7 +7059,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -7.03
+      value: -9
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.y
@@ -7062,11 +7067,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.11
+      value: 1.58
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.42509228
+      value: 0.08171006
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.x
@@ -7074,7 +7079,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.90515006
+      value: 0.9966562
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.z
@@ -7086,7 +7091,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 230.313
+      value: 170.626
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -10673,6 +10678,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
   WaveObjectiveText: Defeat all enemies in this wave!
+  TimeBeforeNextWaveStarts: 0
 --- !u!1001 &615807386
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10691,7 +10697,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 846889980243763403, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: m_Size.z
-      value: 40
+      value: 36.20913
+      objectReference: {fileID: 0}
+    - target: {fileID: 846889980243763403, guid: efc588e010d594a4c94830813166a9e0, type: 3}
+      propertyPath: m_Center.z
+      value: 1.8954353
       objectReference: {fileID: 0}
     - target: {fileID: 3249310325923448568, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: m_Name
@@ -10751,7 +10761,7 @@ PrefabInstance:
       objectReference: {fileID: 1346679289}
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: startEnabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: loadSceneOnClear
@@ -11183,6 +11193,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
   WaveObjectiveText: Defeat all enemies in this wave!
+  TimeBeforeNextWaveStarts: 0
 --- !u!1 &637172408
 GameObject:
   m_ObjectHideFlags: 0
@@ -16030,6 +16041,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
   WaveObjectiveText: Defeat all enemies in this wave!
+  TimeBeforeNextWaveStarts: 0
 --- !u!1001 &971533559
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21250,7 +21262,7 @@ PrefabInstance:
       objectReference: {fileID: 2003327326}
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: startEnabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: dropObjectOnClear
@@ -21259,7 +21271,7 @@ PrefabInstance:
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: encounterToEnable
       value: 
-      objectReference: {fileID: 2146452345}
+      objectReference: {fileID: 7397446371122704287}
     - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
       propertyPath: enableZoneOnComplete
       value: 1
@@ -21313,17 +21325,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3400058836635240288, guid: efc588e010d594a4c94830813166a9e0, type: 3}
   m_PrefabInstance: {fileID: 1253390504}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1253390506 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
-  m_PrefabInstance: {fileID: 1253390504}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aedb9afadd708f14eafd434112cdedda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.CombatEncounter
 --- !u!43 &1253774683
 Mesh:
   m_ObjectHideFlags: 0
@@ -22719,7 +22720,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.19624472
+      value: -1.7737541
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.y
@@ -22727,11 +22728,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5.675411
+      value: -1.9854088
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.5274587
+      value: -0.24244222
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.x
@@ -22739,7 +22740,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.8495807
+      value: 0.97016585
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.z
@@ -22751,7 +22752,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 243.668
+      value: 208.061
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -24299,7 +24300,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 8.827141
+      value: 9.88216
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.y
@@ -24307,11 +24308,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 6.695835
+      value: 7.1272316
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.47057077
+      value: -0.55197334
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.x
@@ -24319,7 +24320,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.8823623
+      value: 0.83386177
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.z
@@ -24331,7 +24332,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 236.143
+      value: 247.005
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -24539,7 +24540,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 7.0549793
+      value: 8.11
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.y
@@ -24547,11 +24548,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.958603
+      value: 8.39
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.32063538
+      value: -0.40884817
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.x
@@ -24559,7 +24560,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.94720274
+      value: 0.9126024
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.z
@@ -24571,7 +24572,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 217.403
+      value: 228.265
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -30903,7 +30904,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.622677
+      value: 5.677696
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.y
@@ -30911,11 +30912,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 9.183609
+      value: 9.6150055
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.12168224
+      value: -0.21508218
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.x
@@ -30923,7 +30924,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.9925691
+      value: 0.97659594
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.z
@@ -30935,7 +30936,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 193.978
+      value: 204.841
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -32497,7 +32498,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat all enemies in this wave!
+  WaveObjectiveText: Crush Those in your Wake!
+  TimeBeforeNextWaveStarts: 0
 --- !u!1001 &1972661937
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -34233,7 +34235,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.97819376
+      value: -2.9481926
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.y
@@ -34241,11 +34243,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.60546875
+      value: 3.0845337
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.5319
+      value: -0.22674541
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.x
@@ -34253,7 +34255,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.8468072
+      value: 0.9739541
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalRotation.z
@@ -34265,7 +34267,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 244.268
+      value: 206.211
       objectReference: {fileID: 0}
     - target: {fileID: 5352723573284463500, guid: f6d86b035b3290d4a9c75782a7d305ef, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -34856,17 +34858,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 4, y: 1.5, z: 4}
   m_Center: {x: -0.0000019073486, y: 0.00000035762787, z: 0}
---- !u!114 &2146452345 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
-  m_PrefabInstance: {fileID: 615807386}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aedb9afadd708f14eafd434112cdedda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.CombatEncounter
 --- !u!114 &175163030020895358
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35282,6 +35273,14 @@ PrefabInstance:
     - target: {fileID: 3473652998857998926, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: _interactionPrompt
       value: Press to Interact
+      objectReference: {fileID: 0}
+    - target: {fileID: 4222769427718020808, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: m_Size.z
+      value: 40.472046
+      objectReference: {fileID: 0}
+    - target: {fileID: 4222769427718020808, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: m_Center.z
+      value: 11.514843
       objectReference: {fileID: 0}
     - target: {fileID: 4965247282811737687, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: errorSFXClip
@@ -36180,6 +36179,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 366249933239526967, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
   m_PrefabInstance: {fileID: 4023996002522161587}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7397446371122704287 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8631346809535284705, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+  m_PrefabInstance: {fileID: 4023996002522161587}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85345b0357feb44d981694dd8a4be11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.PuzzleEncounter
 --- !u!1001 &7524860058362240071
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UIandUXSystems.HUD;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -32,20 +34,7 @@ namespace Progression.Encounters
         private Vector3 lastEnemyPosition;
         private bool hasLastEnemyPosition;
 
-        public override string ObjectiveText
-        {
-            get
-            {
-                return wavesQueue.Count > 0
-                    ? wavesQueue.Peek().WaveObjectiveText
-                    : "Encounter Completed!";
-            }
-        }
-
-        protected override Color DebugColor
-        {
-            get => Color.red;
-        }
+        protected override Color DebugColor => Color.red;
 
         private readonly List<Wave> allWaves = new();
         private readonly Queue<Wave> wavesQueue = new();
@@ -179,16 +168,19 @@ namespace Progression.Encounters
         {
             Debug.Log($"[CombatEncounter] Wave completed: {completedWave}");
 
-            if (wavesQueue.Peek() != completedWave)
-                return;
+            if (wavesQueue.Peek() != completedWave) return;
+
+            // Gets the waves delay before cleaning up and dequeuing it
+            float delay = completedWave.TimeBeforeNextWaveStarts;
 
             CleanupWave(completedWave);
             wavesQueue.Dequeue();
 
-            if (wavesQueue.Count != 0)
-                SpawnNextWave(3f);
-            else
-                HandleEncounterCompleted();
+            // Spawns the next wave if there are more waves in the queue
+            if (wavesQueue.Count != 0) SpawnNextWave(delay);
+
+            // If there are no more waves, then the encounter is completed and should be cleaned up
+            else HandleEncounterCompleted();
         }
 
         private void CleanupWave(Wave wave)
@@ -216,7 +208,10 @@ namespace Progression.Encounters
             if (debugMessagesEnabled)
                 Debug.Log($"[CombatEncounter] Spawning next wave: {currentWave}");
 
-            InvokeUpdateObjective(currentWave.WaveObjectiveText);
+            // Updates the objective if the wave has objective text
+            if (!string.IsNullOrEmpty(currentWave.WaveObjectiveText)) 
+                InvokeUpdateObjective(currentWave.WaveObjectiveText);
+
             currentWave.SpawnEnemies();
         }
 

@@ -14,16 +14,16 @@ namespace Progression.Encounters
 
         protected override Color DebugColor => Color.purple;
 
-        [SerializeField] private string objectiveText = "Complete the puzzle!";
+        #region Inspector Setup
+        [SerializeField] private string objectiveText = "";
         [Header("Optional Overrides")]
         [SerializeField] private PuzzlePart overridePuzzlePart;
         [SerializeField] private PuzzleInteraction[] overrideInteractPoints;
+        #endregion
 
         private PuzzlePart part;
         private IConsoleSelectable consoleSelectable;
         private PuzzleInteraction[] interactPoints;
-
-        public override string ObjectiveText => objectiveText;
 
         protected override void SetupEncounter()
         {
@@ -75,6 +75,14 @@ namespace Progression.Encounters
             interactPoints = null;
 
             base.CleanupEncounter();
+        }
+
+        protected override void PlayerEnteredZone()
+        {
+            base.PlayerEnteredZone();
+
+            if (!string.IsNullOrEmpty(objectiveText))
+                InvokeUpdateObjective(objectiveText);
         }
 
         /// <summary>

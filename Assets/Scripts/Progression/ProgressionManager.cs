@@ -154,9 +154,9 @@ namespace Progression
         }
         #endregion
 
-        private void UpdateObjective(string newObjective)
+        private void UpdateObjective(HUDMessage message)
         {
-            PlayerHUD.SetObjective(newObjective);
+            PlayerHUD.NewMessage(message);
         }
 
         #region Progression Management
@@ -169,14 +169,15 @@ namespace Progression
             // Get the manager for this zone's scene and add the zone to the appropriate list
             ProgressionManager manager = GetInstance(SceneAsset.GetSceneAssetOfObject(zone.gameObject));
 
+            // Add the zone to the appropriate list based on its type.
+            // Then perform any necessary setup for the manager to track it
             switch (zone)
             {
                 case BasicEncounter encounter:
                     manager.encounterCompletionMap.Add(encounter);
                     manager.totalEncountersInScene++;
 
-                    // Subscribe the manager's UpdateObjective method to the encounter's UpdateObjective event
-                    // When the encounter triggers an objective update, the manager can relay that to the HUD
+                    // Subscribe the manager to the zone's UpdateObjective event so it can relay updates to the HUD
                     encounter.UpdateObjective += manager.UpdateObjective;
                     break;
 

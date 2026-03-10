@@ -1,4 +1,5 @@
 using System;
+using UIandUXSystems.HUD;
 using UnityEngine;
 
 namespace Progression
@@ -77,6 +78,9 @@ namespace Progression
         {
             zoneEnabled = true;
             UpdateCollider();
+
+            // If the player is already in the zone when it gets enabled, we need to manually trigger the enter logic since OnTriggerEnter won't be called until they exit and re-enter.
+            if (zoneActive) PlayerEnteredZone();
         }
 
         public void DisableZone()
@@ -90,14 +94,18 @@ namespace Progression
         #region Collider Triggers
         protected void OnTriggerEnter(Collider other)
         {
-            if (!zoneEnabled || !other.transform.root.CompareTag("Player")) return;
+            if (!other.transform.root.CompareTag("Player")) return;
             zoneActive = true;
+
+            if (!zoneEnabled) return;
             PlayerEnteredZone();
         }
         protected void OnTriggerExit(Collider other)
         {
-            if (!zoneEnabled || !other.transform.root.CompareTag("Player")) return;
+            if (!other.transform.root.CompareTag("Player")) return;
             zoneActive = false;
+
+            if (!zoneEnabled) return;
             PlayerExitedZone();
         }
 

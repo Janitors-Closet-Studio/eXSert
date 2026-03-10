@@ -1,5 +1,6 @@
 using System;
 using UI.Loading;
+using UIandUXSystems.HUD;
 using UnityEngine;
 
 namespace Progression.Checkpoints
@@ -11,6 +12,7 @@ namespace Progression.Checkpoints
         [Header("Checkpoint Settings")]
         [SerializeField]
         private string checkpointName = "Checkpoint";
+
         [Header("Spawn Settings")]
         [SerializeField, Tooltip("Optional transform that marks the exact spawn position and rotation. If null the checkpoint's transform is used.")]
         private Transform spawnPoint;
@@ -21,15 +23,14 @@ namespace Progression.Checkpoints
         private bool showSpawnGizmos = true;
         #endregion
 
+        #region Inherited Implementation
         protected override Color DebugColor => Color.darkGreen;
+
         public override string ToString() => $"{checkpointName} with spawn: {GetSpawnPosition()}";
+        #endregion
+
         public string CheckpointId => string.IsNullOrWhiteSpace(checkpointName) ? gameObject.name : checkpointName;
         public SceneAsset CheckpointSceneAsset => ResolveCheckpointSceneAsset();
-
-        // Capsule dimensions are constants shared by all checkpoints.
-        // Adjust these values here until they match the desired in-scene size.
-        private const float SPAWN_CAPSULE_RADIUS = 0.5f;
-        private const float SPAWN_CAPSULE_HEIGHT = 1.8f;
 
         private static readonly bool ReloadSceneOnRespawn = true;
 
@@ -104,6 +105,7 @@ namespace Progression.Checkpoints
         private void TriggerCheckpoint()
         {
             if (currentCheckpoint == this) return; // Already the current checkpoint, no need to update
+
             currentCheckpoint = this;
             OnCheckpointTriggered?.Invoke(this);
 
@@ -111,6 +113,7 @@ namespace Progression.Checkpoints
                 DataPersistenceManager.SaveGame();
         }
 
+        #region Data Persistence
         public void LoadData(GameData data)
         {
             if (data == null)
@@ -142,7 +145,13 @@ namespace Progression.Checkpoints
             data.currentSpawnPointID = CheckpointId;
             data.lastSavedScene = checkpointScene.SceneName;
         }
+        #endregion
 
+        #region Gizmo Drawing
+        // Capsule dimensions are constants shared by all checkpoints.
+        // Adjust these values here until they match the desired in-scene size.
+        private const float SPAWN_CAPSULE_RADIUS = 0.5f;
+        private const float SPAWN_CAPSULE_HEIGHT = 1.8f;
         protected override void OnDrawGizmos()
         {
             base.OnDrawGizmos();
@@ -190,6 +199,7 @@ namespace Progression.Checkpoints
             Gizmos.DrawLine(arrowTip, arrowTip + leftHead * headSize);
             Gizmos.DrawLine(arrowTip, arrowTip + rightHead * headSize);
         }
+        #endregion
 
         #region Collider Functionality
         protected override void PlayerEnteredZone() => TriggerCheckpoint();

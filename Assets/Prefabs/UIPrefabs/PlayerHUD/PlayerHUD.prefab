@@ -738,6 +738,9 @@ MonoBehaviour:
   _interactIcon: {fileID: 5981776657338276489}
   _collectText: {fileID: 2390760298209356351}
   _collectBottomText: {fileID: 771887322774501272}
+  _hintNameText: {fileID: 0}
+  _hintDescriptionText: {fileID: 0}
+  hintUI: {fileID: 0}
 --- !u!1 &1754578852602411632
 GameObject:
   m_ObjectHideFlags: 0
@@ -938,8 +941,9 @@ GameObject:
   - component: {fileID: 8000239025539898438}
   - component: {fileID: 5011529244364066715}
   - component: {fileID: 9000622957064763091}
+  - component: {fileID: 5593992631606652127}
   m_Layer: 5
-  m_Name: NoticeContents
+  m_Name: Notice
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1007,6 +1011,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5593992631606652127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030360712747901842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de76a53dce688e4468ed9138904d0fba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NoticeText
+  HUDText: {fileID: 2390760298209356351}
 --- !u!1 &2240254673920738100
 GameObject:
   m_ObjectHideFlags: 0
@@ -2826,13 +2843,14 @@ GameObject:
   - component: {fileID: 8331187524801118461}
   - component: {fileID: 2927578415759868530}
   - component: {fileID: 7133646764659507557}
+  - component: {fileID: 3734948065986776289}
   m_Layer: 5
   m_Name: Objective
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &8331187524801118461
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2894,6 +2912,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &3734948065986776289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5239238626626196074}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 652da274e67de4044bfc3935c2b53dff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectiveText
+  HUDText: {fileID: 9112974218064353822}
 --- !u!1 &5483915174566888258
 GameObject:
   m_ObjectHideFlags: 0
@@ -3689,7 +3720,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &5923598028257329130
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4077,7 +4108,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2106403429074460419
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6182,10 +6213,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7766454795055846290}
     m_Modifications:
-    - target: {fileID: 8420335558540013024, guid: 32fc3a3f3d66f634bb367ea20fd57cb4, type: 3}
-      propertyPath: m_Name
-      value: ComboCircle_A3
-      objectReference: {fileID: 0}
     - target: {fileID: 4994237317898921455, guid: b5ecfb8a205f9ca408b4eb23f5833967, type: 3}
       propertyPath: m_Name
       value: ComboCircle_A3
@@ -6277,6 +6304,10 @@ PrefabInstance:
     - target: {fileID: 8249961978267516690, guid: b5ecfb8a205f9ca408b4eb23f5833967, type: 3}
       propertyPath: m_Name
       value: Rocket
+      objectReference: {fileID: 0}
+    - target: {fileID: 8420335558540013024, guid: 32fc3a3f3d66f634bb367ea20fd57cb4, type: 3}
+      propertyPath: m_Name
+      value: ComboCircle_A3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
