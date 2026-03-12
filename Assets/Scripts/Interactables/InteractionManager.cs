@@ -166,8 +166,11 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     public void OnInteractButtonPressed()
     {
-        if (!isPlayerNearby || !interactable)
+        if (!isPlayerNearby || !interactable || PlayerMovement.isDashingFlag)
+        {
+            Debug.Log($"Interaction attempted with {gameObject.name}, but conditions not met. isPlayerNearby: {isPlayerNearby}, interactable: {interactable}, isDashing: {PlayerMovement.isDashingFlag}");
             return;
+        }
 
         // Don't allow interactions while player is in combat
         if (_combatIdleController != null && _combatIdleController.IsInCombat)
@@ -182,9 +185,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     }
 
     protected abstract void Interact();
-
-    
-
     public void SwapBasedOnInputMethod()
     {
         InteractionUI interactionUI = GetInteractionUIIfAvailable();

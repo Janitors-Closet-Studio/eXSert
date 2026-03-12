@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UIandUXSystems.HUD;
 using UnityEngine;
 
 namespace Progression.Encounters
@@ -9,7 +10,13 @@ namespace Progression.Encounters
     {
         #region Inspector Setup
         [Header("Wave Settings")]
-        public string WaveObjectiveText = "Defeat all enemies in this wave!";
+        [Header("Objective Settings")]
+        [Tooltip("The objective to display when the wave starts. Keep blank to not update the objective.")]
+        public string WaveObjectiveText = "";
+
+        [Header("Timing Settings")]
+        [Range(0f, 10f), Tooltip("The time in seconds before the next wave starts after this wave is completed. This can be used to give the player a brief respite between waves or to create a sense of urgency. Set to 0 for no delay.")]
+        public float TimeBeforeNextWaveStarts = 0f;
 
         #endregion
 

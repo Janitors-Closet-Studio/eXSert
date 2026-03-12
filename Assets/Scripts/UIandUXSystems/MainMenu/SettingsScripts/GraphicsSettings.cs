@@ -7,6 +7,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class GraphicsSettings : MonoBehaviour
 {
@@ -19,21 +21,11 @@ public class GraphicsSettings : MonoBehaviour
 
     [Header("Brightness Settings")]
     [SerializeField] private Slider brightnessSlider = null;
-    [SerializeField] private float defaultBrightness = .75f;
-    public float DefaultBrightness => defaultBrightness;
-    [SerializeField, Tooltip("Optional explicit reference to the brightness controller on the Global Volume.")]
-    private BrightnessOverlayController brightnessController;
-    private BrightnessOverlayController ActiveBrightnessController
-    {
-        get
-        {
-            if (brightnessController == null)
-                brightnessController = BrightnessOverlayController.Instance;
-            return brightnessController;
-        }
-    }
-    
-    private float brightnessLevel;
+    public float defaultBrightness = 1.25f;
+
+    public Volume globalVolume;
+    internal LiftGammaGain liftGammaGain;
+    internal float brightnessLevel;
     [SerializeField] private Slider staticSlider = null;
     
 
@@ -65,7 +57,7 @@ public class GraphicsSettings : MonoBehaviour
 
     void Awake()
     {
-        brightnessLevel = defaultBrightness;
+        FindGlobalVolume();
     }
 
     private void OnEnable()
@@ -80,14 +72,38 @@ public class GraphicsSettings : MonoBehaviour
             _applyAction.action.performed -= ctx => GraphicsApply();
     }
 
+    private void FindGlobalVolume()
+    {
+        if (globalVolume != null)
+        {
+            // Try to get the LiftGammaGain override from the volume profile
+            if (globalVolume.profile.TryGet(out liftGammaGain))
+            {
+                Debug.Log("LiftGammaGain found. Current gamma value: " + liftGammaGain.gamma.value.w);
+            }
+            else
+            {
+                Debug.LogError("LiftGammaGain effect not found in the volume profile.");
+            }
+        }
+        else
+        {
+            Debug.LogError("Global Volume not assigned.");
+        }
+            
+    }
+
 
     //Alls functions below change values based on player choice
     public void SetBrightness(float brightness)
     {
-        brightnessLevel = brightness;
-        
-        // Route all brightness visuals through the persistent post-process controller.
-        ActiveBrightnessController?.ApplyBrightness(brightness, defaultBrightness);
+
+        if (globalVolume.profile.TryGet(out liftGammaGain))
+        {
+            liftGammaGain.gamma.value = new Vector4(1f, 1f, 1f, brightness);
+            brightnessLevel = brightness;
+            Debug.Log("Brightness set to: " + brightness);
+        }
     }
 
     public void SetDisplayMode(int displayMode)

@@ -6,6 +6,7 @@
  */
 
 using System;
+using UIandUXSystems.HUD;
 using UnityEngine;
 
 namespace Progression.Encounters
@@ -39,11 +40,10 @@ namespace Progression.Encounters
         /// </summary>
         public bool isCleanedUp { get; private set; } = true;
 
-        public abstract string ObjectiveText { get; }
-
         // Event to update the objective text in the HUD, passing the new objective string as a parameter
-        public event System.Action<string> UpdateObjective;
-        protected void InvokeUpdateObjective(string newObjective) => UpdateObjective?.Invoke(newObjective);
+        public event System.Action<HUDMessage> UpdateObjective;
+        protected void InvokeUpdateObjective(string newObjective) => 
+            UpdateObjective?.Invoke(new(HUDMessageType.Objective, newObjective));
 
         protected override void Start()
         {
@@ -104,8 +104,6 @@ namespace Progression.Encounters
         {
             if (debugMessagesEnabled)
                 Debug.Log($"Player entered encounter zone: {encounterName}.");
-
-            UpdateObjective?.Invoke(ObjectiveText);
         }
 
         protected override void PlayerExitedZone()

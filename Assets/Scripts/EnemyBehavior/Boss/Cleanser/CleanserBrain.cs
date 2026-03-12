@@ -571,7 +571,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 2f,
                     RangeMin = 3f,
                     RangeMax = 8f,
-                    AnimationTrigger = "Attack_Lunge",
+                    AnimationTrigger = "Lunge",
                     HasWindupDamageReduction = true,
                     WindupDamageReduction = 0.5f,
                     IncludesMovement = true,
@@ -589,7 +589,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 2.5f,
                     RangeMin = 0f,
                     RangeMax = 4f,
-                    AnimationTrigger = "Attack_OverheadCleave"
+                    AnimationTrigger = "OverheadAttack"
                 };
             }
 
@@ -603,7 +603,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 3f,
                     RangeMin = 0f,
                     RangeMax = 5f,
-                    AnimationTrigger = "Attack_SlashSlap",
+                    AnimationTrigger = "SlashSlap",
                     IsMultiPart = true,
                     PartCategories = new[] { AttackCategory.Halberd, AttackCategory.Wing },
                     IncludesMovement = true,
@@ -621,7 +621,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 3f,
                     RangeMin = 0f,
                     RangeMax = 4f,
-                    AnimationTrigger = "Attack_RakeSpin",
+                    AnimationTrigger = "RakeSpin",
                     IsMultiPart = true,
                     PartCategories = new[] { AttackCategory.Wing, AttackCategory.Halberd }
                 };
@@ -637,7 +637,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 2f,
                     RangeMin = 0f,
                     RangeMax = 4f,
-                    AnimationTrigger = "Attack_SpinSlash"
+                    AnimationTrigger = "SpinSlash"
                 };
             }
 
@@ -651,7 +651,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 4f,
                     RangeMin = 0f,
                     RangeMax = 5f,
-                    AnimationTrigger = "Attack_LegSweep",
+                    AnimationTrigger = "LegSweep",
                     CanStunPlayer = true
                 };
             }
@@ -666,7 +666,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 8f,
                     RangeMin = 0f,
                     RangeMax = 10f,
-                    AnimationTrigger = "Attack_HighDive"
+                    AnimationTrigger = "HighDive"
                 };
             }
 
@@ -680,7 +680,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 10f,
                     RangeMin = 0f,
                     RangeMax = 15f,
-                    AnimationTrigger = "Attack_AnimeDash"
+                    AnimationTrigger = "AnimeDash"
                 };
             }
         }

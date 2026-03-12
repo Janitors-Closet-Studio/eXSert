@@ -62,6 +62,15 @@ public class ComboProgressionUIController : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!SettingsManager.Instance.comboProgression)
+        {
+            this.gameObject.SetActive(false);
+        }
+        else
+        {
+            this.gameObject.SetActive(true);
+        }
+
         PlayerAttackManager.OnAttack += HandleAttack;
         if (tierComboManager == null)
             tierComboManager = FindObjectOfType<TierComboManager>(true);

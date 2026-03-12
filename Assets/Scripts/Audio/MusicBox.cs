@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using Unity.VisualScripting;
 using NUnit.Framework;
+using System;
+
 
 
 
@@ -37,6 +39,7 @@ public class MusicBox : MonoBehaviour
     private Rigidbody rb;
     private Coroutine fadeOutMusicRoutine;
     private Coroutine fadeOutAmbienceRoutine;
+    private bool canPlay = false;
 
     private SoundManager cachedSoundManager;
     private void Awake()
@@ -77,6 +80,9 @@ public class MusicBox : MonoBehaviour
     private void PlayLevelMusic()
     {
         if (levelMusic == null)
+            return;
+
+        if (CutsceneManager.IsCutscenePlaying)
             return;
 
         if (!TryBindMusicSource())
@@ -132,6 +138,9 @@ public class MusicBox : MonoBehaviour
         if (ambienceClip == null)
             return;
 
+        if (CutsceneManager.IsCutscenePlaying)
+            return;
+
         if (ambienceSource == null)
         {
             if (cachedSoundManager == null || cachedSoundManager.ambienceSource == null)
@@ -185,7 +194,7 @@ public class MusicBox : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && IsSceneLoaded(sceneName))
+        if (other.CompareTag("Player") && IsSceneLoaded(sceneName) && CutsceneManager.IsCutscenePlaying == false)
         {
             // If another box was active, stop its fade coroutines
             if (currentActiveBox != null && currentActiveBox != this)

@@ -11,16 +11,15 @@ public class ComboProgressionDisplay : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ManageUIVisibility()
     {
-        if (!SettingsManager.Instance.comboProgression)
+        if (SettingsManager.Instance.comboProgression)
         {
-            comboProgressionUI.SetActive(false);
+            comboProgressionUI.SetActive(true);
         }
         else
         {
-            comboProgressionUI.SetActive(true);
+            comboProgressionUI.SetActive(false);
         }
     }
 }

@@ -23,6 +23,11 @@ public class SoundManager : Singleton<SoundManager>
     public AudioSource puzzleSource;
     public AudioSource levelMusicSource;
 
+    private float ogSfxVolume = 1f;
+    private float ogMusicVolume = 1f;
+    private float ogLevelMusicVolume = 1f;
+    private float ogAmbienceVolume = 1f;
+
     //Debug logs
     private void PersistAudioSource(AudioSource source)
     {
@@ -187,5 +192,49 @@ public class SoundManager : Singleton<SoundManager>
 
         musicSource.volume = 0f;
         musicSource.Stop();
+    }
+
+    public void PauseAllMusic(bool shouldPause)
+    {
+        if (shouldPause)
+        {
+            if (sfxSource != null) ogSfxVolume = sfxSource.volume;
+            if (musicSource != null) ogMusicVolume = musicSource.volume;
+            if (levelMusicSource != null) ogLevelMusicVolume = levelMusicSource.volume;
+            if (ambienceSource != null) ogAmbienceVolume = ambienceSource.volume;
+
+            if (musicSource != null && musicSource.isPlaying)
+                musicSource.Pause();
+            if (levelMusicSource != null && levelMusicSource.isPlaying)
+                levelMusicSource.Pause();
+            if (ambienceSource != null && ambienceSource.isPlaying)
+                ambienceSource.Pause();
+            if (sfxSource != null && sfxSource.isPlaying)
+                sfxSource.Pause();
+
+            if (sfxSource != null) sfxSource.volume = 0f; // Mute SFX
+            if (musicSource != null) musicSource.volume = 0f; // Mute music
+            if (levelMusicSource != null) levelMusicSource.volume = 0f; // Mute level music
+            if (ambienceSource != null) ambienceSource.volume = 0f; // Mute ambience
+        }
+        else
+        {
+            if (musicSource != null && !musicSource.isPlaying)
+                musicSource.UnPause();
+            if (levelMusicSource != null && !levelMusicSource.isPlaying)
+                levelMusicSource.UnPause();
+            if (ambienceSource != null && !ambienceSource.isPlaying)
+                ambienceSource.UnPause();
+            if (sfxSource != null && !sfxSource.isPlaying)
+                sfxSource.UnPause();
+
+            if (sfxSource != null) sfxSource.volume = ogSfxVolume;
+            if (musicSource != null) musicSource.volume = ogMusicVolume;
+            if (levelMusicSource != null) levelMusicSource.volume = ogLevelMusicVolume;
+            if (ambienceSource != null) ambienceSource.volume = ogAmbienceVolume;
+
+            // Ensure all volumes are reset to user settings
+            ApplySavedVolumes();
+        }
     }
 }

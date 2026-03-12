@@ -1,118 +1,285 @@
-# eXSert
-
-_eXSert_ is a third-person character-action prototype set aboard a derelict research vessel. Master stance-based combos, aerial launchers, and precise guarding to carve through waves of autonomous security drones while the ship streams in around you.
-
----
-
-## Installation & Launch
-1. Download the latest build zip from the team share or itch.io page.
-2. Extract the archive anywhere outside `Program Files` (write-access is required for saves).
-3. Run `eXSert.exe`. The launcher boots directly into the main menu; all gameplay scenes stream additively via `SceneLoader`.
+# eXSert – Beta Build
+**eXSert** is a third-person character-action prototype set aboard a derelict research airship. Master stance-based combat, aerial launchers, guard-based counters, and fast traversal while fighting through autonomous security drones as the ship gradually opens up around you.
+This **Beta build** represents a significantly expanded and refined version of the original Alpha slice, introducing multiple new playable zones, improved combat pacing, expanded traversal routes, and major visual upgrades across the airship.
 
 ---
 
-## Art & Asset Attribution
+# Build Overview
 
-### Created In-House
-- Player combatant mesh, rig, and the full animation set (combos, guard, air dash, plunge).
-- Environment kits for the Elevator tutorial, Bridge connector, and Hangar arena, plus bespoke props and set dressing under `Assets/eXSert Assets/`.
-- Enemy variants (Boxer, Crawler, Drone) including VFX hooks, UI, HUD, menus, and original SFX layers.
-- All narrative UI art (objective widgets, dialogue cards, logbook entries) and gameplay shaders marked inside `Assets/eXSert Assets/Shaders`.
+This Beta build features a complete playable progression from the opening elevator sequence to the **Engine Core boss arena**.
 
-### External Content & Credits
-- **Unity Technologies** – Starter Assets packs, Input System samples, Polybrush, ProBuilder, Cinemachine, Unity Toon Shader samples.
-- **Adobe / Allegorithmic** – Adobe Substance 3D integration packages housed under `Assets/Adobe`.
-- **Mirza Beig** – _Distortion Shockwaves VFX_ pack.
-- **Hovl Studio** – _Magic Effects Pack_ (URP).
-- **Vefects** – Zap / Trails / Easy Shockwaves URP packs (see `Assets/eXSert Assets/VFX&Shader/[Imported VFX]/`).
-- **Starter third-party audio stingers** bundled with the above packs (see individual license files within each folder).
+Major updates include:
+* Fully playable progression from **start to final boss encounter**
+* Major level design updates across **Crew Quarters, Hangar, and Conservatory**
+* **Conservatory area unlocked via the new elevator lift system**
+* Large-scale **visual upgrades and environmental polish**
+* A showcase version of the **final boss arena with a basic boss AI**
+* Reworked **checkpoint system** for smoother progression
+* Improved **encounter spawning and combat flow**
+* Expanded **interaction feedback with audio and camera guidance**
 
-All third-party folders keep their original license/readme files; please review them before redistributing the project.
+This build focuses on improving **gameplay clarity, pacing, and overall player experience**.
 
----
-
-## Major Mechanics Snapshot
-- **Stance Switching** – Tap `LB/L1` (controller) or `Q` (keyboard) to swap between single-target and AOE move lists. Stances drive combo trees, hitbox sizes, and animation layers.
-- **Combo System** – Light strings chain into heavy finishers. ScriptableObject `PlayerAttack` assets define per-attack hitboxes, VFX anchors, target caps, and SFX.
-- **Aerial Combat & Plunge** – Launchers send enemies airborne; follow up with air lights/heavies or trigger the plunge (heavy aerial) to slam into clustered crowds.
-- **Guard & Parry Focus** – Holding Guard locks movement speed, pivots the camera, and opens guard-specific dash cancels plus a special counterattack window.
-- **Additive Scene Streaming** – `SceneLoader` keeps the elevator hub resident while additively loading bridge/hangar chunks based on triggers.
-- **Checkpoint / Persistence** – `CheckpointSystem` writes scene + spawn IDs to save slots; reloading spawns you through `PlayerSpawner` at the last triggered checkpoint.
+Some **narrative systems and advanced boss mechanics are still in development.**
 
 ---
 
-## Controls
+# Installation & Launch
 
-| Action | Keyboard & Mouse | Xbox / PlayStation |
-| --- | --- | --- |
-| Move / Look | `WASD` / Mouse | Left Stick / Right Stick |
-| Light Attack | `LMB` / `X` key | `X` / `Square` |
-| Heavy Attack | `RMB` / `Y` key | `Y` / `Triangle` |
-| Jump / Double Jump | Space | `A` / `Cross` |
-| Dash / Air Dash | Left Shift | `B` / `Circle` |
-| Guard (Hold) | Right Mouse / `Mouse4` (bindable) | `RB` / `R1` |
-| Change Stance | `Q` or `LB` (if using pad prompts) | `LB` / `L1` |
-| Lock-On Toggle | `Middle Mouse` | `RS Click` |
-| Pause / Menu | `Esc` | `Start / Options` |
+1. Download and unzip **`eXSert Beta Build.zip`**
+2. Extract the folder anywhere outside `Program Files`
+3. Run **`eXSert.exe`**
 
-Rebinding is done through the Input System settings panel (Pause → Settings → Controls) and writes to `InputSystem.inputsettings.asset`.
+No additional setup or dependencies are required.
 
 ---
 
-## How to Beat the Current Build
+# Controls
 
-1. **Elevator Tutorial (FP_Elevator)**
-   - Follow the on-screen objectives. Three enemy waves spawn sequentially: light-attack tutorial, heavy-attack tutorial, then stance-change tutorial.
-   - Use the objective notices to learn each mechanic; the elevator doors open once Wave 3 dies. Step into the lit pad to trigger the additive load for Bridge.
+## Gamepad (Xbox / PlayStation Layout)
 
-2. **Bridge Connector (FP_Bridge)**
-   - Upon loading, you face a short traversal space with mixed Boxer/Crawler patrols. Use guard-walk (hold Guard + move) to inch forward while blocking turret fire.
-   - Activate the bridge console (prompt appears when close). This spawns the Hangar chunk additively and opens the blast doors.
-
-3. **Hangar Arena (FP_Hangar)**
-   - Clear the initial ring of drones to unlock the center console.
-   - Interact with the console to trigger the multi-wave gauntlet (AOE stance excels here). Guard dashes give i-frames—use them to slip past laser barrages.
-   - The encounter ends after the fifth wave (two Boxers + drone swarm). A checkpoint trigger behind the hangar doors fires automatically; proceed to the exit waypoint to finish the build.
-
-4. **Fail States**
-   - If you die, select “Restart from Checkpoint” to reload the active scene/spawn point via `SceneLoader`. The tutorial resets to Wave 1; the hangar resumes at the latest checkpoint.
-
-Tips: Light attacks can be animation-cancelled into dash/guard, aerial heavies have built-in launch, and plunge slams now cap at five targets to keep performance stable.
+| Action        | Input                         |
+| ------------- | ----------------------------- |
+| Move          | Left Stick                    |
+| Look          | Right Stick                   |
+| Light Attack  | X / Square                    |
+| Heavy Attack  | Y / Triangle                  |
+| Jump          | A / Cross                     |
+| Dash          | Right Trigger                 |
+| Guard / Parry | Right Shoulder                |
+| Lock-On       | Right Stick Press or D-Pad Up |
+| Switch Target | D-Pad Left / Right            |
+| Interact      | B / Circle                    |
+| Pause         | Start / Options               |
 
 ---
 
-## Debug Tools & Cheats
-- **God Mode Toggle** – In the Unity Editor select the player, enable `PlayerHealthBarManager → Invulnerable`. Persisted through play mode but not exposed in builds.
-- **Context Menus** – `PlayerHealthBarManager` offers “Debug/Apply Damage” and “Debug/Kill Player” context buttons; boss brain/health scripts expose similar test hooks.
-- **Checkpoint Reset** – `CheckpointSystem` inspector has buttons for clearing saves/testing load flows; `SceneLoader`’s debug logging can be enabled per component.
-- **Temp VFX Switcher** – `TempAoEVfxSwitcher` lets you toggle rig-mounted VFX for AoE/plunge as well as double jump/air dash when testing presentation changes.
+## Keyboard & Mouse
 
-These debugging aides are editor-only and should be disabled or hidden before shipping.
-
----
-
-## Known Issues (Dec 2025)
-- **Animation Edge Cases** – Rapidly spamming dash/guard can desync locomotion layers before they resync; cancel out by releasing guard for ~0.5 s.
-- **Controller Reconnect** – Unplugging a gamepad while paused sometimes leaves the Input System in keyboard mode until you reopen the pause menu.
-- **Scene Streaming Pops** – If you sprint through a transition trigger twice in the same frame, an additive scene can unload before the next one finishes streaming.
-- **Missing VFX Anchors** – Attacks without a configured `PlayerVfxAnchorRegistry` entry fall back to the hitbox origin (looks like ground sparks). Configure anchors on the player rig to fix.
-- **AI Awareness** – Swapped-in enemies occasionally spawn with zero velocity on sloped navmesh tiles; they unstick after taking damage but remain stationary otherwise.
-
-Please document any additional issues in the project tracker so QA can repro them.
+| Action        | Input              |
+| ------------- | ------------------ |
+| Move          | WASD               |
+| Look          | Mouse              |
+| Light Attack  | Left Mouse Button  |
+| Heavy Attack  | Right Mouse Button |
+| Jump          | Space              |
+| Dash          | Left Shift         |
+| Guard / Parry | E                  |
+| Lock-On       | C                  |
+| Interact      | F                  |
+| Pause         | Escape             |
 
 ---
 
-## AI Disclosure
+# Level Progression
 
-Portions of the combat scripts, additive loading utilities, VFX toggles, and this README were authored with help from **GitHub Copilot (GPT-5.1-Codex Preview)**. The tool was used to scaffold C# methods, refactor attack/VFX systems, and draft documentation, with every change reviewed and adjusted by the development team.
+The Beta build progresses through several sections of the airship:
+
+1. Elevator
+2. Cargo Bay
+3. Crew Quarters
+4. Hangar
+5. Charging Station
+6. Conservatory
+7. Engine Core (Final Boss)
+
+Each zone introduces new **combat encounters, traversal paths, and environmental mechanics** leading toward the final boss arena.
 
 ---
 
-## Build Info
-- Engine: Unity 6000.2.6f2 (2025.2 LTS equivalent)
-- Platform: Windows 10/11 (DX11 URP)
-- Current Milestone: Vertical Slice (Elevator → Hangar)
-- Last Content Update: December 2025
+# Gameplay Flow
 
-Enjoy the slice, and reach out on Teams if you need anything else!
+Players explore multiple sections of the airship while clearing combat encounters and unlocking traversal routes.
 
+The game alternates between:
+
+* **Combat arenas**
+* **Traversal segments**
+* **Environmental progression puzzles**
+
+The final area features a **demonstration version of the boss encounter**, including a **basic AI that actively pursues the player**.
+
+---
+
+# Major Mechanics
+
+## Combo System
+
+Attacks chain into multi-stage combos.
+Finishers deal increased damage and help control groups of enemies.
+
+## Aerial Combat
+
+Enemies can be launched into the air and followed with aerial attacks before finishing with plunge strikes.
+
+## Guard & Parry
+
+Guarding slows movement but increases combat control.
+
+Successful **parries within a short timing window stun enemies**, allowing powerful follow-ups.
+
+## Dash & Air Dash
+
+Fast ground and aerial mobility allow players to reposition quickly and extend combo chains.
+
+## Traversal & Platforming
+
+Scaffolding, catwalks, vertical routes, and lift systems are integrated into combat arenas and exploration paths.
+
+---
+
+# Updated Interaction System
+
+The interaction system has been significantly improved.
+
+Players now receive:
+
+* **Audio feedback** when attempting unavailable interactions
+* **Camera guidance** when activating important objectives
+* Clearer prompts when progressing through level mechanics
+
+These improvements help guide players through complex environments while maintaining immersion.
+
+---
+
+# Checkpoint System
+
+The checkpoint system has been redesigned to improve gameplay flow.
+
+Updates include:
+
+* More reliable respawn points
+* Faster scene recovery after death
+* Improved synchronization between encounters and progression triggers
+
+These improvements allow smoother progression between combat encounters and level sections.
+
+---
+
+# Conservatory Progression Guide
+
+Progression through **Crew Quarters and Conservatory** now follows a structured encounter and keycard sequence.
+
+### Initial Progression
+
+1. Enter **Room 1** (first room on the left)
+2. Defeat all enemies
+3. Collect the **Key** dropped by the encounter
+4. Exit through the opposite door and move toward **Room 2**
+
+### Lower Level Access
+
+5. On the right side of the area, locate a **gap in the fence**
+6. Follow the **descending ramp**
+7. Navigate down through the **second floor toward the first floor**
+
+While progressing downward:
+
+* Enemy encounters must be cleared
+* Enemies drop a **Key Card required to activate the lift system**
+
+### Lift System
+
+Activating the lift system allows players to return upward through the structure.
+
+Players may continue exploring toward the **third floor**.
+
+### Final Key Sequence
+
+After clearing the third floor encounters:
+
+* Enemies drop a **Key** to activate the third room lift
+* Defeating enemies inside the room grants the **Golden Key**
+
+The **Golden Key unlocks a console** on the third floor.
+
+Activating this console opens a **maintenance hatch leading to the Engine Core**, where the final boss encounter takes place.
+
+---
+
+# Known Issues (Beta)
+
+The following issues are currently known in the Beta build.
+
+## Gameplay & Progression
+
+* Starting a new game, returning to menu, then starting another may lock the game
+* Interacting during dash may break player movement
+* Lock-on movement occasionally behaves inconsistently
+
+## UI & Settings
+
+* Audio sliders may not update visually
+* Settings changes in the main menu may not save correctly
+* Objective UI updates inconsistently
+* Brightness slider currently nonfunctional
+* Combo Progression Manager toggle issue
+* Motion blur cannot currently be disabled
+
+## Controls & Input
+
+* Interaction feedback occasionally updates slowly
+
+## Audio
+
+* Elevator audio may play during the opening cutscene
+* Double jump sound effect volume is currently too quiet
+
+## Environment & Level Issues
+
+* Key cards may occasionally spawn floating
+* Missing NavMesh in Crew Quarters may cause enemies to not chase the player
+* Missing enemy zone in Hangar may prevent enemies from pursuing
+* Hangar key ID assignment may occasionally fail
+* Small collision gap between magnet and cargo in Cargo Bay
+* Player may float slightly in Cargo Bay due to collider issues
+
+These issues are currently under investigation and will be addressed in future builds.
+
+---
+
+# Removed Debug Shortcuts
+
+Debug shortcuts used during Alpha testing have been removed.
+
+The following features are no longer available:
+
+* Scene Load Shortcuts
+* Cargo Bay Progression Cheat
+
+All progression paths now function through **normal gameplay flow.**
+
+---
+
+# Build Info
+
+Engine: **Unity 6000.2.15f2**
+Platform: **Windows 10 / 11 (DX11, URP)**
+Milestone: **Beta**
+Last Update: **March 8, 2026**
+
+---
+
+# AI Disclosure
+
+During development of the **eXSert Beta Build**, Janitor's Closet Studio used:
+
+* **GitHub Copilot** to assist with debugging compiler errors and refactoring during development.
+* **ChatGPT** to help summarize known bug lists and restructure README documentation.
+
+All gameplay systems, assets, and design work were created by **Janitor's Closet Studio's artists, designers, and engineers.**
+
+---
+
+Thank you for participating in the **eXSert Beta Playtest**.
+
+Your feedback helps us refine:
+
+* Combat feel
+* Encounter pacing
+* Level clarity
+* Overall gameplay quality
+
+Please submit bug reports and gameplay feedback through the **Google Form provided in the Discord server.**
+
+If you'd like, I can also show you **3 small README tweaks that make GitHub repos look much more professional** (they're used in a lot of AAA studio public repos).

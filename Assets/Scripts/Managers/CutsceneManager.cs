@@ -6,6 +6,7 @@ using Singletons;
 [RequireComponent(typeof(VideoPlayer))]
 public class CutsceneManager : Singleton<CutsceneManager>
 {
+    public static bool IsCutscenePlaying { get; private set; } = false;
     private const string GameplayInputBlockOwnerId = "CutsceneManager";
 
     [SerializeField]
@@ -65,11 +66,14 @@ public class CutsceneManager : Singleton<CutsceneManager>
 
     private static void OnCutsceneStarted(VideoPlayer source)
     {
+        SoundManager.Instance.PauseAllMusic(true); // Pause music if SoundManager exists
         // Request pause via the coordinator rather than directly changing Time.timeScale.
         _pauseToken = PauseCoordinator.RequestPause("CutsceneManager");
 
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         videoScreenInstance.SetActive(true); // Show the video screen when the cutscene starts
+        
+        IsCutscenePlaying = true;
         source.started -= OnCutsceneStarted; // Unsubscribe from the event to prevent multiple triggers
     }
 
@@ -85,6 +89,8 @@ public class CutsceneManager : Singleton<CutsceneManager>
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         videoScreenInstance.SetActive(false); // Hide the video screen when the cutscene finishes
         source.Stop();
+        SoundManager.Instance?.PauseAllMusic(false); // Unpause music if SoundManager exists
+        IsCutscenePlaying = false;
         source.loopPointReached -= OnCutsceneFinished; // Unsubscribe from the event
     }
 

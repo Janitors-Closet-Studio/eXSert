@@ -70,6 +70,7 @@ public class GeneralSettings : MonoBehaviour
     public void SetComboProgressionDisplay(bool displayOn)
     {
         SettingsManager.Instance.comboProgression = displayOn;
+        Debug.Log($"[SetComboProgressionDisplay] Called with displayOn={displayOn}");
 
         if (displayOn)
         {
@@ -82,6 +83,8 @@ public class GeneralSettings : MonoBehaviour
             comboProgressionText.text = "Off";
         }
 
+        Debug.Log($"[SetComboProgressionDisplay] isComboProgressionOn={isComboProgressionOn}");
+
         if (isComboProgressionOn)
         {
             PlayerPrefs.SetInt("masterCombo", 1);
@@ -92,6 +95,7 @@ public class GeneralSettings : MonoBehaviour
             PlayerPrefs.SetInt("masterCombo", 0);
             SettingsManager.Instance.comboProgression = false;
         }
+        Debug.Log($"[SetComboProgressionDisplay] SettingsManager.Instance.comboProgression={SettingsManager.Instance.comboProgression}");
     }
 
     public void SetInvertY(bool invertYOn)
@@ -127,11 +131,13 @@ public class GeneralSettings : MonoBehaviour
         if (staticVibrationSlider != null)
             staticVibrationSlider.value = vibrationSlider != null ? vibrationSlider.value : SettingsManager.Instance.rumbleStrength;
 
+        Debug.Log($"[GeneralApply] isComboProgressionOn={isComboProgressionOn}, SettingsManager.Instance.comboProgression={SettingsManager.Instance.comboProgression}");
         PlayerPrefs.SetInt("masterInvertY", (isInvertYOn ? 1 : 0));
-
         PlayerPrefs.SetInt("masterCombo", (isComboProgressionOn ? 1 : 0));
 
         PlayerPrefs.Save();
+
+        Debug.Log("General settings applied: Sensitivity = " + SettingsManager.Instance.sensitivity + ", Vibration Strength = " + SettingsManager.Instance.rumbleStrength + ", Invert Y = " + isInvertYOn + ", Combo Progression = " + isComboProgressionOn);
     }
 
     //Resets the settings

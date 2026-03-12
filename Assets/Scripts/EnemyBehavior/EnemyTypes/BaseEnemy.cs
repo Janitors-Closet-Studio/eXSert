@@ -576,6 +576,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             movementAudioSource.loop = true;
             movementAudioSource.clip = movementSFXClip;
             movementAudioSource.volume = movementSFXVolume;
+            movementAudioSource.spatialBlend = 1f; // 3D sound
             originalMovementSFXVolume = movementSFXVolume;
         }
     }

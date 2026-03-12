@@ -43,6 +43,8 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    public static bool isDashingFlag {get; private set; }
+
     #region Inspector Setup
     [Header("Player Animator")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -696,6 +698,7 @@ public class PlayerMovement : MonoBehaviour
         CancelPlungeState();
 
         canDash = false;
+        isDashingFlag = true;
 
         Vector3 dashDirection = (forward * InputReader.MoveInput.y) + (right * InputReader.MoveInput.x);
         if (dashDirection.sqrMagnitude < 0.01f)
@@ -809,6 +812,7 @@ public class PlayerMovement : MonoBehaviour
         {
             yield return new WaitForSeconds(dashCoolDown);
             canDash = true;
+            isDashingFlag = false;
         }
     }
 
