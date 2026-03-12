@@ -10,34 +10,48 @@ namespace Progression.Encounters
     {
         #region Inspector Setup
         [Header("Combat Encounter Settings")]
+        [SerializeField]
+        private bool dropObjectOnClear = false;
 
-        [SerializeField] private bool dropObjectOnClear = false;
-        [SerializeField] private GameObject objectToDrop;
+        [SerializeField]
+        private GameObject objectToDrop;
+
+        [SerializeField]
+        private bool loadSceneOnClear = false;
+
+        [SerializeField]
+        private SceneAsset sceneToLoadOnClear;
+
+        [SerializeField]
         private bool dropAtLastEnemyPosition = true;
+
+        [SerializeField]
+        private float dropYOffset = 0.5f;
         #endregion
 
         private Vector3 lastEnemyPosition;
+        private bool hasLastEnemyPosition;
 
-        public override string ObjectiveText 
-        { 
-            get => wavesQueue.Count > 0 ? wavesQueue.Peek().WaveObjectiveText : "Encounter Completed!";
+        public override string ObjectiveText
+        {
+            get
+            {
+                return wavesQueue.Count > 0
+                    ? wavesQueue.Peek().WaveObjectiveText
+                    : "Encounter Completed!";
+            }
         }
 
-        protected override Color DebugColor { get => Color.red; }
+        protected override Color DebugColor
+        {
+            get => Color.red;
+        }
 
-        /// <summary>
-        /// The entire list of each wave. All waves persist even once they are compleated
-        /// </summary>
         private readonly List<Wave> allWaves = new();
-
-        /// <summary>
-        /// The queue of the incoming waves. Waves are removed once they are compleated
-        /// </summary>
         private readonly Queue<Wave> wavesQueue = new();
 
         private bool encounterStarted = false;
         private Coroutine waveAdvanceRoutine;
-
 
         #region Basic Encounter Overrides
         protected override void SetupEncounter()
@@ -45,38 +59,39 @@ namespace Progression.Encounters
             base.SetupEncounter();
 
             OnEncounterCompleted += DropItem;
+            OnEncounterCompleted += LoadSceneOnClear;
 
-            allWaves.Clear(); // Clear any existing waves in case of editor changes or scene reload
+            allWaves.Clear();
 
-            // iterates through each child object under this encounter
             foreach (Transform child in transform)
             {
-                // if the child object doesn't have "wave" in the name, or if its not active, skip it.
-                // This allows for organization of the encounter gameobject without breaking functionality
-                if (!child.name.ToLower().Contains("wave") || !child.gameObject.activeSelf) continue;
+                if (!child.name.ToLower().Contains("wave") || !child.gameObject.activeSelf)
+                    continue;
 
-                // Create or get a Wave component on the child object (wave root)
                 Wave newWave = SetupWave(child);
-
                 newWave.OnWaveComplete += WaveComplete;
                 newWave.UpdateLastEnemyPosition += OnUpdateLastEnemyPosition;
-
                 allWaves.Add(newWave);
             }
 
             ResetWaves();
 
-            // local function to create a new wave component and initialize it
             Wave SetupWave(Transform parentObject)
             {
-                if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Setting up wave: {parentObject.name} for encounter: {name}");
+                if (debugMessagesEnabled)
+                {
+                    Debug.Log(
+                        $"[CombatEncounter] Setting up wave: {parentObject.name} for encounter: {name}"
+                    );
+                }
 
-                // Try to get an existing Wave component on the parent object. If it doesn't exist, add a new one.
-                Wave waveComponent = parentObject.TryGetComponent<Wave>(out var existingWave) ? waveComponent = existingWave :
-                     waveComponent = parentObject.gameObject.AddComponent<Wave>();
+                Wave waveComponent = parentObject.TryGetComponent<Wave>(out var existingWave)
+                    ? existingWave
+                    : parentObject.gameObject.AddComponent<Wave>();
 
-                List <GameObject> enemiesToAdd = new();
-                foreach (Transform waveChild in parentObject) enemiesToAdd.Add(waveChild.gameObject);
+                List<GameObject> enemiesToAdd = new();
+                foreach (Transform waveChild in parentObject)
+                    enemiesToAdd.Add(waveChild.gameObject);
 
                 return waveComponent.Initialize(enemiesToAdd, debugMessagesEnabled);
             }
@@ -92,20 +107,32 @@ namespace Progression.Encounters
                 CleanupWave(wave);
 
             OnEncounterCompleted -= DropItem;
+            OnEncounterCompleted -= LoadSceneOnClear;
         }
         #endregion
 
-        private void OnUpdateLastEnemyPosition(Vector3 position) => lastEnemyPosition = position;
+        private void OnUpdateLastEnemyPosition(Vector3 position)
+        {
+            lastEnemyPosition = position;
+            hasLastEnemyPosition = true;
+        }
 
         private void BeginEncounter()
         {
             if (encounterStarted)
             {
-                Debug.LogWarning($"[CombatEncounter] Player entered encounter zone for {name}, but the encounter has already started. Ignoring.");
+                Debug.LogWarning(
+                    $"[CombatEncounter] Player entered encounter zone for {name}, but the encounter has already started. Ignoring."
+                );
                 return;
             }
 
-            if(debugMessagesEnabled) Debug.Log($"[CombatEncounter] Encounter started: {name} with {wavesQueue.Count} wave/s");
+            if (debugMessagesEnabled)
+            {
+                Debug.Log(
+                    $"[CombatEncounter] Encounter started: {name} with {wavesQueue.Count} wave/s"
+                );
+            }
 
             encounterStarted = true;
             SpawnNextWave();
@@ -117,13 +144,34 @@ namespace Progression.Encounters
                 return;
 
             Vector3 dropPosition = objectToDrop.transform.position;
-            if (dropAtLastEnemyPosition && lastEnemyPosition != null)
-                dropPosition = lastEnemyPosition + Vector3.forward;
+            if (dropAtLastEnemyPosition && hasLastEnemyPosition)
+                dropPosition = lastEnemyPosition + new Vector3(0f, dropYOffset, 0f);
 
-            Debug.Log($"[CombatEncounter] Dropping object {objectToDrop.name} at position {dropPosition}");
+            Debug.Log(
+                $"[CombatEncounter] Dropping object {objectToDrop.name} at position {dropPosition}"
+            );
 
             objectToDrop.transform.position = dropPosition;
             objectToDrop.SetActive(true);
+        }
+
+        private void LoadSceneOnClear()
+        {
+            if (!loadSceneOnClear)
+                return;
+
+            if (sceneToLoadOnClear == null)
+            {
+                Debug.LogWarning(
+                    $"[CombatEncounter] {name} is set to load a scene on clear, but no SceneAsset is assigned."
+                );
+                return;
+            }
+
+            Debug.Log(
+                $"[CombatEncounter] Loading scene {sceneToLoadOnClear.name} after clearing encounter {name}."
+            );
+            SceneLoader.Load(sceneToLoadOnClear, loadScreen: false);
         }
 
         #region Wave Manipulation Functions
@@ -131,15 +179,16 @@ namespace Progression.Encounters
         {
             Debug.Log($"[CombatEncounter] Wave completed: {completedWave}");
 
-            if (wavesQueue.Peek() != completedWave) return;
+            if (wavesQueue.Peek() != completedWave)
+                return;
 
             CleanupWave(completedWave);
-
             wavesQueue.Dequeue();
 
-            // Check if there are more waves to spawn
-            if (wavesQueue.Count != 0) SpawnNextWave(3f);
-            else HandleEncounterCompleted();
+            if (wavesQueue.Count != 0)
+                SpawnNextWave(3f);
+            else
+                HandleEncounterCompleted();
         }
 
         private void CleanupWave(Wave wave)
@@ -152,30 +201,34 @@ namespace Progression.Encounters
         private async void SpawnNextWave(float delay = 0f)
         {
             if (delay > 0f)
-            {
                 await Task.Delay(TimeSpan.FromSeconds(delay));
-            }
 
-            // Ejects from the function early if there are no more waves to spawn
-            if (wavesQueue.Count == 0) 
-            { 
-                Debug.LogError($"[CombatEncounter] No more waves to spawn for encounter {name}. This should not happen if the encounter is properly completed. Please check the encounter setup.");
-                return; 
+            if (wavesQueue.Count == 0)
+            {
+                Debug.LogError(
+                    $"[CombatEncounter] No more waves to spawn for encounter {name}. This should not happen if the encounter is properly completed. Please check the encounter setup."
+                );
+                return;
             }
 
             Wave currentWave = wavesQueue.Peek();
 
-            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Spawning next wave: {currentWave}");
+            if (debugMessagesEnabled)
+                Debug.Log($"[CombatEncounter] Spawning next wave: {currentWave}");
+
             InvokeUpdateObjective(currentWave.WaveObjectiveText);
             currentWave.SpawnEnemies();
         }
 
         private void ResetWaves()
         {
-            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Resetting waves for encounter: {name}");
+            if (debugMessagesEnabled)
+                Debug.Log($"[CombatEncounter] Resetting waves for encounter: {name}");
 
             wavesQueue.Clear();
             encounterStarted = false;
+            hasLastEnemyPosition = false;
+            lastEnemyPosition = Vector3.zero;
 
             if (waveAdvanceRoutine != null)
             {
@@ -191,26 +244,25 @@ namespace Progression.Encounters
         }
 
         [ContextMenu("Generate New Wave")]
-        /// <summary>
-        /// Creates and adds a new wave GameObject as a child of the current transform.
-        /// </summary>
-        /// <remarks>The new wave is named sequentially based on existing child objects whose names
-        /// contain "wave". The wave is positioned at the origin relative to its parent and includes a <see
-        /// cref="Wave"/> component. Intended to be called while in the editor.</remarks>
-        /// <returns>The newly created <see cref="GameObject"/> representing the wave.</returns>
         public GameObject GenerateNewWave()
         {
             int count = 1;
             foreach (Transform child in transform)
             {
-                if (!child.name.ToLower().Contains("wave")) continue;
+                if (!child.name.ToLower().Contains("wave"))
+                    continue;
+
                 count++;
             }
+
             GameObject newWaveObject = new($"Wave {count}");
             newWaveObject.transform.SetParent(transform);
             newWaveObject.transform.localPosition = Vector3.zero;
             Wave newWave = newWaveObject.AddComponent<Wave>();
-            if (debugMessagesEnabled) Debug.Log($"[CombatEncounter] Generated new wave: {newWave} for encounter: {name}");
+
+            if (debugMessagesEnabled)
+                Debug.Log($"[CombatEncounter] Generated new wave: {newWave} for encounter: {name}");
+
             return newWaveObject;
         }
         #endregion

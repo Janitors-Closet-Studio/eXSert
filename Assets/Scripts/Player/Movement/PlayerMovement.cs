@@ -43,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    #region Inspector Setup
     [Header("Player Animator")]
     [SerializeField] private PlayerAnimationController animationController;
     [SerializeField] private PlayerAttackManager attackManager;
@@ -204,6 +205,7 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField, Range(1f, 100f)]
     private float highFallGroundProbeDistance = 25f;
+    #endregion
 
     private bool canDash = true;
     private bool isDashing;
@@ -358,7 +360,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         doubleJumpAvailable = canDoubleJump;
-        airborneStartHeight = transform.position.y;
+        //airborneStartHeight = transform.position.y;
         airDashAvailable = true;
         suspendGravityDuringDash = false;
     }
@@ -689,7 +691,9 @@ public class PlayerMovement : MonoBehaviour
         DashPerformed?.Invoke();
 
         if (InputReader.inputBusy)
-            attackManager?.ForceCancelCurrentAttack();
+            attackManager?.ForceCancelCurrentAttack(resetCombo: false);
+
+        CancelPlungeState();
 
         canDash = false;
 
@@ -994,6 +998,14 @@ public class PlayerMovement : MonoBehaviour
         currentMovement.x *= 0.5f;
         currentMovement.z *= 0.5f;
         plungeLandingPending = false;
+    }
+
+    public void CancelPlungeState()
+    {
+        isPlunging = false;
+        plungeLandingPending = false;
+        plungeTimer = 0f;
+        aerialAttackLockTimer = 0f;
     }
 
     private void ApplyMovement()
@@ -1377,6 +1389,18 @@ public class PlayerMovement : MonoBehaviour
 
     public bool IsLocomotionAnimationSuppressed => locomotionAnimationSuppressed;
 
+    public bool HasEffectiveMovementInput
+    {
+        get
+        {
+            Vector2 inputMove = ApplyMoveDeadZone(InputReader.MoveInput);
+            if (inputMove.sqrMagnitude > moveInputDeadZone * moveInputDeadZone)
+                return true;
+
+            return inputReleaseTimer < inputReleaseGrace && cachedMoveInput.sqrMagnitude > 0.0001f;
+        }
+    }
+
     public void ForceLocomotionRefresh()
     {
         wasMoving = false;
@@ -1425,8 +1449,51 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.y = Mathf.Min(currentMovement.y, 0f);
         }
 
+        // Clear any residual movement so FixedUpdate/ApplyMovement won't move the player back
         currentMovement.x = 0f;
         currentMovement.z = 0f;
+
+        // Stop dash state
+        dashVelocity = Vector3.zero;
+        isDashing = false;
+        dashForceStop = false;
+        suspendGravityDuringDash = false;
+        airDashInProgress = false;
+        if (dashRoutine != null)
+        {
+            try { StopCoroutine(dashRoutine); } catch { }
+            dashRoutine = null;
+        }
+        if (dashInputLockOwned)
+        {
+            InputReader.inputBusy = false;
+            dashInputLockOwned = false;
+        }
+
+        // Clear external velocity injection
+        externalVelocity = Vector3.zero;
+        externalVelocityActive = false;
+
+        // Stop attack forward-move
+        attackMoveVelocity = Vector3.zero;
+        attackMoveActive = false;
+        if (attackMoveRoutine != null)
+        {
+            try { StopCoroutine(attackMoveRoutine); } catch { }
+            attackMoveRoutine = null;
+        }
+
+        // Clear knockback state
+        isKnockbackActive = false;
+        knockbackVelocity = Vector3.zero;
+
+        // Clear pending jump
+        pendingJump = PendingJumpType.None;
+        pendingJumpTimer = 0f;
+
+        // Release external stun input lock if we own it
+        if (externalStunOwnsInput)
+            ReleaseExternalStunInputLock();
 
         return true;
     }

@@ -13,7 +13,12 @@ public class CrawlerPocket : MonoBehaviour
         "CrawlerPocket: spawns crawlers when the Player enters the trigger zone.\n" +
         "Configure weighted crawler prefabs, spawnCount, and clustering radius/jitter.\n" +
         "Calls AmbushReady when most crawlers reach their cluster points.\n" +
-        "Automatically ensures a trigger BoxCollider matches the configured triggerZone.";
+        "Automatically ensures a trigger BoxCollider matches the configured triggerZone.\n" +
+        "Enable 'Alarm Bot Only' to disable player-triggered spawning (pocket becomes an anchor for AlarmBot spawning only).";
+
+    [Header("Mode")]
+    [SerializeField, Tooltip("When enabled, the pocket will NOT spawn enemies when the player enters. It will still exist in the scene so AlarmBots can find it as the nearest pocket anchor.")]
+    private bool alarmBotOnly = false;
 
     [Header("Crawler Types & Weights")]
     [Tooltip("List of crawler enemy prefabs and their relative spawn weights for random generation.")]
@@ -83,6 +88,9 @@ public class CrawlerPocket : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (alarmBotOnly)
+            return;
+
         // Remove any null (destroyed) entries from the list
         activeEnemies.RemoveAll(c => c == null);
 #if UNITY_EDITOR
@@ -271,11 +279,25 @@ public class CrawlerPocket : MonoBehaviour
     private void OnValidate()
     {
         // Ensure a BoxCollider exists and matches trigger zone settings
+        // (unless this pocket is in AlarmBot-only mode).
         var box = GetComponent<BoxCollider>();
+
+        if (alarmBotOnly)
+        {
+            // Disable the trigger collider so designers don't accidentally rely on player-trigger spawning.
+            if (box != null)
+            {
+                box.enabled = false;
+            }
+            return;
+        }
+
         if (box == null)
         {
             box = gameObject.AddComponent<BoxCollider>();
         }
+
+        box.enabled = true;
         box.isTrigger = true;
         box.size = triggerZoneSize;
         box.center = triggerZoneOffset;

@@ -3687,8 +3687,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.07971318, y: 0.8428363, z: -0.13018717, w: -0.516066}
-  m_LocalPosition: {x: 2.9087486, y: 2.4275591, z: 1.5694401}
+  m_LocalRotation: {x: -0.074003056, y: -0.0019012393, z: 0.00014108462, w: -0.9972562}
+  m_LocalPosition: {x: 0.02042398, y: 1.9387524, z: -3.4486911}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5574,6 +5574,11 @@ MonoBehaviour:
   cameraSnapTime: 0.1
   cameraManager: {fileID: 5480205498155007657}
   rotatePlayerIfCameraDisabled: 0
+  maxHorizontalLeanAngle: 10
+  maxVerticalLeanAngle: 15
+  invertVerticalLean: 0
+  leanResponseSpeed: 2
+  leanReturnTime: 0.15
 --- !u!1 &2525516429101545011
 GameObject:
   m_ObjectHideFlags: 0
@@ -15035,8 +15040,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6626823234369765875}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.07971318, y: 0.8428363, z: -0.13018717, w: -0.516066}
-  m_LocalPosition: {x: 2.9087489, y: 2.427559, z: 1.5694401}
+  m_LocalRotation: {x: -0.074003056, y: -0.0019012393, z: 0.00014108462, w: -0.9972562}
+  m_LocalPosition: {x: 0.02042398, y: 1.9387524, z: -3.4486911}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15119,7 +15124,7 @@ MonoBehaviour:
     SplineCurvature: 1
   RecenteringTarget: 2
   HorizontalAxis:
-    Value: -117.259834
+    Value: 0
     Center: 0
     Range: {x: -180, y: 180}
     Wrap: 1
@@ -15129,7 +15134,7 @@ MonoBehaviour:
       Time: 2
     Restrictions: 0
   VerticalAxis:
-    Value: 25.990355
+    Value: 18
     Center: 17.5
     Range: {x: -10, y: 45}
     Wrap: 0
@@ -20586,8 +20591,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8983900087774367925}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.052654516, y: 0.84821737, z: -0.08589298, w: -0.51997817}
-  m_LocalPosition: {x: 3.607223, y: 2.2276206, z: 1.9250438}
+  m_LocalRotation: {x: -0.082045384, y: -0.002422122, z: 0.00019939675, w: -0.99662566}
+  m_LocalPosition: {x: 0.018337699, y: 2.0687096, z: -3.8779078}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -20670,7 +20675,7 @@ MonoBehaviour:
     SplineCurvature: 0.5
   RecenteringTarget: 2
   HorizontalAxis:
-    Value: -117.259834
+    Value: 0
     Center: 0
     Range: {x: -180, y: 180}
     Wrap: 1
@@ -20680,7 +20685,7 @@ MonoBehaviour:
       Time: 2
     Restrictions: 0
   VerticalAxis:
-    Value: 25.990355
+    Value: 18
     Center: 17.5
     Range: {x: -10, y: 45}
     Wrap: 0

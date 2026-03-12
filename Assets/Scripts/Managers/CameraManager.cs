@@ -48,6 +48,7 @@ public class CameraManager : MonoBehaviour
 
     // Current active camera state
     public CameraState CurrentState { get; private set; } = CameraState.Gameplay;
+    public static CinemachineCamera ActiveCamera => Instance.GetCameraForState(Instance.CurrentState);
 
     private void Awake()
     {

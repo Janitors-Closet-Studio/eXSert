@@ -28,6 +28,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [Header("Input Action Reference")]
     [SerializeField, CriticalReference] internal InputActionReference _interactInputAction;
 
+    private PlayerCombatIdleController _combatIdleController;
+
+    protected static InteractionUI GetInteractionUIIfAvailable()
+    {
+        return InteractionUI.TryGetExisting();
+    }
+
+    protected static AudioSource GetInteractionSfxSourceIfAvailable()
+    {
+        SoundManager soundManager = FindAnyObjectByType<SoundManager>();
+        return soundManager != null ? soundManager.sfxSource : null;
+    }
 
     protected virtual void Awake()
     {
@@ -50,6 +62,12 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     {
         if (_interactInputAction != null)
             _interactInputAction.action.performed -= OnInteract;
+
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (isPlayerNearby && interactionUI != null)
+            interactionUI.HideInteractPrompt();
+
+        isPlayerNearby = false;
     }
 
     private void Start()
@@ -62,13 +80,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         Scene scene = SceneManager.GetSceneByName(sceneName);
         if (scene.isLoaded)
         {
-            if (InteractionUI.Instance != null)
-            {
-                if (InteractionUI.Instance._interactText != null)
-                    InteractionUI.Instance._interactText.gameObject.SetActive(false);
-                if (InteractionUI.Instance._interactIcon != null)
-                    InteractionUI.Instance._interactIcon.gameObject.SetActive(false);
-            }
+            GetInteractionUIIfAvailable()?.HideInteractPrompt();
+            CachePlayerCombatController();
         }
         else 
         {
@@ -76,7 +89,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             {
                 yield return null; // Wait until the scene is loaded
             }
+            CachePlayerCombatController();
             StopCoroutine(FindPlayerScene(sceneName)); // Stop the coroutine once the scene is loaded
+        }
+    }
+
+    private void CachePlayerCombatController()
+    {
+        if (_combatIdleController == null)
+        {
+            var player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+                _combatIdleController = player.GetComponentInChildren<PlayerCombatIdleController>();
         }
     }
 
@@ -96,11 +120,43 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         interactable.gameObject.SetActive(false);
 
-        if (InteractionUI.Instance._interactIcon != null)
-            InteractionUI.Instance._interactIcon.gameObject.SetActive(false);
+        GetInteractionUIIfAvailable()?.HideInteractPrompt();
+    }
 
-        if (InteractionUI.Instance._interactText != null)
-            InteractionUI.Instance._interactText.gameObject.SetActive(false);
+    public virtual void SetInteractionEnabled(bool isEnabled)
+    {
+        interactable = isEnabled;
+
+        if (!isEnabled)
+        {
+            if (isPlayerNearby)
+            {
+                GetInteractionUIIfAvailable()?.HideInteractPrompt();
+            }
+
+            return;
+        }
+
+        if (!isPlayerNearby)
+        {
+            return;
+        }
+
+        SwapBasedOnInputMethod();
+
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI == null)
+            return;
+
+        if (interactionUI._interactText != null)
+        {
+            interactionUI._interactText.gameObject.SetActive(true);
+            if (interactionUI._interactText.transform.parent != null)
+                interactionUI._interactText.transform.parent.gameObject.SetActive(true);
+        }
+
+        if (interactionUI._interactIcon != null)
+            interactionUI._interactIcon.gameObject.SetActive(true);
     }
 
     private void OnInteract(InputAction.CallbackContext context)
@@ -110,14 +166,19 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     public void OnInteractButtonPressed()
     {
-
         if (!isPlayerNearby || !interactable)
+            return;
+
+        // Don't allow interactions while player is in combat
+        if (_combatIdleController != null && _combatIdleController.IsInCombat)
             return;
 
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         Interact();
-        if(InteractionUI.Instance != null && _interactionSFX != null)
-            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+
+        AudioSource interactionSfxSource = GetInteractionSfxSourceIfAvailable();
+        if (interactionSfxSource != null && _interactionSFX != null)
+            interactionSfxSource.PlayOneShot(_interactionSFX);
     }
 
     protected abstract void Interact();
@@ -126,18 +187,20 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     public void SwapBasedOnInputMethod()
     {
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI == null)
+            return;
 
-
-        if (InteractionUI.Instance._interactText != null)
+        if (interactionUI._interactText != null)
         {
-            InteractionUI.Instance._interactText.text = string.IsNullOrWhiteSpace(_interactionPrompt)
+            interactionUI._interactText.text = string.IsNullOrWhiteSpace(_interactionPrompt)
                 ? "Press to Interact"
                 : _interactionPrompt;
-            InteractionUI.Instance._interactText.gameObject.SetActive(true);
+            interactionUI._interactText.gameObject.SetActive(true);
         }
 
-        if (InteractionUI.Instance._interactIcon != null)
-            InteractionUI.Instance._interactIcon.gameObject.SetActive(true);
+        if (interactionUI._interactIcon != null)
+            interactionUI._interactIcon.gameObject.SetActive(true);
     }
 
     protected virtual void OnTriggerEnter(Collider other)
@@ -152,15 +215,19 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         SwapBasedOnInputMethod();
 
-        if (InteractionUI.Instance._interactText != null && interactable)
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI == null)
+            return;
+
+        if (interactionUI._interactText != null && interactable)
         {
-            InteractionUI.Instance._interactText.gameObject.SetActive(true);
-            if (InteractionUI.Instance._interactText.transform.parent != null)
-                InteractionUI.Instance._interactText.transform.parent.gameObject.SetActive(true);
+            interactionUI._interactText.gameObject.SetActive(true);
+            if (interactionUI._interactText.transform.parent != null)
+                interactionUI._interactText.transform.parent.gameObject.SetActive(true);
         }
 
-        if (InteractionUI.Instance._interactIcon != null && interactable)
-            InteractionUI.Instance._interactIcon.gameObject.SetActive(true);
+        if (interactionUI._interactIcon != null && interactable)
+            interactionUI._interactIcon.gameObject.SetActive(true);
     }
 
     protected virtual void OnTriggerExit(Collider other)
@@ -170,11 +237,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         isPlayerNearby = false;
 
-        if (InteractionUI.Instance._interactText != null)
-            InteractionUI.Instance._interactText.gameObject.SetActive(false);
-
-        if (InteractionUI.Instance._interactIcon != null)
-            InteractionUI.Instance._interactIcon.gameObject.SetActive(false);
+        GetInteractionUIIfAvailable()?.HideInteractPrompt();
     }
 
     private void OnDrawGizmos()

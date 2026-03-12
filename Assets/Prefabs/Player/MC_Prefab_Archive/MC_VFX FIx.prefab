@@ -5541,6 +5541,7 @@ MonoBehaviour:
   pauseTimeOnParry: 1
   parryPauseDuration: 0.3
   howSlowTimeScales: 0.5
+  animationController: {fileID: 0}
 --- !u!114 &1001267735247796350
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7917,6 +7918,8 @@ MonoBehaviour:
   deathFadeNormalizedThreshold: 0.95
   flinchChance: 0.2
   flinchLockSeconds: 0.35
+  enableDashInvincibility: 1
+  dashInvincibilitySeconds: 0.35
   animationController: {fileID: 5311890396266669227}
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
@@ -17122,10 +17125,24 @@ MonoBehaviour:
   rightAttackVfx: {fileID: 3755443737881139097}
   attackDuration: 0.5
   attackAudioClip: {fileID: 8300000, guid: c7a28a6dc531ab64bac3452a4768d1ea, type: 3}
+  emberRateProperty: EmberRate
+  burstLifeTimeProperty: Burst LifeTime
+  emberRateOff: 0
+  emberRateOn: 2000
+  burstLifeTimeOff: 0
+  burstLifeTimeOn: 1
+  emberRateDelayAfterBurstSeconds: 0.03
+  reinitOnAttackVfxDisable: 1
+  leftHandPointLights: []
+  rightHandPointLights: []
+  autoFindHandLights: 1
   airMoveVfxObjects:
   - {fileID: 0}
   airMoveDuration: 0.5
   airMoveAudioClip: {fileID: 8300000, guid: fe066bdf6899484448fe682666472a86, type: 3}
+  fireShockWaveVfx: {fileID: 0}
+  fireShockWaveDuration: 0.35
+  keepFireShockWaveUpright: 1
 --- !u!114 &1928066033365348012
 MonoBehaviour:
   m_ObjectHideFlags: 0

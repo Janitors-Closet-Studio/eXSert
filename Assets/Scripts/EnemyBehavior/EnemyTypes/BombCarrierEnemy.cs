@@ -11,7 +11,8 @@ public enum BombAttackBehavior
 {
     ChargeAndExplode,   // Default: charge straight, explode on contact/timer
     StopAndLeap,        // Stop, leap at player, explode by proximity
-    ZigZag              // Zig-zag quickly toward player, explode on contact/timer
+    ZigZag,             // Zig-zag quickly toward player, explode on contact/timer
+    TriggerCountdown    // Move until the player enters the trigger zone, then stop and count down in place
 }
 
 public enum BombStates
@@ -84,9 +85,19 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     //[SerializeField] private GameObject warningIndicatorPrefab;
 
     [Header("Explosion Visual")]
-    [SerializeField, Tooltip("If true, show a visual indicator for the explosion radius when detonating.")]
-    private bool showExplosionVisual = false;
-    private GameObject explosionVisual;
+    [SerializeField, Tooltip("Optional prefab to spawn when the bomb detonates. Leave empty to disable explosion VFX.")]
+    private GameObject explosionVfxPrefab;
+    [SerializeField, Tooltip("Optional anchor for the explosion VFX. If null, uses the enemy root transform.")]
+    private Transform explosionVfxAnchor;
+    [SerializeField, Tooltip("Local-space offset from the explosion VFX anchor.")]
+    private Vector3 explosionVfxOffset = Vector3.zero;
+    [SerializeField, Tooltip("Scale multiplier applied to the spawned explosion VFX prefab.")]
+    private float explosionVfxScale = 1f;
+    [SerializeField, Tooltip("If true, parent the explosion VFX to the anchor so it follows the enemy.")]
+    private bool explosionVfxFollowsEnemy = true;
+    [SerializeField, Tooltip("If true, draw the explosion radius gizmo in the editor.")]
+    private bool showExplosionRadiusGizmo = true;
+    private GameObject explosionVfxInstance;
     [SerializeField, Tooltip("How long the explosion visual remains after detonation.")]
     private float explosionVisualDuration = 0.5f;
 
@@ -99,6 +110,7 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     // State
     private bool isExploding = false;
     private Coroutine attackRoutine;
+    private Coroutine debugPreviewCoroutine;
 
     [HideInInspector]
     public GameObject originalPrefab;
@@ -123,38 +135,123 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
         InitializeStateMachine(BombStates.Idle);
         ConfigureStateMachine();
 
-        // Create the explosion visual sphere if enabled
-        if (showExplosionVisual)
+        EnsureExplosionVfxPrefabReady();
+    }
+
+    private void EnsureExplosionVfxPrefabReady()
+    {
+        if (explosionVfxPrefab == null && explosionVfxInstance != null)
         {
-            CreateExplosionVisual();
+            Destroy(explosionVfxInstance);
+            explosionVfxInstance = null;
         }
     }
 
-    private void CreateExplosionVisual()
+    private Transform GetExplosionVfxAnchor()
     {
-        explosionVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        explosionVisual.transform.SetParent(transform);
-        explosionVisual.transform.localPosition = Vector3.zero;
-        explosionVisual.transform.localScale = Vector3.one * explosionRadius * 2f; // Diameter
+        return explosionVfxAnchor != null ? explosionVfxAnchor : transform;
+    }
 
-        // Make the sphere mostly transparent
-        var renderer = explosionVisual.GetComponent<Renderer>();
-        var mat = new Material(Shader.Find("Standard"));
-        mat.color = new Color(1f, 0.3f, 0.1f, 0.25f); // Orange, mostly transparent
-        mat.SetFloat("_Mode", 3); // Transparent mode
-        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        mat.SetInt("_ZWrite", 0);
-        mat.DisableKeyword("_ALPHATEST_ON");
-        mat.EnableKeyword("_ALPHABLEND_ON");
-        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        mat.renderQueue = 3000;
-        renderer.material = mat;
+    private void EnsureExplosionVfxInstance()
+    {
+        if (explosionVfxPrefab == null)
+        {
+            if (explosionVfxInstance != null)
+            {
+                Destroy(explosionVfxInstance);
+                explosionVfxInstance = null;
+            }
+            return;
+        }
 
-        // Remove collider from visual
-        Destroy(explosionVisual.GetComponent<Collider>());
+        if (explosionVfxInstance != null)
+        {
+            PositionExplosionVfxInstance();
+            return;
+        }
 
-        explosionVisual.SetActive(false); // Hide by default
+        Transform anchor = GetExplosionVfxAnchor();
+        Vector3 spawnPosition = anchor.TransformPoint(explosionVfxOffset);
+        Quaternion spawnRotation = anchor.rotation;
+
+        explosionVfxInstance = Instantiate(explosionVfxPrefab, spawnPosition, spawnRotation);
+        ApplyExplosionVfxScale();
+
+        if (explosionVfxFollowsEnemy)
+        {
+            explosionVfxInstance.transform.SetParent(anchor);
+            explosionVfxInstance.transform.localPosition = explosionVfxOffset;
+            explosionVfxInstance.transform.localRotation = Quaternion.identity;
+        }
+        else
+        {
+            explosionVfxInstance.transform.position = spawnPosition;
+            explosionVfxInstance.transform.rotation = spawnRotation;
+        }
+
+        explosionVfxInstance.SetActive(false);
+    }
+
+    private void PositionExplosionVfxInstance()
+    {
+        if (explosionVfxInstance == null)
+            return;
+
+        ApplyExplosionVfxScale();
+
+        Transform anchor = GetExplosionVfxAnchor();
+        if (explosionVfxFollowsEnemy)
+        {
+            explosionVfxInstance.transform.SetParent(anchor);
+            explosionVfxInstance.transform.localPosition = explosionVfxOffset;
+            explosionVfxInstance.transform.localRotation = Quaternion.identity;
+        }
+        else
+        {
+            explosionVfxInstance.transform.SetParent(null);
+            explosionVfxInstance.transform.position = anchor.TransformPoint(explosionVfxOffset);
+            explosionVfxInstance.transform.rotation = anchor.rotation;
+        }
+    }
+
+    private void ApplyExplosionVfxScale()
+    {
+        if (explosionVfxInstance == null)
+            return;
+
+        float scale = Mathf.Max(0.01f, explosionVfxScale);
+        explosionVfxInstance.transform.localScale = Vector3.one * scale;
+    }
+
+    private void PlayExplosionVfx()
+    {
+        EnsureExplosionVfxInstance();
+        if (explosionVfxInstance == null)
+            return;
+
+        PositionExplosionVfxInstance();
+        explosionVfxInstance.SetActive(true);
+
+        var particleSystems = explosionVfxInstance.GetComponentsInChildren<ParticleSystem>(true);
+        foreach (var particleSystem in particleSystems)
+        {
+            particleSystem.Clear(true);
+            particleSystem.Play(true);
+        }
+    }
+
+    private void StopExplosionVfx()
+    {
+        if (explosionVfxInstance == null)
+            return;
+
+        var particleSystems = explosionVfxInstance.GetComponentsInChildren<ParticleSystem>(true);
+        foreach (var particleSystem in particleSystems)
+        {
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        explosionVfxInstance.SetActive(false);
     }
 
     private void PermitExplodeFromAllStates()
@@ -210,8 +307,10 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
         PermitExplodeFromAllStates();
     }
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
+
         // Immediately see player and start approaching
         if (PlayerTarget == null)
         {
@@ -240,8 +339,26 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
 
         if (attackRoutine != null)
             StopCoroutine(attackRoutine);
+        ShowCountdownWarningVfx();
         EnemyBehaviorDebugLogBools.Log(nameof(BombCarrierEnemy), $"BombCarrierEnemy using attackBehavior: {attackBehavior}");
         attackRoutine = StartCoroutine(AttackBehaviorRoutine());
+    }
+
+    private void ShowCountdownWarningVfx()
+    {
+        float countdownDuration = Mathf.Max(0.05f, explodeTimer);
+        ShowAttackIndicator(customDuration: countdownDuration);
+
+        if (attackIndicatorInstance == null)
+            return;
+
+        var particleSystems = attackIndicatorInstance.GetComponentsInChildren<ParticleSystem>(true);
+        foreach (var particleSystem in particleSystems)
+        {
+            var main = particleSystem.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(countdownDuration);
+            particleSystem.Play(true);
+        }
     }
 
     private IEnumerator AttackBehaviorRoutine()
@@ -257,9 +374,34 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             case BombAttackBehavior.ZigZag:
                 yield return StartCoroutine(ZigZagRoutine());
                 break;
+            case BombAttackBehavior.TriggerCountdown:
+                yield return StartCoroutine(TriggerCountdownRoutine());
+                break;
         }
         // After attack, trigger explosion
         if (canExplode)
+            enemyAI.Fire(BombTriggers.Explode);
+    }
+
+    private IEnumerator TriggerCountdownRoutine()
+    {
+        if (agent != null && agent.enabled)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+        }
+
+        float timer = 0f;
+        while (!isExploding && timer < explodeTimer)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        while (!canExplode && !isExploding)
+            yield return null;
+
+        if (!isExploding)
             enemyAI.Fire(BombTriggers.Explode);
     }
 
@@ -372,16 +514,15 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
         yield return WaitForSecondsCache.Get(postPocketExplodeCooldown);
         canExplode = true;
     }
+
     private void Explode()
     {
         if (isExploding) return;
         isExploding = true;
 
-        // Show explosion visual if enabled
-        if (showExplosionVisual && explosionVisual != null)
-        {
-            explosionVisual.SetActive(true);
-        }
+        HideAttackIndicator();
+
+        PlayExplosionVfx();
 
         // Damage player and enemies in radius, but only if collider is not a trigger
         Collider[] hits = Physics.OverlapSphere(transform.position, explosionRadius);
@@ -397,12 +538,69 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
         StartCoroutine(DisableAndDestroyAfterDelay(explosionVisualDuration));
     }
 
+    [ContextMenu("Debug/Test Countdown Warning")]
+    public void DebugPreviewCountdownWarning()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning($"[{nameof(BombCarrierEnemy)}] Enter Play Mode to preview the countdown warning.", this);
+            return;
+        }
+
+        CancelDebugPreview();
+        ShowCountdownWarningVfx();
+    }
+
+    [ContextMenu("Debug/Test Explosion Sequence")]
+    public void DebugPreviewExplosionSequence()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning($"[{nameof(BombCarrierEnemy)}] Enter Play Mode to preview the explosion sequence.", this);
+            return;
+        }
+
+        CancelDebugPreview();
+        debugPreviewCoroutine = StartCoroutine(DebugPreviewExplosionSequenceRoutine());
+    }
+
+    public void CancelDebugPreview()
+    {
+        if (debugPreviewCoroutine != null)
+        {
+            StopCoroutine(debugPreviewCoroutine);
+            debugPreviewCoroutine = null;
+        }
+
+        HideAttackIndicator();
+
+        StopExplosionVfx();
+    }
+
+    private IEnumerator DebugPreviewExplosionSequenceRoutine()
+    {
+        ShowCountdownWarningVfx();
+
+        yield return WaitForSecondsCache.Get(Mathf.Max(0.05f, explodeTimer));
+
+        HideAttackIndicator();
+        PlayExplosionVfx();
+
+        yield return WaitForSecondsCache.Get(Mathf.Max(0.05f, explosionVisualDuration));
+
+        StopExplosionVfx();
+
+        debugPreviewCoroutine = null;
+    }
+
     private IEnumerator DisableAndDestroyAfterDelay(float delay)
     {
         // Disable all renderers except the explosion visual
         foreach (var renderer in GetComponentsInChildren<Renderer>())
         {
-            if (explosionVisual == null || renderer.gameObject != explosionVisual)
+            bool isExplosionVfxRenderer = explosionVfxInstance != null
+                && renderer.transform.IsChildOf(explosionVfxInstance.transform);
+            if (!isExplosionVfxRenderer)
                 renderer.enabled = false;
         }
 
@@ -439,10 +637,18 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     protected override void OnTriggerEnter(Collider other)
     {
         base.OnTriggerEnter(other);
-        if (!isExploding && canExplode && other.CompareTag("Player"))
+        if (isExploding || !canExplode || !other.CompareTag("Player"))
+            return;
+
+        if (attackBehavior == BombAttackBehavior.TriggerCountdown)
         {
-            enemyAI.Fire(BombTriggers.Explode);
+            if (enemyAI.State == BombStates.Approaching)
+                enemyAI.Fire(BombTriggers.InAttackRange);
+
+            return;
         }
+
+        enemyAI.Fire(BombTriggers.Explode);
     }
     protected override void OnTriggerStay(Collider other)
     {
@@ -487,6 +693,8 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     }
     protected override void OnDestroy()
     {
+        CancelDebugPreview();
+
         if (Pocket != null)
         {
             Pocket.RemoveFromActiveLists(this);
@@ -524,8 +732,12 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
                 }
             }
 
+            float attackStartDistance = attackBehavior == BombAttackBehavior.TriggerCountdown
+                ? triggerRadius
+                : chargeStartDistance;
+
             // Only allow attacking if cooldown is over
-            if (canExplode && dist <= chargeStartDistance)
+            if (canExplode && dist <= attackStartDistance)
             {
                 // Fire the InAttackRange trigger to enter Attacking state
                 enemyAI.Fire(BombTriggers.InAttackRange);
@@ -538,5 +750,25 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
 
             yield return null;
         }
+    }
+
+    protected override void OnDrawGizmos()
+    {
+        base.OnDrawGizmos();
+
+        if (!showExplosionRadiusGizmo)
+            return;
+
+        float radius = Mathf.Max(0f, explosionRadius);
+        if (radius <= 0f)
+            return;
+
+        Vector3 center = transform.position;
+
+        Gizmos.color = new Color(1f, 0.35f, 0.1f, 0.18f);
+        Gizmos.DrawSphere(center, radius);
+
+        Gizmos.color = new Color(1f, 0.2f, 0.05f, 0.95f);
+        Gizmos.DrawWireSphere(center, radius);
     }
 }

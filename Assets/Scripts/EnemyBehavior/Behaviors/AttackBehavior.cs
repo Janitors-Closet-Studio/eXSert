@@ -3,10 +3,10 @@
 // Works with: BaseEnemy attack triggers, EnemyProjectile, Player health systems, EnemyAttackQueueManager.
 // Notes: Does not manage movement; only attack timing and hit application.
 
-using UnityEngine;
 using System.Collections;
-using Utilities.Combat;
 using EnemyBehavior;
+using UnityEngine;
+using Utilities.Combat;
 
 namespace Behaviors
 {
@@ -19,9 +19,8 @@ namespace Behaviors
         private Coroutine attackLoopCoroutine;
         private BaseEnemy<TState, TTrigger> enemy;
         private Transform playerTarget;
-
-        // Cache the Attack state value for this enum type
         private TState attackStateValue;
+        private bool damageSentThisEnable;
 
         private static readonly Collider[] hitBuffer = new Collider[16];
 
@@ -29,8 +28,6 @@ namespace Behaviors
         {
             this.enemy = enemy;
             playerTarget = enemy.PlayerTarget;
-
-            // Cache the Attack state value once
             attackStateValue = (TState)System.Enum.Parse(typeof(TState), "Attack");
 
             enemy.SetEnemyColor(enemy.attackColor);
@@ -55,33 +52,45 @@ namespace Behaviors
                 enemy.StopCoroutine(lookAtPlayerCoroutine);
                 lookAtPlayerCoroutine = null;
             }
+
             if (attackRangeMonitorCoroutine != null)
             {
                 enemy.StopCoroutine(attackRangeMonitorCoroutine);
                 attackRangeMonitorCoroutine = null;
             }
+
             if (attackLoopCoroutine != null)
             {
                 enemy.StopCoroutine(attackLoopCoroutine);
                 attackLoopCoroutine = null;
             }
-            enemy.attackCollider.enabled = false;
+
+            enemy.DisableAttackHitbox();
+            ResetDamageFlag();
         }
 
         private IEnumerator LookAtPlayerLoop()
         {
             while (enemy.enemyAI.State.Equals(attackStateValue) && playerTarget != null)
             {
+                if (enemy.IsParryStunned)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 if (!enemy.isAttackBoxActive)
                 {
                     Vector3 direction = (playerTarget.position - enemy.transform.position).normalized;
-                    direction.y = 0;
+                    direction.y = 0f;
+
                     if (direction != Vector3.zero)
                     {
                         Quaternion targetRotation = Quaternion.LookRotation(direction);
                         float t = 0f;
                         Quaternion startRotation = enemy.transform.rotation;
-                        while (t < 1f && !enemy.isAttackBoxActive)
+
+                        while (t < 1f && !enemy.isAttackBoxActive && !enemy.IsParryStunned)
                         {
                             t += Time.deltaTime;
                             enemy.transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
@@ -89,6 +98,7 @@ namespace Behaviors
                         }
                     }
                 }
+
                 yield return WaitForSecondsCache.Get(1f);
             }
         }
@@ -113,10 +123,17 @@ namespace Behaviors
         private IEnumerator AttackLoop()
         {
             int safetyCounter = 0;
-            const int maxIterations = 10000; // Prevent infinite loop in editor
+            const int maxIterations = 10000;
 
             while (enemy.enemyAI.State.Equals(attackStateValue))
             {
+                if (enemy.IsParryStunned)
+                {
+                    enemy.DisableAttackHitbox();
+                    yield return null;
+                    continue;
+                }
+
                 safetyCounter++;
                 if (safetyCounter > maxIterations)
                 {
@@ -126,10 +143,8 @@ namespace Behaviors
                     yield break;
                 }
 
-                // Check if this enemy can attack (is at front of queue)
                 if (!enemy.CanAttackFromQueue())
                 {
-                    // Not our turn - wait and check again
                     yield return WaitForSecondsCache.Get(0.15f);
                     continue;
                 }
@@ -154,46 +169,33 @@ namespace Behaviors
                     }
 
                     int hitCount = Physics.OverlapBoxNonAlloc(boxCenter, boxHalfExtents, hitBuffer, boxRotation);
-
                     for (int i = 0; i < hitCount; i++)
                     {
-                        var hit = hitBuffer[i];
-                        if (hit.CompareTag("Player"))
-                        {
-                            playerInAttackBox = true;
-                            playerCollider = hit;
-                            break;
-                        }
+                        Collider hit = hitBuffer[i];
+                        if (!hit.CompareTag("Player"))
+                            continue;
+
+                        playerInAttackBox = true;
+                        playerCollider = hit;
+                        break;
                     }
 
-                if (playerInAttackBox)
+                    if (playerInAttackBox)
                     {
-                        // Notify queue that we're attacking
                         enemy.NotifyAttackBegin();
-                        
-                        // For animation-event-based attacks, don't enable hitbox here - let animation events handle it
+
                         if (!enemy.useAnimationEventAttacks)
                         {
-                            enemy.isAttackBoxActive = true;
-                            enemy.attackCollider.enabled = true;
-                            enemy.SetEnemyColor(enemy.hitboxActiveColor);
+                            enemy.EnableAttackHitbox();
                             DealDamageToPlayerOnce(playerCollider);
                         }
-                        // else: Animation events (Attack/AttackEnd) will control hitbox timing
 
                         didAttack = true;
                         enemy.TriggerAttackAnimation();
                     }
-                    else
+                    else if (!enemy.useAnimationEventAttacks)
                     {
-                        // Only disable hitbox here if NOT using animation events
-                        // (animation events handle their own disable via AttackEnd)
-                        if (!enemy.useAnimationEventAttacks)
-                        {
-                            enemy.isAttackBoxActive = false;
-                            enemy.attackCollider.enabled = false;
-                            enemy.SetEnemyColor(enemy.attackColor);
-                        }
+                        enemy.DisableAttackHitbox();
                     }
                 }
                 catch (System.Exception ex)
@@ -204,70 +206,60 @@ namespace Behaviors
                     yield break;
                 }
 
-                if (didAttack)
-                {
-                    // For animation-event-based attacks, wait for animation to complete
-                    // The attackActiveDuration is used as a minimum wait time for the full attack cycle
-                    yield return WaitForSecondsCache.Get(enemy.attackActiveDuration);
-                    
-                    // Only disable hitbox via timer if NOT using animation events
-                    // Animation events will call AttackEnd() to disable the hitbox at the right time
-                    if (!enemy.useAnimationEventAttacks)
-                    {
-                        enemy.isAttackBoxActive = false;
-                        enemy.attackCollider.enabled = false;
-                        enemy.SetEnemyColor(enemy.attackColor);
-                    }
-                    
-                    ResetDamageFlag();
-                    yield return WaitForSecondsCache.Get(enemy.attackInterval);
-
-                    // Notify queue that attack is finished - move to back of queue
-                    enemy.NotifyAttackEnd();
-
-                    // Only do backup and rotate for crawlers
-                    if (enemy is BaseCrawlerEnemy crawler)
-                    {
-                        yield return HandleAfterAttack();
-                        if (SwarmManager.Instance != null)
-                            SwarmManager.Instance.RotateAttackers();
-                    }
-                    // For other enemy types, you could add custom post-attack logic here if needed
-                }
-                else
+                if (!didAttack)
                 {
                     yield return WaitForSecondsCache.Get(0.1f);
+                    continue;
+                }
+
+                yield return WaitForSecondsCache.Get(enemy.attackActiveDuration);
+
+                if (!enemy.useAnimationEventAttacks)
+                    enemy.DisableAttackHitbox();
+
+                ResetDamageFlag();
+
+                while (enemy.IsParryStunned && enemy.enemyAI.State.Equals(attackStateValue))
+                    yield return null;
+
+                yield return WaitForSecondsCache.Get(enemy.attackInterval);
+                enemy.NotifyAttackEnd();
+
+                if (enemy is BaseCrawlerEnemy crawler)
+                {
+                    yield return HandleAfterAttack(crawler);
+                    if (SwarmManager.Instance != null)
+                        SwarmManager.Instance.RotateAttackers();
                 }
             }
-            // Ensure hitbox is disabled when exiting attack state
-            enemy.isAttackBoxActive = false;
-            enemy.attackCollider.enabled = false;
-            enemy.SetEnemyColor(enemy.attackColor);
-        }
 
-        private bool damageSentThisEnable = false;
+            enemy.DisableAttackHitbox();
+            ResetDamageFlag();
+        }
 
         private void DealDamageToPlayerOnce(Collider playerCollider)
         {
-            if (damageSentThisEnable) return;
+            if (damageSentThisEnable)
+                return;
+
             damageSentThisEnable = true;
 
-            if (!playerCollider.CompareTag("Player")) return;
+            if (!playerCollider.CompareTag("Player"))
+                return;
 
             float dmg = enemy.damage;
 
-            // Parry: no damage
             if (CombatManager.isParrying && enemy.canBeParried)
             {
+                enemy.ApplyParryStun();
                 CombatManager.ParrySuccessful();
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log("AttackBehavior", $"{enemy.gameObject.name} attack parried by player.");
 #endif
-                dmg = 0;
                 return;
             }
 
-            playerCollider.TryGetComponent<IHealthSystem>(out var healthSystem);
+            playerCollider.TryGetComponent<IHealthSystem>(out IHealthSystem healthSystem);
             if (healthSystem == null)
             {
 #if UNITY_EDITOR
@@ -276,11 +268,9 @@ namespace Behaviors
                 return;
             }
 
-            
-            // Guard: half damage
             if (CombatManager.isGuarding)
             {
-                dmg *= 0.25f; // temporary guard mitigation
+                dmg *= 0.25f;
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log("AttackBehavior", $"{enemy.gameObject.name} attack guarded. Applying reduced damage {dmg}.");
 #endif
@@ -292,38 +282,30 @@ namespace Behaviors
 #endif
         }
 
-        // Reset flag when hitbox is disabled
-        // Call this at the end of each attack cycle
         private void ResetDamageFlag()
         {
             damageSentThisEnable = false;
         }
 
-        private IEnumerator HandleAfterAttack()
+        private IEnumerator HandleAfterAttack(BaseCrawlerEnemy crawler)
         {
-            // For crawlers with swarm disabled, skip back-away entirely
-            if (enemy is BaseCrawlerEnemy crawler && !crawler.enableSwarmBehavior)
-            {
+            if (!crawler.enableSwarmBehavior)
                 yield break;
-            }
 
-            // After attack finishes, before returning to swarm
             Vector3 awayDirection = (enemy.transform.position - playerTarget.position).normalized;
-            float backupDistance = 2.0f; // Adjust as needed
+            float backupDistance = 2.0f;
             Vector3 backupTarget = enemy.transform.position + awayDirection * backupDistance;
 
-            // Move the enemy back for a short time
-            if (enemy.GetComponent<UnityEngine.AI.NavMeshAgent>() != null)
-                enemy.GetComponent<UnityEngine.AI.NavMeshAgent>().SetDestination(backupTarget);
+            UnityEngine.AI.NavMeshAgent navMeshAgent = enemy.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (navMeshAgent != null)
+                navMeshAgent.SetDestination(backupTarget);
 
-            // Optionally, wait a short time before rejoining the swarm
             yield return WaitForSecondsCache.Get(0.5f);
-
-            // Here you can add the code to make the enemy rejoin the swarm
         }
+
         public void Tick(BaseEnemy<TState, TTrigger> enemy)
         {
-            // No per-frame logic needed for death
+            // No per-frame logic needed for death.
         }
     }
 }

@@ -81,6 +81,10 @@ namespace Behaviors
             // Wait one frame to ensure state transition is complete
             yield return null;
             
+            const float updateInterval = 0.05f; // More frequent updates for smoother motion
+            const float destinationUpdateThreshold = 0.4f; // Only update destination if player moved significantly
+            Vector3 lastDestination = Vector3.zero;
+            
             // For boss fight crawlers with ForceChasePlayer, run indefinitely until attack/death
             // For normal crawlers, check state normally
             bool shouldContinue = crawler.ForceChasePlayer 
@@ -107,8 +111,14 @@ namespace Behaviors
                 // Move as a blob toward the player, apply separation
                 if (crawler.agent != null && crawler.agent.enabled)
                 {
-                    crawler.agent.isStopped = false;
-                    crawler.agent.SetDestination(player.position);
+                    // Only recalculate path if player has moved significantly
+                    float playerMovement = Vector3.Distance(player.position, lastDestination);
+                    if (playerMovement > destinationUpdateThreshold || !crawler.agent.hasPath)
+                    {
+                        crawler.agent.isStopped = false;
+                        crawler.agent.SetDestination(player.position);
+                        lastDestination = player.position;
+                    }
                 }
 
                 crawler.ApplySeparation();
@@ -127,7 +137,14 @@ namespace Behaviors
                 // --- FIX: Only allow Flee if not forced to chase by alarm ---
                 // Only allow flee if not alarm-spawned or alarm is dead
                 // Also skip flee check entirely if ForceChasePlayer is true (boss fight spawned enemies)
+                // Also skip flee check if there's no pocket assigned (crawler spawned without a pocket)
                 bool ignoreFlee = crawler.ForceChasePlayer; // Boss-spawned crawlers should NEVER flee
+                
+                // No pocket = no flee destination, so skip flee logic entirely
+                if (!ignoreFlee && crawler.Pocket == null)
+                {
+                    ignoreFlee = true;
+                }
                 
                 if (!ignoreFlee && crawler.AlarmSource != null && crawler.AlarmSource.enemyAI != null)
                 {
@@ -145,7 +162,7 @@ namespace Behaviors
                 }
                 // else: do NOT fire Flee, keep swarming/chasing
 
-                yield return WaitForSecondsCache.Get(0.1f);
+                yield return WaitForSecondsCache.Get(updateInterval);
                 
                 // Update continue condition at end of loop
                 shouldContinue = crawler.ForceChasePlayer 
@@ -158,14 +175,23 @@ namespace Behaviors
         private IEnumerator DefaultChasePlayerLoop()
         {
             const float losePlayerDistance = 25f;
-            const float updateInterval = 0.1f; // Don't update every frame!
+            const float updateInterval = 0.05f; // More frequent updates for smoother motion
+            const float destinationUpdateThreshold = 0.5f; // Only update destination if player moved significantly
             var wait = WaitForSecondsCache.Get(updateInterval);
 
+            Vector3 lastDestination = playerTarget != null ? playerTarget.position : Vector3.zero;
+            
             while (enemy.enemyAI.State.Equals(chaseStateValue) && playerTarget != null)
             {
                 if (enemy.agent != null && enemy.agent.enabled)
                 {
-                    MoveToAttackRange(playerTarget);
+                    // Only recalculate path if player has moved significantly
+                    float playerMovement = Vector3.Distance(playerTarget.position, lastDestination);
+                    if (playerMovement > destinationUpdateThreshold || !enemy.agent.hasPath)
+                    {
+                        MoveToAttackRange(playerTarget);
+                        lastDestination = playerTarget.position;
+                    }
                 }
 
                 float attackRange = (Mathf.Max(enemy.attackBoxSize.x, enemy.attackBoxSize.z) * 0.5f) + enemy.attackBoxDistance;
@@ -183,7 +209,7 @@ namespace Behaviors
                     yield break;
                 }
 
-                yield return wait; // Throttle to ~10 updates/second instead of 60+
+                yield return wait;
             }
         }
 

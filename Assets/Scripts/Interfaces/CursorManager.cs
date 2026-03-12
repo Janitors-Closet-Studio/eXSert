@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using Singletons;
 
 /*
 Written by Kyle Woo
@@ -9,8 +10,7 @@ Manages the cursor visibility and lock state based on the current input scheme a
 */
 
 [DisallowMultipleComponent]
-[RequireComponent(typeof(PlayerInput))]
-public class CursorBySchemeAndMap : MonoBehaviour
+public class CursorManager : Singleton<CursorManager>
 {
     [SerializeField] private string[] uiActionMapNames = new[] { "UI", "Menu" };
     [SerializeField] private string loadingActionMapName = "Loading";
@@ -19,56 +19,72 @@ public class CursorBySchemeAndMap : MonoBehaviour
     [SerializeField] private CursorLockMode lockModeWhenHidden = CursorLockMode.Locked;
 
     private static bool forceHidden;
-    private static readonly List<CursorBySchemeAndMap> Instances = new();
 
     private PlayerInput playerInput;
     private string lastMap;
+    private string lastScene;
     private string lastScheme;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void Bootstrap()
+    {
+        _ = Instance;
+    }
 
     public static void SetForceHidden(bool hidden)
     {
         forceHidden = hidden;
-        foreach (var instance in Instances)
-        {
-            if (instance != null)
-                instance.ApplyCursorPolicy();
-        }
+        if (!isApplicationQuitting && Instance != null)
+            Instance.ApplyCursorPolicy();
     }
 
-    private void Awake()
+    public static void RefreshPolicy()
     {
-        playerInput = GetComponent<PlayerInput>();
+        if (isApplicationQuitting || Instance == null)
+            return;
+
+        Instance.RefreshPlayerInputBinding();
+        Instance.OnControlsOrMapPossiblyChanged();
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+        if (Instance != this)
+            return;
+
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+        RefreshPlayerInputBinding();
         CacheState();
         ApplyCursorPolicy();
-
-        if (playerInput != null)
-            playerInput.onControlsChanged += HandleControlsChanged;
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         if (playerInput != null)
             playerInput.onControlsChanged -= HandleControlsChanged;
-        Instances.Remove(this);
-    }
 
-    private void OnEnable()
-    {
-        if (!Instances.Contains(this))
-            Instances.Add(this);
-    }
-
-    private void OnDisable()
-    {
-        Instances.Remove(this);
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        base.OnDestroy();
     }
 
     private void Update()
     {
+        RefreshPlayerInputBinding();
+
         // Detect manual SwitchCurrentActionMap calls
-        var mapName = playerInput != null && playerInput.currentActionMap != null ? playerInput.currentActionMap.name : string.Empty;
-        if (!string.Equals(mapName, lastMap, System.StringComparison.Ordinal))
+        string mapName = playerInput != null && playerInput.currentActionMap != null ? playerInput.currentActionMap.name : string.Empty;
+        string sceneName = SceneManager.GetActiveScene().name;
+        string schemeName = playerInput != null ? playerInput.currentControlScheme : string.Empty;
+        if (!string.Equals(mapName, lastMap, System.StringComparison.Ordinal)
+            || !string.Equals(sceneName, lastScene, System.StringComparison.Ordinal)
+            || !string.Equals(schemeName, lastScheme, System.StringComparison.Ordinal))
             OnControlsOrMapPossiblyChanged();
+    }
+
+    private void HandleSceneLoaded(Scene _, LoadSceneMode __)
+    {
+        OnControlsOrMapPossiblyChanged();
     }
 
     private void HandleControlsChanged(PlayerInput _)
@@ -85,7 +101,23 @@ public class CursorBySchemeAndMap : MonoBehaviour
     private void CacheState()
     {
         lastMap = playerInput != null && playerInput.currentActionMap != null ? playerInput.currentActionMap.name : string.Empty;
+        lastScene = SceneManager.GetActiveScene().name;
         lastScheme = playerInput != null ? playerInput.currentControlScheme : string.Empty;
+    }
+
+    private void RefreshPlayerInputBinding()
+    {
+        PlayerInput currentPlayerInput = InputReader.PlayerInput;
+        if (playerInput == currentPlayerInput)
+            return;
+
+        if (playerInput != null)
+            playerInput.onControlsChanged -= HandleControlsChanged;
+
+        playerInput = currentPlayerInput;
+
+        if (playerInput != null)
+            playerInput.onControlsChanged += HandleControlsChanged;
     }
 
     private void ApplyCursorPolicy()
@@ -96,9 +128,14 @@ public class CursorBySchemeAndMap : MonoBehaviour
             return;
         }
 
+        bool onKeyboardMouse = IsMatch(lastScheme, keyboardMouseSchemeNames);
+
         if (IsSceneForcedVisible())
         {
-            ShowCursor();
+            if (onKeyboardMouse)
+                ShowCursor();
+            else
+                HideCursor();
             return;
         }
 
@@ -111,10 +148,7 @@ public class CursorBySchemeAndMap : MonoBehaviour
             return;
         }
 
-        bool inUI = IsMatch(lastMap, uiActionMapNames);
-        bool onKeyboardMouse = IsMatch(lastScheme, keyboardMouseSchemeNames);
-
-        if (inUI && onKeyboardMouse)
+        if (onKeyboardMouse && IsMatch(lastMap, uiActionMapNames))
             ShowCursor();
         else
             HideCursor();

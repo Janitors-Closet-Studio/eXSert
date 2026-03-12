@@ -11,6 +11,11 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
     [SerializeField] private float damage = 20f;
     [SerializeField] private LayerMask hitMask = ~0;
 
+    [Header("Effects")]
+    [SerializeField] private GameObject explosionVFXPrefab;
+    [SerializeField] private AudioClip explosionSFX;
+    [SerializeField] private float sfxVolume = 1f;
+
     private void OnEnable()
     {
         Invoke(nameof(SelfDestruct), lifetime);
@@ -55,6 +60,18 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
         if (playerHit)
         {
             EnemyBehaviorDebugLogBools.Log(nameof(ExplosiveEnemyProjectile), "[ExplosiveEnemyProjectile] Player within explosive splash radius");
+        }
+
+        // Spawn VFX at explosion position
+        if (explosionVFXPrefab != null)
+        {
+            Instantiate(explosionVFXPrefab, transform.position, Quaternion.identity);
+        }
+
+        // Play explosion SFX
+        if (explosionSFX != null)
+        {
+            AudioSource.PlayClipAtPoint(explosionSFX, transform.position, sfxVolume);
         }
 
         // Pool-friendly: reparent BEFORE deactivation if used by turrets

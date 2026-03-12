@@ -15,8 +15,14 @@ public abstract class UnlockableInteraction : InteractionManager
     [Tooltip("Insert the ID of the item needed to unlock this interaction; leave empty if none is needed")]
     [SerializeField] protected string requiredItemID = "";
 
+    [Tooltip("Prompt shown while the required item is missing.")]
+    [SerializeField] private string lockedInteractionPrompt = "LOCKED";
+
     protected bool needsItem => !string.IsNullOrEmpty(requiredItemID);
-    protected bool canUnlock => InternalPlayerInventory.Instance.HasItem(requiredItemID);
+    protected bool canUnlock => InternalPlayerInventory.Instance != null && InternalPlayerInventory.Instance.HasItem(requiredItemID);
+    protected bool canExecuteWithoutItem => IsUnlockedWithoutRequiredItem();
+    protected bool canExecuteInteraction => !needsItem || canUnlock || canExecuteWithoutItem;
+
     [Header("Error SFX")]
     [SerializeField] private AudioClip errorSFXClip;
 
@@ -39,6 +45,29 @@ public abstract class UnlockableInteraction : InteractionManager
     /// </summary>
     protected abstract void ExecuteInteraction();
 
+    protected virtual bool IsUnlockedWithoutRequiredItem()
+    {
+        return false;
+    }
+
+    protected override void OnTriggerEnter(Collider other)
+    {
+        base.OnTriggerEnter(other);
+
+        if (!other.transform.root.CompareTag("Player"))
+            return;
+
+        if (!needsItem || canExecuteInteraction)
+            return;
+
+        if (InteractionUI.Instance != null && InteractionUI.Instance._interactText != null)
+        {
+            InteractionUI.Instance._interactText.text = string.IsNullOrWhiteSpace(lockedInteractionPrompt)
+                ? "LOCKED"
+                : lockedInteractionPrompt;
+        }
+    }
+
     protected override void Interact()
     {
         // Defensive null checks
@@ -48,20 +77,7 @@ public abstract class UnlockableInteraction : InteractionManager
             return;
         }
 
-        if (!needsItem)
-        {
-            if (onInteractionExecuted == null)
-            {
-                Debug.LogWarning("[UnlockableInteraction] onInteractionExecuted event is not assigned.");
-            }
-            ExecuteInteraction();
-            onInteractionExecuted?.Invoke();
-            // if(_interactionSFX != null)
-            //SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
-            return;
-        }
-
-        if (canUnlock)
+        if (canExecuteInteraction)
         {
             if (onInteractionExecuted == null)
             {
@@ -71,17 +87,16 @@ public abstract class UnlockableInteraction : InteractionManager
             onInteractionExecuted?.Invoke();
             if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
                 SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+            return;
         }
-        else
+
+        if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.puzzleSource != null)
         {
-            if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.puzzleSource != null)
-            {
-                SoundManager.Instance.puzzleSource.PlayOneShot(errorSFXClip);
-            }
-            else if (errorSFXClip != null)
-            {
-                Debug.LogWarning("[UnlockableInteraction] SoundManager.Instance or puzzleSource is null. Cannot play error SFX.");
-            }
+            SoundManager.Instance.puzzleSource.PlayOneShot(errorSFXClip);
+        }
+        else if (errorSFXClip != null)
+        {
+            Debug.LogWarning("[UnlockableInteraction] SoundManager.Instance or puzzleSource is null. Cannot play error SFX.");
         }
     }
 }

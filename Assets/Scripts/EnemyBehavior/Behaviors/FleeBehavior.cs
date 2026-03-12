@@ -37,13 +37,27 @@ namespace Behaviors
             if (crawler.AlarmSource != null && crawler.AlarmSource.gameObject != null)
                 yield break;
 
+            // If no pocket is assigned, transition back to Chase instead of getting stuck
+            if (crawler.Pocket == null)
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.LogWarning("FleeBehavior", $"{crawler.name}: No pocket assigned, transitioning to Chase instead of Flee.");
+#endif
+                // Wait a frame to avoid re-entrancy issues
+                yield return null;
+                crawler.TryFireTriggerByName("SeePlayer");
+                yield break;
+            }
+
             while (true)
             {
                 if (crawler.Pocket == null)
                 {
 #if UNITY_EDITOR
-                    EnemyBehaviorDebugLogBools.LogWarning("FleeBehavior", $"{crawler.name}: No pocket assigned, cannot flee.");
+                    EnemyBehaviorDebugLogBools.LogWarning("FleeBehavior", $"{crawler.name}: Pocket became null, transitioning to Chase.");
 #endif
+                    yield return null;
+                    crawler.TryFireTriggerByName("SeePlayer");
                     yield break;
                 }
 

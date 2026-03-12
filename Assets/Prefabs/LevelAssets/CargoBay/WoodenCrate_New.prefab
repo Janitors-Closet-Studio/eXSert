@@ -54,10 +54,39 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: f03cfde301baa884e8e16bb6851190f6, type: 2}
     - target: {fileID: 919132149155446097, guid: 136a934e59d2d5d46850cb17c48448e1, type: 3}
       propertyPath: m_Name
-      value: WoodenCrate
+      value: WoodenCrate_New
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 136a934e59d2d5d46850cb17c48448e1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7459295354727844705}
   m_SourcePrefab: {fileID: 100100000, guid: 136a934e59d2d5d46850cb17c48448e1, type: 3}
+--- !u!1 &6251113269399343286 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 136a934e59d2d5d46850cb17c48448e1, type: 3}
+  m_PrefabInstance: {fileID: 6485469027019419111}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &7459295354727844705
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6251113269399343286}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 96.08069, y: 96.08067, z: 92.7965}
+  m_Center: {x: 0.000015258789, y: -0.2882424, z: 46.39825}

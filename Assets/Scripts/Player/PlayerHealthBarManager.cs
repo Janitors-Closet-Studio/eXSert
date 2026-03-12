@@ -7,6 +7,7 @@ Uses the health interfaces to increase or decreae hp amount and sets the healthb
 
 using System;
 using System.Collections;
+using UI.Loading;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Progression.Checkpoints;
@@ -53,9 +54,9 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool destroyPlayerOnDeath = false;
     [FormerlySerializedAs("deathPoseHoldSeconds")]
     [SerializeField, Range(0f, 6f), Tooltip("Seconds to wait after triggering the death animation before the loading fade may begin.")]
-    private float deathFadeDelaySeconds = 3.5f;
-    [SerializeField, Range(0.5f, 1f), Tooltip("Normalized time within the death animation that must be reached before triggering the loading fade.")]
-    private float deathFadeNormalizedThreshold = 0.95f;
+    private float deathFadeDelaySeconds = 2f;
+    [SerializeField, Range(0f, 1f), Tooltip("Normalized time within the death animation that must be reached before triggering the loading fade. Set to 0 to rely only on the delay.")]
+    private float deathFadeNormalizedThreshold = 0f;
 
     [Header("Reactions")]
     [SerializeField, Range(0f, 1f)] private float flinchChance = 0.2f;
@@ -94,8 +95,11 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private Coroutine flinchRoutine;
     private Coroutine deathSequenceRoutine;
     private bool deathInputLockOwned;
+    private bool waitingForRespawnHeal;
     private bool suppressNextFlinch;
     private float invincibleUntilUnscaledTime;
+    private float defaultMaxHealth;
+    private float defaultCurrentHealth;
 
     #region Unity MonoBehaviour Functions
     private void Awake()
@@ -110,6 +114,9 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         {
             currentHealth = Mathf.Clamp(maxHealth * Mathf.Clamp01(startingHealthPercent), 0f, maxHealth);
         }
+
+        defaultMaxHealth = Mathf.Max(1f, maxHealth);
+        defaultCurrentHealth = Mathf.Clamp(currentHealth, 0f, defaultMaxHealth);
 
         NotifyHealthChanged();
         OnPlayerHealthRegistered?.Invoke(this);
@@ -131,7 +138,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private void OnEnable() 
     {
         Player.SetActive(true);
-        Player.RespawnPlayer += Revive;
+        Player.RespawnPlayer += HandleRespawnRequested;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
         if (playerMovement != null)
@@ -142,8 +149,10 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private void OnDisable() 
     { 
         Player.SetActive(false); 
-        Player.RespawnPlayer -= Revive;
+        Player.RespawnPlayer -= HandleRespawnRequested;
         CheckpointBehavior.UnsubscribeFromPlayerRespawn();
+        LoadingScreenController.OnLoadingScreenShown -= HandleLoadingScreenShown;
+        waitingForRespawnHeal = false;
 
         if (playerMovement != null)
         {
@@ -206,6 +215,15 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         }
     }
 
+    public void RestoreDesignTimeDefaults(bool fullHeal = true)
+    {
+        ResetDeathSequenceState();
+        isDead = false;
+        maxHealth = Mathf.Max(1f, defaultMaxHealth);
+        currentHealth = fullHeal ? maxHealth : Mathf.Clamp(defaultCurrentHealth, 0f, maxHealth);
+        NotifyHealthChanged();
+    }
+
     private void Revive() => Revive(1f);
     private void Revive(float percentOfMax = 1f)
     {
@@ -213,6 +231,25 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         isDead = false;
         currentHealth = Mathf.Clamp(maxHealth * Mathf.Clamp01(percentOfMax), 0f, maxHealth);
         NotifyHealthChanged();
+    }
+
+    private void HandleRespawnRequested()
+    {
+        if (waitingForRespawnHeal)
+            return;
+
+        waitingForRespawnHeal = true;
+        LoadingScreenController.OnLoadingScreenShown += HandleLoadingScreenShown;
+    }
+
+    private void HandleLoadingScreenShown()
+    {
+        if (!waitingForRespawnHeal)
+            return;
+
+        LoadingScreenController.OnLoadingScreenShown -= HandleLoadingScreenShown;
+        waitingForRespawnHeal = false;
+        Revive();
     }
 
     public void SetMaxHealth(float newMaxHealth)
@@ -286,15 +323,6 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         CancelFlinchRoutine();
         attackManager?.ForceCancelCurrentAttack();
 
-        var normalizedThreshold = deathFadeNormalizedThreshold;
-        var deathfadeDelay = deathFadeDelaySeconds;
-
-        if(!playDeathAnimation || normalizedThreshold <= 0f || animationController == null){
-            // If we're not playing the death animation or the fade threshold is 0, we can immediately trigger the fade and skip right to checkpoint restart
-            deathFadeNormalizedThreshold = 0f;
-            deathFadeDelaySeconds = .5f;
-        }
-
         OnPlayerDied?.Invoke();
 
         if (deathSequenceRoutine != null) StopCoroutine(deathSequenceRoutine);
@@ -363,7 +391,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         AcquireDeathInputLock();
         if(playDeathAnimation) animationController?.PlayDeath();
 
-        yield return WaitForDeathFadeTiming();
+        yield return WaitForDeathFadeTiming(playDeathAnimation);
 
         if (restartFromCheckpointOnDeath) Player.TriggerRespawn();
 
@@ -408,15 +436,18 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         playerMovement?.ExitDeathState();
     }
 
-    private IEnumerator WaitForDeathFadeTiming()
+    private IEnumerator WaitForDeathFadeTiming(bool playDeathAnimation)
     {
-        float delay = Mathf.Max(0f, deathFadeDelaySeconds);
+        float delay = playDeathAnimation && animationController != null
+            ? Mathf.Max(0f, deathFadeDelaySeconds)
+            : 0.5f;
+
         if (delay > 0f)
         {
             yield return new WaitForSecondsRealtime(delay);
         }
 
-        if (animationController == null)
+        if (!playDeathAnimation || animationController == null)
             yield break;
 
         float threshold = Mathf.Clamp01(deathFadeNormalizedThreshold);

@@ -7,14 +7,31 @@ public class FootstepsSFX : MonoBehaviour
 
     private void Start()
     {
-        audioSource = SoundManager.Instance.sfxSource;
+        TryResolveAudioSource();
     }
+
+    private bool TryResolveAudioSource()
+    {
+        if (audioSource != null)
+            return true;
+
+        SoundManager soundManager = FindAnyObjectByType<SoundManager>();
+        if (soundManager == null || soundManager.sfxSource == null)
+            return false;
+
+        audioSource = soundManager.sfxSource;
+        return true;
+    }
+
     public void PlayFootstepSound()
     {
-        if (walkClip.Length > 0)
-        {
-            int randomIndex = Random.Range(0, walkClip.Length);
-            audioSource.PlayOneShot(walkClip[randomIndex]);
-        }
+        if (walkClip == null || walkClip.Length == 0)
+            return;
+
+        if (!TryResolveAudioSource())
+            return;
+
+        int randomIndex = Random.Range(0, walkClip.Length);
+        audioSource.PlayOneShot(walkClip[randomIndex]);
     }
 }

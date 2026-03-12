@@ -86,6 +86,11 @@ namespace EnemyBehavior.Boss
             "Attack timings are driven by animation clip lengths × speed multipliers.\n" +
             "Use Animation Events in clips for precise phase transitions.";
 
+        [Header("Fight Initialization")]
+        [Tooltip("Delay in seconds before the boss begins chasing and attacking the player after scene load. Minimum 0.5s.")]
+        [Min(0.5f)]
+        public float FightStartDelay = 2.0f;
+
         public RoombaForm StartForm = RoombaForm.DuelistSummoner;
 
         [Header("Attacks")]
@@ -925,12 +930,36 @@ namespace EnemyBehavior.Boss
         void OnEnable()
         {
             form = StartForm;
+            
+            // Subscribe to pause events for audio handling
+            PauseManager.OnPaused += OnGamePaused;
+            PauseManager.OnResumed += OnGameResumed;
+            
+            // Start the delayed fight initialization
+            StartCoroutine(DelayedFightStart());
+        }
+        
+        /// <summary>
+        /// Waits for FightStartDelay seconds before starting combat behavior.
+        /// This gives the player time to orient themselves after scene load.
+        /// </summary>
+        private IEnumerator DelayedFightStart()
+        {
+            if (FightStartDelay > 0f)
+            {
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Waiting {FightStartDelay}s before starting fight...");
+                yield return WaitForSecondsCache.Get(FightStartDelay);
+            }
+            
+            // Now start the fight
             if (loop != null) StopCoroutine(loop);
             loop = StartCoroutine(FormLoop());
             ctrl.StartFollowingPlayer(0.1f);
             
             // Register with attack queue system
             RegisterWithAttackQueue();
+            
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Fight started!");
         }
 
 
@@ -948,6 +977,10 @@ namespace EnemyBehavior.Boss
             
             // Unregister from attack queue system
             UnregisterFromAttackQueue();
+            
+            // Unsubscribe from pause events
+            PauseManager.OnPaused -= OnGamePaused;
+            PauseManager.OnResumed -= OnGameResumed;
         }
 
         void Update()
@@ -959,6 +992,28 @@ namespace EnemyBehavior.Boss
                 float t = Mathf.InverseLerp(0f, Mathf.Max(0.01f, MaxIdleSpeedForIntensity), speed);
                 float intensity = Mathf.Lerp(IdleIntensityMin, IdleIntensityMax, t);
                 animator.SetFloat(ParamIdleIntensity, intensity);
+            }
+        }
+        
+        /// <summary>
+        /// Called when the game is paused. Pauses audio sources.
+        /// </summary>
+        private void OnGamePaused()
+        {
+            if (AttackAudioSource != null && AttackAudioSource.isPlaying)
+            {
+                AttackAudioSource.Pause();
+            }
+        }
+        
+        /// <summary>
+        /// Called when the game is resumed. Resumes audio sources.
+        /// </summary>
+        private void OnGameResumed()
+        {
+            if (AttackAudioSource != null)
+            {
+                AttackAudioSource.UnPause();
             }
         }
 

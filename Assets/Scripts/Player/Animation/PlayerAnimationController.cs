@@ -188,6 +188,10 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayGuardDashRight() => CrossFade(PlayerAnim.Guard.DashRight, 0.02f, true);
     public void PlayParry() => CrossFade(PlayerAnim.Guard.Parry, 0.01f, true);
 
+    public bool IsHardLocked => !string.IsNullOrEmpty(hardLockedState);
+
+    public bool IsParryHardLocked => hardLockedState == PlayerAnim.Guard.Parry;
+
     /// <summary>
     /// Plays the Parry animation and prevents other animation requests from overriding it
     /// until the Parry state finishes.

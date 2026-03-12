@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Progression.Encounters
 {
     [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?pli=1&tab=t.0#bookmark=id.5a4pt81lek3x")]
-    internal class Wave : MonoBehaviour
+    public class Wave : MonoBehaviour
     {
         #region Inspector Setup
         [Header("Wave Settings")]

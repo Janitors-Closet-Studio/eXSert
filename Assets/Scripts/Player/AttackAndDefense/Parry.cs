@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using Utilities.Combat;
 using UnityEngine.VFX;
+using Managers.TimeLord;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -90,10 +91,12 @@ public class Parry : MonoBehaviour
 
     private IEnumerator PauseTimeOnParry(float duration)
     {
-        Time.timeScale = howSlowTimeScales;
-        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+        // Use PauseCoordinator rather than directly setting Time.timeScale.
+        string token = PauseCoordinator.RequestTimeScale($"Parry_{GetInstanceID()}", howSlowTimeScales);
+
+        // Wait in real time so effect length is independent of timescale.
         yield return new WaitForSecondsRealtime(duration);
-        Time.timeScale = 1f;
-        Time.fixedDeltaTime = 0.02f;
+
+        PauseCoordinator.ReleaseTimeScale(token);
     }
 }

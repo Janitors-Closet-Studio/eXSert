@@ -1,13 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
+using Progression.Checkpoints;
 using UnityEngine;
 
 [RequireComponent(typeof(CanvasGroup))]
-public sealed class ThrobberOnSpawnTriggers : MonoBehaviour
+public sealed class ThrobberOnSpawnTriggers : MonoBehaviour, IDataPersistenceManager
 {
     [Header("Trigger Sources")]
     [Tooltip("GameObjects that have trigger colliders. When the player enters any of them, this throbber will fade in/out.")]
     [SerializeField] private List<Collider> triggerColliders = new List<Collider>();
+
+    [Header("Checkpoint Integration")]
+    [SerializeField] private bool showOnFirstCheckpointPerScene = true;
 
     [Header("Fade Settings")]
     [SerializeField, Range(0.05f, 5f)] private float fadeDuration = 0.5f;
@@ -20,6 +24,7 @@ public sealed class ThrobberOnSpawnTriggers : MonoBehaviour
 
     private CanvasGroup canvasGroup;
     private Coroutine activeRoutine;
+    private readonly HashSet<string> shownCheckpointScenes = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
 
     private void Awake()
     {
@@ -45,6 +50,16 @@ public sealed class ThrobberOnSpawnTriggers : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        CheckpointBehavior.OnCheckpointTriggered += HandleCheckpointTriggered;
+    }
+
+    private void OnDisable()
+    {
+        CheckpointBehavior.OnCheckpointTriggered -= HandleCheckpointTriggered;
+    }
+
     /// <summary>
     /// Called by helper components when the player enters a trigger.
     /// </summary>
@@ -54,6 +69,50 @@ public sealed class ThrobberOnSpawnTriggers : MonoBehaviour
             StopCoroutine(activeRoutine);
 
         activeRoutine = StartCoroutine(FadeSequence());
+    }
+
+    public void LoadData(GameData data)
+    {
+        shownCheckpointScenes.Clear();
+
+        if (data?.checkpointThrobberScenesShown == null)
+            return;
+
+        foreach (string sceneName in data.checkpointThrobberScenesShown)
+        {
+            if (!string.IsNullOrWhiteSpace(sceneName))
+                shownCheckpointScenes.Add(sceneName);
+        }
+    }
+
+    public void SaveData(GameData data)
+    {
+        if (data == null)
+            return;
+
+        if (data.checkpointThrobberScenesShown == null)
+            data.checkpointThrobberScenesShown = new List<string>();
+        else
+            data.checkpointThrobberScenesShown.Clear();
+
+        foreach (string sceneName in shownCheckpointScenes)
+            data.checkpointThrobberScenesShown.Add(sceneName);
+    }
+
+    private void HandleCheckpointTriggered(CheckpointBehavior checkpoint)
+    {
+        if (!showOnFirstCheckpointPerScene || checkpoint == null)
+            return;
+
+        SceneAsset checkpointScene = checkpoint.CheckpointSceneAsset;
+        string sceneName = checkpointScene != null ? checkpointScene.SceneName : checkpoint.gameObject.scene.name;
+        if (string.IsNullOrWhiteSpace(sceneName))
+            return;
+
+        if (!shownCheckpointScenes.Add(sceneName))
+            return;
+
+        OnPlayerEnteredTrigger();
     }
 
     private IEnumerator FadeSequence()

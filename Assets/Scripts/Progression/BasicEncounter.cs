@@ -126,9 +126,9 @@ namespace Progression.Encounters
 
             isCompleted = true;
 
-            if (!enableZoneOnComplete || encounterToEnable == null)
+            if (enableZoneOnComplete && encounterToEnable != null)
                 encounterToEnable.EnableZone();
-            else
+            else if (enableZoneOnComplete)
             {
                 Debug.LogWarning($"[BasicEncounter] Encounter {name} is set to enable another encounter on completion, but that encounter is not assigned. Enabling this encounter's own zone instead.");
             }

@@ -10,6 +10,15 @@ using EnemyBehavior.Boss;
 using UnityEngine;
 using UnityEngine.AI;
 
+/// <summary>
+/// Determines which enemy type spawns first when the alarm activates.
+/// </summary>
+public enum SpawnOrderPriority
+{
+    DronesFirst,
+    CrawlersFirst
+}
+
 [RequireComponent(typeof(NavMeshAgent))]
 public class BossRoombaController : MonoBehaviour
 {
@@ -27,10 +36,12 @@ public class BossRoombaController : MonoBehaviour
     public GameObject alarm;
 
     [Header("Alarm Settings")]
-    [Tooltip("Time in seconds before alarm activates automatically (if player doesn't mount first)")]
-    public float AlarmAutoActivateTime = 15f;
     [Tooltip("Delay in seconds after fight start or form change before alarm activates (random range)")]
     public Vector2 AlarmActivationDelayRange = new Vector2(3f, 5f);
+    [Tooltip("Which enemy type spawns first when the alarm activates.")]
+    public SpawnOrderPriority SpawnOrder = SpawnOrderPriority.DronesFirst;
+    [Tooltip("Delay range (seconds) before the second enemy type spawns after the first.")]
+    public Vector2 SecondWaveDelayRange = new Vector2(2f, 4f);
     [Tooltip("Maximum health of the alarm. When destroyed, no more adds spawn.")]
     public float AlarmMaxHealth = 100f;
     [Tooltip("Current health of the alarm (runtime).")]
@@ -43,7 +54,6 @@ public class BossRoombaController : MonoBehaviour
     public float AlarmBreakOffForce = 200f;
     private bool alarmActivated;
     private bool alarmDestroyed;
-    private float alarmTimer;
     private Coroutine alarmActivationDelayRoutine;
 
     [Header("Spawn Pockets")]
@@ -209,7 +219,6 @@ public class BossRoombaController : MonoBehaviour
         if (animParamsRoutine != null) StopCoroutine(animParamsRoutine);
         animParamsRoutine = StartCoroutine(AnimParamsLoop(0.05f));
         
-        alarmTimer = 0f;
         alarmActivated = false;
         // Reset alarm on enable (in case of pooling/re-enabling)
         if (!alarmDestroyed)
@@ -267,29 +276,6 @@ public class BossRoombaController : MonoBehaviour
         var ca = new EnemyBehavior.Crowd.CrowdAgent() { Agent = agent, Profile = profile };
         if (EnemyBehavior.Crowd.CrowdController.Instance != null)
             EnemyBehavior.Crowd.CrowdController.Instance.Register(ca);
-    }
-
-    void Update()
-    {
-        // Handle alarm timing - only during Duelist/Summoner form
-        // During CageBull, the alarm should stay deactivated
-        if (!alarmActivated && alarm != null && !alarmDestroyed)
-        {
-            // Check if brain exists and is in CageBull form - if so, don't auto-activate
-            var brain = GetComponent<EnemyBehavior.Boss.BossRoombaBrain>();
-            if (brain != null && brain.CurrentForm == EnemyBehavior.Boss.RoombaForm.CageBull)
-            {
-                // Reset timer during CageBull so it doesn't immediately activate when returning to Duelist
-                alarmTimer = 0f;
-                return;
-            }
-            
-            alarmTimer += Time.deltaTime;
-            if (alarmTimer >= AlarmAutoActivateTime)
-            {
-                ActivateAlarm();
-            }
-        }
     }
 
     void ApplyProfile()
@@ -1054,10 +1040,44 @@ public class BossRoombaController : MonoBehaviour
 
     private IEnumerator ManageSpawnsRoutine()
     {
-        // Initial spawn wave - spawn all enemies immediately when alarm activates
-        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Initial spawn wave starting...");
-        RespawnDeadEnemies(activeDrones, droneSpawnPoints, dronePrefab, maxDrones, dronePool);
-        RespawnDeadEnemies(activeCrawlers, crawlerSpawnPoints, crawlerPrefab, maxCrawlers, crawlerPool);
+        // Initial spawn wave - spawn enemies in staggered order based on SpawnOrder setting
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Initial spawn wave starting... SpawnOrder={SpawnOrder}");
+        
+        // Spawn first wave based on priority
+        if (SpawnOrder == SpawnOrderPriority.DronesFirst)
+        {
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Spawning drones first...");
+            RespawnDeadEnemies(activeDrones, droneSpawnPoints, dronePrefab, maxDrones, dronePool);
+        }
+        else
+        {
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Spawning crawlers first...");
+            RespawnDeadEnemies(activeCrawlers, crawlerSpawnPoints, crawlerPrefab, maxCrawlers, crawlerPool);
+        }
+        
+        // Wait for second wave delay
+        float secondWaveDelay = Random.Range(SecondWaveDelayRange.x, SecondWaveDelayRange.y);
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Waiting {secondWaveDelay:F1}s before second wave...");
+        yield return WaitForSecondsCache.Get(secondWaveDelay);
+        
+        // Check if alarm is still active before spawning second wave
+        if (!alarmActivated || alarmDestroyed)
+        {
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Alarm no longer active, skipping second wave.");
+            yield break;
+        }
+        
+        // Spawn second wave (the other enemy type)
+        if (SpawnOrder == SpawnOrderPriority.DronesFirst)
+        {
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Spawning crawlers (second wave)...");
+            RespawnDeadEnemies(activeCrawlers, crawlerSpawnPoints, crawlerPrefab, maxCrawlers, crawlerPool);
+        }
+        else
+        {
+            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] Spawning drones (second wave)...");
+            RespawnDeadEnemies(activeDrones, droneSpawnPoints, dronePrefab, maxDrones, dronePool);
+        }
         
         // Respawn check cadence
         var wait = WaitForSecondsCache.Get(2f);

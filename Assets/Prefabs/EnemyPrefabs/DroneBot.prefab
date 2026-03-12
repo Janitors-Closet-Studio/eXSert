@@ -649,7 +649,7 @@ MonoBehaviour:
   agent: {fileID: 0}
   currentState: 0
   maxHealth: 25
-  currentHealth: 2
+  currentHealth: 25
   lowHealthThresholdPercent: 0.25
   handleLowHealth: 1
   currentZone: {fileID: 0}
@@ -664,9 +664,10 @@ MonoBehaviour:
   attackInterval: 1
   attackActiveDuration: 0.5
   showAttackGizmo: 1
-  canBeParried: 1
+  canBeParried: 0
   useAnimationEventAttacks: 0
   attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
+  attackIndicatorAnchor: {fileID: 0}
   attackIndicatorOffset: {x: 0, y: 0, z: 1.5}
   attackIndicatorLeadTime: 0.5
   attackIndicatorDuration: 0

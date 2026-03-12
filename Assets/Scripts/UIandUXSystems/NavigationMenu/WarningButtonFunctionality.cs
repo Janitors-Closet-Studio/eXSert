@@ -65,7 +65,10 @@ public class WarningButtonFunctionality : MonoBehaviour
         var actionToRun = ResolvePendingAction();
         Debug.Log($"[WarningButtonFunctionality] Confirm pressed. Resolved action: {actionToRun}");
         if (actionToRun == WarningAction.None)
-            return;
+        { 
+            Debug.LogError("[WarningButtonFunctionality] Confirm pressed but no pending action or active warning text found. This should not happen.");
+            return; 
+        }
 
         HideWarningUI();
         ExecuteAction(actionToRun);
@@ -196,44 +199,34 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     private void ExecuteAction(WarningAction action)
     {
-        var handler = ResolveActionHandler();
-
+        Debug.Log($"[WarningButtonFunctionality] Executing action: {action}");
         switch (action)
         {
-
             case WarningAction.RestartCheckpoint:
-                FadeOutLevelMusic();
-                if (handler != null) handler.RestartFromCheckpoint();
-                else Player.TriggerRespawn();
+                // FadeOutLevelMusic();
+                Debug.Log("[WarningButtonFunctionality] Restarting from checkpoint.");
+                GameActionHandler restartHandler = ResolveActionHandler();
+                if (restartHandler != null)
+                    restartHandler.RestartFromCheckpoint();
+                else
+                    Player.TriggerRespawn();
                 break;
 
             case WarningAction.ReturnToMainMenu:
-                FadeOutLevelMusic();
+                // FadeOutLevelMusic();
+                GameActionHandler handler = ResolveActionHandler();
                 if (handler != null)
-                {
                     handler.ReturnToMainMenu();
-                }
                 else
-                {
-                    PauseManager.Instance?.ResumeGame();
-                    SceneAsset.LoadMainMenu();
-                }
+                    SceneLoader.LoadMainMenu();
                 break;
 
             case WarningAction.QuitGame:
-                FadeOutLevelMusic();
-                if (handler != null)
-                {
-                    handler.QuitGame();
-                }
-                else
-                {
 #if UNITY_EDITOR
-                    UnityEditor.EditorApplication.isPlaying = false;
+                UnityEditor.EditorApplication.isPlaying = false;
 #else
-                    Application.Quit();
+                Application.Quit();
 #endif
-                }
                 break;
 
             default:

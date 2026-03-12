@@ -148,7 +148,7 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Update()
     {
-        if (CombatManager.isGuarding)
+        if (ShouldIgnoreAttackInput())
         {
             ClearBufferedAttack();
             return;
@@ -178,8 +178,11 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void ProcessAttackInput(bool lightAttack)
     {
-        if (CombatManager.isGuarding)
+        if (ShouldIgnoreAttackInput())
+        {
+            ClearBufferedAttack();
             return;
+        }
 
         if (!InputReader.inputBusy)
         {
@@ -866,6 +869,12 @@ public class PlayerAttackManager : MonoBehaviour
 
     private bool TryConsumeBufferedAttack()
     {
+        if (ShouldIgnoreAttackInput())
+        {
+            ClearBufferedAttack();
+            return false;
+        }
+
         if (bufferedAttackButton == AttackButton.None)
             return false;
 
@@ -890,6 +899,17 @@ public class PlayerAttackManager : MonoBehaviour
         bufferedAttackExpiresAt = -1f;
     }
 
+    private bool ShouldIgnoreAttackInput()
+    {
+        if (InputReader.IsGameplayInputBlocked)
+            return true;
+
+        if (CombatManager.isGuarding || CombatManager.isParrying)
+            return true;
+
+        return animationController != null && animationController.IsParryHardLocked;
+    }
+
     public void ForceCancelCurrentAttack(bool resetCombo = true)
     {
         if (plungeRecoveryRoutine != null)
@@ -902,9 +922,11 @@ public class PlayerAttackManager : MonoBehaviour
         StopGuardAttackFlowRoutine();
         StopSpecialAttackAutoCancelRoutine();
         ClearHitbox();
+        playerMovement?.CancelPlungeState();
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
         InputReader.inputBusy = false;
+        playerMovement?.SuppressLocomotionAnimations(false);
         playerMovement?.ForceLocomotionRefresh();
 
         if (resetCombo)

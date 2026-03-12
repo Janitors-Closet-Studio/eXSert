@@ -57,9 +57,7 @@ public class GuidelineLightBulb : MonoBehaviour
 
     private void Awake()
     {
-        _mpb = new MaterialPropertyBlock();
-        CachePropertyIds();
-        CacheInitialLightIntensities();
+        EnsureInitialized();
     }
 
     private void OnEnable()
@@ -83,6 +81,18 @@ public class GuidelineLightBulb : MonoBehaviour
         CachePropertyIds();
     }
 
+    private void EnsureInitialized()
+    {
+        if (_mpb == null)
+            _mpb = new MaterialPropertyBlock();
+
+        if (!_hasCachedIds)
+            CachePropertyIds();
+
+        if (!_cachedInitialLightIntensities)
+            CacheInitialLightIntensities();
+    }
+
     private void CachePropertyIds()
     {
         _emissionColorPropId = Shader.PropertyToID(emissionColorProperty);
@@ -102,8 +112,7 @@ public class GuidelineLightBulb : MonoBehaviour
 
     public void SetState(bool on)
     {
-        if (!_hasCachedIds)
-            CachePropertyIds();
+        EnsureInitialized();
 
         IsOn = on;
 
@@ -137,15 +146,47 @@ public class GuidelineLightBulb : MonoBehaviour
         }
     }
 
+    public void SetPowerValue(float normalizedValue, float poweredOnLightIntensity)
+    {
+        EnsureInitialized();
+
+        float clampedValue = Mathf.Clamp01(normalizedValue);
+        bool isPowered = clampedValue > 0.001f;
+        IsOn = isPowered;
+
+        ApplyEmission(Color.Lerp(offEmissionColor, onEmissionColor, clampedValue));
+
+        if (targetLights != null)
+        {
+            float targetIntensity = Mathf.Lerp(0f, Mathf.Max(0f, poweredOnLightIntensity), clampedValue);
+            for (int i = 0; i < targetLights.Length; i++)
+            {
+                if (targetLights[i] == null)
+                    continue;
+
+                targetLights[i].intensity = targetIntensity;
+                targetLights[i].enabled = isPowered;
+            }
+        }
+
+        if (targetVolumetricLights != null)
+        {
+            for (int i = 0; i < targetVolumetricLights.Length; i++)
+            {
+                if (targetVolumetricLights[i] != null)
+                    targetVolumetricLights[i].enabled = isPowered;
+            }
+        }
+    }
+
     // Sets intensity on the referenced Light components (does not enable/disable them).
     // Used by completion/latched states to dim lights without reauthoring prefabs.
     public void SetLightIntensity(float intensity)
     {
+        EnsureInitialized();
+
         if (targetLights == null || targetLights.Length == 0)
             return;
-
-        if (!_cachedInitialLightIntensities)
-            CacheInitialLightIntensities();
 
         float clamped = Mathf.Max(0f, intensity);
 

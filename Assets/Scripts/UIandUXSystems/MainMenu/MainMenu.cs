@@ -21,8 +21,17 @@ public class MainMenu : Menu
     {
         // Disable load game button if no save data exists
         if (!DataPersistenceManager.HasGameData()) loadGame.interactable = false;
-        
+
+        if (loadGame != null) loadGame.onClick.AddListener(OnLoadGameClicked);
+        if (newGameButton != null) newGameButton.onClick.AddListener(OnNewGameClicked);
         if (quitButton != null) quitButton.onClick.AddListener(OnQuitGameClicked);
+    }
+
+    private void OnDestroy()
+    {
+        if (loadGame != null) loadGame.onClick.RemoveListener(OnLoadGameClicked);
+        if (newGameButton != null) newGameButton.onClick.RemoveListener(OnNewGameClicked);
+        if (quitButton != null) quitButton.onClick.RemoveListener(OnQuitGameClicked);
     }
 
     protected override void OnEnable()
@@ -55,6 +64,16 @@ public class MainMenu : Menu
     public void OnLoadGameClicked()
     {
         saveSlotsMenu.ActivateMenu(true);
+        this.DeactivateMenu();
+    }
+
+    /// <summary>
+    /// Called when New Game button is clicked.
+    /// Opens save slot selection for starting a new game.
+    /// </summary>
+    public void OnNewGameClicked()
+    {
+        saveSlotsMenu.ActivateMenu(false);
         this.DeactivateMenu();
     }
 

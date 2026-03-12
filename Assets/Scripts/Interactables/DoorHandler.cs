@@ -38,11 +38,16 @@ public class DoorPartMovement
 }
 public class DoorHandler : MonoBehaviour
 {
+    private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+    private static readonly int LegacyColorProperty = Shader.PropertyToID("_Color");
+    private static readonly int EmissionColorProperty = Shader.PropertyToID("_EmissionColor");
+
+    private MaterialPropertyBlock lightBulbPropertyBlock;
 
     public enum DoorState { Open, Closed }
     public enum DoorLockState { Locked, Unlocked }
     public enum DoorType { OpenUnconvential, OpenOut, OpenIn }
-    public enum CanGoBothWays { Yes, No }
+    
 
     [Header("Door State & Type")]
     [Tooltip("Current state of the door (Open/Closed)")]
@@ -51,8 +56,7 @@ public class DoorHandler : MonoBehaviour
     public DoorLockState doorLockState = DoorLockState.Locked;
     [Tooltip("Type of door movement")]
     public DoorType doorType;
-    [Tooltip("Can the door be opened and closed multiple times?")]
-    public CanGoBothWays canGoBothWays;
+
 
     [Header("Door Movement Settings")]
     [Tooltip("Original position of the door (auto-set)")]
@@ -70,13 +74,8 @@ public class DoorHandler : MonoBehaviour
     [SerializeField] private float openSpeed = 2f;
 
     private bool isOpening = false;
-    private bool isOpened = false;
+    internal bool isOpened = false;
 
-    [Header("One Way Door Settings")]
-    [Tooltip("For one-way doors, track if the door has been opened once to prevent reopening")]
-    private bool oneWayDoorLocked = false;
-    [Tooltip("Track if the player is currently inside the door area for one-way doors")]
-    [SerializeField, ReadOnly] private bool isPlayerInside = false;
 
     [Header("Hinge Settings (for OpenOut/OpenIn)")]
     [Tooltip("Optional hinge pivot. If null, a pivot GameObject will be created at the door origin.")]
@@ -86,17 +85,29 @@ public class DoorHandler : MonoBehaviour
     [Header("Door Light Settings")]
     [Tooltip("Light bulb GameObject to change color")]
     public GameObject lightBulb;
-    [Tooltip("Color of the light bulb when the door is locked")]
-    public Color lockedLightBulbColor;
-    [Tooltip("Color of the light bulb when the door is unlocked")]
-    public Color unlockedLightBulbColor;
+
+    [Tooltip("Base color of the bulb material when the door is locked.")]
+    [ColorUsage(false, true)]
+    public Color lockedLightBulbColor = DefaultLockedBulbBaseColor;
+
+    [Tooltip("Emission color of the bulb material when the door is locked.")]
+    [ColorUsage(true, true)]
+    public Color lockedLightBulbEmissionColor = DefaultLockedBulbEmissionColor;
+
+    [Tooltip("Base color of the bulb material when the door is unlocked.")]
+    [ColorUsage(false, true)]
+    public Color unlockedLightBulbColor = DefaultUnlockedBulbBaseColor;
+
+    [Tooltip("Emission color of the bulb material when the door is unlocked.")]
+    [ColorUsage(true, true)]
+    public Color unlockedLightBulbEmissionColor = DefaultUnlockedBulbEmissionColor;
 
     [Tooltip("Light component on the door to change color")]
     public Light doorLight;
     [Tooltip("Color of the light when the door is locked")]
-    public Color lockedLightColor;
+    public Color lockedLightColor = DefaultLockedPointLightColor;
     [Tooltip("Color of the light when the door is unlocked")]
-    public Color unlockedLightColor;
+    public Color unlockedLightColor = DefaultUnlockedPointLightColor;
 
     [Tooltip("Speed of the light color transition")]
     public float lightFadeSpeed = 2f;
@@ -112,6 +123,13 @@ public class DoorHandler : MonoBehaviour
     // Store original parent to reparent door after using hinge pivot
     private Transform originalParent;
 
+    private static Color DefaultLockedBulbBaseColor => ColorFromHex("A10000");
+    private static Color DefaultLockedBulbEmissionColor => ColorFromHsv(0f, 100f, 38f);
+    private static Color DefaultLockedPointLightColor => ColorFromHex("FF1E1E");
+    private static Color DefaultUnlockedBulbBaseColor => ColorFromHex("1DC814");
+    private static Color DefaultUnlockedBulbEmissionColor => ColorFromHsv(145f, 100f, 13f);
+    private static Color DefaultUnlockedPointLightColor => ColorFromHex("44A659");
+
     private void Awake()
     {
         doorPosOrigin = this.transform.localPosition;
@@ -126,17 +144,18 @@ public class DoorHandler : MonoBehaviour
         StartingLightColor();
     }
 
+    private void OnValidate()
+    {
+        if (!Application.isPlaying)
+            StartingLightColor();
+    }
+
     /// <summary>
     /// Toggles the door between Open and Closed states.
     /// Lock checking is handled by DoorInteractions component.
     /// </summary>
     public void Interact()
     {
-        if (canGoBothWays == CanGoBothWays.No && oneWayDoorLocked)
-        {
-            Debug.Log("This one-way door cannot be opened again.");
-            return;
-        }
         switch (currentDoorState)
         {
             case DoorState.Open:
@@ -144,53 +163,49 @@ public class DoorHandler : MonoBehaviour
                 break;
             case DoorState.Closed:
                 OpenDoor();
-                StartCoroutine(NotAllowReentry());
+                StartCoroutine(NotAllowReentryCoroutine());
                 break;
         }
     }
 
-    // Intializes the door light color based on the current lock and door state
+    public virtual IEnumerator NotAllowReentryCoroutine()
+    {
+        // Default doors do not use one-way re-entry behavior.
+        yield break;
+    }
+
+    public void UnlockDoor()
+    {
+        if (doorLockState == DoorLockState.Unlocked)
+            return;
+
+        doorLockState = DoorLockState.Unlocked;
+        DoorHandlerCoroutines();
+    }
+
+    public void LockDoor()
+    {
+        if (doorLockState == DoorLockState.Locked)
+            return;
+
+        StopAllCoroutines();
+        doorLockState = DoorLockState.Locked;
+        ApplyDoorLightState(lockedLightBulbColor, lockedLightBulbEmissionColor, lockedLightColor);
+    }
+
     private void StartingLightColor()
     {
         if (DoorLockState.Locked == doorLockState)
         {
-            doorLight.color = lockedLightColor;
+            ApplyDoorLightState(lockedLightBulbColor, lockedLightBulbEmissionColor, lockedLightColor);
         }
         else
         {
-            doorLight.color = unlockedLightColor;
+            ApplyDoorLightState(unlockedLightBulbColor, unlockedLightBulbEmissionColor, unlockedLightColor);
         }
     }
 
-    private IEnumerator NotAllowReentry()
-    {
-        float delayAfterExit = 1.0f; // seconds to wait before closing
-        bool waitingToClose = false;
-        float exitTimer = 0f;
-        Debug.Log(isPlayerInside ? "Player is inside the door area." : "Player is outside the door area.");
-        while(isOpened)
-        {
-            if (canGoBothWays == CanGoBothWays.No && isPlayerInside)
-            {
-                if (!waitingToClose)
-                {
-                    waitingToClose = true;
-                    exitTimer = 0f;
-                }
-                exitTimer += Time.deltaTime;
-                if (exitTimer >= delayAfterExit)
-                {
-                    CloseDoor();
-                    yield break;
-                }
-            }
-            else
-            {
-                waitingToClose = false;
-            }
-            yield return null;
-        }
-    }
+    
 
     internal MeshRenderer GetLightMeshRenderer()
     {
@@ -216,32 +231,56 @@ public class DoorHandler : MonoBehaviour
 
     public void DoorHandlerCoroutines()
     {
-        StartCoroutine(FadeLightBulbHDRColor(lockedLightBulbColor, unlockedLightBulbColor, lightFadeSpeed));
+        StartCoroutine(
+            FadeLightBulbColor(
+                lockedLightBulbColor,
+                unlockedLightBulbColor,
+                lockedLightBulbEmissionColor,
+                unlockedLightBulbEmissionColor,
+                lightFadeSpeed
+            )
+        );
         StartCoroutine(FadeColorIntoEachother(lockedLightColor, unlockedLightColor, lightFadeSpeed));
     }
 
-    private IEnumerator FadeLightBulbHDRColor(Color fromColor, Color toColor, float duration)
+    private IEnumerator FadeLightBulbColor(
+        Color fromBaseColor,
+        Color toBaseColor,
+        Color fromEmissionColor,
+        Color toEmissionColor,
+        float duration
+    )
     {
         MeshRenderer meshRenderer = GetLightMeshRenderer();
         if (meshRenderer == null)
             yield break;
 
+        if (duration <= 0f)
+        {
+            ApplyBulbMaterialState(meshRenderer, toBaseColor, toEmissionColor);
+            yield break;
+        }
+
         float elapsed = 0f;
         while (elapsed < duration)
         {
             float t = Mathf.Clamp01(elapsed / duration);
-            Color currentColor = Color.Lerp(fromColor, toColor, t);
-            meshRenderer.material.EnableKeyword("_EMISSION");
-            meshRenderer.material.SetColor("_EmissionColor", currentColor);
+            Color currentBaseColor = Color.Lerp(fromBaseColor, toBaseColor, t);
+            Color currentEmissionColor = Color.Lerp(fromEmissionColor, toEmissionColor, t);
+            ApplyBulbMaterialState(meshRenderer, currentBaseColor, currentEmissionColor);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        meshRenderer.material.SetColor("_EmissionColor", toColor);
+
+        ApplyBulbMaterialState(meshRenderer, toBaseColor, toEmissionColor);
     }
 
     // Fade Color into eachother over time, used for light color transitions when opening/closing and locking/unlocking the door
     private IEnumerator FadeColorIntoEachother(Color fromColor, Color toColor, float duration)
     {
+        if (doorLight == null)
+            yield break;
+
         float elapsed = 0f;
         while (elapsed < duration)
         {
@@ -253,7 +292,65 @@ public class DoorHandler : MonoBehaviour
         doorLight.color = toColor;
     }
 
-    private void OpenDoor()
+    private void ApplyDoorLightState(Color bulbBaseColor, Color bulbEmissionColor, Color pointLightColor)
+    {
+        MeshRenderer meshRenderer = GetLightMeshRenderer();
+        if (meshRenderer != null)
+            ApplyBulbMaterialState(meshRenderer, bulbBaseColor, bulbEmissionColor);
+
+        if (doorLight != null)
+            doorLight.color = pointLightColor;
+    }
+
+    private void ApplyBulbMaterialState(MeshRenderer meshRenderer, Color baseColor, Color emissionColor)
+    {
+        if (meshRenderer == null)
+            return;
+
+        lightBulbPropertyBlock ??= new MaterialPropertyBlock();
+
+        Material[] materials = meshRenderer.sharedMaterials;
+        for (int i = 0; i < materials.Length; i++)
+        {
+            Material material = materials[i];
+            if (material == null)
+                continue;
+
+            meshRenderer.GetPropertyBlock(lightBulbPropertyBlock, i);
+
+            if (material.HasProperty(BaseColorProperty))
+                lightBulbPropertyBlock.SetColor(BaseColorProperty, baseColor);
+
+            if (material.HasProperty(LegacyColorProperty))
+                lightBulbPropertyBlock.SetColor(LegacyColorProperty, baseColor);
+
+            if (material.HasProperty(EmissionColorProperty))
+            {
+                lightBulbPropertyBlock.SetColor(EmissionColorProperty, emissionColor);
+            }
+
+            meshRenderer.SetPropertyBlock(lightBulbPropertyBlock, i);
+        }
+    }
+
+    private static Color ColorFromHex(string hex)
+    {
+        if (UnityEngine.ColorUtility.TryParseHtmlString($"#{hex}", out Color parsedColor))
+            return parsedColor;
+
+        return Color.white;
+    }
+
+    private static Color ColorFromHsv(float hueDegrees, float saturationPercent, float valuePercent, float intensity = 0f)
+    {
+        Color color = Color.HSVToRGB(hueDegrees / 360f, saturationPercent / 100f, valuePercent / 100f);
+        if (!Mathf.Approximately(intensity, 0f))
+            color *= Mathf.Pow(2f, intensity);
+
+        return color;
+    }
+
+    public void OpenDoor()
     {
         Debug.Log("Opening the door.");
         currentDoorState = DoorState.Open;
@@ -276,15 +373,10 @@ public class DoorHandler : MonoBehaviour
         isOpened = true;
     }
 
-    private void CloseDoor()
+    public void CloseDoor()
     {
         Debug.Log("Closing the door.");
         currentDoorState = DoorState.Closed;
-
-        if (canGoBothWays == CanGoBothWays.No)
-        {
-            oneWayDoorLocked = true;
-        }
 
         switch (doorType)
         {
@@ -309,7 +401,7 @@ public class DoorHandler : MonoBehaviour
         // Use hinge pivot to rotate outwards so the door stays locked in its socket
         EnsurePivot();
         hingeStartRot = hingePivot.rotation;
-        hingeTargetRot = hingeStartRot * Quaternion.Euler(0f, -90f, 0f);
+        hingeTargetRot = hingeOriginalRot * Quaternion.Euler(0f, -90f, 0f);
         StartHingeAnimation(hingeStartRot, hingeTargetRot, 1f / openSpeed);
     }
 
@@ -318,7 +410,7 @@ public class DoorHandler : MonoBehaviour
         // Use hinge pivot to rotate inwards so the door stays locked in its socket
         EnsurePivot();
         hingeStartRot = hingePivot.rotation;
-        hingeTargetRot = hingeStartRot * Quaternion.Euler(0f, 90f, 0f);
+        hingeTargetRot = hingeOriginalRot * Quaternion.Euler(0f, 90f, 0f);
         StartHingeAnimation(hingeStartRot, hingeTargetRot, 1f / openSpeed); 
     }
 
@@ -348,8 +440,8 @@ public class DoorHandler : MonoBehaviour
         if (hingePivot == null)
         {
             GameObject go = new GameObject(this.gameObject.name + "PivotPoint");
-            go.transform.position = doorPosOrigin;
-            go.transform.rotation = doorRotOrigin;
+            go.transform.position = transform.position;
+            go.transform.rotation = transform.rotation;
             // parent pivot to the door's original parent to keep hierarchy
             go.transform.SetParent(this.transform.parent, true);
             hingePivot = go.transform;
@@ -494,21 +586,5 @@ public class DoorHandler : MonoBehaviour
     }
 
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (canGoBothWays == CanGoBothWays.No && other.CompareTag("Player"))
-        {
-            Debug.Log("Player entered the door area.");
-            isPlayerInside = true;
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (canGoBothWays == CanGoBothWays.No && other.CompareTag("Player"))
-        {
-            Debug.Log("Player exited the door area.");
-            isPlayerInside = false;
-        }
-        }
+    
 }

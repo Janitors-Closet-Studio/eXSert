@@ -29,8 +29,9 @@ public class GameData
     // Checkpoint/Progress data
     public string currentSceneName;
     public string currentSpawnPointID;
-    // Last scene that was saved for this profile (persisted per-profile)
-    public SceneAsset lastSavedScene;
+    // Last scene that was saved for this profile (stored as a scene name string for JSON persistence)
+    public string lastSavedScene;
+    public List<string> checkpointThrobberScenesShown;
 
 
     //Base variable definitions should be here
@@ -46,5 +47,6 @@ public class GameData
         currentSpawnPointID = "default";
         // default last saved scene matches the current scene name on new games
         lastSavedScene = currentSceneName;
+        checkpointThrobberScenesShown = new List<string>();
     }
 }

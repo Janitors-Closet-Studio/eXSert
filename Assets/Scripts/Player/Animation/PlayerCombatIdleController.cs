@@ -34,7 +34,7 @@ public class PlayerCombatIdleController : MonoBehaviour
     [Header("Timing")]
     [SerializeField]
     [Tooltip("Seconds the player stays flagged as in combat after an attack or taking damage.")]
-    private float combatDuration = 10f;
+    private float combatDuration = 5f;
 
 
 
@@ -148,7 +148,9 @@ public class PlayerCombatIdleController : MonoBehaviour
         bool grounded = characterController != null
             ? characterController.isGrounded
             : playerMovement != null && PlayerMovement.isGrounded;
-        bool hasMovementInput = InputReader.MoveInput.sqrMagnitude >= movementThreshold;
+        bool hasMovementInput = playerMovement != null
+            ? playerMovement.HasEffectiveMovementInput
+            : InputReader.MoveInput.sqrMagnitude >= movementThreshold;
 
         if (combatTimer > 0f)
             combatTimer = Mathf.Max(0f, combatTimer - Time.deltaTime);

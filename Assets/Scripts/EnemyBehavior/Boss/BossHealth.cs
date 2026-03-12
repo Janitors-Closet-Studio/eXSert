@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 namespace EnemyBehavior.Boss
 {
@@ -56,6 +57,8 @@ namespace EnemyBehavior.Boss
 
         private bool isDefeated = false;
         private float displayedHealth;
+
+        public event Action BossDefeated;
 
         // IHealthSystem interface properties
         public float currentHP => currentHealth;
@@ -192,7 +195,7 @@ namespace EnemyBehavior.Boss
         {
             if (damageSFX != null && SoundManager.Instance != null)
             {
-                SoundManager.Instance.sfxSource.PlayOneShot(damageSFX[Random.Range(0, damageSFX.Length)]);
+                SoundManager.Instance.sfxSource.PlayOneShot(damageSFX[UnityEngine.Random.Range(0, damageSFX.Length)]);
             }
         }
 
@@ -230,6 +233,7 @@ namespace EnemyBehavior.Boss
             Log("Boss defeated!");
             
             PlayDefeatSFX();
+            BossDefeated?.Invoke();
             
             if (brain != null)
             {

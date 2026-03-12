@@ -1,12 +1,11 @@
 using System;
-using System.Runtime.CompilerServices;
-using Unity.VisualScripting;
+using UI.Loading;
 using UnityEngine;
 
 namespace Progression.Checkpoints
 {
     [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?tab=t.0#bookmark=id.gqgefvoh0b90")]
-    public class CheckpointBehavior : ProgressionZone
+    public class CheckpointBehavior : ProgressionZone, IDataPersistenceManager
     {
         #region Inspector Setup
         [Header("Checkpoint Settings")]
@@ -15,83 +14,37 @@ namespace Progression.Checkpoints
         [Header("Spawn Settings")]
         [SerializeField, Tooltip("Optional transform that marks the exact spawn position and rotation. If null the checkpoint's transform is used.")]
         private Transform spawnPoint;
+        [SerializeField, Tooltip("SceneAsset that owns this checkpoint. Assign explicitly for additive-scene save/load routing.")]
+        private SceneAsset checkpointSceneAsset;
 
         [SerializeField, Tooltip("Whether the spawn gizmo should be drawn.")]
         private bool showSpawnGizmos = true;
         #endregion
 
         protected override Color DebugColor => Color.darkGreen;
+        public override string ToString() => $"{checkpointName} with spawn: {GetSpawnPosition()}";
+        public string CheckpointId => string.IsNullOrWhiteSpace(checkpointName) ? gameObject.name : checkpointName;
+        public SceneAsset CheckpointSceneAsset => ResolveCheckpointSceneAsset();
 
         // Capsule dimensions are constants shared by all checkpoints.
         // Adjust these values here until they match the desired in-scene size.
         private const float SPAWN_CAPSULE_RADIUS = 0.5f;
         private const float SPAWN_CAPSULE_HEIGHT = 1.8f;
 
-        private const bool RELOAD_SCENE_ON_RESPAWN = true;
+        private static readonly bool ReloadSceneOnRespawn = true;
 
         // Static reference to the current checkpoint. This allows any part of the code to query the current spawn position and rotation.
-        private static CheckpointBehavior currentCheckpoint;
+        public static CheckpointBehavior currentCheckpoint { get; private set; }
+        public static event Action<CheckpointBehavior> OnCheckpointTriggered;
 
-        private static GameObject _playerObject;
-        private static GameObject PlayerObject
-        {
-            get
-            {
-                if (!SceneAsset.PlayerLoaded) return null; // Player scene not loaded, so player object cannot be found
-
-                if (_playerObject != null) return _playerObject;
-
-                _playerObject = GameObject.FindGameObjectWithTag("Player");
-                if (_playerObject == null) throw new ArgumentNullException("Player object not found in the scene. Ensure that the player scene contains a GameObject tagged 'Player'.");
-                else _playerObject = _playerObject.transform.root.gameObject; // Get the root GameObject in case the player is a child of another object
-                
-                return _playerObject;
-            }
-        }
-
-        public Transform SpawnPoint => spawnPoint;
+        private static GameObject PlayerObject => Player.PlayerObject;
 
         public Vector3 GetSpawnPosition() => spawnPoint != null ? spawnPoint.position : transform.position;
         public Quaternion GetSpawnRotation() => spawnPoint != null ? spawnPoint.rotation : transform.rotation;
 
-        public static void SubscribeToPlayerRespawn() => Player.RespawnPlayer += RespawnPlayer;
-        public static void UnsubscribeFromPlayerRespawn() => Player.RespawnPlayer -= RespawnPlayer;
-        
-        // Private method to handle the checkpoint's side of Respawning the player.
-        // Simply just moves the player to the current checkpoint's spawn position.
-        private static void RespawnPlayer()
+        private SceneAsset ResolveCheckpointSceneAsset()
         {
-            if (currentCheckpoint == null)
-            {
-                Debug.LogError("No checkpoint has been triggered yet! Cannot respawn player.");
-                return;
-            }
-            
-            if (RELOAD_SCENE_ON_RESPAWN)
-            {
-                SceneAsset.OnSceneReloaded += MovePlayerToCheckpoint; // Subscribe to the scene reloaded event to move the player after reload completes
-                // Reload the current scene to reset everything, then move the player to the checkpoint after reload
-                SceneAsset.Load(SceneAsset.GetSceneAssetOfObject(currentCheckpoint.gameObject), forceReload: true);
-            }
-            else
-            {
-                // Just move the player to the checkpoint without reloading the scene
-                MovePlayerToCheckpoint();
-            }
-
-            // Local function to move the player to the checkpoint spawn point.
-            // This is called regardless if the scene gets reloaded or not.
-            // It is important to call it after the scene is reloaded.
-            static void MovePlayerToCheckpoint()
-            {
-                if (PlayerObject == null)
-                {
-                    Debug.LogError("Cannot respawn player because the player object could not be found.");
-                    return;
-                }
-                PlayerObject.transform.SetPositionAndRotation(currentCheckpoint.GetSpawnPosition(), currentCheckpoint.GetSpawnRotation());
-                SceneAsset.OnSceneReloaded -= MovePlayerToCheckpoint; // Unsubscribe after moving the player
-            }
+            return checkpointSceneAsset != null ? checkpointSceneAsset : SceneAsset.GetSceneAssetOfObject(gameObject);
         }
 
         public static void OverrideCurrentCheckpoint(CheckpointBehavior newCheckpoint, bool overrideIfNull = true)
@@ -105,10 +58,89 @@ namespace Progression.Checkpoints
             currentCheckpoint = newCheckpoint;
         }
 
+        public static void SubscribeToPlayerRespawn() => Player.RespawnPlayer += RespawnPlayer;
+        public static void UnsubscribeFromPlayerRespawn() => Player.RespawnPlayer -= RespawnPlayer;
+        
+        // Private method to handle the checkpoint's side of Respawning the player.
+        // Simply just moves the player to the current checkpoint's spawn position.
+        private static void RespawnPlayer()
+        {
+            Debug.Log("[Checkpoint] Respawning player at current checkpoint...");
+
+            if (currentCheckpoint == null)
+            {
+                Debug.LogError("No checkpoint has been triggered yet! Cannot respawn player.");
+                return;
+            }
+            
+            if (ReloadSceneOnRespawn)
+            {
+                LoadingScreenController.OnLoadingScreenContentShown += MovePlayerToCheckpoint;
+                // Reload the current scene to reset everything, then move the player once the loading content is visibly covering gameplay.
+                SceneLoader.Load(currentCheckpoint.CheckpointSceneAsset, forceReload: true);
+            }
+            else
+            {
+                // Just move the player to the checkpoint without reloading the scene
+                MovePlayerToCheckpoint();
+            }
+
+            static void MovePlayerToCheckpoint()
+            {
+                if (PlayerObject == null)
+                {
+                    Debug.LogError("Cannot respawn player because the player object could not be found.");
+                    return;
+                }
+
+                Debug.Log($"[Checkpoint] Moving {PlayerObject.name} to checkpoint: {currentCheckpoint}");
+
+                Player.SpawnPlayerAtCheckpoint(); // This will internally use the currentCheckpoint reference to get the spawn position and rotation
+
+                LoadingScreenController.OnLoadingScreenContentShown -= MovePlayerToCheckpoint;
+            }
+        }
+
         private void TriggerCheckpoint()
         {
             if (currentCheckpoint == this) return; // Already the current checkpoint, no need to update
             currentCheckpoint = this;
+            OnCheckpointTriggered?.Invoke(this);
+
+            if (DataPersistenceManager.HasGameData())
+                DataPersistenceManager.SaveGame();
+        }
+
+        public void LoadData(GameData data)
+        {
+            if (data == null)
+                return;
+
+            string sceneName = ResolveCheckpointSceneAsset()?.SceneName;
+            if (string.IsNullOrEmpty(sceneName) || string.IsNullOrEmpty(data.currentSceneName) || string.IsNullOrEmpty(data.currentSpawnPointID))
+                return;
+
+            if (!string.Equals(sceneName, data.currentSceneName, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (!string.Equals(CheckpointId, data.currentSpawnPointID, StringComparison.Ordinal))
+                return;
+
+            currentCheckpoint = this;
+        }
+
+        public void SaveData(GameData data)
+        {
+            if (data == null || currentCheckpoint != this)
+                return;
+
+            SceneAsset checkpointScene = ResolveCheckpointSceneAsset();
+            if (checkpointScene == null)
+                return;
+
+            data.currentSceneName = checkpointScene.SceneName;
+            data.currentSpawnPointID = CheckpointId;
+            data.lastSavedScene = checkpointScene.SceneName;
         }
 
         protected override void OnDrawGizmos()

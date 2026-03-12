@@ -533,7 +533,7 @@ Transform:
   - {fileID: 7815928879269134530}
   - {fileID: 2582435110544865380}
   - {fileID: 2222975241783084402}
-  m_Father: {fileID: 7062466207562430769}
+  m_Father: {fileID: 2998592108608372481}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3098935527054034341
 GameObject:
@@ -667,6 +667,39 @@ Transform:
   m_Children:
   - {fileID: 1911258614101377482}
   m_Father: {fileID: 948423067133658361}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4179874037968042622
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2998592108608372481}
+  m_Layer: 8
+  m_Name: VisualModel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2998592108608372481
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4179874037968042622}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7848542552717789067}
+  - {fileID: 6047506002138633351}
+  m_Father: {fileID: 7062466207562430769}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4253777651015568395
 GameObject:
@@ -873,7 +906,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7062466207562430769}
+  m_Father: {fileID: 2998592108608372481}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!137 &1039734379672306560
 SkinnedMeshRenderer:
@@ -1807,13 +1840,10 @@ PrefabInstance:
       addedObject: {fileID: 4024182181471907119}
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7848542552717789067}
-    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 283870704403528731}
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6047506002138633351}
+      addedObject: {fileID: 2998592108608372481}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       insertIndex: -1
@@ -1827,6 +1857,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7452145169804983094}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4641506608255380074}
   m_SourcePrefab: {fileID: 100100000, guid: 91245a57f2bf85c4888c593bd822fd75, type: 3}
 --- !u!4 &7062466207562430769 stripped
 Transform:
@@ -1891,6 +1924,7 @@ MonoBehaviour:
   attackActiveDuration: 0.5
   showAttackGizmo: 1
   canBeParried: 1
+  parryStunDuration: 2
   useAnimationEventAttacks: 1
   attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
   attackIndicatorAnchor: {fileID: 1545110694085676553}
@@ -1898,7 +1932,7 @@ MonoBehaviour:
   attackIndicatorLeadTime: 0.5
   attackIndicatorDuration: 0
   attackIndicatorFollowsEnemy: 1
-  attackIndicatorScale: 1
+  attackIndicatorScale: 2
   healthBarPrefab: {fileID: 5126943973119965438, guid: ba84b42810b4ba14b8c277e64607a584, type: 3}
   healthBarAnchor: {fileID: 4024182181471907119}
   healthBarInstance: {fileID: 0}
@@ -1978,3 +2012,19 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &4641506608255380074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7586660143841223563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73ae453abcfb68e4480d11c0d8330845, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualSmoother
+  positionSmoothTime: 0.08
+  rotationSmoothTime: 0.06
+  visualRoot: {fileID: 2998592108608372481}
+  maxLagDistance: 1

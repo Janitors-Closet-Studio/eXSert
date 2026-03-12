@@ -13,6 +13,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -26,7 +27,6 @@ internal enum ActionMap
     Loading
 }
 
-[Serializable]
 public class InputReader : Singleton<InputReader>
 {
     public override string ToString() => "Input Reader";
@@ -133,6 +133,7 @@ public class InputReader : Singleton<InputReader>
     public static event Action RightTargetPressed;
 
     public static bool inputBusy = false;
+    private static readonly HashSet<string> gameplayInputBlockOwners = new();
 
     [Header("DeadzoneValues")]
     [SerializeField, Range(0f, 0.5f)] internal float leftStickDeadzoneValue = 0.15f;
@@ -141,6 +142,8 @@ public class InputReader : Singleton<InputReader>
     // Gets the input and sets the variable
     public static Vector2 MoveInput { get; private set; }
     public static Vector2 LookInput { get; private set; }
+
+    public static bool IsGameplayInputBlocked => gameplayInputBlockOwners.Count > 0;
 
     public InputAction LoadingLookAction => loadingLookAction;
     public InputAction LoadingZoomAction => loadingZoomAction;
@@ -171,59 +174,37 @@ public class InputReader : Singleton<InputReader>
     #region Action Accessors
     // Centralized action accessors so gameplay scripts never touch InputActions directly
     public static bool JumpTriggered =>
-        Instance != null
-        && Instance.jumpAction != null
-        && Instance.jumpAction.triggered;
+        IsGameplayActionTriggered(Instance?.jumpAction);
 
     public static bool DashTriggered =>
-        Instance != null
-        && Instance.dashAction != null
-        && Instance.dashAction.triggered;
+        IsGameplayActionTriggered(Instance?.dashAction);
 
     public static bool ToggleWalkTriggered =>
-        Instance != null
-        && Instance.toggleWalkAction != null
-        && Instance.toggleWalkAction.triggered;
+        IsGameplayActionTriggered(Instance?.toggleWalkAction);
 
     public static bool JumpHeld =>
-        Instance != null
-        && Instance.jumpAction != null
-        && Instance.jumpAction.IsPressed();
+        IsGameplayActionPressed(Instance?.jumpAction);
 
     public static bool DashHeld =>
-        Instance != null
-        && Instance.dashAction != null
-        && Instance.dashAction.IsPressed();
+        IsGameplayActionPressed(Instance?.dashAction);
 
     public static bool GuardHeld =>
-        Instance != null
-        && Instance.guardAction != null
-        && Instance.guardAction.IsPressed();
+        IsGameplayActionPressed(Instance?.guardAction);
 
     public static bool LightAttackTriggered =>
-        Instance != null
-        && Instance.lightAttackAction != null
-        && Instance.lightAttackAction.triggered;
+        IsGameplayActionTriggered(Instance?.lightAttackAction);
 
     public static bool HeavyAttackTriggered =>
-        Instance != null
-        && Instance.heavyAttackAction != null
-        && Instance.heavyAttackAction.triggered;
+        IsGameplayActionTriggered(Instance?.heavyAttackAction);
 
     public static bool ChangeStanceTriggered =>
-        Instance != null
-        && Instance.changeStanceAction != null
-        && Instance.changeStanceAction.triggered;
+        IsGameplayActionTriggered(Instance?.changeStanceAction);
 
     public static bool InteractTriggered =>
-        Instance != null
-        && Instance.interactAction != null
-        && Instance.interactAction.triggered;
+        IsGameplayActionTriggered(Instance?.interactAction);
 
     public static bool EscapePuzzleTriggered =>
-        Instance != null
-        && Instance.escapePuzzleAction != null
-        && Instance.escapePuzzleAction.triggered;
+        IsGameplayActionTriggered(Instance?.escapePuzzleAction);
 
     public static bool NavigationMenuTriggered =>
         Instance != null
@@ -295,15 +276,21 @@ public class InputReader : Singleton<InputReader>
 
     private void Update()
     {
+        if (IsGameplayInputBlocked)
+        {
+            MoveInput = Vector2.zero;
+            LookInput = Vector2.zero;
+        }
+
         // Read move/look only when action exists and is enabled. Use optimized deadzone check.
-        if (moveAction != null && moveAction.enabled)
+        if (!IsGameplayInputBlocked && moveAction != null && moveAction.enabled)
             MoveInput = ApplyDeadzone(moveAction.ReadValue<Vector2>(), leftStickDeadzoneValue);
-        else
+        else if (!IsGameplayInputBlocked)
             MoveInput = Vector2.zero;
 
-        if (lookAction != null && lookAction.enabled)
+        if (!IsGameplayInputBlocked && lookAction != null && lookAction.enabled)
             LookInput = ApplyDeadzone(lookAction.ReadValue<Vector2>(), rightStickDeadzoneValue);
-        else
+        else if (!IsGameplayInputBlocked)
             LookInput = Vector2.zero;
 
         if (_playerInput != null)
@@ -465,6 +452,9 @@ public class InputReader : Singleton<InputReader>
         if (!context.performed)
             return;
 
+        if (IsGameplayInputBlocked)
+            return;
+
         if (Time.time - lastDashPerformedTime <= lockOnDashSuppressionWindow)
             return;
 
@@ -476,12 +466,18 @@ public class InputReader : Singleton<InputReader>
         if (!context.performed)
             return;
 
+        if (IsGameplayInputBlocked)
+            return;
+
         LeftTargetPressed?.Invoke();
     }
 
     private void HandleRightTargetPerformed(InputAction.CallbackContext context)
     {
         if (!context.performed)
+            return;
+
+        if (IsGameplayInputBlocked)
             return;
 
         RightTargetPressed?.Invoke();
@@ -492,7 +488,53 @@ public class InputReader : Singleton<InputReader>
         if (!context.performed)
             return;
 
+        if (IsGameplayInputBlocked)
+            return;
+
         lastDashPerformedTime = Time.time;
+    }
+
+    public static string RequestGameplayInputBlock(string ownerId = null)
+    {
+        if (string.IsNullOrWhiteSpace(ownerId))
+            ownerId = Guid.NewGuid().ToString();
+
+        if (gameplayInputBlockOwners.Add(ownerId))
+        {
+            MoveInput = Vector2.zero;
+            LookInput = Vector2.zero;
+        }
+
+        return ownerId;
+    }
+
+    public static void ReleaseGameplayInputBlock(string ownerId)
+    {
+        if (string.IsNullOrWhiteSpace(ownerId))
+            return;
+
+        if (!gameplayInputBlockOwners.Remove(ownerId))
+            return;
+
+        if (gameplayInputBlockOwners.Count == 0)
+        {
+            MoveInput = Vector2.zero;
+            LookInput = Vector2.zero;
+        }
+    }
+
+    private static bool IsGameplayActionTriggered(InputAction action)
+    {
+        return !IsGameplayInputBlocked
+            && action != null
+            && action.triggered;
+    }
+
+    private static bool IsGameplayActionPressed(InputAction action)
+    {
+        return !IsGameplayInputBlocked
+            && action != null
+            && action.IsPressed();
     }
 
     private static Vector2 ApplyDeadzone(Vector2 value, float deadzone)

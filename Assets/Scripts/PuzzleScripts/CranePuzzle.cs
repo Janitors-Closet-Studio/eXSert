@@ -80,6 +80,7 @@ public class CranePuzzle : PuzzlePart
 
     // Cache of the player's movement component so it can be re-enabled later
     private PlayerMovement cachedPlayerMovement;
+    private PlayerAnimationController cachedPlayerAnimationController;
 
     #region Serializable Fields
     [Header("Input Actions")]
@@ -115,6 +116,10 @@ public class CranePuzzle : PuzzlePart
     [Header("Crane Control Settings")]
     [Tooltip("Invert horizontal input (A/D) so A acts as right and D as left when enabled")]
     [SerializeField] private bool invertHorizontal = false;
+    [Tooltip("Invert forward/backward input (W/S or stick Y) when enabled")]
+    [SerializeField] private bool invertForwardBackward = false;
+    [Tooltip("Optional override for forward/backward speed. Uses Crane Move Speed when set to 0 or less")]
+    [SerializeField] private float forwardBackwardMoveSpeed = 0f;
     #endregion
 
     internal bool isMoving = false;
@@ -260,13 +265,18 @@ public class CranePuzzle : PuzzlePart
 
         // Try to find PlayerMovement on the player, its children, or parent; fallback to any active instance
         var pm = FindPlayerMovement(player);
+        cachedPlayerAnimationController = FindPlayerAnimationController(player);
 
         // If found, disable movement and cache for restoration
         if (pm != null)
         {
             cachedPlayerMovement = pm;
+            pm.SuppressLocomotionAnimations(true);
+            pm.ForceLocomotionRefresh();
             pm.enabled = false;
         }
+
+        cachedPlayerAnimationController?.PlaySingleTargetIdleCombat(0.08f);
 
 
         SwitchPuzzleCamera();
@@ -367,6 +377,26 @@ public class CranePuzzle : PuzzlePart
         return FindObjectOfType<PlayerMovement>();
     }
 
+    private PlayerAnimationController FindPlayerAnimationController(GameObject player)
+    {
+        if (player == null)
+            return null;
+
+        var animationController = player.GetComponent<PlayerAnimationController>();
+        if (animationController != null)
+            return animationController;
+
+        animationController = player.GetComponentInChildren<PlayerAnimationController>(true);
+        if (animationController != null)
+            return animationController;
+
+        animationController = player.GetComponentInParent<PlayerAnimationController>();
+        if (animationController != null)
+            return animationController;
+
+        return FindObjectOfType<PlayerAnimationController>();
+    }
+
     protected void SetPuzzleCamera(CinemachineCamera camera)
     {
         if (camera == puzzleCamera)
@@ -389,6 +419,7 @@ public class CranePuzzle : PuzzlePart
     {   
         IsCranePuzzleActive = true;
         DisableInteractUIDuringPuzzle();
+        PauseManager.Instance?.SetGameplayHUDVisible(false);
 
         int status = SetupCranePuzzle();
 
@@ -398,6 +429,12 @@ public class CranePuzzle : PuzzlePart
     // Call this when the puzzle is finished or cancelled
     public override void EndPuzzle()
         
+    {
+        ReleasePuzzleControl(stopRunningCoroutines: true, clearAutomationState: true);
+        isCompleted = false;
+    }
+
+    protected void ReleasePuzzleControl(bool stopRunningCoroutines, bool clearAutomationState)
     {
         IsCranePuzzleActive = false;
 
@@ -412,14 +449,21 @@ public class CranePuzzle : PuzzlePart
 
         puzzleActive = false;
 
-        StopAllCoroutines();
+        if (stopRunningCoroutines)
+        {
+            StopAllCoroutines();
+        }
+
         moveCoroutine = null;
         isMoving = false;
 
         // Unlock crane movement
         LockOrUnlockMovement(false);
         isExtending = false;
-        isAutomatedMovement = false;
+        if (clearAutomationState)
+        {
+            isAutomatedMovement = false;
+        }
 
         // Disable input actions
         if (_escapePuzzleAction != null && _escapePuzzleAction.action != null)
@@ -480,8 +524,10 @@ public class CranePuzzle : PuzzlePart
                 gameplayMap.Enable();
             }
         }
-        isCompleted = false;
+
         RestorePlayerMovement();
+        PauseManager.Instance?.SetGameplayHUDVisible(true);
+        InteractionUI.Instance?.HideInteractPrompt();
     }
 
     #endregion
@@ -493,10 +539,62 @@ public class CranePuzzle : PuzzlePart
         if (actionToRead != null)
         {
             cachedMoveInput = actionToRead.ReadValue<Vector2>();
-
-            if (invertHorizontal)
-                cachedMoveInput.x *= -1f; 
         }
+    }
+
+    private void GetProcessedMoveInput(out float xInput, out float yInput, out float zInput)
+    {
+        xInput = cachedMoveInput.x;
+        yInput = cachedMoveInput.y;
+        zInput = cachedMoveInput.y;
+
+        if (invertHorizontal)
+        {
+            xInput *= -1f;
+        }
+
+        if (invertForwardBackward)
+        {
+            zInput *= -1f;
+        }
+
+        if (swapXZControls)
+        {
+            float temp = xInput;
+            xInput = zInput;
+            zInput = temp;
+        }
+    }
+
+    private float GetForwardBackwardMoveSpeed()
+    {
+        return forwardBackwardMoveSpeed > 0f ? forwardBackwardMoveSpeed : craneMoveSpeed;
+    }
+
+    private bool HasMovableYAxis()
+    {
+        foreach (CranePart part in craneParts)
+        {
+            if (part != null && part.moveY)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool HasMovableZAxis()
+    {
+        foreach (CranePart part in craneParts)
+        {
+            if (part != null && part.moveZ)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public IEnumerator MoveCraneCoroutine()
@@ -509,11 +607,20 @@ public class CranePuzzle : PuzzlePart
             InputAction escapeActionToRead = runtimeEscapeAction != null ? runtimeEscapeAction : (_escapePuzzleAction != null ? _escapePuzzleAction.action : null);
             if (escapeActionToRead != null && escapeActionToRead.triggered)
             {
-                EndPuzzle();
-                yield break;
+                if (HandleEscapeTriggered())
+                {
+                    yield break;
+                }
             }
 
             CheckForConfirm();
+
+            if (!puzzleActive || isAutomatedMovement || isExtending)
+            {
+                isMoving = false;
+                yield return null;
+                continue;
+            }
 
             CraneMovement();
 
@@ -526,18 +633,9 @@ public class CranePuzzle : PuzzlePart
 
     public virtual void CraneMovement()
     {
-        Vector2 input = cachedMoveInput;
-        float xInput = input.x;
-        float yInput = input.y;
+        GetProcessedMoveInput(out float xInput, out float yInput, out float zInput);
 
-        if (swapXZControls)
-        {
-            float temp = xInput;
-            xInput = yInput;
-            yInput = temp;
-        }
-
-        bool hasInput = input.sqrMagnitude > 0.0001f;
+        bool hasInput = cachedMoveInput.sqrMagnitude > 0.0001f;
         isMoving = hasInput;
 
         if (hasInput)
@@ -548,42 +646,38 @@ public class CranePuzzle : PuzzlePart
                 if (part == null || part.partObject == null) continue;
 
                 Vector3 basePos = part.useWorldPosition ? part.partObject.transform.position : part.partObject.transform.localPosition;
-                Vector3 delta = Vector3.zero;
+                Vector3 next = basePos;
 
                 if (part.moveX)
                 {
-                    delta.x = xInput;
+                    next.x += xInput * craneMoveSpeed * Time.deltaTime;
                 }
                 if (part.moveY)
                 {
-                    delta.y = yInput;
+                    next.y += yInput * craneMoveSpeed * Time.deltaTime;
                 }
                 if (part.moveZ)
                 {
-                    delta.z = yInput;
+                    next.z += zInput * GetForwardBackwardMoveSpeed() * Time.deltaTime;
                 }
-                if (delta != Vector3.zero)
+
+                if (part.moveX)
                 {
-                    Vector3 next = basePos + delta * craneMoveSpeed * Time.deltaTime;
-
-                    if (part.moveX)
-                    {
-                        next.x = Mathf.Clamp(next.x, part.minX, part.maxX);
-                    }
-                    if (part.moveY)
-                    {
-                        next.y = Mathf.Clamp(next.y, part.minY, part.maxY);
-                    }
-                    if (part.moveZ)
-                    {
-                        next.z = Mathf.Clamp(next.z, part.minZ, part.maxZ);
-                    }
-
-                    if (part.useWorldPosition)
-                        part.partObject.transform.position = next;
-                    else
-                        part.partObject.transform.localPosition = next;
+                    next.x = Mathf.Clamp(next.x, part.minX, part.maxX);
                 }
+                if (part.moveY)
+                {
+                    next.y = Mathf.Clamp(next.y, part.minY, part.maxY);
+                }
+                if (part.moveZ)
+                {
+                    next.z = Mathf.Clamp(next.z, part.minZ, part.maxZ);
+                }
+
+                if (part.useWorldPosition)
+                    part.partObject.transform.position = next;
+                else
+                    part.partObject.transform.localPosition = next;
             }
         }
     }
@@ -593,33 +687,28 @@ public class CranePuzzle : PuzzlePart
         if (!isMoving)
             return CraneMovementDirection.None;
 
-        Vector2 input = cachedMoveInput;
-        float xInput = input.x;
-        float yInput = input.y;
+        GetProcessedMoveInput(out float xInput, out float yInput, out float zInput);
 
-        if (swapXZControls)
-        {
-            float temp = xInput;
-            xInput = yInput;
-            yInput = temp;
-        }
+        float absX = Mathf.Abs(xInput);
+        float absY = Mathf.Abs(yInput);
+        float absZ = Mathf.Abs(zInput);
 
-        if (Mathf.Abs(xInput) > Mathf.Abs(yInput))
+        if (absX >= absY && absX >= absZ && absX > 0f)
         {
             return xInput > 0 ? CraneMovementDirection.Right : CraneMovementDirection.Left;
         }
-        else if (Mathf.Abs(yInput) > Mathf.Abs(xInput))
+
+        if (HasMovableZAxis() && absZ >= absY && absZ > 0f)
+        {
+            return zInput > 0 ? CraneMovementDirection.Forward : CraneMovementDirection.Backward;
+        }
+
+        if (HasMovableYAxis() && absY > 0f)
         {
             return yInput > 0 ? CraneMovementDirection.Up : CraneMovementDirection.Down;
         }
-        else if (Mathf.Abs(yInput) > 0 && swapXZControls)
-        {
-            return yInput > 0 ? CraneMovementDirection.Forward : CraneMovementDirection.Backward;
-        }
-        else
-        {
-            return CraneMovementDirection.None;
-        }
+
+        return CraneMovementDirection.None;
     }
 
     public enum CraneMovementDirection
@@ -652,6 +741,12 @@ public class CranePuzzle : PuzzlePart
         return actionToRead != null && actionToRead.triggered;
     }
 
+    protected virtual bool HandleEscapeTriggered()
+    {
+        EndPuzzle();
+        return true;
+    }
+
     #region Restrict/Restore Movement
     //After puzzle ends, restore player movement if it was disabled
     private void RestorePlayerMovement()
@@ -667,6 +762,8 @@ public class CranePuzzle : PuzzlePart
             if (cachedPlayerMovement != null)
             {
                 cachedPlayerMovement.enabled = true;
+                cachedPlayerMovement.SuppressLocomotionAnimations(false);
+                cachedPlayerMovement.ForceLocomotionRefresh();
                 
                 var cc = cachedPlayerMovement.GetComponent<CharacterController>();
                 if (cc != null && !cc.enabled)
@@ -674,6 +771,10 @@ public class CranePuzzle : PuzzlePart
                     cc.enabled = true;
                 }
             }
+
+            cachedPlayerAnimationController?.PlayIdle();
+
+            cachedPlayerAnimationController = null;
             cachedPlayerMovement = null;
     }
 

@@ -38,6 +38,12 @@ public class MenuListManager : MonoBehaviour
             return;
         }
 
+        // If this menu is already at the top, do nothing to prevent flashing
+        if (menusToManage.Count > 0 && menusToManage[0] == menuToAdd)
+        {
+            return;
+        }
+
         // Remember what was selected before opening this menu
         if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
         {

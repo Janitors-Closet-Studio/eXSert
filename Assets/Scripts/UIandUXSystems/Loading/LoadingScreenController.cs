@@ -3,17 +3,20 @@ using System.Collections;
 using System.Collections.Generic;
 using eXsert;
 using UnityEngine;
-using UnityEngine.InputSystem;
+using Managers.TimeLord;
 
 namespace UI.Loading
 {
     /// <summary>
     /// Controls the blackout/prop showcase loading screen. Lives inside the LoadingScene and persists via DontDestroyOnLoad.
+    /// Streamlined: pause/unpause is now coordinated by <see cref="Managers.PauseCoordinator"/>.
     /// </summary>
     public sealed class LoadingScreenController : MonoBehaviour
     {
         public static LoadingScreenController Instance { get; private set; }
         public static bool HasInstance => Instance != null;
+        public static event Action OnLoadingScreenShown;
+        public static event Action OnLoadingScreenContentShown;
 
         [Header("Scene References")]
         [SerializeField] private CanvasGroup blackoutCanvasGroup;
@@ -26,16 +29,12 @@ namespace UI.Loading
         [SerializeField, Range(0.05f, 2f)] private float fadeDuration = 2f;
         [SerializeField] private AnimationCurve fadeCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         [SerializeField, Range(0f, 60f)] private float minimumDisplaySeconds = 1.5f;
-        [SerializeField, Tooltip("Time (0-1 normalized) into the fade-out at which gameplay should resume so the player never sees a frozen scene.")]
-        [Range(0.1f, 0.95f)] private float resumeThresholdNormalized = 0.3f;
 
-        private InputAction loadingLookAction;
-        private InputAction loadingZoomAction;
-        private bool usingFallbackControls;
-        private PlayerControls fallbackLoadingControls;
-        private Coroutine activeRoutine;
-        private bool isLoadingSequenceRunning;
-        private float resumeTimeScale = 1f;
+        private static Coroutine activeRoutine;
+        private static bool isLoadingSequenceRunning;
+
+        private const string PauseOwnerId = "LoadingScreenController";
+        private const string GameplayInputBlockOwnerId = "LoadingScreenController";
 
         private void Awake()
         {
@@ -71,20 +70,39 @@ namespace UI.Loading
                 Instance = null;
         }
 
-        /*
         /// <summary>
         /// Begins the loading workflow. The supplied routine performs the actual scene loading work.
         /// </summary>
-        public void BeginLoading(IEnumerator loadSteps, bool pauseGame = true, float? minimumDisplayOverride = null)
+        public static void BeginLoading(IEnumerator loadSteps, bool pauseGame = true, float? minimumDisplayOverride = null)
         {
-            if (!isActiveAndEnabled)
+#if UNITY_EDITOR
+            Debug.Log($"[LoadingScreen][Editor Trace] BeginLoading called. Suppressed={SceneLoader.IsLoadingScreenSuppressed}, PauseGame={pauseGame}. Stack:\n{Environment.StackTrace}");
+#endif
+
+            if (SceneLoader.IsLoadingScreenSuppressed)
             {
                 if (loadSteps != null)
                 {
-                    if (SceneLoader.Instance != null)
-                        SceneLoader.Instance.StartCoroutine(loadSteps);
+                    if (Instance != null && Instance.isActiveAndEnabled)
+                        Instance.StartCoroutine(loadSteps);
                     else
-                        StartCoroutine(loadSteps);
+                        CoroutineRunner.Run(loadSteps);
+                }
+
+                return;
+            }
+
+            if (Instance == null)
+            {
+                Debug.LogWarning("[LoadingScreen] No LoadingScreenController instance available. Loading will proceed without overlay.");
+                return;
+            }
+
+            if (!Instance.isActiveAndEnabled)
+            {
+                if (loadSteps != null)
+                {
+                    Instance.StartCoroutine(loadSteps);
                 }
                 return;
             }
@@ -95,51 +113,56 @@ namespace UI.Loading
                 return;
             }
 
-            // Defensive: if a previous coroutine reference remained for any reason, clear it now.
             activeRoutine = null;
 
-            float targetMinimumDisplay = minimumDisplayOverride ?? minimumDisplaySeconds;
-            activeRoutine = StartCoroutine(RunLoadingSequence(loadSteps, pauseGame, targetMinimumDisplay));
+            float targetMinimumDisplay = minimumDisplayOverride ?? Instance.minimumDisplaySeconds;
+            activeRoutine = Instance.StartCoroutine(Instance.RunLoadingSequence(loadSteps, pauseGame, targetMinimumDisplay));
         }
-        */
 
         private IEnumerator RunLoadingSequence(IEnumerator loadSteps, bool pauseGame, float minimumDisplayDuration)
         {
             isLoadingSequenceRunning = true;
-
-            bool didPause = false;
+            string pauseToken = null;
+            string gameplayInputBlockToken = null;
 
             try
             {
-                resumeTimeScale = Mathf.Approximately(Time.timeScale, 0f) ? 1f : Time.timeScale;
+                gameplayInputBlockToken = InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
+
+                // Request pause via coordinator so it becomes authoritative.
                 if (pauseGame)
                 {
-                    Time.timeScale = 0f;
-                    didPause = true;
+                    pauseToken = PauseCoordinator.RequestPause(PauseOwnerId);
                 }
-
-                // Loading input (spin/zoom) disabled – we only show the prefab now.
-                // EnableLoadingInput();
 
                 bool enforceMinimum = minimumDisplayDuration > 0f;
                 float minDisplayEndTime = 0f;
 
+                // Fade to black (unscaled)
                 yield return FadeBlack(0f, 1f);
 
                 if (loadingCanvasRoot != null)
                     loadingCanvasRoot.SetActive(true);
 
-                CursorBySchemeAndMap.SetForceHidden(true);
+                OnLoadingScreenShown?.Invoke();
+
+                CursorManager.SetForceHidden(true);
 
                 propManager?.ShowRandomProp();
 
+                // Fade in loading content
                 yield return FadeBlack(1f, 0f);
+
+                OnLoadingScreenContentShown?.Invoke();
+
                 if (enforceMinimum)
                     minDisplayEndTime = Time.unscaledTime + minimumDisplayDuration;
 
+                // Run actual loading steps (scene load, asset load, etc.)
                 if (loadSteps != null)
                     yield return StartCoroutine(loadSteps);
 
+                // Enforce minimum display time (uses unscaled time so timescale==0 doesn't affect it)
                 if (enforceMinimum)
                 {
                     float remaining = minDisplayEndTime - Time.unscaledTime;
@@ -147,24 +170,32 @@ namespace UI.Loading
                         yield return new WaitForSecondsRealtime(remaining);
                 }
 
+                // Fade back to black (unscaled)
                 yield return FadeBlack(0f, 1f);
 
                 propManager?.ClearProp();
                 if (loadingCanvasRoot != null)
                     loadingCanvasRoot.SetActive(false);
 
-                yield return FadeOutAndResume(pauseGame);
+                if (!string.IsNullOrWhiteSpace(gameplayInputBlockToken))
+                {
+                    InputReader.ReleaseGameplayInputBlock(gameplayInputBlockToken);
+                    gameplayInputBlockToken = null;
+                }
 
-                CursorBySchemeAndMap.SetForceHidden(false);
+                // Fade out and then release our pause request (if we had one)
+                yield return FadeOutAndReleasePause(pauseToken);
 
-                // Loading input (spin/zoom) disabled – we only show the prefab now.
-                // DisableLoadingInput();
+                CursorManager.SetForceHidden(false);
             }
             finally
             {
-                // If anything goes wrong mid-load (exception, interrupted coroutine), avoid leaving the game frozen.
-                if (didPause && Mathf.Approximately(Time.timeScale, 0f))
-                    Time.timeScale = resumeTimeScale;
+                if (!string.IsNullOrWhiteSpace(gameplayInputBlockToken))
+                    InputReader.ReleaseGameplayInputBlock(gameplayInputBlockToken);
+
+                // Ensure our pause request is released even if something fails during the sequence.
+                if (!string.IsNullOrWhiteSpace(pauseToken))
+                    PauseCoordinator.ReleaseTimeScale(pauseToken);
 
                 isLoadingSequenceRunning = false;
                 activeRoutine = null;
@@ -189,18 +220,22 @@ namespace UI.Loading
             blackoutCanvasGroup.alpha = to;
         }
 
-        private IEnumerator FadeOutAndResume(bool pauseGame)
+        private IEnumerator FadeOutAndReleasePause(string pauseToken)
         {
             if (blackoutCanvasGroup == null)
             {
-                if (pauseGame)
-                    Time.timeScale = resumeTimeScale;
+                if (!string.IsNullOrWhiteSpace(pauseToken))
+                    PauseCoordinator.ReleaseTimeScale(pauseToken);
                 yield break;
             }
 
+            if (!string.IsNullOrWhiteSpace(pauseToken))
+            {
+                PauseCoordinator.ReleaseTimeScale(pauseToken);
+                pauseToken = null;
+            }
+
             float timer = 0f;
-            bool resumed = !pauseGame;
-            float resumeThreshold = Mathf.Clamp(resumeThresholdNormalized, 0.05f, 0.95f);
 
             while (timer < fadeDuration)
             {
@@ -208,114 +243,10 @@ namespace UI.Loading
                 float t = Mathf.Clamp01(timer / fadeDuration);
                 float curved = fadeCurve.Evaluate(t);
                 blackoutCanvasGroup.alpha = Mathf.Lerp(1f, 0f, curved);
-
-                if (!resumed && t >= resumeThreshold)
-                {
-                    Time.timeScale = resumeTimeScale;
-                    resumed = true;
-                }
-
                 yield return null;
             }
 
             blackoutCanvasGroup.alpha = 0f;
-
-            if (!resumed)
-                Time.timeScale = resumeTimeScale;
-        }
-
-        private void EnableLoadingInput()
-        {
-            if (TryBindPlayerInputLoadingActions())
-                return;
-
-            if (TryBindFallbackLoadingActions())
-                return;
-
-            Debug.LogWarning("[LoadingScreen] LoadingLook/LoadingZoom actions not found; prop rotation disabled during loading.");
-        }
-
-        private void DisableLoadingInput()
-        {
-            UnhookPlayerInputAction(loadingLookAction, HandleLookPerformed);
-            UnhookPlayerInputAction(loadingZoomAction, HandleZoomPerformed);
-            loadingLookAction = null;
-            loadingZoomAction = null;
-
-            if (usingFallbackControls && fallbackLoadingControls != null)
-            {
-                fallbackLoadingControls.UI.Disable();
-                usingFallbackControls = false;
-            }
-
-            propManager?.SetLookInput(Vector2.zero);
-            propManager?.SetZoomInput(0f);
-        }
-
-        private void HandleLookPerformed(InputAction.CallbackContext context)
-        {
-            propManager?.SetLookInput(context.ReadValue<Vector2>());
-        }
-
-        private void HandleZoomPerformed(InputAction.CallbackContext context)
-        {
-            propManager?.SetZoomInput(context.ReadValue<float>());
-        }
-
-        private bool TryBindPlayerInputLoadingActions()
-        {
-            if (InputReader.Instance == null)
-                return false;
-
-            loadingLookAction = InputReader.Instance.LoadingLookAction;
-            loadingZoomAction = InputReader.Instance.LoadingZoomAction;
-
-            if (loadingLookAction == null && loadingZoomAction == null)
-                return false;
-
-            HookPlayerInputAction(loadingLookAction, HandleLookPerformed);
-            HookPlayerInputAction(loadingZoomAction, HandleZoomPerformed);
-            return true;
-        }
-
-        private bool TryBindFallbackLoadingActions()
-        {
-            if (fallbackLoadingControls == null)
-            {
-                fallbackLoadingControls = new PlayerControls();
-            }
-
-            loadingLookAction = fallbackLoadingControls.UI.LoadingLook;
-            loadingZoomAction = fallbackLoadingControls.UI.LoadingZoom;
-
-            if (loadingLookAction == null && loadingZoomAction == null)
-                return false;
-
-            fallbackLoadingControls.UI.Enable();
-            HookPlayerInputAction(loadingLookAction, HandleLookPerformed);
-            HookPlayerInputAction(loadingZoomAction, HandleZoomPerformed);
-            usingFallbackControls = true;
-            return true;
-        }
-
-        private static void HookPlayerInputAction(InputAction action, Action<InputAction.CallbackContext> callback)
-        {
-            if (action == null || callback == null)
-                return;
-
-            action.performed += callback;
-            action.canceled += callback;
-            if (!action.enabled)
-                action.Enable();
-        }
-
-        private static void UnhookPlayerInputAction(InputAction action, Action<InputAction.CallbackContext> callback)
-        {
-            if (action == null || callback == null)
-                return;
-
-            action.performed -= callback;
-            action.canceled -= callback;
         }
     }
 }

@@ -11,6 +11,7 @@ using System.Linq;
 using UnityEngine.SceneManagement;
 using System.IO;
 using Singletons;
+using Progression.Checkpoints;
 
 public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
@@ -68,8 +69,36 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         //Defines the variable dataPersistenceObjects to be the function below
-        dataPersistenceObjects = FindAllDataPersistenceObjects();
+        RefreshDataPersistenceObjects();
         LoadGame();
+    }
+
+    private static void RefreshDataPersistenceObjects()
+    {
+        if (Instance == null)
+        {
+            dataPersistenceObjects = new List<IDataPersistenceManager>();
+            return;
+        }
+
+        dataPersistenceObjects = Instance.FindAllDataPersistenceObjects();
+    }
+
+    private static IEnumerable<IDataPersistenceManager> GetValidDataPersistenceObjects()
+    {
+        RefreshDataPersistenceObjects();
+
+        if (dataPersistenceObjects == null)
+            yield break;
+
+        foreach (IDataPersistenceManager dataPersistenceObj in dataPersistenceObjects)
+        {
+            if (dataPersistenceObj is UnityEngine.Object unityObject && unityObject == null)
+                continue;
+
+            if (dataPersistenceObj != null)
+                yield return dataPersistenceObj;
+        }
     }
 
     public static void ChangeSelectedProfileId(string newProfileId)
@@ -115,7 +144,7 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
         // Keep the manager's cached lastSavedScene in sync with the loaded profile
         lastSavedScene = gameData.lastSavedScene;
         //Goes through each of the found items that needs to be loaded and loads them
-        foreach (IDataPersistenceManager dataPersistenceObj in dataPersistenceObjects)
+        foreach (IDataPersistenceManager dataPersistenceObj in GetValidDataPersistenceObjects())
         {
             dataPersistenceObj.LoadData(gameData);
         }
@@ -124,17 +153,58 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     public static void SaveGame()
     {
         if (Instance.disableDataPersistence) return;
+        if (gameData == null) return;
 
         //Goes through each of the found items that needs to be saved and saves them
-        foreach (IDataPersistenceManager dataPersistenceObj in dataPersistenceObjects)
+        foreach (IDataPersistenceManager dataPersistenceObj in GetValidDataPersistenceObjects())
             dataPersistenceObj.SaveData(gameData);
+
+        CheckpointBehavior activeCheckpoint = CheckpointBehavior.currentCheckpoint;
+        if (activeCheckpoint != null)
+        {
+            SceneAsset checkpointScene = activeCheckpoint.CheckpointSceneAsset;
+            if (checkpointScene != null)
+            {
+                gameData.currentSceneName = checkpointScene.SceneName;
+                gameData.currentSpawnPointID = activeCheckpoint.CheckpointId;
+                gameData.lastSavedScene = checkpointScene.SceneName;
+            }
+        }
 
         //Saves the current time, converts to binary, and assigns the data to gameData
         gameData.lastUpdated = System.DateTime.Now.ToBinary();
 
-        // Record the active scene as the last saved scene for the current profile
-        gameData.lastSavedScene = SceneManager.GetActiveScene().name;
+        // Prefer the checkpoint scene saved by gameplay systems; otherwise fall back to the currently active scene.
+        if (string.IsNullOrEmpty(gameData.lastSavedScene))
+            gameData.lastSavedScene = SceneManager.GetActiveScene().name;
+
         lastSavedScene = gameData.lastSavedScene;
+
+        fileDataHandler.Save(gameData, selectedProfileId);
+    }
+
+    public static void SetDebugStartupTarget(SceneAsset scene, string spawnPointId = "default")
+    {
+        if (scene == null)
+        {
+            Debug.LogError("[DataPersistenceManager] Cannot set debug startup target because scene is null.");
+            return;
+        }
+
+        gameData ??= new GameData();
+
+        string resolvedSpawnPointId = string.IsNullOrWhiteSpace(spawnPointId) ? "default" : spawnPointId;
+        gameData.currentSceneName = scene.SceneName;
+        gameData.currentSpawnPointID = resolvedSpawnPointId;
+        gameData.lastSavedScene = scene.SceneName;
+        gameData.lastUpdated = System.DateTime.Now.ToBinary();
+        lastSavedScene = scene;
+
+        if (Instance == null || Instance.disableDataPersistence || fileDataHandler == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(selectedProfileId))
+            selectedProfileId = "debug";
 
         fileDataHandler.Save(gameData, selectedProfileId);
     }

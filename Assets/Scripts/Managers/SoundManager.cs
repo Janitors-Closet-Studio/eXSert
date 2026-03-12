@@ -4,7 +4,7 @@
 
 using UnityEngine;
 using Singletons;
-
+using System.Collections;
 public class SoundManager : Singleton<SoundManager>
 {
     [SerializeField] protected override bool ShouldPersistAcrossScenes => true;
@@ -105,5 +105,87 @@ public class SoundManager : Singleton<SoundManager>
             return 0f;
 
         return Mathf.Clamp01(scaledVolume / masterVolume);
+    }
+
+    public void FadeOutMusic(float duration)
+    {
+        if (musicSource != null)
+        {
+            StartCoroutine(FadeOutCoroutine(musicSource, duration));
+        }
+    }
+
+    public IEnumerator FadeOutGameplayAudio(float duration)
+    {
+        if (duration <= 0f)
+        {
+            StopGameplayAudioImmediate();
+            yield break;
+        }
+
+        yield return FadeOutGameplaySourcesCoroutine(duration);
+        ApplySavedVolumes();
+    }
+
+    public void StopGameplayAudioImmediate()
+    {
+        StopSource(levelMusicSource);
+        StopSource(ambienceSource);
+        ApplySavedVolumes();
+    }
+
+    private IEnumerator FadeOutGameplaySourcesCoroutine(float duration)
+    {
+        float elapsedTime = 0f;
+        float initialLevelMusicVolume = levelMusicSource != null ? levelMusicSource.volume : 0f;
+        float initialAmbienceVolume = ambienceSource != null ? ambienceSource.volume : 0f;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsedTime / duration);
+
+            if (levelMusicSource != null && levelMusicSource.isPlaying)
+                levelMusicSource.volume = Mathf.Lerp(initialLevelMusicVolume, 0f, t);
+
+            if (ambienceSource != null && ambienceSource.isPlaying)
+                ambienceSource.volume = Mathf.Lerp(initialAmbienceVolume, 0f, t);
+
+            yield return null;
+        }
+
+        StopSource(levelMusicSource);
+        StopSource(ambienceSource);
+    }
+
+    private static void StopSource(AudioSource source)
+    {
+        if (source == null)
+            return;
+
+        source.Stop();
+        source.clip = null;
+    }
+
+    public IEnumerator FadeOutCoroutine(AudioSource musicSource, float fadeDuration)
+    {
+        if (musicSource == null || fadeDuration <= 0f)
+            yield break;
+
+
+        Debug.Log("Starting fade out coroutine for music source: " + musicSource.name);
+        float startVolume = musicSource.volume;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < fadeDuration)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            float newVolume = Mathf.Lerp(startVolume, 0f, elapsedTime / fadeDuration);
+            musicSource.volume = newVolume;
+            yield return null;
+        }
+
+        musicSource.volume = 0f;
+        musicSource.Stop();
     }
 }

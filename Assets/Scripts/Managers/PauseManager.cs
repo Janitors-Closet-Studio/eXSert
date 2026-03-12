@@ -5,6 +5,8 @@ using System.Collections;
 
 public class PauseManager : Singletons.Singleton<PauseManager>
 {
+    private const string GameplayInputBlockOwnerId = "PauseManager";
+
     protected override bool ShouldPersistAcrossScenes => false;
 
     [Header("UI GameObjects")]
@@ -34,6 +36,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private MenuListManager menuListManager;
 
     public static bool IsPaused { get; private set; } = false;
+    
+    /// <summary>
+    /// Fired when the game is paused. Subscribe to this to pause audio sources, animations, etc.
+    /// </summary>
+    public static event System.Action OnPaused;
+    
+    /// <summary>
+    /// Fired when the game is resumed. Subscribe to this to resume audio sources, animations, etc.
+    /// </summary>
+    public static event System.Action OnResumed;
     
     private enum ActiveMenu
     {
@@ -86,6 +98,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if (_swapMenuActionReference != null && _swapMenuActionReference.action != null)
             _swapMenuActionReference.action.performed -= OnSwapMenu;
+
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
 
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
@@ -242,7 +256,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         Debug.Log(Time.timeScale + "is the current timescale when showing pause menu.");  
         Time.timeScale = 0f;
+        InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         IsPaused = true;
+        OnPaused?.Invoke();
+        MufffleMusicForMenu(true);
         currentActiveMenu = ActiveMenu.PauseMenu;
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
@@ -253,6 +270,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (InputReader.PlayerInput != null)
         {
             InputReader.PlayerInput.SwitchCurrentActionMap("UI");
+            CursorManager.RefreshPolicy();
         }
         else
         {
@@ -263,7 +281,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void ShowNavigationMenu()
     {
         Time.timeScale = 0f;
+        InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         IsPaused = true;
+        OnPaused?.Invoke();
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
@@ -274,6 +294,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (InputReader.PlayerInput != null)
         {
             InputReader.PlayerInput.SwitchCurrentActionMap("UI");
+            CursorManager.RefreshPolicy();
         }
     }
 
@@ -299,7 +320,11 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         Time.timeScale = 1f;
         IsPaused = false;
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
+        OnResumed?.Invoke();
         currentActiveMenu = ActiveMenu.None;
+
+        MufffleMusicForMenu(false);
 
         HideAllMenus();
 
@@ -309,6 +334,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (InputReader.PlayerInput != null)
         {
             InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+            CursorManager.RefreshPolicy();
         }
         else
         {
@@ -323,12 +349,14 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void HideMenusForSceneTransition()
     {
         IsPaused = false;
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
 
         if (InputReader.PlayerInput != null)
         {
             InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+            CursorManager.RefreshPolicy();
         }
     }
 
@@ -376,6 +404,11 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             playerHUDRoot.SetActive(visible);
     }
 
+    public void SetGameplayHUDVisible(bool visible)
+    {
+        SetHUDVisible(visible);
+    }
+
     private bool TryResolveHudRoot()
     {
         if (playerHUDRoot != null)
@@ -393,7 +426,32 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         return true;
     }
 
-    
+    private void MufffleMusicForMenu(bool shouldMuffle)
+    {
+        if(SoundManager.Instance == null || SoundManager.Instance.levelMusicSource == null)
+            return;
+
+        var lowPassFilter = SoundManager.Instance.levelMusicSource.GetComponent<AudioLowPassFilter>();
+        var oldCutoff = lowPassFilter != null ? lowPassFilter.cutoffFrequency : 22000f;
+
+
+        if (shouldMuffle)
+        {
+            Debug.Log("Muffling music for menu");
+            SoundManager.Instance.levelMusicSource.volume *= 0.5f; // Muffle music
+            if (lowPassFilter != null)
+                lowPassFilter.cutoffFrequency = 500f; // Apply low-pass filter
+            else
+                Debug.LogWarning("No AudioLowPassFilter found on level music source. Music will be muffled by volume reduction only.");
+        }
+        else
+        {
+            Debug.Log("Restoring music after menu");
+            SoundManager.Instance.levelMusicSource.volume /= 0.5f; // Restore music volume
+            if (lowPassFilter != null)
+                lowPassFilter.cutoffFrequency = oldCutoff; // Revert low-pass filter
+        }
+    }
 
     private void CacheHudRootName()
     {

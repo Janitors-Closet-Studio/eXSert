@@ -1,131 +1,153 @@
 /*
     Written by Brandon Wahl
 
-    This script manages the platform rotation puzzle in the hangar level. Here once the designated interact point is click,
-    the platform will rotate 180 degrees. The player will also move with the platform to perserve realism.
+    This script manages a hangar platform that rotates around its local Z axis when triggered by a console.
+    It behaves like a simple toggle: first interaction rotates the platform 180 degrees, second interaction rotates it back.
 */
-
 
 using UnityEngine;
 
 public class HangarPlatformRotationPuzzle : PuzzlePart
 {
-    [SerializeField] private float lerpSpeed;
+    private enum RotationDirection
+    {
+        Clockwise,
+        CounterClockwise
+    }
 
-    private GameObject player;
+    [Header("Rotation Settings")]
+    [SerializeField] private RotationDirection rotationDirection = RotationDirection.Clockwise;
+    [SerializeField, Min(0f)] private float rotationDegrees = 180f;
+    [SerializeField, Min(0f)] private float rotationSpeedDegreesPerSecond = 180f;
+    [SerializeField] private bool movePlayerWithPlatform = true;
+
     private CharacterController playerController;
-    private Vector3 playerStartOffset; // Offset from platform at start of rotation
-    private Vector3 lastPlayerPosition; // Track player position from last frame
-    private Quaternion lastPlatformRotation; // Track platform rotation from last frame
-
-    private bool isRotating = false;
-    private Quaternion startPos;
-    private Quaternion targetPos;
-
-    protected Quaternion origin;
-
+    private Quaternion originLocalRotation;
+    private Quaternion rotatedLocalRotation;
+    private Quaternion targetLocalRotation;
+    private Quaternion lastPlatformRotation;
+    private bool isRotating;
 
     private void Awake()
     {
-        origin = this.transform.rotation;
-        
-        // Find player by CharacterController component instead of tag
-        playerController = FindFirstObjectByType<CharacterController>();
-        if (playerController != null)
+        originLocalRotation = transform.localRotation;
+
+        float signedDegrees = Mathf.Abs(rotationDegrees);
+        if (rotationDirection == RotationDirection.Clockwise)
         {
-            player = playerController.gameObject;
+            signedDegrees *= -1f;
         }
+
+        rotatedLocalRotation = originLocalRotation * Quaternion.Euler(0f, 0f, signedDegrees);
+        playerController = FindFirstObjectByType<CharacterController>();
     }
 
     public override void ConsoleInteracted()
     {
-        throw new System.NotImplementedException();
+        Interact();
+    }
+
+    public void Rotate()
+    {
+        Interact();
+    }
+
+    public void RotateForward()
+    {
+        StartPuzzle();
+    }
+
+    public void RotateBack()
+    {
+        EndPuzzle();
     }
 
     public override void StartPuzzle()
     {
-        if(!isCompleted)
-        {
-            startPos = origin;
-            targetPos = Quaternion.Euler(startPos.eulerAngles.x, startPos.eulerAngles.y - 180, startPos.eulerAngles.z);
-            isRotating = true;
-            isCompleted = true;
-            
-            // Store player's offset from platform center at start
-            if (player != null)
-            {
-                playerStartOffset = player.transform.position - this.transform.position;
-                lastPlayerPosition = player.transform.position;
-                lastPlatformRotation = this.transform.rotation;
-            }
-        }
+        BeginRotation(rotatedLocalRotation, completedState: true);
     }
 
     public override void EndPuzzle()
     {
-        if(isCompleted)
+        BeginRotation(originLocalRotation, completedState: false);
+    }
+
+    public void Interact()
+    {
+        if (isRotating)
         {
-            startPos = this.transform.rotation;
-            targetPos = origin;
-            isRotating = true;
-            isCompleted = false;
-            
-            // Store player's offset from platform center at start
-            if (player != null)
-            {
-                playerStartOffset = player.transform.position - this.transform.position;
-                lastPlayerPosition = player.transform.position;
-                lastPlatformRotation = this.transform.rotation;
-            }
+            return;
+        }
+
+        if (isCompleted)
+        {
+            EndPuzzle();
+        }
+        else
+        {
+            StartPuzzle();
         }
     }
 
-    // Calculate player's target position by rotating their offset around platform
-    private void RotatePlayer()
+    private void BeginRotation(Quaternion nextTargetRotation, bool completedState)
     {
-        if (player != null && playerController != null)
-            {
-                
-                // Gets rotation delta this frame
-                Quaternion rotationDelta = this.transform.rotation * Quaternion.Inverse(lastPlatformRotation);
-                
-                // Get current offset from platform
-                Vector3 currentOffset = player.transform.position - this.transform.position;
-                
-                // Rotate the offset by the rotation delta
-                Vector3 rotatedOffset = rotationDelta * currentOffset;
-                
-                // Calculate where player should be after platform rotation
-                Vector3 targetPosition = this.transform.position + rotatedOffset;
-                
-                // This will allow for the player to be correctly rotated until they free move
-                Vector3 rotationMovement = targetPosition - player.transform.position;
-                
-                playerController.Move(rotationMovement);
-                
-                // Update variables
-                lastPlayerPosition = player.transform.position;
-                lastPlatformRotation = this.transform.rotation;
-            }
+        if (isRotating)
+        {
+            return;
+        }
+
+        targetLocalRotation = nextTargetRotation;
+        lastPlatformRotation = transform.rotation;
+        isRotating = true;
+        isCompleted = completedState;
     }
 
     private void Update()
     {
-        if (isRotating)
+        if (!isRotating)
         {
-            float t = Mathf.Clamp01(lerpSpeed * Time.deltaTime);
+            return;
+        }
 
-            //Rotates platform as needed
-            this.transform.rotation = Quaternion.Lerp(this.transform.rotation, targetPos, t);
+        Quaternion nextRotation = Quaternion.RotateTowards(
+            transform.localRotation,
+            targetLocalRotation,
+            rotationSpeedDegreesPerSecond * Time.deltaTime
+        );
 
-            RotatePlayer();
-            
-            // Once it is at its destination this will be called
-            if (Quaternion.Angle(this.transform.rotation, targetPos) < 0.01f)
+        transform.localRotation = nextRotation;
+
+        if (movePlayerWithPlatform)
+        {
+            RotatePlayerWithPlatform();
+        }
+
+        if (Quaternion.Angle(transform.localRotation, targetLocalRotation) <= 0.01f)
+        {
+            transform.localRotation = targetLocalRotation;
+            isRotating = false;
+        }
+    }
+
+    private void RotatePlayerWithPlatform()
+    {
+        if (playerController == null)
+        {
+            playerController = FindFirstObjectByType<CharacterController>();
+            if (playerController == null)
             {
-                this.transform.rotation = targetPos;
-                isRotating = false;
+                return;
             }
         }
+
+        Quaternion currentPlatformRotation = transform.rotation;
+        Quaternion rotationDelta = currentPlatformRotation * Quaternion.Inverse(lastPlatformRotation);
+        Vector3 playerOffset = playerController.transform.position - transform.position;
+        Vector3 rotatedOffset = rotationDelta * playerOffset;
+        Vector3 targetPlayerPosition = transform.position + rotatedOffset;
+        Vector3 movement = targetPlayerPosition - playerController.transform.position;
+
+        playerController.Move(movement);
+        lastPlatformRotation = currentPlatformRotation;
     }
 }

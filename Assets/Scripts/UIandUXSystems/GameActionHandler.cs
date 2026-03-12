@@ -45,7 +45,7 @@ public class GameActionHandler : MonoBehaviour
         
         PrepareForSceneLoad(resumeImmediately: false);
         
-        SceneAsset.Load("MainMenu");
+        SceneLoader.LoadMainMenu();
     }
 
     /// <summary>

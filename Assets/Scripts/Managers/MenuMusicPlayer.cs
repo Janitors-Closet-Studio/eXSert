@@ -46,6 +46,8 @@ public class MenuMusicPlayer : MonoBehaviour
             return;
         }
 
+        SoundManager.Instance.StopGameplayAudioImmediate();
+
         // Set the music clip
         SoundManager.Instance.musicSource.clip = backgroundMusic;
         SoundManager.Instance.musicSource.loop = loopMusic;
