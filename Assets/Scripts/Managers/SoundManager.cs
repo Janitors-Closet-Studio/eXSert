@@ -27,6 +27,7 @@ public class SoundManager : Singleton<SoundManager>
     private float ogMusicVolume = 1f;
     private float ogLevelMusicVolume = 1f;
     private float ogAmbienceVolume = 1f;
+    private float ogVoiceVolume = 1f;   
 
     //Debug logs
     private void PersistAudioSource(AudioSource source)
@@ -202,6 +203,7 @@ public class SoundManager : Singleton<SoundManager>
             if (musicSource != null) ogMusicVolume = musicSource.volume;
             if (levelMusicSource != null) ogLevelMusicVolume = levelMusicSource.volume;
             if (ambienceSource != null) ogAmbienceVolume = ambienceSource.volume;
+            if (voiceSource != null) ogVoiceVolume = voiceSource.volume;
 
             if (musicSource != null && musicSource.isPlaying)
                 musicSource.Pause();
@@ -211,11 +213,14 @@ public class SoundManager : Singleton<SoundManager>
                 ambienceSource.Pause();
             if (sfxSource != null && sfxSource.isPlaying)
                 sfxSource.Pause();
+            if (voiceSource != null && voiceSource.isPlaying)
+                voiceSource.Pause();
 
             if (sfxSource != null) sfxSource.volume = 0f; // Mute SFX
             if (musicSource != null) musicSource.volume = 0f; // Mute music
             if (levelMusicSource != null) levelMusicSource.volume = 0f; // Mute level music
             if (ambienceSource != null) ambienceSource.volume = 0f; // Mute ambience
+            if (voiceSource != null) voiceSource.volume = 0f; // Mute voice
         }
         else
         {
@@ -227,11 +232,14 @@ public class SoundManager : Singleton<SoundManager>
                 ambienceSource.UnPause();
             if (sfxSource != null && !sfxSource.isPlaying)
                 sfxSource.UnPause();
+            if (voiceSource != null && !voiceSource.isPlaying)
+                voiceSource.UnPause();
 
             if (sfxSource != null) sfxSource.volume = ogSfxVolume;
             if (musicSource != null) musicSource.volume = ogMusicVolume;
             if (levelMusicSource != null) levelMusicSource.volume = ogLevelMusicVolume;
             if (ambienceSource != null) ambienceSource.volume = ogAmbienceVolume;
+            if (voiceSource != null) voiceSource.volume = ogVoiceVolume;
 
             // Ensure all volumes are reset to user settings
             ApplySavedVolumes();

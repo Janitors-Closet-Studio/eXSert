@@ -107,11 +107,11 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Start()
     {
-        fallbackSfxSource = SoundManager.Instance != null ? SoundManager.Instance.sfxSource : null;
+        fallbackSfxSource = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
 
         if (attackAudioSource == null)
         {
-            attackAudioSource = SoundManager.Instance != null ? SoundManager.Instance.sfxSource : null;
+            attackAudioSource = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
         }
 
     }

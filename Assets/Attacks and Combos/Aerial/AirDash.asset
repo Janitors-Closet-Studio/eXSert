@@ -29,9 +29,16 @@ MonoBehaviour:
   _defaultDistanceFromPlayer: 0
   _customAttackDistanceFromPlayer: 0.2
   _hitboxHeightOffset: 0.9
+  _maxTargetsPerActivation: 1
+  _forwardMoveDistance: 0
+  _forwardMoveDuration: 0.12
   _animationClip: {fileID: 4768331174732935317, guid: f9e343186c6dde140911a4f45180422c, type: 3}
   _allowLateChain: 1
   _hitboxDuration: 0.1
   _tickInterval: 0
-  _attackSFX: {fileID: 0}
+  _hitVfxPrefab: {fileID: 0}
+  _vfxAnchorId: 
+  _vfxLifetime: 1
+  _additionalVfxEntries: []
+  _attackSFX: {fileID: 8300000, guid: f2bac5a0f7f4459449935b0d84f345cd, type: 3}
   _hitSFX: {fileID: 0}

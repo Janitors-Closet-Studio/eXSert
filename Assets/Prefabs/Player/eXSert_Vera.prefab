@@ -5523,6 +5523,7 @@ MonoBehaviour:
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
   attackLockSystem: {fileID: 1001267735247796350}
+  guardUpSFX: {fileID: 8300000, guid: 98bf54e980c4e3247a7ee22320664b20, type: 3}
 --- !u!114 &5058666932746763221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5535,7 +5536,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34e70bb17c3ba73478a8f20712811ec1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry
-  parrySoundEffect: {fileID: 8300000, guid: af9c3ad391ae39c4d9bdafa01254938a, type: 3}
+  parrySoundEffect: {fileID: 8300000, guid: f8b9c5f90c8644c488c915fcc5039b55, type: 3}
   parryEffect: {fileID: 8926484042661614526, guid: b0902efa133e21b44926742b93fc8e46, type: 3}
   parryEffectDuration: 1
   pauseTimeOnParry: 1
@@ -7902,6 +7903,8 @@ MonoBehaviour:
   invertYAxis: 0
   highFallHeightThreshold: 6
   highFallGroundProbeDistance: 25
+  dashSFX: {fileID: 8300000, guid: 4a80ad5659e0df34fa32064cd1c4ae09, type: 3}
+  jumpSFX: {fileID: 8300000, guid: ea2d65beafcf27e4398ba2b45473e354, type: 3}
 --- !u!114 &8127531854480134888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7930,6 +7933,13 @@ MonoBehaviour:
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
   healthBar: {fileID: 0}
+  playerHurtSFX:
+  - {fileID: 8300000, guid: 5d1a5e08f71808a46a2dbefb1543b694, type: 3}
+  - {fileID: 8300000, guid: c411a1c7700b2d5458aaebc74464d7dd, type: 3}
+  - {fileID: 8300000, guid: 2739185c4b81417438de87670df3ae68, type: 3}
+  - {fileID: 8300000, guid: aa5598b7d93f1894fa3ee7e3c429a0d6, type: 3}
+  - {fileID: 8300000, guid: 01fb6574262bbc94182186df8b8e2b2f, type: 3}
+  playerDeathSFX: {fileID: 8300000, guid: 430efd9a9dac85a4e985151c42538ddd, type: 3}
   debugDamageAmount: 100
 --- !u!114 &2026860560813373367
 MonoBehaviour:
@@ -17131,7 +17141,7 @@ MonoBehaviour:
   leftAttackVfx: {fileID: 1456974626908723287}
   rightAttackVfx: {fileID: 3755443737881139097}
   attackDuration: 0.5
-  attackAudioClip: {fileID: 8300000, guid: c7a28a6dc531ab64bac3452a4768d1ea, type: 3}
+  attackAudioClip: {fileID: 0}
   emberRateProperty: EmberRate
   burstLifeTimeProperty: Burst LifeTime
   emberRateOff: 0
@@ -17150,7 +17160,7 @@ MonoBehaviour:
   airMoveVfxObjects:
   - {fileID: 0}
   airMoveDuration: 0.5
-  airMoveAudioClip: {fileID: 8300000, guid: fe066bdf6899484448fe682666472a86, type: 3}
+  airMoveAudioClip: {fileID: 8300000, guid: 9539a2ae48c4aea4b84ff3d3a8e0a787, type: 3}
   fireShockWaveVfx: {fileID: 7703162255160455181}
   fireShockWaveDuration: 0.5
   keepFireShockWaveUpright: 1

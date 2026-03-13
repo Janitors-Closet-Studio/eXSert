@@ -207,6 +207,11 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField, Range(1f, 100f)]
     private float highFallGroundProbeDistance = 25f;
+
+    [Header("Movement SFX")]
+    [SerializeField] private AudioClip dashSFX;
+    [SerializeField] private AudioClip jumpSFX;
+
     #endregion
 
     private bool canDash = true;
@@ -658,6 +663,7 @@ public class PlayerMovement : MonoBehaviour
 
 
             currentMovement.y = jumpForce;
+            PlaySFX(jumpSFX);
 
             
             doubleJumpAvailable = canDoubleJump;
@@ -748,6 +754,8 @@ public class PlayerMovement : MonoBehaviour
                     else
                         ResetMoveState();
                 }));
+        if(!isAirDash)
+            PlaySFX(dashSFX);
     }
 
     private IEnumerator DashCoroutine(
@@ -1525,6 +1533,14 @@ public class PlayerMovement : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void PlaySFX(AudioClip clip)
+    {
+        if (clip == null)
+            return;
+
+        SoundManager.Instance.voiceSource.PlayOneShot(clip);
     }
 
     private void PlayMovementAnimation()

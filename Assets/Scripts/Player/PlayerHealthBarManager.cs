@@ -76,6 +76,10 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [Header("UI")]
     [SerializeField] private HealthBar healthBar;
 
+    [Header("SFX")]
+    [SerializeField] private AudioClip[] playerHurtSFX;
+    [SerializeField] private AudioClip playerDeathSFX;
+
     [Header("Debug")]
     [SerializeField, Tooltip("Damage applied when using the debug buttons.")]
     private float debugDamageAmount = 100f;
@@ -183,6 +187,11 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         float previous = currentHealth;
         currentHealth = Mathf.Max(0f, currentHealth - damage);
+        if (playerHurtSFX != null && playerHurtSFX.Length > 0)
+        {
+            int index = UnityEngine.Random.Range(0, playerHurtSFX.Length);
+            SoundManager.Instance.voiceSource.PlayOneShot(playerHurtSFX[index]);
+        }
         float actual = previous - currentHealth;
         if (actual <= 0f)
             return;
@@ -318,6 +327,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (isDead) return;
 
         isDead = true;
+        
+
         currentHealth = 0f;
 
         CancelFlinchRoutine();
@@ -328,6 +339,9 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (deathSequenceRoutine != null) StopCoroutine(deathSequenceRoutine);
 
         deathSequenceRoutine = StartCoroutine(DeathSequenceRoutine(playDeathAnimation));
+
+        if (!CutsceneManager.IsCutscenePlaying && Time.timeScale > 0f)
+            SoundManager.Instance.voiceSource.PlayOneShot(playerDeathSFX);
     }
 
     private void NotifyHealthChanged()

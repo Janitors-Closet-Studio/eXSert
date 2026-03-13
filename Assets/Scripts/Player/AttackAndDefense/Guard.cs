@@ -25,6 +25,9 @@ public class Guard : MonoBehaviour
     [SerializeField] private PlayerAttackManager attackManager;
     [SerializeField] private AttackLockSystem attackLockSystem;
 
+    [Header("Guard SFX")]
+    [SerializeField] private AudioClip guardUpSFX;
+
     private CameraManager cameraManager;
     private bool guardActive;
     private bool guardDashActive;
@@ -78,6 +81,7 @@ public class Guard : MonoBehaviour
     private void EnterGuard()
     {
         guardActive = true;
+        SoundManager.Instance.sfxSource.PlayOneShot(guardUpSFX);
 
         if (InputReader.inputBusy)
             attackManager?.ForceCancelCurrentAttack(resetCombo: false);
