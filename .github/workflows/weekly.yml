@@ -1,0 +1,47 @@
+name: Weekly Build (main)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 0'
+
+jobs:
+  build:
+    name: Windows Build - main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          lfs: false
+
+      - name: Cache Unity Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-Main-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-Main-
+
+      - name: Build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: StandaloneWindows64
+          buildName: eXSert
+          unityVersion: 6000.2.15f1
+
+      - name: Zip the build
+        run: zip -r eXSert-main-${{ github.run_number }}.zip build/StandaloneWindows64/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: weekly-${{ github.run_number }}
+          name: "Weekly Build #${{ github.run_number }}"
+          body: "Automated weekly build from the main branch."
+          files: eXSert-main-${{ github.run_number }}.zip
+          prerelease: false  # weekly main builds are more stable
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
