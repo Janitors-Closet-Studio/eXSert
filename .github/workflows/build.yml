@@ -1,0 +1,40 @@
+name: Unity Windows Build
+
+on:
+  workflow_dispatch:        # lets you trigger it manually to test
+  schedule:
+    - cron: '0 2 * * *'    # nightly at 2 AM UTC
+
+jobs:
+  build:
+    name: Build for Windows
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true         # important if you use Git LFS for assets
+
+      - name: Cache Unity Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-Windows-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Windows-
+
+      - name: Build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: StandaloneWindows64
+          buildName: MyGame
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-${{ github.run_number }}
+          path: build/StandaloneWindows64/
+          retention-days: 7
