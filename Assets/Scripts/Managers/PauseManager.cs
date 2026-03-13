@@ -114,7 +114,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnPauseOrBack(InputAction.CallbackContext context)
     {
-        if(CranePuzzle.IsCranePuzzleActive || Hint.isHintActive)
+
+        if(Hint.isHintActive)
         {
             Debug.Log("[PauseManager] OnPauseOrBack ignored - crane puzzle active");
             return;
@@ -333,7 +334,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         // Switch back to Gameplay input
         if (InputReader.PlayerInput != null)
         {
-            InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+            if(CranePuzzle.IsCranePuzzleActive)
+                InputReader.PlayerInput.SwitchCurrentActionMap("CranePuzzle");
+            else
+                InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
             CursorManager.RefreshPolicy();
         }
         else

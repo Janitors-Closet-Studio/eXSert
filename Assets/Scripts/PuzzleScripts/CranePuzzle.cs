@@ -87,6 +87,7 @@ public class CranePuzzle : PuzzlePart
     [SerializeField, CriticalReference] internal InputActionReference craneMoveAction;
     [SerializeField, CriticalReference] internal InputActionReference _escapePuzzleAction;
     [SerializeField, CriticalReference] internal InputActionReference _confirmPuzzleAction;
+    [SerializeField, CriticalReference] internal InputActionReference _pauseAction;
 
     [Space(10)]
     [Header("Camera")]
@@ -244,9 +245,12 @@ public class CranePuzzle : PuzzlePart
         }
     }
 
+
     private int SetupCranePuzzle()
     {
         HandleGameplayMap(false); // Disable gameplay map during puzzle
+        _pauseAction.action.Enable(); // Enable the escape action so player can exit puzzle with pause menu
+        Debug.Log("Pause action is enabled: " + _pauseAction.action.enabled); // Log to confirm the action is enabled
 
         CacheCraneBoundaries();
         CacheCranePartStartPositions();

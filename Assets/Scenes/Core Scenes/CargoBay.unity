@@ -20623,6 +20623,20 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
   m_PrefabInstance: {fileID: 1227666213}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1230094600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
+  m_Name: Gameplay/Pause
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
+  m_Asset: {fileID: -944628639613478452, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  m_ActionId: 88363508-0501-4f47-b573-26fffb0d8ea2
 --- !u!1001 &1239216743
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -35231,6 +35245,10 @@ PrefabInstance:
       value: -3.38
       objectReference: {fileID: 0}
     - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: _pauseAction
+      value: 
+      objectReference: {fileID: 1230094600}
+    - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: firstTargetObject
       value: 
       objectReference: {fileID: 2016756741}
@@ -35256,7 +35274,7 @@ PrefabInstance:
       objectReference: {fileID: 1324409221}
     - target: {fileID: 3276642748270603368, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_VersionIndex
-      value: 11843
+      value: 11846
       objectReference: {fileID: 0}
     - target: {fileID: 3473652998857998926, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: _interactId

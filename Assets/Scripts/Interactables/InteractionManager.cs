@@ -29,6 +29,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [SerializeField, CriticalReference] internal InputActionReference _interactInputAction;
 
     private PlayerCombatIdleController _combatIdleController;
+    // Track input block owner for interaction
+    private string _interactionInputBlockOwnerId;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
     {
@@ -166,7 +168,13 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     public void OnInteractButtonPressed()
     {
-        if (!isPlayerNearby || !interactable || PlayerMovement.isDashingFlag && InputReader.IsGameplayInputBlocked)
+        // Prevent interaction if gameplay input is blocked (e.g., during pause)
+        if (InputReader.IsGameplayInputBlocked)
+        {
+            Debug.Log($"Interaction attempted with {gameObject.name}, but gameplay input is blocked.");
+            return;
+        }
+        if (!isPlayerNearby || !interactable || PlayerMovement.isDashingFlag)
         {
             Debug.Log($"Interaction attempted with {gameObject.name}, but conditions not met. isPlayerNearby: {isPlayerNearby}, interactable: {interactable}, isDashing: {PlayerMovement.isDashingFlag}");
             return;
@@ -182,6 +190,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         AudioSource interactionSfxSource = GetInteractionSfxSourceIfAvailable();
         if (interactionSfxSource != null && _interactionSFX != null)
             interactionSfxSource.PlayOneShot(_interactionSFX);
+
     }
 
     protected abstract void Interact();
@@ -205,39 +214,33 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     protected virtual void OnTriggerEnter(Collider other)
     {
-        // Ensure the collider belongs to the player character, checking the root object for the "Player" tag to account for child colliders.
-        if (!other.transform.root.CompareTag("Player") && !interactable)
-            return;
-
-        Debug.Log($"[InteractionManager] Player entered interaction zone of {gameObject.name}. Setting isPlayerNearby true.");
-
-        isPlayerNearby = true;
-
-        SwapBasedOnInputMethod();
-
-        InteractionUI interactionUI = GetInteractionUIIfAvailable();
-        if (interactionUI == null)
-            return;
-
-        if (interactionUI._interactText != null && interactable)
+        // Only set isPlayerNearby if the collider belongs to the player character
+        if (other.transform.root.CompareTag("Player"))
         {
-            interactionUI._interactText.gameObject.SetActive(true);
-            if (interactionUI._interactText.transform.parent != null)
-                interactionUI._interactText.transform.parent.gameObject.SetActive(true);
+            Debug.Log($"[InteractionManager] Player entered interaction zone of {gameObject.name}. Setting isPlayerNearby true.");
+            isPlayerNearby = true;
+            SwapBasedOnInputMethod();
+            InteractionUI interactionUI = GetInteractionUIIfAvailable();
+            if (interactionUI == null)
+                return;
+            if (interactionUI._interactText != null && interactable)
+            {
+                interactionUI._interactText.gameObject.SetActive(true);
+                if (interactionUI._interactText.transform.parent != null)
+                    interactionUI._interactText.transform.parent.gameObject.SetActive(true);
+            }
+            if (interactionUI._interactIcon != null && interactable)
+                interactionUI._interactIcon.gameObject.SetActive(true);
         }
-
-        if (interactionUI._interactIcon != null && interactable)
-            interactionUI._interactIcon.gameObject.SetActive(true);
     }
 
     protected virtual void OnTriggerExit(Collider other)
     {
-        if (!other.transform.root.CompareTag("Player"))
-            return;
-
-        isPlayerNearby = false;
-
-        GetInteractionUIIfAvailable()?.HideInteractPrompt();
+        if (other.transform.root.CompareTag("Player"))
+        {
+            isPlayerNearby = false;
+            GetInteractionUIIfAvailable()?.HideInteractPrompt();
+        }
     }
 
     private void OnDrawGizmos()
