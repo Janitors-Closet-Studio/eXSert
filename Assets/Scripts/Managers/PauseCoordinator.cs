@@ -24,10 +24,19 @@ namespace Managers.TimeLord
         private static float _lastAppliedEffectiveScale = 1f;
 
         /// <summary>
+        /// Fired when the game is paused. Subscribe to this to pause audio sources, animations, etc.
+        /// </summary>
+        public static event Action OnPaused;
+
+        /// <summary>
+        /// Fired when the game is resumed. Subscribe to this to resume audio sources, animations, etc.
+        /// </summary>
+        public static event Action OnResumed;
+
+        /// <summary>
         /// Request a pause (timescale 0). Returns the owner id (useful if you passed null/empty to generate one).
         /// </summary>
-        public static string RequestPause(string ownerId = null)
-            => RequestTimeScale(ownerId, 0f);
+        public static string RequestPause(string ownerId = null) => RequestTimeScale(ownerId, 0f);
 
         /// <summary>
         /// Request a specific time scale (0 = paused, 0.5 = half speed, 1 = normal).
@@ -35,14 +44,14 @@ namespace Managers.TimeLord
         /// </summary>
         public static string RequestTimeScale(string ownerId, float scale)
         {
-            if (string.IsNullOrWhiteSpace(ownerId))
-                ownerId = Guid.NewGuid().ToString();
+            // Generates a unique ownerId if not provided, but prefer the caller to provide one for easier debugging/monitoring.
+            if (string.IsNullOrWhiteSpace(ownerId)) ownerId = Guid.NewGuid().ToString();
 
             scale = Mathf.Max(0f, scale); // clamp negative values
 
             lock (_lock)
             {
-                var wasEmpty = _activeRequests.Count == 0;
+                bool wasEmpty = _activeRequests.Count == 0;
                 if (wasEmpty)
                 {
                     // Save current state to restore later.
@@ -54,7 +63,8 @@ namespace Managers.TimeLord
                 ApplyEffectiveTimeScale();
 
 #if UNITY_EDITOR
-                Debug.Log($"[PauseCoordinator] RequestTimeScale: '{ownerId}' -> {scale}. Active owners: {string.Join(", ", _activeRequests.Keys)}");
+                // Log the request and current active owners for debugging purposes.
+                Debug.Log($"[PauseCoordinator] RequestTimeScale: '{ownerId}' -> {scale}. Active owners: {string.Join(", ", _activeRequests.Keys)}. Current timescale: {Time.timeScale}");
 #endif
             }
 
@@ -67,23 +77,29 @@ namespace Managers.TimeLord
         /// </summary>
         public static void ReleaseTimeScale(string ownerId)
         {
-            if (string.IsNullOrWhiteSpace(ownerId))
-                return;
+            if (string.IsNullOrWhiteSpace(ownerId)) return;
 
             lock (_lock)
             {
-                if (!_activeRequests.Remove(ownerId))
-                    return;
+                if (!_activeRequests.Remove(ownerId)) return;
 
                 if (_activeRequests.Count == 0)
                 {
                     // Restore saved values
+                    float oldApplied = _lastAppliedEffectiveScale;
                     Time.timeScale = _savedTimeScale;
                     Time.fixedDeltaTime = _savedFixedDeltaTime;
                     _lastAppliedEffectiveScale = _savedTimeScale;
+
 #if UNITY_EDITOR
                     Debug.Log($"[PauseCoordinator] Release '{ownerId}'. No owners remaining -> restoring timescale {_savedTimeScale} and fixedDeltaTime {_savedFixedDeltaTime}.");
 #endif
+
+                    // Notify transitions: if we were paused (0) and now restored to >0 -> resumed
+                    if (Mathf.Approximately(oldApplied, 0f) && !Mathf.Approximately(_savedTimeScale, 0f))
+                    {
+                        OnResumed?.Invoke();
+                    }
                 }
                 else
                 {
@@ -102,6 +118,8 @@ namespace Managers.TimeLord
         {
             lock (_lock)
             {
+                float oldApplied = _lastAppliedEffectiveScale;
+
                 _activeRequests.Clear();
                 Time.timeScale = _savedTimeScale;
                 Time.fixedDeltaTime = _savedFixedDeltaTime;
@@ -109,8 +127,17 @@ namespace Managers.TimeLord
 #if UNITY_EDITOR
                 Debug.Log($"[PauseCoordinator] ForceUnpause. Restored timescale {_savedTimeScale} and fixedDeltaTime {_savedFixedDeltaTime}.");
 #endif
+                if (Mathf.Approximately(oldApplied, 0f) && !Mathf.Approximately(_savedTimeScale, 0f))
+                {
+                    OnResumed?.Invoke();
+                }
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether the application is currently fully paused. Slow-mo (timescale > 0 but < 1) is not considered paused.
+        /// </summary>
+        public static bool IsPaused => IsPausedOrAltered && Mathf.Approximately(CurrentEffectiveTimeScale, 0f);
 
         /// <summary>
         /// Returns true when there is at least one active time-scale request.
@@ -166,30 +193,59 @@ namespace Managers.TimeLord
             {
                 if (_activeRequests.Count == 0)
                 {
+                    float oldApplied = _lastAppliedEffectiveScale;
                     Time.timeScale = _savedTimeScale;
                     Time.fixedDeltaTime = _savedFixedDeltaTime;
                     _lastAppliedEffectiveScale = _savedTimeScale;
+
+                    if (Mathf.Approximately(oldApplied, 0f) && !Mathf.Approximately(_savedTimeScale, 0f))
+                        OnResumed?.Invoke();
                 }
                 else
                 {
-                    var effective = _activeRequests.Values.Min();
+                    float effective = _activeRequests.Values.Min();
+                    float oldApplied = _lastAppliedEffectiveScale;
+
                     Time.timeScale = effective;
                     Time.fixedDeltaTime = Mathf.Max(0.0001f, 0.02f * effective);
                     _lastAppliedEffectiveScale = effective;
+
+                    // If we transitioned into pause
+                    if (!Mathf.Approximately(oldApplied, 0f) && Mathf.Approximately(effective, 0f))
+                        OnPaused?.Invoke();
+
+                    // If we transitioned out of pause
+                    if (Mathf.Approximately(oldApplied, 0f) && !Mathf.Approximately(effective, 0f))
+                        OnResumed?.Invoke();
                 }
             }
         }
 
+        /// <summary>
+        /// Private helper to calculate and apply the effective timescale based on current active requests.
+        /// </summary>
         private static void ApplyEffectiveTimeScale()
         {
             // Lower (smaller) timescale wins: pause (0) overrides slow-mo.
-            var effective = _activeRequests.Values.Min();
+            float effective = _activeRequests.Values.Min();
+
+            float oldApplied = _lastAppliedEffectiveScale;
 
             // Apply timescale and scale fixedDeltaTime accordingly.
             Time.timeScale = effective;
             // Keep fixedDeltaTime consistent with timescale to avoid physics step issues.
             Time.fixedDeltaTime = Mathf.Max(0.0001f, 0.02f * effective);
             _lastAppliedEffectiveScale = effective;
+
+            // Notify transitions: paused <-> resumed
+            if (!Mathf.Approximately(oldApplied, 0f) && Mathf.Approximately(effective, 0f))
+            {
+                OnPaused?.Invoke();
+            }
+            else if (Mathf.Approximately(oldApplied, 0f) && !Mathf.Approximately(effective, 0f))
+            {
+                OnResumed?.Invoke();
+            }
         }
     }
 }

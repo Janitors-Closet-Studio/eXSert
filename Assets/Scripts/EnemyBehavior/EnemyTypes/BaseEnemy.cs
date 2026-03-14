@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using EnemyBehavior;
+using Managers.TimeLord; // For PauseCoordinator
 using Unity.VisualScripting;
 
 // BaseEnemy is generic so derived classes can define their own states and triggers
@@ -471,15 +472,15 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     protected virtual void OnEnable()
     {
         // Subscribe to pause events for audio handling
-        PauseManager.OnPaused += PauseAllAudioSources;
-        PauseManager.OnResumed += ResumeAllAudioSources;
+        PauseCoordinator.OnPaused += PauseAllAudioSources;
+        PauseCoordinator.OnResumed += ResumeAllAudioSources;
     }
     
     protected virtual void OnDisable()
     {
         // Unsubscribe from pause events
-        PauseManager.OnPaused -= PauseAllAudioSources;
-        PauseManager.OnResumed -= ResumeAllAudioSources;
+        PauseCoordinator.OnPaused -= PauseAllAudioSources;
+        PauseCoordinator.OnResumed -= ResumeAllAudioSources;
     }
 
     // Update is called once per frame
@@ -1256,7 +1257,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         // Ensure we have an audio source (lazy initialization)
         EnsureAudioSource();
         
-        if (movementAudioSource == null || PauseManager.IsPaused) return;
+        if (movementAudioSource == null || PauseCoordinator.IsPaused) return;
         
         movementAudioSource.clip = movementSFXClip;
         float sfxVolume = (SoundManager.Instance != null && SoundManager.Instance.sfxSource != null) 

@@ -1,7 +1,8 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using System.Collections;
+using Managers.TimeLord;
 
 public class PauseManager : Singletons.Singleton<PauseManager>
 {
@@ -35,17 +36,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private MenuListManager menuListManager;
 
-    public static bool IsPaused { get; private set; } = false;
-    
-    /// <summary>
-    /// Fired when the game is paused. Subscribe to this to pause audio sources, animations, etc.
-    /// </summary>
-    public static event System.Action OnPaused;
-    
-    /// <summary>
-    /// Fired when the game is resumed. Subscribe to this to resume audio sources, animations, etc.
-    /// </summary>
-    public static event System.Action OnResumed;
+    // Proxy to coordinator's paused state
+    public static bool IsPaused => PauseCoordinator.IsPaused;
     
     private enum ActiveMenu
     {
@@ -67,6 +59,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnEnable()
     {
+        // Subscribe to coordinator pause/resume events for global side-effects (audio muffling, etc.)
+        PauseCoordinator.OnPaused += HandleCoordinatorPaused;
+        PauseCoordinator.OnResumed += HandleCoordinatorResumed;
+
         // Navigation Menu action
         if (_navigationMenuActionReference == null || _navigationMenuActionReference.action == null)
             Debug.LogWarning($"Navigation Menu Input Action Reference is not set in the inspector. Keyboard/Controller Input won't open navigation menu properly");
@@ -102,6 +98,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
 
         SceneManager.sceneLoaded -= HandleSceneLoaded;
+
+        // Unsubscribe from coordinator
+        PauseCoordinator.OnPaused -= HandleCoordinatorPaused;
+        PauseCoordinator.OnResumed -= HandleCoordinatorResumed;
     }
 
 
@@ -127,9 +127,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
         Debug.Log($"[PauseManager] OnPauseOrBack called - Current menu: {currentActiveMenu}, Menu count: {menuListManager.menusToManage.Count}, IsPaused: {IsPaused}");
-
-        // Force pause timescale whenever Pause is triggered
-        Time.timeScale = 0f;
 
         if(LogManager.Instance.unreadLogs.Count > 0 || DiaryManager.Instance.unreadDiaries.Count > 0)
             unreadEntriesNotif.SetActive(true);
@@ -256,11 +253,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void ShowPauseMenu()
     {
         Debug.Log(Time.timeScale + "is the current timescale when showing pause menu.");  
-        Time.timeScale = 0f;
+
+        // Request pause through the coordinator (centralized time scale authority).
+        PauseCoordinator.RequestPause(GameplayInputBlockOwnerId);
+
+        // Block gameplay input while menus are active
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
-        IsPaused = true;
-        OnPaused?.Invoke();
-        MufffleMusicForMenu(true);
         currentActiveMenu = ActiveMenu.PauseMenu;
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
@@ -281,10 +279,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void ShowNavigationMenu()
     {
-        Time.timeScale = 0f;
+        // Request pause through the coordinator (centralized time scale authority).
+        PauseCoordinator.RequestPause(GameplayInputBlockOwnerId);
+
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
-        IsPaused = true;
-        OnPaused?.Invoke();
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
@@ -319,13 +317,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     public void ResumeGame()
     {
-        Time.timeScale = 1f;
-        IsPaused = false;
-        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
-        OnResumed?.Invoke();
-        currentActiveMenu = ActiveMenu.None;
+        // Release the coordinator ownership for pause
+        PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
 
-        MufffleMusicForMenu(false);
+        // Release gameplay input block
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
+        currentActiveMenu = ActiveMenu.None;
 
         HideAllMenus();
 
@@ -352,7 +349,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     /// </summary>
     public void HideMenusForSceneTransition()
     {
-        IsPaused = false;
+        // Do NOT change the coordinator's timescale state here — this method must only hide UI and release local input blocking.
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
@@ -499,6 +496,18 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         }
 
         return false;
+    }
+
+    // Coordinator event handlers
+    private void HandleCoordinatorPaused()
+    {
+        // Central pause side-effects: audio, etc.
+        MufffleMusicForMenu(true);
+    }
+
+    private void HandleCoordinatorResumed()
+    {
+        MufffleMusicForMenu(false);
     }
 }
 
