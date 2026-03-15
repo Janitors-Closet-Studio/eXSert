@@ -122,7 +122,7 @@ public class InputReader : Singleton<InputReader>
                         lightAttackAction, heavyAttackAction, dashAction, navigationMenuAction,
                         interactAction, escapePuzzleAction, lockOnAction, leftTargetAction,
                         rightTargetAction, loadingLookAction, loadingZoomAction, pauseAction,
-                        toggleWalkAction;
+                        toggleWalkAction, debugMenu;
 
     private bool callbacksRegistered = false;
     [SerializeField, Range(0f, 0.5f)] private float lockOnDashSuppressionWindow = 0.18f;
@@ -147,6 +147,7 @@ public class InputReader : Singleton<InputReader>
 
     public InputAction LoadingLookAction => loadingLookAction;
     public InputAction LoadingZoomAction => loadingZoomAction;
+    public InputAction DebugMenu => debugMenu;
 
     // Centralize action names to avoid typos and make maintenance easier
     private static class ActionNames
@@ -169,6 +170,7 @@ public class InputReader : Singleton<InputReader>
         public const string LoadingZoom = "LoadingZoom";
         public const string Pause = "Pause";
         public const string ToggleWalk = "ToggleWalk";
+        public const string DebugMenu = "Open/Close Debug Menu";
     }
 
     #region Action Accessors
@@ -239,6 +241,8 @@ public class InputReader : Singleton<InputReader>
 
         // Use squared deadzone comparisons internally; set the default min to match the smallest deadzone
         InputSystem.settings.defaultDeadzoneMin = Mathf.Min(leftStickDeadzoneValue, rightStickDeadzoneValue);
+
+        debugMenu = GetAction(ActionNames.DebugMenu);
     }
 
     private void Start()
