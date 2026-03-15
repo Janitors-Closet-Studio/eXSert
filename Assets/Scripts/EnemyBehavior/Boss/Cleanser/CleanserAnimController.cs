@@ -30,10 +30,10 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 internal const string Default = "Idle";
                 internal const string Intro = "IntroIdle";
+                internal const string DoubleHandIdle = "DoubleHandIdle";
 
-                // TODO: Add when animation exists in the current Animator.
+                // idk if we are going to have this - Kyle
                 // internal const string CombatIdle = "CombatIdle";
-                // internal const string DoubleHandIdle = "DoubleHandIdle";
             }
 
             /// <summary>
@@ -42,12 +42,10 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class Locomotion
             {
                 internal const string Walk = "Walk";
-
-                // TODO: Add when animation exists in the current Animator.
-                // internal const string Jump = "Jump";
-                // internal const string JumpArc = "JumpArc";
-                // internal const string JumpArcResolution = "JumpArcResolution";
-                // internal const string JumpArcCancellation = "JumpArcCancellation";
+                internal const string JumpFull = "JumpFull";
+                internal const string JumpTakeoff = "JumpTakeoff";
+                internal const string JumpInAir = "JumpInAir";
+                internal const string JumpLanding = "JumpLanding";
             }
 
             /// <summary>
@@ -56,12 +54,12 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class GeneralStates
             {
                 internal const string GrabWeapon = "GrabWeapon";
+                internal const string Death = "Death";
 
                 // TODO: Add when animation exists in the current Animator.
                 // internal const string GrabWeapons = "GrabWeapons";
                 // internal const string Flinch = "Flinch";
                 // internal const string Stunned = "Stunned";
-                // internal const string Death = "Death";
             }
 
             /// <summary>
@@ -70,21 +68,17 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class BasicAttacks
             {
                 internal const string Lunge = "Lunge";
-                internal const string BlockAndLunge = "BlockAndLunge";
+                internal const string BlockAndLunge = "LungeBlock";
                 internal const string Cleave = "Cleave";
-                internal const string AdvancingCleave = "AdvancingCleave";
+                internal const string AdvancingCleave = "CleaveAdvance";
                 internal const string DiagUpwardSlash = "DiagUpwardSlash";
                 internal const string PommelStrike = "PommelStrike";
                 internal const string WingBash = "WingBash";
                 internal const string OverheadAttack = "OverheadAttack";
                 internal const string SpareToss = "SpareToss";
-
-                // TODO: Add when animation exists in the current Animator.
-                // internal const string PommelSlam = "PommelSlam";
-                // internal const string OverheadCleave = "OverheadCleave";
-                // internal const string LegSweep = "LegSweep";
-                // internal const string SlashtoSlap = "SlashtoSlap";
-                // internal const string RakeIntoSpinSlash = "RakeIntoSpinSlash";
+                internal const string LegSweep = "LegSweep";
+                internal const string SlashToSlap = "SlashToSlap";
+                internal const string RakeIntoSpinSlash = "RakeIntoSpinSlash";
             }
 
             /// <summary>
@@ -92,12 +86,14 @@ namespace EnemyBehavior.Boss.Cleanser
             /// </summary>
             internal static class StrongAttacks
             {
+                internal const string AnimeDash = "AnimeDash";
+                internal const string SpinAttackWindUp = "JumpSpinAttackHPWindup";
+                internal const string SpinWindUp = "JumpSpinAttackWindup";
+                internal const string SpinHold = "JumpSpinAttackHPHoldPose";
+                internal const string SpinAttackWindDown = "JumpSpinAttackWindDown";
+
                 // TODO: Add when animation exists in the current Animator.
                 // internal const string Whirlwind = "Whirlwind";
-                // internal const string AnimeDash = "AnimeDash";
-                // internal const string HighDiveWindup = "JumpSpinAttackWindup";
-                // internal const string HighDiveHoldPose = "JumpSpinAttackHoldPose";
-                // internal const string HighDiveWindDown = "JumpSpinAttackWindDown";
             }
 
             /// <summary>
@@ -105,8 +101,10 @@ namespace EnemyBehavior.Boss.Cleanser
             /// </summary>
             internal static class Ultimate
             {
-                // TODO: Add when animation exists in the current Animator.
-                // internal const string DoubleMaximumSweep = "Ultimate";
+                internal const string Main = "Ultimate";
+                internal const string JumpArcBase = "JumpArcBase";
+                internal const string JumpArcResolution = "JumpArcResolution";
+                internal const string JumpArcCancel = "JumpArcCancel";
             }
         }
 
@@ -119,11 +117,16 @@ namespace EnemyBehavior.Boss.Cleanser
             { "DiagonalUpwardSlash", CleanserAnim.BasicAttacks.DiagUpwardSlash },
             { "GrabWeapons", CleanserAnim.GeneralStates.GrabWeapon },
             { "PommelSlam", CleanserAnim.BasicAttacks.PommelStrike },
-            { "JumpSpinAttack_Windup", "JumpSpinAttackWindup" },
-            { "JumpSpinAttack_HoldPose", "JumpSpinAttackHoldPose" },
-            { "JumpSpinAttack_WindDown", "JumpSpinAttackWindDown" },
-            { "JumpArc_Resolution", "JumpArcResolution" },
-            { "JumpArc_Cancellation", "JumpArcCancellation" },
+            { "BlockAndLunge", CleanserAnim.BasicAttacks.BlockAndLunge },
+            { "AdvancingCleave", CleanserAnim.BasicAttacks.AdvancingCleave },
+            { "SlashtoSlap", CleanserAnim.BasicAttacks.SlashToSlap },
+            { "JumpSpinAttack_Windup", CleanserAnim.StrongAttacks.SpinWindUp },
+            { "JumpSpinAttack_HoldPose", CleanserAnim.StrongAttacks.SpinHold },
+            { "JumpSpinAttack_WindDown", CleanserAnim.StrongAttacks.SpinAttackWindDown },
+            { "JumpSpinAttackHoldPose", CleanserAnim.StrongAttacks.SpinHold },
+            { "JumpArc_Resolution", CleanserAnim.Ultimate.JumpArcResolution },
+            { "JumpArc_Cancellation", CleanserAnim.Ultimate.JumpArcCancel },
+            { "JumpArcCancellation", CleanserAnim.Ultimate.JumpArcCancel },
         };
 
         [Header("Animator Setup")]
@@ -171,29 +174,33 @@ namespace EnemyBehavior.Boss.Cleanser
 
     public void PlayIdle(float transition = -1f) => CrossFade(CleanserAnim.Idle.Default, transition);
     public void PlayIntroIdle(float transition = -1f) => CrossFade(CleanserAnim.Idle.Intro, transition);
+    public void PlayDoubleHandIdle(float transition = -1f) => CrossFade(CleanserAnim.Idle.DoubleHandIdle, transition);
 
     // TODO: Uncomment when animation exists in the current Animator.
     // public void PlayCombatIdle(float transition = -1f) => CrossFade(CleanserAnim.Idle.CombatIdle, transition);
-    // public void PlayDoubleHandIdle(float transition = -1f) => CrossFade(CleanserAnim.Idle.DoubleHandIdle, transition);
 
     #endregion
 
     #region Locomotion Animations
 
     public void PlayWalk(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.Walk, transition);
+    public void PlayJumpFull(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpFull, transition);
+    public void PlayJumpTakeoff(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpTakeoff, transition);
+    public void PlayJumpInAir(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpInAir, transition);
+    public void PlayJumpLanding(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpLanding, transition);
 
     // TODO: Uncomment when animation exists in the current Animator.
     // public void PlayJump(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.Jump, transition);
-    // public void PlayJumpArc(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpArc, transition);
 
     #endregion
 
     #region General State Animations
 
         public void PlayGrabWeapon() => CrossFade(CleanserAnim.GeneralStates.GrabWeapon, attackTransition, true);
+        public void PlayDeath() => CrossFade(CleanserAnim.GeneralStates.Death, 0.02f, true);
 
         // TODO: Uncomment when animation exists in the current Animator.
-        // public void PlayDeath() => CrossFade(CleanserAnim.GeneralStates.Death, 0.02f, true);
+        // public void PlayFlinch() => CrossFade(CleanserAnim.GeneralStates.Flinch, 0.02f, true);
 
     #endregion
 
@@ -229,22 +236,24 @@ namespace EnemyBehavior.Boss.Cleanser
         public void PlayDiagUpwardSlash() => CrossFade(CleanserAnim.BasicAttacks.DiagUpwardSlash, attackTransition, true);
         public void PlayPommelStrike() => CrossFade(CleanserAnim.BasicAttacks.PommelStrike, attackTransition, true);
         public void PlayWingBash() => CrossFade(CleanserAnim.BasicAttacks.WingBash, attackTransition, true);
+        public void PlayLegSweep() => CrossFade(CleanserAnim.BasicAttacks.LegSweep, attackTransition, true);
+        public void PlaySlashToSlap() => CrossFade(CleanserAnim.BasicAttacks.SlashToSlap, attackTransition, true);
+        public void PlayRakeIntoSpinSlash() => CrossFade(CleanserAnim.BasicAttacks.RakeIntoSpinSlash, attackTransition, true);
+        public void PlayAnimeDash() => CrossFade(CleanserAnim.StrongAttacks.AnimeDash, attackTransition, true);
+        public void PlaySpinAttackWindUp() => CrossFade(CleanserAnim.StrongAttacks.SpinAttackWindUp, attackTransition, true);
+        public void PlaySpinWindUp() => CrossFade(CleanserAnim.StrongAttacks.SpinWindUp, attackTransition, true);
+        public void PlaySpinHold() => CrossFade(CleanserAnim.StrongAttacks.SpinHold, defaultTransition, true);
+        public void PlaySpinAttackWindDown() => CrossFade(CleanserAnim.StrongAttacks.SpinAttackWindDown, attackTransition, true);
+        public void PlayUltimate() => CrossFade(CleanserAnim.Ultimate.Main, attackTransition, true);
+        public void PlayJumpArcBase() => CrossFade(CleanserAnim.Ultimate.JumpArcBase, attackTransition, true);
+        public void PlayJumpArcResolution() => CrossFade(CleanserAnim.Ultimate.JumpArcResolution, attackTransition, true);
+        public void PlayJumpArcCancel() => CrossFade(CleanserAnim.Ultimate.JumpArcCancel, attackTransition, true);
 
         // TODO: Uncomment when animation exists in the current Animator.
         // public void PlayPommelSlam() => CrossFade(CleanserAnim.BasicAttacks.PommelSlam, attackTransition, true);
         // public void PlayOverheadAttack() => CrossFade(CleanserAnim.BasicAttacks.OverheadAttack, attackTransition, true);
         // public void PlayOverheadCleaveExact() => CrossFade(CleanserAnim.BasicAttacks.OverheadCleave, attackTransition, true);
-        // public void PlayLegSweep() => CrossFade(CleanserAnim.BasicAttacks.LegSweep, attackTransition, true);
-        // public void PlaySlashtoSlap() => CrossFade(CleanserAnim.BasicAttacks.SlashtoSlap, attackTransition, true);
-        // public void PlayRakeIntoSpinSlash() => CrossFade(CleanserAnim.BasicAttacks.RakeIntoSpinSlash, attackTransition, true);
         // public void PlayWhirlwind() => CrossFade(CleanserAnim.StrongAttacks.Whirlwind, attackTransition, true);
-        // public void PlayAnimeDash() => CrossFade(CleanserAnim.StrongAttacks.AnimeDash, attackTransition, true);
-        // public void PlayHighDiveWindup() => CrossFade(CleanserAnim.StrongAttacks.HighDiveWindup, attackTransition, true);
-        // public void PlayHighDiveHoldPose() => CrossFade(CleanserAnim.StrongAttacks.HighDiveHoldPose, defaultTransition);
-        // public void PlayHighDiveWindDown() => CrossFade(CleanserAnim.StrongAttacks.HighDiveWindDown, attackTransition, true);
-
-        // TODO: Uncomment when animation exists in the current Animator.
-        // public void PlayUltimate() => CrossFade(CleanserAnim.Ultimate.DoubleMaximumSweep, attackTransition, true);
 
         #endregion
 
@@ -293,8 +302,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <summary>
         /// Check if the Cleanser is currently playing the death animation.
         /// </summary>
-        // TODO: Uncomment when death animation exists
-        // public bool IsPlayingDeath(out float normalizedTime) => IsPlaying(CleanserAnim.GeneralStates.Death, out normalizedTime);
+        public bool IsPlayingDeath(out float normalizedTime) => IsPlaying(CleanserAnim.GeneralStates.Death, out normalizedTime);
 
         /// <summary>
         /// Returns the current animation state name.
