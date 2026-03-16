@@ -5,6 +5,8 @@ using UI.Loading;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 using UnityEngine.Video;
+using Progression;
+using Progression.Checkpoints;
 
 /// <summary>
 /// Centralized static class responsible for scene loading/unloading and player-scene specific behaviors.
@@ -336,41 +338,44 @@ public static class SceneLoader
         Initialize();
 
         CoroutineRunner.Run(LoadIntoGameTransitionRoutine(firstScene, newGame));
-    }
 
-    private static IEnumerator LoadIntoGameTransitionRoutine(SceneAsset firstScene, bool newGame)
-    {
-        if (newGame)
+        static IEnumerator LoadIntoGameTransitionRoutine(SceneAsset firstScene, bool newGame)
         {
+            if (newGame)
+            {
+                yield return EnsureLoadingSceneReady();
+
+                VideoClip openingCutscene = Cutscene.GetCutscene("Opening Cutscene");
+                if (openingCutscene != null)
+                {
+                    CutsceneManager.PlayCutscene(openingCutscene);
+                    yield return LoadIntoGameCoroutine(firstScene, newGame: false);
+                    yield break;
+                }
+
+                Debug.LogWarning("[Scene Loader] Opening cutscene is unavailable. Falling back to standard loading-screen startup.");
+            }
+
             yield return EnsureLoadingSceneReady();
 
-            VideoClip openingCutscene = Cutscene.GetCutscene("Opening Cutscene");
-            if (openingCutscene != null)
+            if (!LoadingScreenController.HasInstance)
             {
-                CutsceneManager.PlayCutscene(openingCutscene);
-                yield return LoadIntoGameCoroutine(firstScene, newGame: false);
+                Debug.LogWarning("[Scene Loader] LoadingScreenController is unavailable. Falling back to direct game load.");
+                yield return LoadIntoGameCoroutine(firstScene, newGame);
                 yield break;
             }
 
-            Debug.LogWarning("[Scene Loader] Opening cutscene is unavailable. Falling back to standard loading-screen startup.");
+            LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame));
         }
-
-        yield return EnsureLoadingSceneReady();
-
-        if (!LoadingScreenController.HasInstance)
-        {
-            Debug.LogWarning("[Scene Loader] LoadingScreenController is unavailable. Falling back to direct game load.");
-            yield return LoadIntoGameCoroutine(firstScene, newGame);
-            yield break;
-        }
-
-        LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame));
     }
 
     private static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame)
     {
         // Load first gameplay scene, wait for it
         yield return LoadCoroutine(firstScene, loadScreen: false);
+
+        // Sets the first checkpoint to the first scene so that the player will spawn there when the player scene loads
+        CheckpointBehavior.OverrideCurrentCheckpoint(ProgressionManager.GetInstance(firstScene).FirstCheckpoint);
 
         // Load player scene, wait for it
         yield return LoadPlayerSceneCoroutine();
@@ -456,31 +461,39 @@ public static class SceneLoader
             isLoaded = false;
         }
 
-        if (isLoaded && !forceReload) yield break;
-
-        Debug.Log($"[Scene Loader] Coroutine loading player scene '{PLAYER_SCENE}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
-
-        AsyncOperation operation;
-        try
+        if (!isLoaded || forceReload)
         {
-            operation = SceneManager.LoadSceneAsync(PLAYER_SCENE, LoadSceneMode.Additive);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"[Scene Loader] Exception starting async load for '{PLAYER_SCENE}': {ex.Message}\n{ex.StackTrace}");
-            yield break;
-        }
+            Debug.Log($"[Scene Loader] Coroutine loading player scene '{PLAYER_SCENE}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
 
-        yield return operation;
+            AsyncOperation operation;
+            try
+            {
+                operation = SceneManager.LoadSceneAsync(PLAYER_SCENE, LoadSceneMode.Additive);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Scene Loader] Exception starting async load for '{PLAYER_SCENE}': {ex.Message}\n{ex.StackTrace}");
+                yield break;
+            }
 
-        Debug.Log($"[Scene Loader] Player scene '{PLAYER_SCENE}' coroutine load completed. LoadedSceneCount now: {LoadedSceneCount}.");
+            yield return operation;
+
+            Debug.Log($"[Scene Loader] Player scene '{PLAYER_SCENE}' coroutine load completed. LoadedSceneCount now: {LoadedSceneCount}.");
+        }
 
         GameObject player = Player.PlayerObject;
 
         if (player == null)
+        {
             Debug.LogError("[Scene Loader] Player object not found in the scene after loading the player scene. " +
                            "Ensure that the player scene contains a GameObject tagged 'Player' and that SceneAsset points to the correct scene.");
-        else if (characterStartInactive) player.SetActive(false);
+        }
+        else
+        {
+            if (characterStartInactive) player.SetActive(false);
+            
+            Player.SpawnPlayerAtCheckpoint();
+        }
     }
 
     /// <summary>Unload everything except player then load the main menu.</summary>

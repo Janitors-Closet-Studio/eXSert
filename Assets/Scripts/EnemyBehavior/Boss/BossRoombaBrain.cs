@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Utilities.Combat;
+using Managers.TimeLord; // PauseCoordinator
 
 namespace EnemyBehavior.Boss
 {
@@ -932,8 +933,8 @@ namespace EnemyBehavior.Boss
             form = StartForm;
             
             // Subscribe to pause events for audio handling
-            PauseManager.OnPaused += OnGamePaused;
-            PauseManager.OnResumed += OnGameResumed;
+            PauseCoordinator.OnPaused += OnGamePaused;
+            PauseCoordinator.OnResumed += OnGameResumed;
             
             // Start the delayed fight initialization
             StartCoroutine(DelayedFightStart());
@@ -979,8 +980,8 @@ namespace EnemyBehavior.Boss
             UnregisterFromAttackQueue();
             
             // Unsubscribe from pause events
-            PauseManager.OnPaused -= OnGamePaused;
-            PauseManager.OnResumed -= OnGameResumed;
+            PauseCoordinator.OnPaused -= OnGamePaused;
+            PauseCoordinator.OnResumed -= OnGameResumed;
         }
 
         void Update()

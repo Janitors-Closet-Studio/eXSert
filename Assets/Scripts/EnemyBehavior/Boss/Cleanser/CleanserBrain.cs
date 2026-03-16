@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Utilities.Combat;
+using Managers.TimeLord; // For pause event handling
 
 namespace EnemyBehavior.Boss.Cleanser
 {
@@ -425,8 +426,8 @@ namespace EnemyBehavior.Boss.Cleanser
             RegisterWithAttackQueue();
             
             // Subscribe to pause events for audio handling
-            PauseManager.OnPaused += OnGamePaused;
-            PauseManager.OnResumed += OnGameResumed;
+            PauseCoordinator.OnPaused += OnGamePaused;
+            PauseCoordinator.OnResumed += OnGameResumed;
             
             if (mainLoopCoroutine != null)
                 StopCoroutine(mainLoopCoroutine);
@@ -438,8 +439,8 @@ namespace EnemyBehavior.Boss.Cleanser
             UnregisterFromAttackQueue();
             
             // Unsubscribe from pause events
-            PauseManager.OnPaused -= OnGamePaused;
-            PauseManager.OnResumed -= OnGameResumed;
+            PauseCoordinator.OnPaused -= OnGamePaused;
+            PauseCoordinator.OnResumed -= OnGameResumed;
             
             if (mainLoopCoroutine != null)
             {

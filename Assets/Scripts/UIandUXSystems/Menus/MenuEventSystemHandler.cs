@@ -12,7 +12,7 @@ public class MenuEventSystemHandler : MonoBehaviour
 {
     [Header("UI Selectables")]
     [Tooltip("List of UI Selectables (Buttons, Toggles, etc.) to add selection listeners to")]
-    public List<Selectable> Selectables = new List<Selectable>();
+    public List<Selectable> Selectables = new();
     [SerializeField] internal Selectable _firstSelected;
 
     [Header("Input")]
