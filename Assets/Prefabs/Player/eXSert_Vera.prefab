@@ -5536,7 +5536,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34e70bb17c3ba73478a8f20712811ec1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry
-  parrySoundEffect: {fileID: 8300000, guid: f8b9c5f90c8644c488c915fcc5039b55, type: 3}
+  parrySoundEffect: {fileID: 8300000, guid: b738f8d9bc283704db401192c18a3f85, type: 3}
   parryEffect: {fileID: 8926484042661614526, guid: b0902efa133e21b44926742b93fc8e46, type: 3}
   parryEffectDuration: 1
   pauseTimeOnParry: 1
@@ -7907,6 +7907,7 @@ MonoBehaviour:
   highFallGroundProbeDistance: 25
   dashSFX: {fileID: 8300000, guid: 4a80ad5659e0df34fa32064cd1c4ae09, type: 3}
   jumpSFX: {fileID: 8300000, guid: ea2d65beafcf27e4398ba2b45473e354, type: 3}
+  doubleJumpSFX: {fileID: 8300000, guid: 9539a2ae48c4aea4b84ff3d3a8e0a787, type: 3}
 --- !u!114 &8127531854480134888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7941,6 +7942,10 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 2739185c4b81417438de87670df3ae68, type: 3}
   - {fileID: 8300000, guid: aa5598b7d93f1894fa3ee7e3c429a0d6, type: 3}
   - {fileID: 8300000, guid: 01fb6574262bbc94182186df8b8e2b2f, type: 3}
+  impactSFX:
+  - {fileID: 8300000, guid: 14ec7c5d68b4caa41bdfa27a9126a22b, type: 3}
+  - {fileID: 8300000, guid: c064e56110f694b46bfedd2fe21a3e2d, type: 3}
+  - {fileID: 8300000, guid: abee1b0c5dfc37c44971fbdd46487bff, type: 3}
   playerDeathSFX: {fileID: 8300000, guid: 430efd9a9dac85a4e985151c42538ddd, type: 3}
   debugDamageAmount: 100
 --- !u!114 &2026860560813373367
@@ -17162,8 +17167,9 @@ MonoBehaviour:
   airMoveVfxObjects:
   - {fileID: 0}
   airMoveDuration: 0.5
-  airMoveAudioClip: {fileID: 8300000, guid: 9539a2ae48c4aea4b84ff3d3a8e0a787, type: 3}
+  airMoveAudioClip: {fileID: 8300000, guid: f2bac5a0f7f4459449935b0d84f345cd, type: 3}
   fireShockWaveVfx: {fileID: 7703162255160455181}
+  fireShockWaveAudioClip: {fileID: 8300000, guid: 813f7b39e0cc2ee4fb5fe61999893058, type: 3}
   fireShockWaveDuration: 0.5
   keepFireShockWaveUpright: 1
 --- !u!114 &1928066033365348012

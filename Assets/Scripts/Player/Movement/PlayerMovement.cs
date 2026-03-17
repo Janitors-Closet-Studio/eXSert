@@ -217,6 +217,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement SFX")]
     [SerializeField] private AudioClip dashSFX;
     [SerializeField] private AudioClip jumpSFX;
+    [SerializeField] private AudioClip doubleJumpSFX;
 
     #endregion
 
@@ -709,6 +710,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         currentMovement.y = MathF.Max(currentMovement.y, doubleJumpForce);
+        PlaySFX(doubleJumpSFX);
         doubleJumpAvailable = false;
         pendingJump = PendingJumpType.None;
         DoubleJumpPerformed?.Invoke();

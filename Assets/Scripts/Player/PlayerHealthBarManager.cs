@@ -78,6 +78,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     [Header("SFX")]
     [SerializeField] private AudioClip[] playerHurtSFX;
+    [SerializeField] private AudioClip[] impactSFX;
     [SerializeField] private AudioClip playerDeathSFX;
 
     [Header("Debug")]
@@ -187,11 +188,19 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         float previous = currentHealth;
         currentHealth = Mathf.Max(0f, currentHealth - damage);
+
         if (playerHurtSFX != null && playerHurtSFX.Length > 0)
         {
             int index = UnityEngine.Random.Range(0, playerHurtSFX.Length);
             SoundManager.Instance.voiceSource.PlayOneShot(playerHurtSFX[index]);
         }
+
+        if (impactSFX != null && impactSFX.Length > 0)
+        {
+            int index = UnityEngine.Random.Range(0, impactSFX.Length);
+            SoundManager.Instance.sfxSource.PlayOneShot(impactSFX[index]);
+        }
+
         float actual = previous - currentHealth;
         if (actual <= 0f)
             return;

@@ -101,6 +101,10 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private GameObject fireShockWaveVfx;
 
     [SerializeField]
+    [Tooltip("Audio clip played when ground explosion VFX enable.")]
+    private AudioClip fireShockWaveAudioClip;
+
+    [SerializeField]
     [Tooltip("How long the FireShockWave object stays enabled after GroundExplosion is invoked.")]
     private float fireShockWaveDuration = 0.35f;
 
@@ -268,6 +272,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         SetVfxActive(airMoveVfxObjects, true);
         PlayAudio(airMoveAudioClip);
+        PlayAudio(fireShockWaveAudioClip);
         RestartGroupRoutine(
             ref airMoveDeactivateRoutine,
             airMoveDuration,
@@ -321,6 +326,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
         }
 
         fireShockWaveVfx.SetActive(true);
+        PlayAudio(fireShockWaveAudioClip);
 
         float duration = Mathf.Max(0f, fireShockWaveDuration);
         if (duration <= 0f)
@@ -353,6 +359,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
         leftAttackActive = true;
         EnableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         PlayAudio(attackAudioClip);
+        PlayAudio(fireShockWaveAudioClip);
 
         RestartSingleRoutine(
             ref leftAttackDeactivateRoutine,
@@ -418,6 +425,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
         TrySetFloat(effect, emberRateProperty, emberRateOff);
 
         effect.Play();
+        
 
         float delay = Mathf.Max(0f, emberRateDelayAfterBurstSeconds);
         if (delay <= 0f)
@@ -442,6 +450,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
         TrySetFloat(effect, burstLifeTimeProperty, burstLifeTimeOn);
         TrySetFloat(effect, emberRateProperty, emberRateOn);
         SetLightsActive(handLights, active: true);
+        PlayAudio(fireShockWaveAudioClip);
     }
 
     private void DisableHandAttackVfx(
