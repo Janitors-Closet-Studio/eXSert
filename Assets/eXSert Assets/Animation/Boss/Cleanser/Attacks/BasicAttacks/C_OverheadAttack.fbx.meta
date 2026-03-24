@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ba90c269faed8db4b9d03341bb39149d
+guid: 43c77473606c30f468be2ee0e0c7b623
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -31,10 +31,10 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: OverheadAttack
-      takeName: _OverheadAttack
-      internalID: -393701607324299360
-      firstFrame: 80
+      name: _OverheadAttackFixed
+      takeName: _OverheadAttackFixed
+      internalID: -1166960321123321576
+      firstFrame: 52
       lastFrame: 207
       wrapMode: 0
       orientationOffsetY: 0
@@ -54,11 +54,46 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0
+        functionName: ShowIndicator
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.42764437
+        functionName: HideIndicator
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.44062296
+        functionName: OnHalberdHitboxStart
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.5444516
+        functionName: OnHalberdHitboxEnd
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.98961717
+        functionName: OnAttackComplete
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
+      additiveReferencePoseFrame: 52
     isReadable: 0
   meshes:
     lODScreenPercentages: []
@@ -125,11 +160,11 @@ ModelImporter:
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1
-  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: cae0a68f0b846e745a3e2f525d99d144, type: 3}
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
   autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 2
   humanoidOversampling: 1
-  avatarSetup: 2
+  avatarSetup: 0
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0

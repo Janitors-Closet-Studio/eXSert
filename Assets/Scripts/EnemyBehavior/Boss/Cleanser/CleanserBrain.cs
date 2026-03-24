@@ -162,6 +162,16 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Audio source for boss SFX. Auto-falls back to SoundManager if left empty.")]
         [SerializeField] private AudioSource sfxSource;
 
+        [Header("Hitbox References")]
+        [Tooltip("Collider that represents the halberd hit volume. Used to derive hit range during halberd hit windows.")]
+        [SerializeField] private Collider halberdHitboxCollider;
+        [Tooltip("Collider that represents the wing hit volume. Used to derive hit range during wing hit windows.")]
+        [SerializeField] private Collider wingHitboxCollider;
+        [Tooltip("Collider used during SpinDash hold phase (typically a capsule around the whole body).")]
+        [SerializeField] private Collider spinDashHitboxCollider;
+        [Tooltip("Delay before re-enabling SpinDash hitbox after a successful hit, preventing per-frame damage ticks.")]
+        [SerializeField] private float spinDashHitboxRearmDelay = 0.08f;
+
         [Header("Animator Parameters")]
         [Tooltip("Animator float parameter for movement speed magnitude.")]
         [SerializeField] private string paramMoveSpeed = "MoveSpeed";
@@ -212,6 +222,14 @@ namespace EnemyBehavior.Boss.Cleanser
         private AttackCategory currentAttackCategory = AttackCategory.Halberd;
         private bool pickedUpWeaponThisCombo;
         private float baseAgentSpeed;
+        private bool waitingForUltimateLowSweepEvent;
+        private bool waitingForUltimateMidSweepEvent;
+        private Vector3 pendingUltimateSweepTargetPos;
+        private bool waitingForSpareTossReleaseEvent;
+        private bool spareTossReleaseEventReceived;
+        private bool spinDashHitboxPhaseActive;
+        private bool spinDashHitboxArmed;
+        private Coroutine spinDashHitboxRearmCoroutine;
 
         #region IQueuedAttacker Implementation
         
@@ -403,6 +421,11 @@ namespace EnemyBehavior.Boss.Cleanser
             CachePlayerReference();
             InitializeAttackDescriptors();
             EnsurePlayerSlideOffSurface();
+
+            if (spinDashHitboxCollider != null)
+            {
+                spinDashHitboxCollider.enabled = false;
+            }
         }
 
         private void ApplyMovementSettings()
@@ -490,6 +513,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 StopCoroutine(currentAttackCoroutine);
                 currentAttackCoroutine = null;
             }
+
+            EndSpinDashHitboxPhase();
         }
 
         private void Update()
@@ -1182,6 +1207,7 @@ namespace EnemyBehavior.Boss.Cleanser
         // Runtime state for animation events
         private bool attackAnimationComplete = false;
         private bool isHitboxActive = false;
+        private bool hasAppliedDamageThisHitboxWindow = false;
         private CleanserAttackDescriptor currentAttack;
 
         /// <summary>
@@ -1200,6 +1226,7 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (!isExecutingAttack) return;
             isHitboxActive = true;
+            hasAppliedDamageThisHitboxWindow = false;
             
             // Hide attack indicator when hitbox becomes active (if duration was 0)
             if (attackIndicatorDuration <= 0f)
@@ -1218,6 +1245,7 @@ namespace EnemyBehavior.Boss.Cleanser
         public void OnAttackHitboxEnd()
         {
             isHitboxActive = false;
+            hasAppliedDamageThisHitboxWindow = false;
             
             // Play impact SFX/VFX when hitbox ends (attack follow-through)
             if (currentAttack != null)
@@ -1232,6 +1260,40 @@ namespace EnemyBehavior.Boss.Cleanser
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Hitbox disabled.");
 #endif
+        }
+
+        /// <summary>
+        /// Animation Event: Halberd-specific hitbox start.
+        /// </summary>
+        public void OnHalberdHitboxStart()
+        {
+            currentAttackCategory = AttackCategory.Halberd;
+            OnAttackHitboxStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Halberd-specific hitbox end.
+        /// </summary>
+        public void OnHalberdHitboxEnd()
+        {
+            OnAttackHitboxEnd();
+        }
+
+        /// <summary>
+        /// Animation Event: Wing-specific hitbox start.
+        /// </summary>
+        public void OnWingHitboxStart()
+        {
+            currentAttackCategory = AttackCategory.Wing;
+            OnAttackHitboxStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Wing-specific hitbox end.
+        /// </summary>
+        public void OnWingHitboxEnd()
+        {
+            OnAttackHitboxEnd();
         }
 
         /// <summary>
@@ -1276,6 +1338,44 @@ namespace EnemyBehavior.Boss.Cleanser
             SpawnCrescentArcProjectiles(CrescentWaveProjectileConfiguration, player.position, 0f);
         }
 
+        /// <summary>
+        /// Animation Event: Launches stockpiled spare weapons for SpareToss timing.
+        /// </summary>
+        public void OnSpareTossRelease()
+        {
+            if (!isExecutingAttack)
+                return;
+
+            spareTossReleaseEventReceived = true;
+            waitingForSpareTossReleaseEvent = false;
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns the ultimate low sweep projectile(s).
+        /// </summary>
+        public void OnUltimateLowSweepProjectile()
+        {
+            if (!isExecutingUltimate)
+                return;
+
+            waitingForUltimateLowSweepEvent = false;
+            SpawnCrescentWave(UltimateSettings.LowSweepHeight, pendingUltimateSweepTargetPos);
+            PlaySFX(UltimateSettings.SweepSFX);
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns the ultimate mid sweep projectile(s).
+        /// </summary>
+        public void OnUltimateMidSweepProjectile()
+        {
+            if (!isExecutingUltimate)
+                return;
+
+            waitingForUltimateMidSweepEvent = false;
+            SpawnCrescentWave(UltimateSettings.MidSweepHeight, pendingUltimateSweepTargetPos);
+            PlaySFX(UltimateSettings.SweepSFX);
+        }
+
         private IEnumerator DoAttackMovement()
         {
             float moveDist = currentAttack?.MovementDistance ?? 3f;
@@ -1309,21 +1409,35 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             yield return FaceTarget(player, 0.3f);
-            
-            // Randomize path type before throw
-            SpareTossSettings.RandomizePathType();
-            
+
             // Use animation trigger from config
             TriggerAnimation(SpareTossSettings.AnimationTrigger);
             PlaySFX(SpareTossSettings.ThrowSFX);
 
-            // Wait for throw release timing and then launch all stockpiled spare weapons in an arc.
-            yield return new WaitForSeconds(0.35f);
+            waitingForSpareTossReleaseEvent = true;
+            spareTossReleaseEventReceived = false;
+
+            const float releaseFallbackTimeout = 1.2f;
+            float elapsed = 0f;
+            while (!spareTossReleaseEventReceived && elapsed < releaseFallbackTimeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            waitingForSpareTossReleaseEvent = false;
+
+            if (!spareTossReleaseEventReceived)
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), "[Cleanser] SpareToss release event not received. Using fallback release timing.");
+#endif
+            }
 
             Vector3 tossCenter = player != null ? player.position : transform.position + transform.forward * 6f;
             yield return dualWieldSystem.LaunchStockpiledWeaponsToGround(tossCenter);
             
-            yield return new WaitForSeconds(0.4f);
+            yield return new WaitForSeconds(0.15f);
         }
 
         private IEnumerator ExecuteSpinDash()
@@ -1359,6 +1473,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             agent.enabled = false;
+            BeginSpinDashHitboxPhase();
 
             int hitCount = 0;
             for (int i = 0; i < dashPoints.Count; i++)
@@ -1384,13 +1499,8 @@ namespace EnemyBehavior.Boss.Cleanser
                         transform.forward = Vector3.Slerp(transform.forward, moveDir, Time.deltaTime * 14f);
                     }
 
-                    if (hitCount < SpinDashSettings.MaxHitCount)
-                    {
-                        if (CheckMeleeHit(SpinDashSettings.DamagePerHit, AttackCategory.Halberd, SpinDashSettings.HitRange))
-                        {
-                            hitCount++;
-                        }
-                    }
+                    if (hitCount < SpinDashSettings.MaxHitCount && TrySpinDashHit(SpinDashSettings.DamagePerHit, SpinDashSettings.HitRange))
+                        hitCount++;
 
                     yield return null;
                 }
@@ -1414,10 +1524,13 @@ namespace EnemyBehavior.Boss.Cleanser
                     elapsed += Time.deltaTime;
                     float t = elapsed / dashDuration;
                     transform.position = Vector3.Lerp(start, finalTarget, t);
-                    CheckMeleeHit(SpinDashSettings.DamagePerHit, AttackCategory.Halberd, SpinDashSettings.HitRange);
+                    if (hitCount < SpinDashSettings.MaxHitCount && TrySpinDashHit(SpinDashSettings.DamagePerHit, SpinDashSettings.HitRange))
+                        hitCount++;
                     yield return null;
                 }
             }
+
+            EndSpinDashHitboxPhase();
 
             agent.enabled = true;
             agent.Warp(transform.position);
@@ -1771,6 +1884,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 currentAttackCoroutine = null;
             }
 
+            EndSpinDashHitboxPhase();
+
             StartCoroutine(ExecuteUltimateAttack());
         }
 #endif
@@ -1781,6 +1896,8 @@ namespace EnemyBehavior.Boss.Cleanser
             hasUsedUltimate = true;
             attacksSinceUltimate = 0;
             aerialHitsReceived = 0;
+            waitingForUltimateLowSweepEvent = false;
+            waitingForUltimateMidSweepEvent = false;
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] ULTIMATE: Double Maximum Sweep initiated!");
@@ -1801,17 +1918,19 @@ namespace EnemyBehavior.Boss.Cleanser
             // Sweeps
             if (CanSpawnUltimateSweep(UltimateSettings.LowSweepProjectile))
             {
+                pendingUltimateSweepTargetPos = arenaCenter;
+                waitingForUltimateLowSweepEvent = true;
                 TriggerAnimation(UltimateSettings.UltimateTrigger);
-                SpawnCrescentWave(UltimateSettings.LowSweepHeight, arenaCenter);
-                PlaySFX(UltimateSettings.SweepSFX);
+                yield return WaitForUltimateLowSweepEventOrFallback();
             }
             yield return new WaitForSeconds(0.8f);
             
             if (CanSpawnUltimateSweep(UltimateSettings.MidSweepProjectile))
             {
+                pendingUltimateSweepTargetPos = arenaCenter;
+                waitingForUltimateMidSweepEvent = true;
                 TriggerAnimation(UltimateSettings.UltimateTrigger);
-                SpawnCrescentWave(UltimateSettings.MidSweepHeight, arenaCenter);
-                PlaySFX(UltimateSettings.SweepSFX);
+                yield return WaitForUltimateMidSweepEventOrFallback();
             }
             yield return new WaitForSeconds(0.5f);
             
@@ -1876,6 +1995,42 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             isExecutingUltimate = false;
+        }
+
+        private IEnumerator WaitForUltimateLowSweepEventOrFallback()
+        {
+            const float fallbackTimeout = 0.35f;
+            float elapsed = 0f;
+            while (waitingForUltimateLowSweepEvent && elapsed < fallbackTimeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (waitingForUltimateLowSweepEvent)
+            {
+                waitingForUltimateLowSweepEvent = false;
+                SpawnCrescentWave(UltimateSettings.LowSweepHeight, pendingUltimateSweepTargetPos);
+                PlaySFX(UltimateSettings.SweepSFX);
+            }
+        }
+
+        private IEnumerator WaitForUltimateMidSweepEventOrFallback()
+        {
+            const float fallbackTimeout = 0.35f;
+            float elapsed = 0f;
+            while (waitingForUltimateMidSweepEvent && elapsed < fallbackTimeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (waitingForUltimateMidSweepEvent)
+            {
+                waitingForUltimateMidSweepEvent = false;
+                SpawnCrescentWave(UltimateSettings.MidSweepHeight, pendingUltimateSweepTargetPos);
+                PlaySFX(UltimateSettings.SweepSFX);
+            }
         }
 
         private void SpawnCrescentWave(float height, Vector3 targetPos)
@@ -2349,6 +2504,104 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             return false;
+        }
+
+        private float GetActiveHitboxRange(AttackCategory category)
+        {
+            Collider selectedCollider = category == AttackCategory.Wing ? wingHitboxCollider : halberdHitboxCollider;
+            if (selectedCollider != null)
+            {
+                Bounds b = selectedCollider.bounds;
+                float extent = Mathf.Max(b.extents.x, b.extents.z);
+                if (extent > 0.01f)
+                    return Mathf.Max(1f, extent * 2f);
+            }
+
+            if (currentAttack != null)
+                return Mathf.Max(1f, currentAttack.RangeMax);
+
+            return 3f;
+        }
+
+        private float GetSpinDashHitboxRange(float fallbackRange)
+        {
+            if (spinDashHitboxCollider != null)
+            {
+                Bounds b = spinDashHitboxCollider.bounds;
+                float extent = Mathf.Max(b.extents.x, b.extents.z);
+                if (extent > 0.01f)
+                    return Mathf.Max(1f, extent * 2f);
+            }
+
+            return Mathf.Max(1f, fallbackRange);
+        }
+
+        private bool TrySpinDashHit(float damage, float fallbackRange)
+        {
+            if (!spinDashHitboxPhaseActive || !spinDashHitboxArmed)
+                return false;
+
+            float range = GetSpinDashHitboxRange(fallbackRange);
+            if (!CheckMeleeHit(damage, AttackCategory.Halberd, range))
+                return false;
+
+            spinDashHitboxArmed = false;
+            if (spinDashHitboxCollider != null)
+            {
+                spinDashHitboxCollider.enabled = false;
+            }
+
+            if (spinDashHitboxRearmCoroutine != null)
+                StopCoroutine(spinDashHitboxRearmCoroutine);
+
+            spinDashHitboxRearmCoroutine = StartCoroutine(RearmSpinDashHitboxAfterDelay());
+            return true;
+        }
+
+        private void BeginSpinDashHitboxPhase()
+        {
+            spinDashHitboxPhaseActive = true;
+            spinDashHitboxArmed = true;
+
+            if (spinDashHitboxCollider != null)
+            {
+                spinDashHitboxCollider.enabled = true;
+            }
+        }
+
+        private void EndSpinDashHitboxPhase()
+        {
+            spinDashHitboxPhaseActive = false;
+            spinDashHitboxArmed = false;
+
+            if (spinDashHitboxRearmCoroutine != null)
+            {
+                StopCoroutine(spinDashHitboxRearmCoroutine);
+                spinDashHitboxRearmCoroutine = null;
+            }
+
+            if (spinDashHitboxCollider != null)
+            {
+                spinDashHitboxCollider.enabled = false;
+            }
+        }
+
+        private IEnumerator RearmSpinDashHitboxAfterDelay()
+        {
+            float delay = Mathf.Max(0f, spinDashHitboxRearmDelay);
+            if (delay > 0f)
+                yield return WaitForSecondsCache.Get(delay);
+
+            if (spinDashHitboxPhaseActive)
+            {
+                spinDashHitboxArmed = true;
+                if (spinDashHitboxCollider != null)
+                {
+                    spinDashHitboxCollider.enabled = true;
+                }
+            }
+
+            spinDashHitboxRearmCoroutine = null;
         }
 
         private void CheckAoEHit(float damage, float radius, AttackCategory category)

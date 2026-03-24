@@ -356,6 +356,50 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
+        /// Animation Event: Enables the halberd hitbox window.
+        /// </summary>
+        public void HalberdHitboxStart()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] HalberdHitboxStart invoked");
+
+            cleanserBrain?.OnHalberdHitboxStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Disables the halberd hitbox window.
+        /// </summary>
+        public void HalberdHitboxEnd()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] HalberdHitboxEnd invoked");
+
+            cleanserBrain?.OnHalberdHitboxEnd();
+        }
+
+        /// <summary>
+        /// Animation Event: Enables the wing hitbox window.
+        /// </summary>
+        public void WingHitboxStart()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] WingHitboxStart invoked");
+
+            cleanserBrain?.OnWingHitboxStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Disables the wing hitbox window.
+        /// </summary>
+        public void WingHitboxEnd()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] WingHitboxEnd invoked");
+
+            cleanserBrain?.OnWingHitboxEnd();
+        }
+
+        /// <summary>
         /// Animation Event: Switch to wing attack category (for multi-part attacks).
         /// </summary>
         public void SwitchToWing()
@@ -397,6 +441,39 @@ namespace EnemyBehavior.Boss.Cleanser
                 Debug.Log("[CleanserAnimController] SpawnDiagUpwardSlashProjectile invoked");
 
             cleanserBrain?.OnDiagUpwardSlashProjectile();
+        }
+
+        /// <summary>
+        /// Animation Event: Releases SpareToss volley at the exact throw frame.
+        /// </summary>
+        public void SpareTossRelease()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpareTossRelease invoked");
+
+            cleanserBrain?.OnSpareTossRelease();
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns ultimate low sweep projectile(s).
+        /// </summary>
+        public void SpawnUltimateLowSweepProjectile()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpawnUltimateLowSweepProjectile invoked");
+
+            cleanserBrain?.OnUltimateLowSweepProjectile();
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns ultimate mid sweep projectile(s).
+        /// </summary>
+        public void SpawnUltimateMidSweepProjectile()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpawnUltimateMidSweepProjectile invoked");
+
+            cleanserBrain?.OnUltimateMidSweepProjectile();
         }
 
         /// <summary>

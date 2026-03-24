@@ -132,6 +132,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("References")]
         [Tooltip("Audio source for SFX (uses SoundManager if null).")]
         public AudioSource SFXSource;
+        [Tooltip("Optional dedicated spare-toss volley handler. Auto-found on Awake if left empty.")]
+        [SerializeField] private SpareTossVolley spareTossVolley;
 
         // Runtime state
         private readonly List<SpareWeapon> stockpiledWeapons = new List<SpareWeapon>();
@@ -193,6 +195,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void Awake()
         {
+            spareTossVolley = spareTossVolley ?? GetComponent<SpareTossVolley>();
+
             // Initialize weapons to rest positions
             foreach (var weapon in SpareWeapons)
             {
@@ -446,24 +450,35 @@ namespace EnemyBehavior.Boss.Cleanser
             if (stockpiledWeapons.Count == 0)
                 yield break;
 
+            if (spareTossVolley == null)
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserDualWieldSystem), "[CleanserDualWield] SpareTossVolley reference is missing.");
+#endif
+                yield break;
+            }
+
             PlaySFX(TossLaunchSFX);
 
             var weaponsToLaunch = new List<SpareWeapon>(stockpiledWeapons);
             stockpiledWeapons.Clear();
-
-            var usedLandingPositions = new List<Vector3>();
-            foreach (var weapon in weaponsToLaunch)
-            {
-                if (weapon == null || weapon.WeaponObject == null)
-                    continue;
-
-                Vector3 landingPos = PickLandingPosition(center, usedLandingPositions);
-                usedLandingPositions.Add(landingPos);
-
-                yield return TossWeaponToGroundCoroutine(weapon, landingPos);
-            }
+            yield return spareTossVolley.LaunchVolley(weaponsToLaunch, center, this);
 
             UpdateStockpileLayoutImmediate();
+        }
+
+        public void RegisterWeaponLodged(SpareWeapon weapon)
+        {
+            if (weapon == null)
+                return;
+
+            if (!lodgedWeapons.Contains(weapon))
+                lodgedWeapons.Add(weapon);
+        }
+
+        public void PlaySpareTossImpactSfx()
+        {
+            PlaySFX(TossImpactSFX);
         }
 
         public List<Vector3> GetLodgedWeaponPositions()
@@ -701,66 +716,5 @@ namespace EnemyBehavior.Boss.Cleanser
             return HoverAnchorLocal + lateral + vertical;
         }
 
-        private Vector3 PickLandingPosition(Vector3 center, List<Vector3> usedPositions)
-        {
-            const int attempts = 24;
-            for (int i = 0; i < attempts; i++)
-            {
-                float angle = Random.Range(0f, Mathf.PI * 2f);
-                float radius = Random.Range(LandingRadiusMin, LandingRadiusMax);
-                Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-                candidate.y = transform.position.y;
-
-                bool overlaps = false;
-                for (int j = 0; j < usedPositions.Count; j++)
-                {
-                    if (Vector3.Distance(candidate, usedPositions[j]) < MinLandingSpacing)
-                    {
-                        overlaps = true;
-                        break;
-                    }
-                }
-
-                if (!overlaps)
-                    return candidate;
-            }
-
-            Vector3 fallback = center + Random.onUnitSphere * LandingRadiusMax;
-            fallback.y = transform.position.y;
-            return fallback;
-        }
-
-        private IEnumerator TossWeaponToGroundCoroutine(SpareWeapon weapon, Vector3 landingPos)
-        {
-            Transform wt = weapon.WeaponObject.transform;
-            wt.SetParent(null);
-
-            Vector3 startPos = wt.position;
-            Vector3 control = (startPos + landingPos) * 0.5f + Vector3.up * TossArcHeight;
-
-            float elapsed = 0f;
-            while (elapsed < TossArcDuration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / TossArcDuration);
-                float u = 1f - t;
-                wt.position = u * u * startPos + 2f * u * t * control + t * t * landingPos;
-                yield return null;
-            }
-
-            wt.position = landingPos;
-            wt.rotation = Quaternion.Euler(LodgedRotationEuler.x, Random.Range(0f, 360f), LodgedRotationEuler.z);
-            weapon.IsHeld = false;
-            weapon.IsAtRest = false;
-            weapon.IsReturning = false;
-
-            if (!lodgedWeapons.Contains(weapon))
-                lodgedWeapons.Add(weapon);
-
-            if (TossImpactVFX != null)
-                Instantiate(TossImpactVFX, landingPos, Quaternion.identity);
-
-            PlaySFX(TossImpactSFX);
-        }
     }
 }
