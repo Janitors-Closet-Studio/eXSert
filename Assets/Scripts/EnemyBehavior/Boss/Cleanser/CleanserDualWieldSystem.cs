@@ -1,9 +1,7 @@
 // CleanserDualWieldSystem.cs
-// Purpose: Manages dual-wield mechanics for the Cleanser boss.
+// Purpose: Manages spare-weapon stockpile behavior for the Cleanser boss.
 // Works with: CleanserBrain, CleanserComboSystem
-// Handles spare weapon pickup via magnetism/telekinesis effect.
-// Note: The Cleanser ALWAYS holds his halberd in his right hand. This system manages
-// the spare weapon he can pick up with his left hand (only ONE spare at a time).
+// Spare weapons are stockpiled in a hover cluster, then launched by SpareToss and lodged in ground.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -26,7 +24,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Transform where the weapon rests when not held (in the arena).")]
         public Transform RestPosition;
         
-        [Tooltip("Left hand bone/transform where the spare weapon attaches when held.")]
+        [Tooltip("Legacy left-hand attach point (no longer used by current stockpile workflow).")]
         public Transform HandAttachPoint;
         
         [Tooltip("If true, this weapon is currently held by the Cleanser.")]
@@ -48,14 +46,27 @@ namespace EnemyBehavior.Boss.Cleanser
     public class CleanserDualWieldSystem : MonoBehaviour
     {
         [Header("Spare Weapon Configuration")]
-        [Tooltip("List of spare weapons placed in the arena that can be picked up.")]
+        [Tooltip("List of spare weapons placed in the arena that can be stockpiled.")]
         public List<SpareWeapon> SpareWeapons = new List<SpareWeapon>();
 
-        [Header("Pickup Animation")]
-        [Tooltip("Duration of the magnetism/telekinesis pickup animation.")]
+        [Header("Stockpile Hover")]
+        [Tooltip("Local anchor around the Cleanser where stockpiled weapons hover.")]
+        public Vector3 HoverAnchorLocal = new Vector3(0.8f, 1.8f, -0.2f);
+
+        [Tooltip("Horizontal spacing between stockpiled hover weapons.")]
+        public float HoverSpacing = 0.6f;
+
+        [Tooltip("Vertical offset per stockpiled weapon index to reduce overlap.")]
+        public float HoverVerticalStep = 0.12f;
+
+        [Tooltip("How much yaw spread is applied across stockpiled weapons.")]
+        public float HoverYawSpread = 30f;
+
+        [Header("Acquire Animation")]
+        [Tooltip("Duration of the magnetism/telekinesis acquire animation.")]
         public float PickupAnimationDuration = 0.5f;
         
-        [Tooltip("Curve for the pickup motion (0 = rest position, 1 = left hand).")]
+        [Tooltip("Curve for the acquire motion (0 = rest position, 1 = stockpile hover slot).")]
         public AnimationCurve PickupCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
         
         [Tooltip("VFX prefab to spawn during pickup (magnetism/telekinesis effect).")]
@@ -63,6 +74,34 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("Audio clip to play during pickup.")]
         public AudioClip PickupSFX;
+
+        [Header("Spare Toss (Weapon Rain)")]
+        [Tooltip("Arc duration when launching stockpiled weapons into the ground.")]
+        public float TossArcDuration = 0.7f;
+
+        [Tooltip("Arc height for the toss trajectory.")]
+        public float TossArcHeight = 4f;
+
+        [Tooltip("Minimum spacing between landed weapons so SpinDash points do not overlap.")]
+        public float MinLandingSpacing = 2f;
+
+        [Tooltip("Minimum radius from toss center for landed weapons.")]
+        public float LandingRadiusMin = 3f;
+
+        [Tooltip("Maximum radius from toss center for landed weapons.")]
+        public float LandingRadiusMax = 9f;
+
+        [Tooltip("Blade-down rotation applied to landed weapons.")]
+        public Vector3 LodgedRotationEuler = new Vector3(180f, 0f, 0f);
+
+        [Tooltip("SFX played when stockpiled weapons are launched.")]
+        public AudioClip TossLaunchSFX;
+
+        [Tooltip("SFX played when each weapon impacts the ground.")]
+        public AudioClip TossImpactSFX;
+
+        [Tooltip("Impact VFX spawned when each weapon lodges in the ground.")]
+        public GameObject TossImpactVFX;
 
         [Header("Magnetic Return Settings")]
         [Tooltip("Duration for the weapon to float back to its rest position.")]
@@ -95,7 +134,8 @@ namespace EnemyBehavior.Boss.Cleanser
         public AudioSource SFXSource;
 
         // Runtime state
-        private SpareWeapon currentlyHeldSpare;
+        private readonly List<SpareWeapon> stockpiledWeapons = new List<SpareWeapon>();
+        private readonly List<SpareWeapon> lodgedWeapons = new List<SpareWeapon>();
         private Coroutine pickupCoroutine;
         private Dictionary<SpareWeapon, Coroutine> returnCoroutines = new Dictionary<SpareWeapon, Coroutine>();
         private bool isPickingUp;
@@ -103,7 +143,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <summary>
         /// Returns true if the Cleanser is currently holding a spare weapon.
         /// </summary>
-        public bool IsHoldingSpareWeapon => currentlyHeldSpare != null && currentlyHeldSpare.IsHeld;
+        public bool IsHoldingSpareWeapon => stockpiledWeapons.Count > 0;
         
         /// <summary>
         /// Returns true if a pickup animation is in progress.
@@ -146,7 +186,10 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <summary>
         /// Gets the currently held spare weapon (null if none).
         /// </summary>
-        public SpareWeapon CurrentWeapon => currentlyHeldSpare;
+        public SpareWeapon CurrentWeapon => stockpiledWeapons.Count > 0 ? stockpiledWeapons[0] : null;
+
+        public int StockpiledWeaponCount => stockpiledWeapons.Count;
+        public int LodgedWeaponCount => lodgedWeapons.Count;
 
         private void Awake()
         {
@@ -176,7 +219,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <returns>True if pickup started, false if no weapons available.</returns>
         public bool PickupSpareWeapon()
         {
-            if (isPickingUp || IsHoldingSpareWeapon)
+            if (isPickingUp)
                 return false;
 
             SpareWeapon target = GetNearestAvailableWeapon();
@@ -200,7 +243,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public bool PickupSpareWeapon(int index)
         {
-            if (isPickingUp || IsHoldingSpareWeapon)
+            if (isPickingUp)
                 return false;
                 
             if (index < 0 || index >= SpareWeapons.Count)
@@ -244,6 +287,17 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator PickupWeaponCoroutine(SpareWeapon weapon)
         {
+            if (weapon == null || weapon.WeaponObject == null)
+                yield break;
+
+            if (!weapon.WeaponObject.scene.IsValid())
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserDualWieldSystem), "[CleanserDualWield] Pickup aborted: weapon reference points to a prefab asset instead of a scene instance.");
+#endif
+                yield break;
+            }
+
             isPickingUp = true;
             weapon.IsAtRest = false;
             
@@ -269,11 +323,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 elapsed += Time.deltaTime;
                 float t = PickupCurve.Evaluate(elapsed / PickupAnimationDuration);
                 
-                if (weapon.HandAttachPoint != null)
-                {
-                    weapon.WeaponObject.transform.position = Vector3.Lerp(startPos, weapon.HandAttachPoint.position, t);
-                    weapon.WeaponObject.transform.rotation = Quaternion.Slerp(startRot, weapon.HandAttachPoint.rotation, t);
-                }
+                Vector3 endPos = GetStockpileSlotWorldPosition(stockpiledWeapons.Count);
+                weapon.WeaponObject.transform.position = Vector3.Lerp(startPos, endPos, t);
+                weapon.WeaponObject.transform.rotation = Quaternion.Slerp(startRot, transform.rotation, t);
                 
                 // Move VFX with weapon
                 if (vfx != null)
@@ -282,16 +334,15 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield return null;
             }
 
-            // Parent to left hand
-            if (weapon.HandAttachPoint != null)
-            {
-                weapon.WeaponObject.transform.SetParent(weapon.HandAttachPoint);
-                weapon.WeaponObject.transform.localPosition = Vector3.zero;
-                weapon.WeaponObject.transform.localRotation = Quaternion.identity;
-            }
+            // Parent to boss for stockpile hover layout
+            weapon.WeaponObject.transform.SetParent(transform);
 
             weapon.IsHeld = true;
-            currentlyHeldSpare = weapon;
+            weapon.IsReturning = false;
+            weapon.IsAtRest = false;
+            if (!stockpiledWeapons.Contains(weapon))
+                stockpiledWeapons.Add(weapon);
+            UpdateStockpileLayoutImmediate();
             isPickingUp = false;
             
             // Clean up VFX
@@ -309,14 +360,14 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void ReleaseCurrentWeapon()
         {
-            if (!IsHoldingSpareWeapon)
+            if (stockpiledWeapons.Count == 0)
                 return;
 
-            var weapon = currentlyHeldSpare;
+            var weapon = stockpiledWeapons[0];
+            stockpiledWeapons.RemoveAt(0);
             weapon.IsHeld = false;
-            currentlyHeldSpare = null;
-            
-            // Start magnetic return
+            UpdateStockpileLayoutImmediate();
+
             StartMagneticReturn(weapon);
 
 #if UNITY_EDITOR
@@ -340,12 +391,13 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void DropCurrentWeapon()
         {
-            if (!IsHoldingSpareWeapon)
+            if (stockpiledWeapons.Count == 0)
                 return;
 
-            var weapon = currentlyHeldSpare;
+            var weapon = stockpiledWeapons[0];
+            stockpiledWeapons.RemoveAt(0);
             weapon.IsHeld = false;
-            currentlyHeldSpare = null;
+            UpdateStockpileLayoutImmediate();
             
             // Unparent from hand
             if (weapon.WeaponObject != null)
@@ -384,6 +436,58 @@ namespace EnemyBehavior.Boss.Cleanser
             
             var coroutine = StartCoroutine(MagneticReturnCoroutine(weapon));
             returnCoroutines[weapon] = coroutine;
+        }
+
+        /// <summary>
+        /// Launches all currently stockpiled weapons in an arc and lodges them into the ground.
+        /// </summary>
+        public IEnumerator LaunchStockpiledWeaponsToGround(Vector3 center)
+        {
+            if (stockpiledWeapons.Count == 0)
+                yield break;
+
+            PlaySFX(TossLaunchSFX);
+
+            var weaponsToLaunch = new List<SpareWeapon>(stockpiledWeapons);
+            stockpiledWeapons.Clear();
+
+            var usedLandingPositions = new List<Vector3>();
+            foreach (var weapon in weaponsToLaunch)
+            {
+                if (weapon == null || weapon.WeaponObject == null)
+                    continue;
+
+                Vector3 landingPos = PickLandingPosition(center, usedLandingPositions);
+                usedLandingPositions.Add(landingPos);
+
+                yield return TossWeaponToGroundCoroutine(weapon, landingPos);
+            }
+
+            UpdateStockpileLayoutImmediate();
+        }
+
+        public List<Vector3> GetLodgedWeaponPositions()
+        {
+            var points = new List<Vector3>(lodgedWeapons.Count);
+            foreach (var weapon in lodgedWeapons)
+            {
+                if (weapon?.WeaponObject != null)
+                    points.Add(weapon.WeaponObject.transform.position);
+            }
+            return points;
+        }
+
+        public void ReturnAllLodgedWeaponsToRest()
+        {
+            for (int i = lodgedWeapons.Count - 1; i >= 0; i--)
+            {
+                var weapon = lodgedWeapons[i];
+                if (weapon == null)
+                    continue;
+
+                StartMagneticReturn(weapon);
+            }
+            lodgedWeapons.Clear();
         }
 
         /// <summary>
@@ -466,6 +570,8 @@ namespace EnemyBehavior.Boss.Cleanser
             // Remove from tracking dictionary
             returnCoroutines.Remove(weapon);
 
+            lodgedWeapons.Remove(weapon);
+
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserDualWieldSystem), "[CleanserDualWield] Weapon returned to rest position.");
 #endif
@@ -529,8 +635,9 @@ namespace EnemyBehavior.Boss.Cleanser
                     }
                 }
             }
-            
-            currentlyHeldSpare = null;
+
+            stockpiledWeapons.Clear();
+            lodgedWeapons.Clear();
             isPickingUp = false;
             
 #if UNITY_EDITOR
@@ -551,6 +658,109 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 SoundManager.Instance.sfxSource.PlayOneShot(clip);
             }
+        }
+
+        private void LateUpdate()
+        {
+            if (stockpiledWeapons.Count > 0)
+            {
+                UpdateStockpileLayoutImmediate();
+            }
+        }
+
+        private void UpdateStockpileLayoutImmediate()
+        {
+            int count = stockpiledWeapons.Count;
+            if (count == 0)
+                return;
+
+            for (int i = 0; i < count; i++)
+            {
+                var weapon = stockpiledWeapons[i];
+                if (weapon?.WeaponObject == null)
+                    continue;
+
+                Transform t = weapon.WeaponObject.transform;
+                t.SetParent(transform);
+                t.localPosition = GetStockpileSlotLocalPosition(i, count);
+                t.localRotation = Quaternion.Euler(0f, i * (360f / Mathf.Max(1, count)), 0f);
+            }
+        }
+
+        private Vector3 GetStockpileSlotWorldPosition(int index)
+        {
+            return transform.TransformPoint(GetStockpileSlotLocalPosition(index, Mathf.Max(1, stockpiledWeapons.Count + 1)));
+        }
+
+        private Vector3 GetStockpileSlotLocalPosition(int index, int count)
+        {
+            float normalized = count <= 1 ? 0f : (index / (float)(count - 1) - 0.5f);
+            float yaw = normalized * HoverYawSpread;
+            Vector3 lateral = Quaternion.Euler(0f, yaw, 0f) * Vector3.right * HoverSpacing * normalized * 2f;
+            Vector3 vertical = Vector3.up * (index * HoverVerticalStep);
+            return HoverAnchorLocal + lateral + vertical;
+        }
+
+        private Vector3 PickLandingPosition(Vector3 center, List<Vector3> usedPositions)
+        {
+            const int attempts = 24;
+            for (int i = 0; i < attempts; i++)
+            {
+                float angle = Random.Range(0f, Mathf.PI * 2f);
+                float radius = Random.Range(LandingRadiusMin, LandingRadiusMax);
+                Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+                candidate.y = transform.position.y;
+
+                bool overlaps = false;
+                for (int j = 0; j < usedPositions.Count; j++)
+                {
+                    if (Vector3.Distance(candidate, usedPositions[j]) < MinLandingSpacing)
+                    {
+                        overlaps = true;
+                        break;
+                    }
+                }
+
+                if (!overlaps)
+                    return candidate;
+            }
+
+            Vector3 fallback = center + Random.onUnitSphere * LandingRadiusMax;
+            fallback.y = transform.position.y;
+            return fallback;
+        }
+
+        private IEnumerator TossWeaponToGroundCoroutine(SpareWeapon weapon, Vector3 landingPos)
+        {
+            Transform wt = weapon.WeaponObject.transform;
+            wt.SetParent(null);
+
+            Vector3 startPos = wt.position;
+            Vector3 control = (startPos + landingPos) * 0.5f + Vector3.up * TossArcHeight;
+
+            float elapsed = 0f;
+            while (elapsed < TossArcDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / TossArcDuration);
+                float u = 1f - t;
+                wt.position = u * u * startPos + 2f * u * t * control + t * t * landingPos;
+                yield return null;
+            }
+
+            wt.position = landingPos;
+            wt.rotation = Quaternion.Euler(LodgedRotationEuler.x, Random.Range(0f, 360f), LodgedRotationEuler.z);
+            weapon.IsHeld = false;
+            weapon.IsAtRest = false;
+            weapon.IsReturning = false;
+
+            if (!lodgedWeapons.Contains(weapon))
+                lodgedWeapons.Add(weapon);
+
+            if (TossImpactVFX != null)
+                Instantiate(TossImpactVFX, landingPos, Quaternion.identity);
+
+            PlaySFX(TossImpactSFX);
         }
     }
 }

@@ -119,68 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &18757179
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 18757180}
-  - component: {fileID: 18757182}
-  - component: {fileID: 18757181}
-  m_Layer: 0
-  m_Name: AttackHitbox_Debug
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &18757180
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 18757179}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: 2}
-  m_LocalScale: {x: 1, y: 1, z: 2}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1453178045}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &18757181
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 18757179}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!33 &18757182
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 18757179}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &59580541
 GameObject:
   m_ObjectHideFlags: 0
@@ -311,7 +249,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!33 &294287146
 MeshFilter:
   m_ObjectHideFlags: 10
@@ -2404,6 +2342,66 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &467567982 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 7339073060746803466, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &467567983 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6942533847747032520, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25bc7e41ffc59d94dba3c7d8ab64176a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserAnimController
+--- !u!114 &467567984 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3402071617396780965, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb0a441f2a746b34586e1c51cf0a87c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.VacuumSuctionEffect
+--- !u!114 &467567985 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4109895899566118951, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b4b50c6d5448f2489cfbba9e7aa7f82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserPlatformController
+--- !u!114 &467567986 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c389ff2b8d82cdd469f3ac705c22bca2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserDualWieldSystem
+--- !u!114 &467567988 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+  m_PrefabInstance: {fileID: 2142191634}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17ee5e6a31023954b9db577b013524f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserComboSystem
 --- !u!1 &540802811
 GameObject:
   m_ObjectHideFlags: 0
@@ -3104,785 +3102,6 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
---- !u!1 &1453178035
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1453178045}
-  - component: {fileID: 1453178044}
-  - component: {fileID: 1453178043}
-  - component: {fileID: 1453178042}
-  - component: {fileID: 1453178041}
-  - component: {fileID: 1453178040}
-  - component: {fileID: 1453178039}
-  - component: {fileID: 1453178047}
-  - component: {fileID: 1453178038}
-  - component: {fileID: 1453178037}
-  - component: {fileID: 1453178046}
-  - component: {fileID: 1453178036}
-  m_Layer: 0
-  m_Name: Cleanser_Boss(CapsuleTest)
-  m_TagString: Enemy
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!95 &1453178036
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: d09c4b6c8a75a7740ba26f13e2f3e63d, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
---- !u!114 &1453178037
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b4b50c6d5448f2489cfbba9e7aa7f82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserPlatformController
-  Platforms: []
-  RiseHeight: 8
-  RiseTime: 1.5
-  RiseCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  OrbitRadius: 4
-  OrbitSpeed: 30
-  OrbitCenter: {fileID: 0}
-  PlayerLayerMask:
-    serializedVersion: 2
-    m_Bits: 0
-  MountCheckHeight: 1
-  MountCheckRadius: 1
-  RiseVFXPrefab: {fileID: 0}
-  LowerVFXPrefab: {fileID: 0}
---- !u!114 &1453178038
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c389ff2b8d82cdd469f3ac705c22bca2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserDualWieldSystem
-  SpareWeapons: []
-  PickupAnimationDuration: 0.5
-  PickupCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  PickupVFXPrefab: {fileID: 0}
-  PickupSFX: {fileID: 0}
-  ReturnAnimationDuration: 1.5
-  ReturnCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  ReturnArcHeight: 3
-  ReturnVFXPrefab: {fileID: 0}
-  ReturnSFX: {fileID: 0}
-  ReturnSpinSpeed: 360
-  ShatterVFXPrefab: {fileID: 0}
-  ShatterSFX: {fileID: 0}
-  SFXSource: {fileID: 0}
---- !u!114 &1453178039
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 17ee5e6a31023954b9db577b013524f7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserComboSystem
-  Combos:
-  - ComboName: TestCombo
-    SelectionWeight: 5
-    MinRange: 0
-    MaxRange: 15
-    ComboCooldown: 2
-    MinAggressionLevel: 1
-    MaxAggressionLevel: 5
-    Steps:
-    - BasicAttack: 1
-      IsFinisher: 0
-      StrongAttack: 0
-      PreDelay: 0
-      PickupSpareWeaponBefore: 0
-    - BasicAttack: 2
-      IsFinisher: 0
-      StrongAttack: 0
-      PreDelay: 0
-      PickupSpareWeaponBefore: 0
-    - BasicAttack: 0
-      IsFinisher: 1
-      StrongAttack: 1
-      PreDelay: 0
-      PickupSpareWeaponBefore: 0
-  PostFinisherRecovery: 3
-  VulnerableDuringRecovery: 1
-  RecoveryDamageMultiplier: 1.5
-  AutoPickupBeforeStrongAttack: 1
---- !u!114 &1453178040
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c5c625585bc7ba4e997fe09dfb85ef3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserBrain
-  inspectorHelp: 'CleanserBrain: Main AI controller for the Cleanser boss.
-
-    Manages
-    combo execution, dual-wield mechanics, and ultimate attacks.
-
-    Wing attacks
-    can be guarded but not parried.
-
-    Halberd attacks can be parried but guard
-    won''t help.'
-  betaDummyMode: 0
-  dummyModeStoppingDistance: 3
-  profile: {fileID: 11400000, guid: de31b6f4202553541af11a7539cc903e, type: 2}
-  maxHealth: 500
-  currentHealth: 500
-  healthBar: {fileID: 0}
-  healthBarLerpSpeed: 8
-  exemptFromAttackQueue: 1
-  LungeAttack:
-    ID: Lunge
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 2
-    RangeMin: 3
-    RangeMax: 8
-    AnimationTrigger: Attack_Lunge
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 1
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  OverheadCleaveAttack:
-    ID: OverheadCleave
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: 
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  SlashIntoSlapAttack:
-    ID: SlashIntoSlap
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: 
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  RakeIntoSpinSlashAttack:
-    ID: RakeIntoSpinSlash
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: 
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  SpinSlashOnlyAttack:
-    ID: SpinSlashOnly
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: 
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  LegSweepAttack:
-    ID: LegSweep
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: 
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  SpareTossSettings:
-    AnimationTrigger: Attack_SpareToss
-    ThrowSequentially: 1
-    ProjectileCount: 1
-    AllowedPathTypes: -1
-    UseStraightPath: 1
-    ReturnsOnStraightPath: 0
-    UseCurvedBoomerang: 0
-    CurveWidthRange: {x: 5, y: 10}
-    OvershootDistanceRange: {x: 3, y: 8}
-    ProjectileSpeedRange: {x: 15, y: 25}
-    UseHoming: 1
-    HomingUpdateInterval: 0.3
-    HomingStrength: 0.5
-    WallLayerMask:
-      serializedVersion: 2
-      m_Bits: 0
-    DestroyOnWallHit: 1
-    ThrowSFX: {fileID: 0}
-    HitSFX: {fileID: 0}
-  ProjectilePrefab: {fileID: 0}
-  ProjectileSpawnPoint: {fileID: 0}
-  SpinDashSettings:
-    AnimationTrigger: Attack_SpinDash
-    RandomDashCount: 1
-    AlwaysTripleDash: 0
-    DashSpeed: 20
-    DashDuration: 0.4
-    DelayBetweenDashes: 0.3
-    DashSFX: {fileID: 0}
-    DashVFX: {fileID: 0}
-  KnockbackSettings:
-    KnockbackForce: 15
-    VerticalForce: 5
-    KnockbackRadius: 4
-    Damage: 15
-    AnimationTrigger: Attack_Knockback
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  MiniCrescentSettings:
-    WaveSpeed: 20
-    Damage: 20
-    WaveWidth: 8
-    WaveHeight: 1.5
-    MaxDistance: 25
-    AnimationTrigger: Attack_MiniCrescent
-    SlashSFX: {fileID: 0}
-    WavePrefab: {fileID: 0}
-  GapCloseDashSettings:
-    DashSpeed: 25
-    DashDuration: 0.3
-    MinDistanceToUse: 8
-    TargetStopDistance: 3
-    MinAggressionLevel: 4
-    AnimationTrigger: Dash_GapClose
-    DashSFX: {fileID: 0}
-    DashVFX: {fileID: 0}
-  HighDiveAttack:
-    ID: HighDive
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: 
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  AnimeDashSlashAttack:
-    ID: AnimeDashSlash
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: 
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  WhirlwindSettings:
-    AnimationTrigger: Attack_Whirlwind
-    SuctionDuration: 4
-    SuctionStrength: 12
-    MaxSuctionStrength: 20
-    SuctionRadius: 15
-    DamageTickInterval: 0.5
-    DamagePerTick: 5
-    LeapDistance: 8
-    LeapDuration: 0.6
-    SlamAoERadius: 5
-    SlamDamage: 30
-    SpinSFX: {fileID: 0}
-    SlamSFX: {fileID: 0}
-    SpinVFX: {fileID: 0}
-    SlamVFX: {fileID: 0}
-  UltimateSettings:
-    WaveSpeed: 25
-    LowSweepHeight: 0.5
-    MidSweepHeight: 3
-    WaveWidth: 20
-    SweepDamage: 25
-    ChargeUpTime: 8
-    AerialHitDelay: 2
-    RequiredAerialHits: 2
-    PlatformRiseHeight: 6
-    PlatformOrbitRadius: 4
-    PlatformOrbitSpeed: 30
-    PlatformRiseTime: 1.5
-    MassiveStrikeDamage: 80
-    GuardMitigationCap: 0.3
-    MassiveStrikeRadius: 20
-    PlayCutsceneOnFirstUse: 1
-    CutsceneDuration: 4
-    InitiateSFX: {fileID: 0}
-    SweepSFX: {fileID: 0}
-    ChargeSFX: {fileID: 0}
-    MassiveStrikeSFX: {fileID: 0}
-    MassiveStrikeVFX: {fileID: 0}
-  CrescentWavePrefab: {fileID: 0}
-  WallJumpPositions: []
-  FallbackSpeed: 8
-  FallbackAngularSpeed: 120
-  FallbackAcceleration: 8
-  FallbackStoppingDistance: 2
-  SpareWeaponPickupChance: 0.3
-  AlwaysPickupForSpecialAttacks: 1
-  UseDamageReductionEvents: 1
-  AerialFinisherStunDuration: 3
-  UltimateHealthThreshold: 0.5
-  MinAttacksBetweenUltimates: 999
-  UltimateTriggeredByHealth: 0
-  comboSystem: {fileID: 1453178039}
-  dualWieldSystem: {fileID: 1453178038}
-  platformController: {fileID: 1453178037}
-  aggressionSystem: {fileID: 0}
-  suctionEffect: {fileID: 1453178046}
-  animController: {fileID: 0}
-  animator: {fileID: 1453178036}
-  sfxSource: {fileID: 0}
-  paramMoveSpeed: MoveSpeed
-  paramIsMoving: IsMoving
-  triggerStunned: Stunned
-  triggerDeath: Death
-  attackIndicatorPrefab: {fileID: 0}
-  attackIndicatorOffset: {x: 0, y: 0.5, z: 2}
-  attackIndicatorLeadTime: 0.4
-  attackIndicatorDuration: 0
-  attackIndicatorFollowsBoss: 1
-  attackIndicatorScale: 1
---- !u!195 &1453178041
-NavMeshAgent:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_AgentTypeID: 0
-  m_Radius: 0.5
-  m_Speed: 3.5
-  m_Acceleration: 8
-  avoidancePriority: 50
-  m_AngularSpeed: 120
-  m_StoppingDistance: 0
-  m_AutoTraverseOffMeshLink: 1
-  m_AutoBraking: 1
-  m_AutoRepath: 1
-  m_Height: 2
-  m_BaseOffset: 1
-  m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
---- !u!136 &1453178042
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &1453178043
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1453178044
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
---- !u!4 &1453178045
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 10}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 18757180}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1453178046
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb0a441f2a746b34586e1c51cf0a87c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.VacuumSuctionEffect
-  BasePullStrength: 8
-  MaxPullStrength: 15
-  EffectiveRadius: 25
-  MaxStrengthRadius: 3
-  RampUpSpeed: 0.3
-  BlockSuctionBehindPillars: 0
-  PillarBlockingLayerMask:
-    serializedVersion: 2
-    m_Bits: 0
-  UseHeightThreshold: 0
-  HeightThreshold: 5
-  UsePathfinding: 1
-  PathRecalculateInterval: 0.15
-  WaypointReachedThreshold: 1.5
-  NavMeshAreaMask: -1
-  ObstacleLayerMask:
-    serializedVersion: 2
-    m_Bits: 0
-  ObstacleAvoidanceRadius: 1
-  SuctionVFX: {fileID: 0}
-  VacuumAudioSource: {fileID: 0}
-  SuctionTarget: {fileID: 0}
-  ArenaManager: {fileID: 0}
---- !u!114 &1453178047
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1453178035}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62ae44156d573124c8e098f0eccdda2a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserAggressionSystem
-  aggressionValue: 0
-  minAggressionValue: 0
-  maxAggressionValue: 100
-  forceMaxAggressionOnLowHealth: 1
-  forceMaxAggressionHealthThreshold: 0.25
-  permanentForceMaxAggression: 0
-  aggressionRangeRadius: 10
-  playerLayerMask:
-    serializedVersion: 2
-    m_Bits: 64
-  detectPlayerGuarding: 1
-  guardCheckInterval: 0.1
-  modifiers:
-    PlayerAttackProximity: 1
-    PlayerHitsBoss: 3
-    PlayerRetreats: 2
-    PlayerGuardingPerSecond: 0.5
-    PlayerBlocks: 1
-    PlayerParries: 2
-    PlayerCounters: 3
-    PlayerMaxStacksCounter: 5
-    UltimateCanceled: 10
-    UltimateCompleted: 5
-    IdleDecayPerSecond: 1
-    CleanserCounterDecay: 5
-    IdleEscalationThreshold: 5
-    IdleEscalationBase: 2
-    IdleEscalationLogMultiplier: 3
-  levelMultipliers:
-    Level1Multiplier: 1
-    Level2Multiplier: 2
-    Level3Multiplier: 3
-    Level4Multiplier: 4
-    Level5Multiplier: 5
-  counterChances:
-  - Level: 1
-    ChanceAtZeroStacks: 0.02
-    ChanceAtMediumStacks: 0.02
-    ChanceAtMaxStacks: 0
-  - Level: 2
-    ChanceAtZeroStacks: 0.15
-    ChanceAtMediumStacks: 0.05
-    ChanceAtMaxStacks: 0
-  - Level: 3
-    ChanceAtZeroStacks: 0.35
-    ChanceAtMediumStacks: 0.1
-    ChanceAtMaxStacks: 0
-  - Level: 4
-    ChanceAtZeroStacks: 0.6
-    ChanceAtMediumStacks: 0.2
-    ChanceAtMaxStacks: 0.02
-  - Level: 5
-    ChanceAtZeroStacks: 1
-    ChanceAtMediumStacks: 0.35
-    ChanceAtMaxStacks: 0.1
-  movementConfigs:
-  - Level: 1
-    SpeedMultiplier: 0.7
-    PreferredDistance: 8
-    RepositionInterval: 3
-    AggressivelyClosesDistance: 0
-    CanUseDash: 0
-    StrafeChance: 0.7
-  - Level: 2
-    SpeedMultiplier: 0.85
-    PreferredDistance: 6
-    RepositionInterval: 2.5
-    AggressivelyClosesDistance: 0
-    CanUseDash: 0
-    StrafeChance: 0.5
-  - Level: 3
-    SpeedMultiplier: 1
-    PreferredDistance: 5
-    RepositionInterval: 2
-    AggressivelyClosesDistance: 1
-    CanUseDash: 0
-    StrafeChance: 0.3
-  - Level: 4
-    SpeedMultiplier: 1.15
-    PreferredDistance: 4
-    RepositionInterval: 1.5
-    AggressivelyClosesDistance: 1
-    CanUseDash: 1
-    StrafeChance: 0.2
-  - Level: 5
-    SpeedMultiplier: 1.3
-    PreferredDistance: 3
-    RepositionInterval: 1
-    AggressivelyClosesDistance: 1
-    CanUseDash: 1
-    StrafeChance: 0.1
-  counterAnimationTrigger: Counter
-  counterDamage: 25
-  counterParryWindow: 0.4
-  showAggressionRangeGizmo: 1
 --- !u!1001 &1856932767
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3935,6 +3154,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: wallstuff temp
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 7f3ce25d8e174af40bad8f28886c335b, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3948,6 +3171,54 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 457084441989478713, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 692632389850335451, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1879549587664808902, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: Combos.Array.data[0].ComboName
+      value: Combo1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: Combos.Array.data[0].Steps.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: Combos.Array.data[0].Steps.Array.data[0].BasicAttack
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2967145911899555464, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3131333200268893295, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3256155223603209351, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3588732094955064391, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3805394771299645411, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3863215770838009795, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4119839093308741906, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.067552
@@ -3988,34 +3259,118 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4542901001349318665, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4557741119611530341, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: m_Name
       value: Boss_Cleanser
       objectReference: {fileID: 0}
+    - target: {fileID: 4953254442295635078, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4985742382423956764, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5326748529468535302, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: animator
       value: 
-      objectReference: {fileID: 1453178036}
+      objectReference: {fileID: 467567982}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: comboSystem
       value: 
-      objectReference: {fileID: 1453178039}
+      objectReference: {fileID: 467567988}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: betaDummyMode
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: suctionEffect
       value: 
-      objectReference: {fileID: 1453178046}
+      objectReference: {fileID: 467567984}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: animController
+      value: 
+      objectReference: {fileID: 467567983}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: dualWieldSystem
       value: 
-      objectReference: {fileID: 1453178038}
+      objectReference: {fileID: 467567986}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: platformController
       value: 
-      objectReference: {fileID: 1453178037}
+      objectReference: {fileID: 467567985}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: GapCloseDashSettings.AnimationTrigger
+      value: GapCloseDash
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: DiagUpwardSlashAttack.PartCategories.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5661287960175230491, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6444796255983692030, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.3456
+      objectReference: {fileID: 0}
+    - target: {fileID: 6444796255983692030, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.0638
+      objectReference: {fileID: 0}
+    - target: {fileID: 6444796255983692030, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1.275
+      objectReference: {fileID: 0}
+    - target: {fileID: 6738101640510608029, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7013322031023464175, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.179
+      objectReference: {fileID: 0}
+    - target: {fileID: 7013322031023464175, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.013
+      objectReference: {fileID: 0}
+    - target: {fileID: 7013322031023464175, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.199
+      objectReference: {fileID: 0}
     - target: {fileID: 7339073060746803466, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: m_Avatar
       value: 
       objectReference: {fileID: 9000000, guid: f22d293b78079d347ba405534d6bf7bd, type: 3}
+    - target: {fileID: 7354344309646800665, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7557028378129576759, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7880857795613731960, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8069808948076308616, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8367154512084554134, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4027,10 +3382,9 @@ SceneRoots:
   m_Roots:
   - {fileID: 1274315432}
   - {fileID: 59580546}
-  - {fileID: 1453178045}
   - {fileID: 879541705}
   - {fileID: 1147248246}
-  - {fileID: 2142191634}
   - {fileID: 357719416}
   - {fileID: 294287149}
   - {fileID: 1856932767}
+  - {fileID: 2142191634}

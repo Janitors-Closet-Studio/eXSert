@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 using Utilities.Combat;
 using Managers.TimeLord; // For pause event handling
 
@@ -53,48 +54,77 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private bool exemptFromAttackQueue = true;
         
         [Header("Basic Attack Configurations")]
+        [Tooltip("Basic melee attack descriptor: Lunge.")]
         public CleanserAttackDescriptor LungeAttack;
+        [Tooltip("Basic melee attack descriptor: Lunge with blocking windup.")]
+        public CleanserAttackDescriptor LungeBlockAttack;
+        [Tooltip("Basic melee attack descriptor: Overhead cleave.")]
         public CleanserAttackDescriptor OverheadCleaveAttack;
+        [Tooltip("Basic melee attack descriptor: Cleave.")]
+        public CleanserAttackDescriptor CleaveAttack;
+        [Tooltip("Basic melee attack descriptor: Advancing cleave.")]
+        public CleanserAttackDescriptor CleaveAdvanceAttack;
+        [Tooltip("Basic melee attack descriptor: Pommel strike.")]
+        public CleanserAttackDescriptor PommelStrikeAttack;
+        [Tooltip("Basic melee attack descriptor: Diagonal upward slash.")]
+        public CleanserAttackDescriptor DiagUpwardSlashAttack;
+        [Tooltip("Basic melee attack descriptor: Wing bash.")]
+        public CleanserAttackDescriptor WingBashAttack;
+        [Tooltip("Basic mixed attack descriptor: Slash into slap.")]
         public CleanserAttackDescriptor SlashIntoSlapAttack;
+        [Tooltip("Basic mixed attack descriptor: Rake into spin slash.")]
         public CleanserAttackDescriptor RakeIntoSpinSlashAttack;
-        public CleanserAttackDescriptor SpinSlashOnlyAttack;
+        [Tooltip("Basic melee attack descriptor: Leg sweep.")]
         public CleanserAttackDescriptor LegSweepAttack;
-
-        [Header("Spare Toss Configuration")]
-        public SpareTossConfig SpareTossSettings = new SpareTossConfig();
-        [Tooltip("Prefab for the thrown weapon projectile (visual only - the actual spare weapon returns magnetically).")]
-        public GameObject ProjectilePrefab;
-        [Tooltip("Transform where projectiles spawn from (hand).")]
-        public Transform ProjectileSpawnPoint;
-
-        [Header("Spin Dash Configuration")]
-        public SpinDashConfig SpinDashSettings = new SpinDashConfig();
-
-        [Header("Knockback Attack Configuration")]
-        [Tooltip("Configuration for the knockback attack that pushes player away.")]
-        public KnockbackAttackConfig KnockbackSettings = new KnockbackAttackConfig();
-        
-        [Header("Mini Crescent Wave Configuration")]
-        [Tooltip("Configuration for the mini crescent wave ranged attack.")]
-        public MiniCrescentWaveConfig MiniCrescentSettings = new MiniCrescentWaveConfig();
-        
-        [Header("Gap-Closing Dash Configuration")]
-        [Tooltip("Configuration for the gap-closing dash (no hitbox).")]
-        public GapClosingDashConfig GapCloseDashSettings = new GapClosingDashConfig();
+        [Tooltip("Configuration for the SpinDash basic move (uses JumpSpinAttack animation clips/states).")]
+        [FormerlySerializedAs("JumpSpinSettings")]
+        public JumpSpinAttackConfig SpinDashSettings = new JumpSpinAttackConfig();
 
         [Header("Strong Attack Configurations")]
+        [Tooltip("Strong finisher descriptor: High Dive.")]
         public CleanserAttackDescriptor HighDiveAttack;
+        [Tooltip("Strong finisher descriptor: Anime Dash Slash.")]
         public CleanserAttackDescriptor AnimeDashSlashAttack;
-        
-        [Header("Whirlwind Configuration")]
+        [Tooltip("Configuration for Whirlwind strong attack.")]
         public WhirlwindConfig WhirlwindSettings = new WhirlwindConfig();
 
         [Header("Ultimate Attack Configuration")]
+        [Tooltip("Main ultimate settings block for Double Maximum Sweep.")]
         public DoubleMaximumSweepConfig UltimateSettings = new DoubleMaximumSweepConfig();
-        [Tooltip("Prefab for the crescent wave projectile.")]
+        [Tooltip("Positions where Cleanser can jump to perform the double sweep setup.")]
+        public List<Transform> DoubleSweepPositions = new List<Transform>();
+        [Tooltip("Duration of stun when ultimate is canceled by aerial plunge finisher.")]
+        public float AerialFinisherStunDuration = 3f;
+        [Tooltip("Health percentage at which ultimate becomes available.")]
+        [Range(0f, 1f)] public float UltimateHealthThreshold = 0.5f;
+        [Tooltip("Minimum attacks between ultimate uses when using attack-count trigger mode.")]
+        public int MinAttacksBetweenUltimates = 15;
+        [Tooltip("If true, ultimate triggers by health threshold. If false, triggers by attacks since last ultimate.")]
+        public bool UltimateTriggeredByHealth = true;
+        [Tooltip("Animator state used during dedicated ultimate hover phase.")]
+        [SerializeField] private string stateUltimateHover = "JumpArcHold";
+
+        [Header("Crescent Wave Projectile Configuration")]
+        [Tooltip("Shared crescent-wave projectile settings used by DiagUpwardSlash and ultimate sweeps.")]
+        public CrescentArcProjectileConfig CrescentWaveProjectileConfiguration = new CrescentArcProjectileConfig();
+        [Tooltip("Legacy fallback projectile prefab used if per-attack crescent prefab is not assigned.")]
         public GameObject CrescentWavePrefab;
-        [Tooltip("Positions on walls where Cleanser can jump to for ultimate.")]
-        public List<Transform> WallJumpPositions = new List<Transform>();
+
+        [Header("Spare Toss Configuration")]
+        [Tooltip("Behavior settings for spare toss projectiles.")]
+        public SpareTossConfig SpareTossSettings = new SpareTossConfig();
+        [Tooltip("Prefab for the thrown weapon projectile (visual only - the actual spare weapon returns magnetically).")]
+        public GameObject ProjectilePrefab;
+        [Tooltip("Transform where spare toss projectiles spawn from (typically the hand).")]
+        public Transform ProjectileSpawnPoint;
+
+        [Header("Knockback Configuration")]
+        [Tooltip("Configuration for the knockback attack that pushes player away.")]
+        public KnockbackAttackConfig KnockbackSettings = new KnockbackAttackConfig();
+
+        [Header("Movement Configuration")]
+        [Tooltip("Configuration for the gap-closing dash (movement only, no hitbox).")]
+        public GapClosingDashConfig GapCloseDashSettings = new GapClosingDashConfig();
 
         [Header("Movement (Fallback if no Profile)")]
         [Tooltip("Base movement speed (used if profile is null).")]
@@ -106,11 +136,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Stopping distance from target (used if profile is null).")]
         public float FallbackStoppingDistance = 2f;
 
-        [Header("Dual-Wield Settings")]
-        [Tooltip("Chance (0-1) to pick up a spare weapon before starting a combo.")]
-        [Range(0f, 1f)] public float SpareWeaponPickupChance = 0.3f;
-        [Tooltip("If true, always picks up spare weapon before these specific attacks regardless of chance.")]
-        public bool AlwaysPickupForSpecialAttacks = true;
+        [Header("Misc Configuration")]
 
         [Header("Windup Damage Reduction")]
         [Tooltip("If true, check for animation events to enable/disable damage reduction.")]
@@ -118,32 +144,34 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isDamageReductionActive = false;
         private float currentDamageReduction = 1f;
 
-        [Header("Stun Settings")]
-        [Tooltip("Duration of stun when interrupted by aerial finisher during ultimate.")]
-        public float AerialFinisherStunDuration = 3f;
-        
-        [Header("Ultimate Trigger")]
-        [Tooltip("Health percentage at which ultimate becomes available.")]
-        [Range(0f, 1f)] public float UltimateHealthThreshold = 0.5f;
-        [Tooltip("Minimum attacks between ultimate uses.")]
-        public int MinAttacksBetweenUltimates = 15;
-        [Tooltip("If true, ultimate triggers based on health threshold. If false, uses attack count.")]
-        public bool UltimateTriggeredByHealth = true;
-
         [Header("References")]
+        [Tooltip("Combo system component reference.")]
         [SerializeField] private CleanserComboSystem comboSystem;
+        [Tooltip("Dual-wield system component reference.")]
         [SerializeField] private CleanserDualWieldSystem dualWieldSystem;
+        [Tooltip("Platform controller component reference.")]
         [SerializeField] private CleanserPlatformController platformController;
+        [Tooltip("Aggression system component reference.")]
         [SerializeField] private CleanserAggressionSystem aggressionSystem;
+        [Tooltip("Whirlwind suction effect component reference.")]
         [SerializeField] private VacuumSuctionEffect suctionEffect;
+        [Tooltip("Animation controller wrapper. Auto-found on Awake if left empty.")]
         [SerializeField] private CleanserAnimController animController;
+        [Tooltip("Animator component used for fallback parameter/trigger control. Auto-found on Awake if left empty.")]
         [SerializeField] private Animator animator;
+        [Tooltip("Audio source for boss SFX. Auto-falls back to SoundManager if left empty.")]
         [SerializeField] private AudioSource sfxSource;
 
         [Header("Animator Parameters")]
+        [Tooltip("Animator float parameter for movement speed magnitude.")]
         [SerializeField] private string paramMoveSpeed = "MoveSpeed";
+        [Tooltip("Animator bool parameter indicating moving/not moving state.")]
         [SerializeField] private string paramIsMoving = "IsMoving";
+        [Tooltip("Animator bool parameter indicating whether a player target is available.")]
+        [SerializeField] private string paramIsPlayerHere = "IsPlayerHere";
+        [Tooltip("Animator trigger parameter for stunned reaction.")]
         [SerializeField] private string triggerStunned = "Stunned";
+        [Tooltip("Animator trigger parameter for death.")]
         [SerializeField] private string triggerDeath = "Death";
 
         [Header("Attack Indicator VFX")]
@@ -172,9 +200,12 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isStunned;
         private bool isExecutingUltimate;
         private bool isExecutingAttack;
+        private bool isInUltimateHoverPhase;
+        private bool ultimateCanceledByAerial;
         private int attacksSinceUltimate;
         private bool hasUsedUltimate;
         private int aerialHitsReceived;
+        private float ultimateHoverPauseTimer;
         private Coroutine mainLoopCoroutine;
         private Coroutine currentAttackCoroutine;
         private Dictionary<string, float> attackCooldowns = new Dictionary<string, float>();
@@ -253,6 +284,12 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             currentHealth -= finalDamage;
+
+            // During dedicated ultimate hover phase, player damage pauses the resolution timer briefly.
+            if (isInUltimateHoverPhase && finalDamage > 0f)
+            {
+                ultimateHoverPauseTimer = Mathf.Max(ultimateHoverPauseTimer, UltimateSettings.HoverTimerPauseOnDamage);
+            }
 
             // Notify aggression system that player hit the boss
             if (aggressionSystem != null)
@@ -493,9 +530,18 @@ namespace EnemyBehavior.Boss.Cleanser
         private void UpdateAnimatorParameters()
         {
             if (agent == null) return;
+
+            if (animator != null && !string.IsNullOrEmpty(paramIsPlayerHere))
+            {
+                animator.SetBool(paramIsPlayerHere, player != null);
+            }
             
             float speed = agent.velocity.magnitude;
             float normalizedSpeed = agent.speed > 0f ? speed / agent.speed : 0f;
+
+            // Prevent locomotion updates from interrupting active attack/ultimate/stun animations.
+            if (isExecutingAttack || isExecutingUltimate || isStunned)
+                return;
             
             // Use animation controller if available, otherwise fall back to direct animator
             if (animController != null)
@@ -572,11 +618,29 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 2f,
                     RangeMin = 3f,
                     RangeMax = 8f,
-                    AnimationTrigger = "Lunge",
+                    AnimationTrigger = "Attack_Lunge",
                     HasWindupDamageReduction = true,
                     WindupDamageReduction = 0.5f,
                     IncludesMovement = true,
                     MovementDistance = 5f
+                };
+            }
+
+            if (string.IsNullOrEmpty(LungeBlockAttack?.ID))
+            {
+                LungeBlockAttack = new CleanserAttackDescriptor
+                {
+                    ID = "LungeBlock",
+                    Category = AttackCategory.Halberd,
+                    BaseDamage = 18f,
+                    Cooldown = 2.5f,
+                    RangeMin = 2f,
+                    RangeMax = 8f,
+                    AnimationTrigger = "Attack_LungeBlock",
+                    HasWindupDamageReduction = true,
+                    WindupDamageReduction = 0.5f,
+                    IncludesMovement = true,
+                    MovementDistance = 4f
                 };
             }
 
@@ -590,7 +654,79 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 2.5f,
                     RangeMin = 0f,
                     RangeMax = 4f,
-                    AnimationTrigger = "OverheadAttack"
+                    AnimationTrigger = "Attack_OverheadCleave"
+                };
+            }
+
+            if (string.IsNullOrEmpty(CleaveAttack?.ID))
+            {
+                CleaveAttack = new CleanserAttackDescriptor
+                {
+                    ID = "Cleave",
+                    Category = AttackCategory.Halberd,
+                    BaseDamage = 20f,
+                    Cooldown = 2.2f,
+                    RangeMin = 0f,
+                    RangeMax = 4f,
+                    AnimationTrigger = "Attack_Cleave"
+                };
+            }
+
+            if (string.IsNullOrEmpty(CleaveAdvanceAttack?.ID))
+            {
+                CleaveAdvanceAttack = new CleanserAttackDescriptor
+                {
+                    ID = "CleaveAdvance",
+                    Category = AttackCategory.Halberd,
+                    BaseDamage = 22f,
+                    Cooldown = 2.6f,
+                    RangeMin = 1f,
+                    RangeMax = 7f,
+                    AnimationTrigger = "Attack_CleaveAdvance",
+                    IncludesMovement = true,
+                    MovementDistance = 3.5f
+                };
+            }
+
+            if (string.IsNullOrEmpty(PommelStrikeAttack?.ID))
+            {
+                PommelStrikeAttack = new CleanserAttackDescriptor
+                {
+                    ID = "PommelStrike",
+                    Category = AttackCategory.Halberd,
+                    BaseDamage = 16f,
+                    Cooldown = 2f,
+                    RangeMin = 0f,
+                    RangeMax = 3f,
+                    AnimationTrigger = "Attack_PommelStrike"
+                };
+            }
+
+            if (string.IsNullOrEmpty(DiagUpwardSlashAttack?.ID))
+            {
+                DiagUpwardSlashAttack = new CleanserAttackDescriptor
+                {
+                    ID = "DiagUpwardSlash",
+                    Category = AttackCategory.Halberd,
+                    BaseDamage = 17f,
+                    Cooldown = 2f,
+                    RangeMin = 0f,
+                    RangeMax = 4f,
+                    AnimationTrigger = "Attack_DiagUpwardSlash"
+                };
+            }
+
+            if (string.IsNullOrEmpty(WingBashAttack?.ID))
+            {
+                WingBashAttack = new CleanserAttackDescriptor
+                {
+                    ID = "WingBash",
+                    Category = AttackCategory.Wing,
+                    BaseDamage = 14f,
+                    Cooldown = 2f,
+                    RangeMin = 0f,
+                    RangeMax = 3f,
+                    AnimationTrigger = "Attack_WingBash"
                 };
             }
 
@@ -604,7 +740,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 3f,
                     RangeMin = 0f,
                     RangeMax = 5f,
-                    AnimationTrigger = "SlashSlap",
+                    AnimationTrigger = "Attack_SlashSlap",
                     IsMultiPart = true,
                     PartCategories = new[] { AttackCategory.Halberd, AttackCategory.Wing },
                     IncludesMovement = true,
@@ -622,23 +758,9 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 3f,
                     RangeMin = 0f,
                     RangeMax = 4f,
-                    AnimationTrigger = "RakeSpin",
+                    AnimationTrigger = "Attack_RakeSpin",
                     IsMultiPart = true,
                     PartCategories = new[] { AttackCategory.Wing, AttackCategory.Halberd }
-                };
-            }
-
-            if (string.IsNullOrEmpty(SpinSlashOnlyAttack?.ID))
-            {
-                SpinSlashOnlyAttack = new CleanserAttackDescriptor
-                {
-                    ID = "SpinSlashOnly",
-                    Category = AttackCategory.Halberd,
-                    BaseDamage = 20f,
-                    Cooldown = 2f,
-                    RangeMin = 0f,
-                    RangeMax = 4f,
-                    AnimationTrigger = "SpinSlash"
                 };
             }
 
@@ -652,7 +774,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 4f,
                     RangeMin = 0f,
                     RangeMax = 5f,
-                    AnimationTrigger = "LegSweep",
+                    AnimationTrigger = "Attack_LegSweep",
                     CanStunPlayer = true
                 };
             }
@@ -667,7 +789,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 8f,
                     RangeMin = 0f,
                     RangeMax = 10f,
-                    AnimationTrigger = "HighDive"
+                    AnimationTrigger = "Attack_HighDive"
                 };
             }
 
@@ -681,7 +803,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     Cooldown = 10f,
                     RangeMin = 0f,
                     RangeMax = 15f,
-                    AnimationTrigger = "AnimeDash"
+                    AnimationTrigger = "Attack_AnimeDash"
                 };
             }
         }
@@ -841,38 +963,20 @@ namespace EnemyBehavior.Boss.Cleanser
             comboSystem.StartCombo(combo);
             pickedUpWeaponThisCombo = false;
             
-            // Chance-based pickup at START of combo
-            if (dualWieldSystem != null && !dualWieldSystem.IsHoldingSpareWeapon 
-                && dualWieldSystem.AvailableSpareWeaponCount > 0)
-            {
-                if (Random.value < SpareWeaponPickupChance)
-                {
-                    dualWieldSystem.PickupSpareWeapon();
-                    yield return new WaitUntil(() => !dualWieldSystem.IsPickingUp);
-                    pickedUpWeaponThisCombo = true;
-                }
-            }
-            
             while (comboSystem.IsExecutingCombo)
             {
                 var step = comboSystem.GetCurrentStep();
                 if (step == null)
                     break;
-                
-                // Check for forced pickup before special attacks
-                if (AlwaysPickupForSpecialAttacks && step.IsFinisher && !pickedUpWeaponThisCombo)
+
+                // Step-directed pickup (designer controlled).
+                if (step.PickupSpareWeaponBefore && dualWieldSystem != null
+                    && !dualWieldSystem.IsHoldingSpareWeapon
+                    && dualWieldSystem.AvailableSpareWeaponCount > 0)
                 {
-                    bool isSpecialAttack = step.StrongAttack == CleanserStrongAttack.AnimeDashSlash 
-                        || step.StrongAttack == CleanserStrongAttack.Whirlwind;
-                        
-                    if (isSpecialAttack && dualWieldSystem != null 
-                        && !dualWieldSystem.IsHoldingSpareWeapon 
-                        && dualWieldSystem.AvailableSpareWeaponCount > 0)
-                    {
-                        dualWieldSystem.PickupSpareWeapon();
-                        yield return new WaitUntil(() => !dualWieldSystem.IsPickingUp);
-                        pickedUpWeaponThisCombo = true;
-                    }
+                    dualWieldSystem.PickupSpareWeapon();
+                    yield return new WaitUntil(() => !dualWieldSystem.IsPickingUp);
+                    pickedUpWeaponThisCombo = true;
                 }
                 
                 if (step.PreDelay > 0f)
@@ -897,10 +1001,18 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield return null;
             }
             
-            // Release spare weapon at END of combo (returns magnetically to rest position)
-            if (pickedUpWeaponThisCombo && dualWieldSystem != null && dualWieldSystem.IsHoldingSpareWeapon)
+            // Clean up stockpiled/lodged spare weapons at END of combo.
+            if (dualWieldSystem != null)
             {
-                dualWieldSystem.ReleaseCurrentWeapon();
+                while (dualWieldSystem.IsHoldingSpareWeapon)
+                {
+                    dualWieldSystem.ReleaseCurrentWeapon();
+                }
+
+                if (dualWieldSystem.LodgedWeaponCount > 0)
+                {
+                    dualWieldSystem.ReturnAllLodgedWeaponsToRest();
+                }
             }
         }
 
@@ -914,8 +1026,26 @@ namespace EnemyBehavior.Boss.Cleanser
                 case CleanserBasicAttack.Lunge:
                     yield return ExecuteAttackWithAnimationEvents(LungeAttack);
                     break;
+                case CleanserBasicAttack.LungeBlock:
+                    yield return ExecuteAttackWithAnimationEvents(LungeBlockAttack);
+                    break;
                 case CleanserBasicAttack.OverheadCleave:
                     yield return ExecuteAttackWithAnimationEvents(OverheadCleaveAttack);
+                    break;
+                case CleanserBasicAttack.Cleave:
+                    yield return ExecuteAttackWithAnimationEvents(CleaveAttack);
+                    break;
+                case CleanserBasicAttack.CleaveAdvance:
+                    yield return ExecuteAttackWithAnimationEvents(CleaveAdvanceAttack);
+                    break;
+                case CleanserBasicAttack.PommelStrike:
+                    yield return ExecuteAttackWithAnimationEvents(PommelStrikeAttack);
+                    break;
+                case CleanserBasicAttack.DiagUpwardSlash:
+                    yield return ExecuteAttackWithAnimationEvents(DiagUpwardSlashAttack);
+                    break;
+                case CleanserBasicAttack.WingBash:
+                    yield return ExecuteAttackWithAnimationEvents(WingBashAttack);
                     break;
                 case CleanserBasicAttack.SlashIntoSlap:
                     yield return ExecuteAttackWithAnimationEvents(SlashIntoSlapAttack);
@@ -936,7 +1066,8 @@ namespace EnemyBehavior.Boss.Cleanser
                     yield return ExecuteKnockbackAttack();
                     break;
                 case CleanserBasicAttack.MiniCrescentWave:
-                    yield return ExecuteMiniCrescentWave();
+                    // Legacy enum entry: MiniCrescentWave now routes to DiagUpwardSlash behavior.
+                    yield return ExecuteAttackWithAnimationEvents(DiagUpwardSlashAttack);
                     break;
             }
             
@@ -959,6 +1090,9 @@ namespace EnemyBehavior.Boss.Cleanser
                     break;
                 case CleanserStrongAttack.Whirlwind:
                     yield return ExecuteWhirlwind();
+                    break;
+                case CleanserStrongAttack.SpinDash:
+                    yield return ExecuteSpinDash();
                     break;
             }
             
@@ -1131,6 +1265,17 @@ namespace EnemyBehavior.Boss.Cleanser
             StartCoroutine(DoAttackMovement());
         }
 
+        /// <summary>
+        /// Animation Event: Spawns DiagUpwardSlash projectile(s) while the halberd hitbox attack is active.
+        /// </summary>
+        public void OnDiagUpwardSlashProjectile()
+        {
+            if (!isExecutingAttack || player == null)
+                return;
+
+            SpawnCrescentArcProjectiles(CrescentWaveProjectileConfiguration, player.position, 0f);
+        }
+
         private IEnumerator DoAttackMovement()
         {
             float moveDist = currentAttack?.MovementDistance ?? 3f;
@@ -1155,10 +1300,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ExecuteSpareToss()
         {
-            if (ProjectilePrefab == null || ProjectileSpawnPoint == null)
+            if (dualWieldSystem == null)
             {
 #if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), "[Cleanser] SpareToss failed: missing prefab or spawn point.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), "[Cleanser] SpareToss failed: DualWield/stockpile system missing.");
 #endif
                 yield break;
             }
@@ -1171,78 +1316,127 @@ namespace EnemyBehavior.Boss.Cleanser
             // Use animation trigger from config
             TriggerAnimation(SpareTossSettings.AnimationTrigger);
             PlaySFX(SpareTossSettings.ThrowSFX);
-            
-            // Wait for throw animation event or fallback
-            yield return new WaitForSeconds(0.4f);
-            
-            for (int i = 0; i < SpareTossSettings.ProjectileCount; i++)
-            {
-                var projObj = Instantiate(ProjectilePrefab, ProjectileSpawnPoint.position, ProjectileSpawnPoint.rotation);
-                var proj = projObj.GetComponent<CleanserProjectile>();
-                
-                if (proj != null)
-                {
-                    // Pass the dual wield system for magnetic return callback
-                    proj.Initialize(player, transform, SpareTossSettings, dualWieldSystem);
-                }
-                
-                if (SpareTossSettings.ThrowSequentially && i < SpareTossSettings.ProjectileCount - 1)
-                {
-                    yield return new WaitForSeconds(0.3f);
-                }
-            }
+
+            // Wait for throw release timing and then launch all stockpiled spare weapons in an arc.
+            yield return new WaitForSeconds(0.35f);
+
+            Vector3 tossCenter = player != null ? player.position : transform.position + transform.forward * 6f;
+            yield return dualWieldSystem.LaunchStockpiledWeaponsToGround(tossCenter);
             
             yield return new WaitForSeconds(0.4f);
         }
 
         private IEnumerator ExecuteSpinDash()
         {
-            int dashCount = 1;
-            
-            if (SpinDashSettings.RandomDashCount)
+            if (player == null) yield break;
+
+            yield return FaceTarget(player, 0.1f);
+            ShowAttackIndicator();
+
+            TriggerAnimation(SpinDashSettings.WindupTrigger);
+            PlaySFX(SpinDashSettings.WindupSFX);
+            yield return new WaitForSeconds(SpinDashSettings.WindupDuration);
+
+            if (!string.IsNullOrEmpty(SpinDashSettings.HPWindupTrigger) && SpinDashSettings.HPWindupDuration > 0f)
             {
-                dashCount = Random.value > 0.5f ? 3 : 1;
-            }
-            else if (SpinDashSettings.AlwaysTripleDash)
-            {
-                dashCount = 3;
+                TriggerAnimation(SpinDashSettings.HPWindupTrigger);
+                yield return new WaitForSeconds(SpinDashSettings.HPWindupDuration);
             }
 
-            // Use animation trigger from config
-            TriggerAnimation(SpinDashSettings.AnimationTrigger);
-            PlaySFX(SpinDashSettings.DashSFX);
-            
-            if (SpinDashSettings.DashVFX != null)
+            TriggerAnimation(SpinDashSettings.HoldPoseTrigger);
+            PlaySFX(SpinDashSettings.HoldSFX);
+
+            GameObject spinVfxInstance = null;
+            if (SpinDashSettings.SpinVFX != null)
             {
-                Instantiate(SpinDashSettings.DashVFX, transform.position, transform.rotation, transform);
+                spinVfxInstance = Instantiate(SpinDashSettings.SpinVFX, transform.position, transform.rotation, transform);
             }
-            
-            yield return new WaitForSeconds(0.3f);
-            
-            for (int i = 0; i < dashCount; i++)
+
+            var dashPoints = dualWieldSystem != null ? dualWieldSystem.GetLodgedWeaponPositions() : new List<Vector3>();
+            if (dashPoints.Count == 0 && player != null)
             {
-                if (player == null) break;
-                
-                Vector3 targetPos = player.position;
-                Vector3 dashDir = (targetPos - transform.position).normalized;
-                transform.forward = dashDir;
-                
+                dashPoints.Add(player.position);
+            }
+
+            agent.enabled = false;
+
+            int hitCount = 0;
+            for (int i = 0; i < dashPoints.Count; i++)
+            {
+                Vector3 target = dashPoints[i];
+                target.y = transform.position.y;
+
+                Vector3 start = transform.position;
+                float distance = Vector3.Distance(start, target);
+                float dashDuration = Mathf.Clamp(distance / Mathf.Max(0.01f, SpinDashSettings.MoveSpeed), 0.08f, 0.25f);
+
                 float elapsed = 0f;
-                while (elapsed < SpinDashSettings.DashDuration)
+                while (elapsed < dashDuration)
                 {
                     elapsed += Time.deltaTime;
-                    agent.Move(dashDir * SpinDashSettings.DashSpeed * Time.deltaTime);
-                    CheckMeleeHit(15f, AttackCategory.Halberd, 2f);
+                    float t = elapsed / dashDuration;
+                    transform.position = Vector3.Lerp(start, target, t);
+
+                    Vector3 moveDir = (target - transform.position).normalized;
+                    moveDir.y = 0f;
+                    if (moveDir.sqrMagnitude > 0.001f)
+                    {
+                        transform.forward = Vector3.Slerp(transform.forward, moveDir, Time.deltaTime * 14f);
+                    }
+
+                    if (hitCount < SpinDashSettings.MaxHitCount)
+                    {
+                        if (CheckMeleeHit(SpinDashSettings.DamagePerHit, AttackCategory.Halberd, SpinDashSettings.HitRange))
+                        {
+                            hitCount++;
+                        }
+                    }
+
                     yield return null;
                 }
-                
-                if (i < dashCount - 1)
+
+                yield return new WaitForSeconds(0.05f);
+            }
+
+            // Final dash ends at the player.
+            if (player != null)
+            {
+                Vector3 finalTarget = player.position;
+                finalTarget.y = transform.position.y;
+
+                Vector3 start = transform.position;
+                float distance = Vector3.Distance(start, finalTarget);
+                float dashDuration = Mathf.Clamp(distance / Mathf.Max(0.01f, SpinDashSettings.MoveSpeed), 0.08f, 0.25f);
+                float elapsed = 0f;
+
+                while (elapsed < dashDuration)
                 {
-                    yield return new WaitForSeconds(SpinDashSettings.DelayBetweenDashes);
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / dashDuration;
+                    transform.position = Vector3.Lerp(start, finalTarget, t);
+                    CheckMeleeHit(SpinDashSettings.DamagePerHit, AttackCategory.Halberd, SpinDashSettings.HitRange);
+                    yield return null;
                 }
             }
-            
-            yield return new WaitForSeconds(0.5f);
+
+            agent.enabled = true;
+            agent.Warp(transform.position);
+
+            if (dualWieldSystem != null && dualWieldSystem.LodgedWeaponCount > 0)
+            {
+                dualWieldSystem.ReturnAllLodgedWeaponsToRest();
+            }
+
+            if (spinVfxInstance != null)
+            {
+                Destroy(spinVfxInstance);
+            }
+
+            TriggerAnimation(SpinDashSettings.WindDownTrigger);
+            PlaySFX(SpinDashSettings.WindDownSFX);
+            yield return new WaitForSeconds(SpinDashSettings.WindDownDuration);
+
+            HideAttackIndicator();
         }
 
         private IEnumerator ExecuteHighDive()
@@ -1492,70 +1686,6 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
-        /// Executes the mini crescent wave ranged attack.
-        /// </summary>
-        private IEnumerator ExecuteMiniCrescentWave()
-        {
-            if (player == null) yield break;
-
-            yield return FaceTarget(player, 0.2f);
-
-            TriggerAnimation(MiniCrescentSettings.AnimationTrigger);
-            PlaySFX(MiniCrescentSettings.SlashSFX);
-
-            // Wait for animation slash point
-            yield return new WaitForSeconds(0.25f);
-
-            // Spawn crescent wave projectile
-            if (MiniCrescentSettings.WavePrefab != null)
-            {
-                Vector3 spawnPos = transform.position;
-                spawnPos.y += MiniCrescentSettings.WaveHeight;
-
-                var waveObj = Instantiate(MiniCrescentSettings.WavePrefab, spawnPos, transform.rotation);
-
-                // Configure wave movement
-                var rb = waveObj.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    Vector3 dir = (player.position - spawnPos).normalized;
-                    dir.y = 0;
-                    rb.linearVelocity = dir * MiniCrescentSettings.WaveSpeed;
-                }
-
-                // Set up damage on the wave if it has a damage component
-                var waveDamage = waveObj.GetComponent<CleanserProjectile>();
-                if (waveDamage != null)
-                {
-                    // Configure using existing projectile system
-                    var config = new SpareTossConfig
-                    {
-                        UseStraightPath = true,
-                        ReturnsOnStraightPath = false,
-                        ProjectileSpeedRange = new Vector2(MiniCrescentSettings.WaveSpeed, MiniCrescentSettings.WaveSpeed)
-                    };
-                    waveDamage.Initialize(player, transform, config);
-                }
-
-                // Auto-destroy after max distance travel time
-                float travelTime = MiniCrescentSettings.MaxDistance / MiniCrescentSettings.WaveSpeed;
-                Destroy(waveObj, travelTime);
-
-#if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Mini crescent wave fired!");
-#endif
-            }
-            else
-            {
-#if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), "[Cleanser] Mini crescent wave prefab not assigned!");
-#endif
-            }
-
-            yield return new WaitForSeconds(0.4f);
-        }
-
-        /// <summary>
         /// Executes the gap-closing dash (no hitbox, pure movement).
         /// </summary>
         private IEnumerator ExecuteGapClosingDash()
@@ -1628,6 +1758,23 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
+#if UNITY_EDITOR
+        [ContextMenu("DEBUG/Run Ultimate Sequence")]
+        private void DebugRunUltimateSequence()
+        {
+            if (!Application.isPlaying || isDefeated || isExecutingUltimate)
+                return;
+
+            if (currentAttackCoroutine != null)
+            {
+                StopCoroutine(currentAttackCoroutine);
+                currentAttackCoroutine = null;
+            }
+
+            StartCoroutine(ExecuteUltimateAttack());
+        }
+#endif
+
         private IEnumerator ExecuteUltimateAttack()
         {
             isExecutingUltimate = true;
@@ -1635,45 +1782,41 @@ namespace EnemyBehavior.Boss.Cleanser
             attacksSinceUltimate = 0;
             aerialHitsReceived = 0;
             
-            // Force pickup before ultimate if available
-            if (dualWieldSystem != null && !dualWieldSystem.IsHoldingSpareWeapon 
-                && dualWieldSystem.AvailableSpareWeaponCount > 0)
-            {
-                dualWieldSystem.PickupSpareWeapon();
-                yield return new WaitUntil(() => !dualWieldSystem.IsPickingUp);
-            }
-            
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] ULTIMATE: Double Maximum Sweep initiated!");
 #endif
 
             PlaySFX(UltimateSettings.InitiateSFX);
 
-            if (WallJumpPositions.Count > 0)
+            if (DoubleSweepPositions.Count > 0)
             {
-                Transform wallPos = WallJumpPositions[Random.Range(0, WallJumpPositions.Count)];
-                yield return JumpToPosition(wallPos.position, 1f);
+                TriggerAnimation(UltimateSettings.JumpArcBaseTrigger);
+                Transform sweepPos = DoubleSweepPositions[Random.Range(0, DoubleSweepPositions.Count)];
+                yield return JumpToPosition(sweepPos.position, 1f);
             }
             
             Vector3 arenaCenter = player != null ? player.position : transform.position + transform.forward * 10f;
             yield return FaceTarget(arenaCenter, 0.3f);
             
             // Sweeps
-            if (CrescentWavePrefab != null)
+            if (CanSpawnUltimateSweep(UltimateSettings.LowSweepProjectile))
             {
+                TriggerAnimation(UltimateSettings.UltimateTrigger);
                 SpawnCrescentWave(UltimateSettings.LowSweepHeight, arenaCenter);
                 PlaySFX(UltimateSettings.SweepSFX);
             }
             yield return new WaitForSeconds(0.8f);
             
-            if (CrescentWavePrefab != null)
+            if (CanSpawnUltimateSweep(UltimateSettings.MidSweepProjectile))
             {
+                TriggerAnimation(UltimateSettings.UltimateTrigger);
                 SpawnCrescentWave(UltimateSettings.MidSweepHeight, arenaCenter);
                 PlaySFX(UltimateSettings.SweepSFX);
             }
             yield return new WaitForSeconds(0.5f);
             
             Vector3 floatPos = arenaCenter + Vector3.up * UltimateSettings.PlatformRiseHeight;
+            TriggerAnimation(UltimateSettings.JumpArcBaseTrigger);
             yield return JumpToPosition(floatPos, 0.8f);
             
             if (platformController != null)
@@ -1687,22 +1830,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 UltimateSettings.PlayCutsceneOnFirstUse = false;
             }
             
-            float chargeElapsed = 0f;
-            bool canceled = false;
-            
-            while (chargeElapsed < UltimateSettings.ChargeUpTime)
-            {
-                chargeElapsed += Time.deltaTime;
-                
-                if (aerialHitsReceived >= UltimateSettings.RequiredAerialHits)
-                {
-#if UNITY_EDITOR
-                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Ultimate can be canceled by plunge finisher!");
-#endif
-                }
-                
-                yield return null;
-            }
+            yield return ExecuteUltimateHoverPhase();
+            bool canceled = ultimateCanceledByAerial;
             
             if (platformController != null)
             {
@@ -1721,6 +1850,8 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             else
             {
+                TriggerAnimation(UltimateSettings.JumpArcCancelTrigger);
+
                 // Notify aggression system that ultimate was canceled
                 if (aggressionSystem != null)
                 {
@@ -1730,10 +1861,18 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield return ApplyStun(AerialFinisherStunDuration);
             }
             
-            // Release spare weapon after ultimate (returns magnetically to rest position)
-            if (dualWieldSystem != null && dualWieldSystem.IsHoldingSpareWeapon)
+            // Reset spare stockpile/lodged state after ultimate.
+            if (dualWieldSystem != null)
             {
-                dualWieldSystem.ReleaseCurrentWeapon();
+                while (dualWieldSystem.IsHoldingSpareWeapon)
+                {
+                    dualWieldSystem.ReleaseCurrentWeapon();
+                }
+
+                if (dualWieldSystem.LodgedWeaponCount > 0)
+                {
+                    dualWieldSystem.ReturnAllLodgedWeaponsToRest();
+                }
             }
             
             isExecutingUltimate = false;
@@ -1741,25 +1880,190 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void SpawnCrescentWave(float height, Vector3 targetPos)
         {
-            Vector3 spawnPos = transform.position;
-            spawnPos.y = transform.position.y + height;
-            
-            var waveObj = Instantiate(CrescentWavePrefab, spawnPos, Quaternion.identity);
-            
-            var rb = waveObj.GetComponent<Rigidbody>();
-            if (rb != null)
+            CrescentArcProjectileConfig sourceConfig = height <= (UltimateSettings.LowSweepHeight + 0.01f)
+                ? UltimateSettings.LowSweepProjectile
+                : UltimateSettings.MidSweepProjectile;
+
+            if (sourceConfig != null)
             {
-                Vector3 dir = (targetPos - spawnPos).normalized;
-                dir.y = 0;
-                rb.linearVelocity = dir * UltimateSettings.WaveSpeed;
+                var runtimeConfig = new CrescentArcProjectileConfig
+                {
+                    ProjectilePrefab = sourceConfig.ProjectilePrefab != null
+                        ? sourceConfig.ProjectilePrefab
+                        : CrescentWaveProjectileConfiguration?.ProjectilePrefab,
+                    ProjectileCount = sourceConfig.ProjectileCount,
+                    Damage = UltimateSettings.SweepDamage,
+                    Speed = sourceConfig.Speed > 0f ? sourceConfig.Speed : UltimateSettings.WaveSpeed,
+                    MaxDistance = sourceConfig.MaxDistance,
+                    SpawnHeight = sourceConfig.SpawnHeight,
+                    SpawnForwardOffset = sourceConfig.SpawnForwardOffset,
+                    ScaleRange = sourceConfig.ScaleRange,
+                    TiltAngleRange = sourceConfig.TiltAngleRange,
+                    SpreadStep = sourceConfig.SpreadStep,
+                    DamageCategory = sourceConfig.DamageCategory
+                };
+
+                if (runtimeConfig.ProjectilePrefab != null)
+                {
+                    SpawnCrescentArcProjectiles(runtimeConfig, targetPos, height);
+                    return;
+                }
             }
-            
-            Destroy(waveObj, 5f);
+
+            // Legacy fallback to rigidbody-style wave prefab.
+            if (CrescentWavePrefab != null)
+            {
+                Vector3 spawnPos = transform.position;
+                spawnPos.y = transform.position.y + height;
+
+                var waveObj = Instantiate(CrescentWavePrefab, spawnPos, Quaternion.identity);
+                var rb = waveObj.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    Vector3 dir = (targetPos - spawnPos).normalized;
+                    dir.y = 0;
+                    rb.linearVelocity = dir * UltimateSettings.WaveSpeed;
+                }
+
+                var waveProjectile = waveObj.GetComponent<CleanserProjectile>();
+                if (waveProjectile != null)
+                {
+                    waveProjectile.Damage = UltimateSettings.SweepDamage;
+                }
+
+                Destroy(waveObj, 5f);
+                return;
+            }
+        }
+
+        private bool CanSpawnUltimateSweep(CrescentArcProjectileConfig config)
+        {
+            bool hasSharedPrefab = CrescentWaveProjectileConfiguration != null && CrescentWaveProjectileConfiguration.ProjectilePrefab != null;
+            return hasSharedPrefab || (config != null && config.ProjectilePrefab != null) || CrescentWavePrefab != null;
+        }
+
+        private IEnumerator ExecuteUltimateHoverPhase()
+        {
+            isInUltimateHoverPhase = true;
+            ultimateCanceledByAerial = false;
+            aerialHitsReceived = 0;
+            ultimateHoverPauseTimer = 0f;
+
+            TriggerAnimation(stateUltimateHover);
+
+            float chargeElapsed = 0f;
+            while (chargeElapsed < UltimateSettings.ChargeUpTime)
+            {
+                if (ultimateCanceledByAerial)
+                {
+#if UNITY_EDITOR
+                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Ultimate canceled during hover phase by aerial finisher.");
+#endif
+                    break;
+                }
+
+                if (ultimateHoverPauseTimer > 0f)
+                {
+                    ultimateHoverPauseTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    chargeElapsed += Time.deltaTime;
+                }
+                yield return null;
+            }
+            isInUltimateHoverPhase = false;
+        }
+
+        private void SpawnCrescentArcProjectiles(CrescentArcProjectileConfig config, Vector3 targetPos, float additionalHeight = 0f)
+        {
+            if (config == null)
+                return;
+
+            Vector3 baseDir = (targetPos - transform.position);
+            baseDir.y = 0f;
+            if (baseDir.sqrMagnitude < 0.001f)
+                baseDir = transform.forward;
+            baseDir.Normalize();
+
+            int count = Mathf.Max(1, config.ProjectileCount);
+            float centerOffset = (count - 1) * 0.5f;
+
+            for (int i = 0; i < count; i++)
+            {
+                float spreadOffset = (i - centerOffset) * config.SpreadStep;
+                float randomOffset = 0f;
+                float finalYaw = spreadOffset + randomOffset;
+                Vector3 dir = Quaternion.AngleAxis(finalYaw, Vector3.up) * baseDir;
+
+                Vector3 spawnPos = transform.position
+                    + transform.forward * config.SpawnForwardOffset
+                    + Vector3.up * (config.SpawnHeight + additionalHeight);
+
+                GameObject prefabToSpawn = config.ProjectilePrefab != null
+                    ? config.ProjectilePrefab
+                    : CrescentWaveProjectileConfiguration?.ProjectilePrefab;
+
+                if (prefabToSpawn == null)
+                    continue;
+
+                float tiltAngle = Random.Range(config.TiltAngleRange.x, config.TiltAngleRange.y);
+                Quaternion spawnRot = Quaternion.LookRotation(dir) * Quaternion.Euler(tiltAngle, 0f, 0f);
+                GameObject projectile = Instantiate(prefabToSpawn, spawnPos, spawnRot);
+
+                float scale = Random.Range(config.ScaleRange.x, config.ScaleRange.y);
+                if (Mathf.Abs(scale - 1f) > 0.001f)
+                {
+                    projectile.transform.localScale *= scale;
+                }
+
+                var arcProjectile = projectile.GetComponent<CleanserCrescentArcProjectile>();
+                if (arcProjectile != null)
+                {
+                    arcProjectile.Initialize(
+                        dir,
+                        config.Damage,
+                        config.Speed,
+                        config.MaxDistance,
+                        config.DamageCategory,
+                        config.CanBeParried,
+                        config.CanBeGuarded,
+                        config.GuardDamageMultiplier);
+                    continue;
+                }
+
+                var cleanserProjectile = projectile.GetComponent<CleanserProjectile>();
+                if (cleanserProjectile != null)
+                {
+                    cleanserProjectile.Damage = config.Damage;
+
+                    var straightConfig = new SpareTossConfig
+                    {
+                        UseStraightPath = true,
+                        ReturnsOnStraightPath = false,
+                        UseCurvedBoomerang = false,
+                        ProjectileSpeedRange = new Vector2(config.Speed, config.Speed)
+                    };
+
+                    cleanserProjectile.Initialize(player, transform, straightConfig, dualWieldSystem);
+                    continue;
+                }
+
+                // Fallback path if prefab uses Rigidbody-only motion.
+                var rb = projectile.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.linearVelocity = dir * config.Speed;
+                }
+
+                Destroy(projectile, 5f);
+            }
         }
 
         private IEnumerator ExecuteMassiveStrike()
         {
             PlaySFX(UltimateSettings.MassiveStrikeSFX);
+            TriggerAnimation(UltimateSettings.JumpArcResolutionTrigger);
             
             Vector3 startPos = transform.position;
             Vector3 targetPos = startPos;
@@ -1812,13 +2116,41 @@ namespace EnemyBehavior.Boss.Cleanser
 
         public void OnAerialHitReceived()
         {
-            if (!isExecutingUltimate) return;
+            if (!isExecutingUltimate || !isInUltimateHoverPhase) return;
+
+            if (!WasHitByFullAerialComboPlungeFinisher())
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Aerial hit during ultimate ignored (requires full aerial combo + plunge finisher).");
+#endif
+                return;
+            }
             
             aerialHitsReceived++;
+            if (aerialHitsReceived >= UltimateSettings.RequiredAerialHits)
+            {
+                ultimateCanceledByAerial = true;
+            }
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Aerial hit received during ultimate! ({aerialHitsReceived}/{UltimateSettings.RequiredAerialHits})");
 #endif
+        }
+
+        private bool WasHitByFullAerialComboPlungeFinisher()
+        {
+            if (player == null)
+                return false;
+
+            AerialComboManager aerialCombo = player.GetComponent<AerialComboManager>()
+                ?? player.GetComponentInParent<AerialComboManager>()
+                ?? player.GetComponentInChildren<AerialComboManager>();
+
+            if (aerialCombo == null)
+                return false;
+
+            // Full aerial combo requirement: player used heavy (plunge) and had built at least 2 aerial fast hits.
+            return aerialCombo.HasUsedAerialHeavy && aerialCombo.AerialFastCount >= 2;
         }
 
         #endregion

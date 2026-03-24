@@ -125,6 +125,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4119839093308741906}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &108805457041770230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6444796255983692030}
+  m_Layer: 0
+  m_Name: HalberdHolder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6444796255983692030
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 108805457041770230}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7013322031023464175}
+  m_Father: {fileID: 9161943510287696900}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &122372230354132911
 GameObject:
   m_ObjectHideFlags: 0
@@ -3603,7 +3635,7 @@ Transform:
   - {fileID: 3439708993080574878}
   - {fileID: 2305301482217641234}
   - {fileID: 6069593360214277365}
-  - {fileID: 7013322031023464175}
+  - {fileID: 6444796255983692030}
   m_Father: {fileID: 5619892136756566092}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1717064890579678596
@@ -8718,6 +8750,25 @@ MonoBehaviour:
     ImpactSFX: {fileID: 0}
     AttackVFX: {fileID: 0}
     ImpactVFX: {fileID: 0}
+  LungeBlockAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
   OverheadCleaveAttack:
     ID: OverheadCleave
     Category: 0
@@ -8726,6 +8777,101 @@ MonoBehaviour:
     RangeMin: 0
     RangeMax: 5
     AnimationTrigger: Attack_OverheadCleave
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  CleaveAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  CleaveAdvanceAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  PommelStrikeAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  DiagUpwardSlashAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  WingBashAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8775,25 +8921,6 @@ MonoBehaviour:
     ImpactSFX: {fileID: 0}
     AttackVFX: {fileID: 0}
     ImpactVFX: {fileID: 0}
-  SpinSlashOnlyAttack:
-    ID: SpinSlashOnly
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: Attack_SpinSlash
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
   LegSweepAttack:
     ID: LegSweep
     Category: 0
@@ -8813,64 +8940,26 @@ MonoBehaviour:
     ImpactSFX: {fileID: 0}
     AttackVFX: {fileID: 0}
     ImpactVFX: {fileID: 0}
-  SpareTossSettings:
-    AnimationTrigger: Attack_SpareToss
-    ThrowSequentially: 1
-    ProjectileCount: 1
-    AllowedPathTypes: -1
-    UseStraightPath: 1
-    ReturnsOnStraightPath: 0
-    UseCurvedBoomerang: 0
-    CurveWidthRange: {x: 5, y: 10}
-    OvershootDistanceRange: {x: 3, y: 8}
-    ProjectileSpeedRange: {x: 15, y: 25}
-    UseHoming: 1
-    HomingUpdateInterval: 0.3
-    HomingStrength: 0.5
-    WallLayerMask:
-      serializedVersion: 2
-      m_Bits: 0
-    DestroyOnWallHit: 0
-    ThrowSFX: {fileID: 0}
-    HitSFX: {fileID: 0}
-  ProjectilePrefab: {fileID: 0}
-  ProjectileSpawnPoint: {fileID: 0}
   SpinDashSettings:
-    AnimationTrigger: Attack_SpinDash
-    RandomDashCount: 1
-    AlwaysTripleDash: 0
-    DashSpeed: 20
-    DashDuration: 0.4
-    DelayBetweenDashes: 0.3
-    DashSFX: {fileID: 0}
-    DashVFX: {fileID: 0}
-  KnockbackSettings:
-    KnockbackForce: 15
-    VerticalForce: 5
-    KnockbackRadius: 4
-    Damage: 15
-    AnimationTrigger: Attack_Knockback
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  MiniCrescentSettings:
-    WaveSpeed: 20
-    Damage: 20
-    WaveWidth: 8
-    WaveHeight: 1.5
-    MaxDistance: 25
-    AnimationTrigger: Attack_MiniCrescent
-    SlashSFX: {fileID: 0}
-    WavePrefab: {fileID: 0}
-  GapCloseDashSettings:
-    DashSpeed: 25
-    DashDuration: 0.3
-    MinDistanceToUse: 8
-    TargetStopDistance: 3
-    MinAggressionLevel: 4
-    AnimationTrigger: Dash_GapClose
-    DashSFX: {fileID: 0}
-    DashVFX: {fileID: 0}
+    WindupTrigger: JumpSpinAttackWindup
+    HPWindupTrigger: JumpSpinAttackHPWindup
+    HoldPoseTrigger: JumpSpinAttackHPHoldPose
+    WindDownTrigger: JumpSpinAttackWindDown
+    WindupDuration: 0.25
+    HPWindupDuration: 0.2
+    HoldDuration: 0.9
+    WindDownDuration: 0.25
+    MoveSpeed: 12
+    MaxTravelDistance: 10
+    TrackPlayerDuringHold: 1
+    DamagePerHit: 8
+    HitRange: 2.5
+    HitInterval: 0.2
+    MaxHitCount: 6
+    WindupSFX: {fileID: 0}
+    HoldSFX: {fileID: 0}
+    WindDownSFX: {fileID: 0}
+    SpinVFX: {fileID: 0}
   HighDiveAttack:
     ID: HighDive
     Category: 0
@@ -8926,12 +9015,47 @@ MonoBehaviour:
     SpinVFX: {fileID: 0}
     SlamVFX: {fileID: 0}
   UltimateSettings:
+    UltimateTrigger: Ultimate
+    JumpArcBaseTrigger: JumpArcBase
+    JumpArcCancelTrigger: JumpArcCancel
+    JumpArcResolutionTrigger: JumpArcResolution
     WaveSpeed: 25
     LowSweepHeight: 0.5
     MidSweepHeight: 3
     WaveWidth: 20
     SweepDamage: 25
+    LowSweepProjectile:
+      ProjectilePrefab: {fileID: 0}
+      ProjectileCount: 1
+      Damage: 20
+      Speed: 25
+      MaxDistance: 25
+      SpawnHeight: 1.2
+      SpawnForwardOffset: 1.2
+      ScaleRange: {x: 1, y: 1}
+      TiltAngleRange: {x: 0, y: 0}
+      SpreadStep: 6
+      DamageCategory: 0
+      CanBeParried: 1
+      CanBeGuarded: 1
+      GuardDamageMultiplier: 0.35
+    MidSweepProjectile:
+      ProjectilePrefab: {fileID: 0}
+      ProjectileCount: 1
+      Damage: 20
+      Speed: 25
+      MaxDistance: 25
+      SpawnHeight: 1.2
+      SpawnForwardOffset: 1.2
+      ScaleRange: {x: 1, y: 1}
+      TiltAngleRange: {x: 0, y: 0}
+      SpreadStep: 6
+      DamageCategory: 0
+      CanBeParried: 1
+      CanBeGuarded: 1
+      GuardDamageMultiplier: 0.35
     ChargeUpTime: 8
+    HoverTimerPauseOnDamage: 0.25
     AerialHitDelay: 2
     RequiredAerialHits: 2
     PlatformRiseHeight: 6
@@ -8948,19 +9072,73 @@ MonoBehaviour:
     ChargeSFX: {fileID: 0}
     MassiveStrikeSFX: {fileID: 0}
     MassiveStrikeVFX: {fileID: 0}
-  CrescentWavePrefab: {fileID: 0}
-  WallJumpPositions: []
-  FallbackSpeed: 8
-  FallbackAngularSpeed: 120
-  FallbackAcceleration: 8
-  FallbackStoppingDistance: 2
-  SpareWeaponPickupChance: 0.3
-  AlwaysPickupForSpecialAttacks: 1
-  UseDamageReductionEvents: 1
+  DoubleSweepPositions: []
   AerialFinisherStunDuration: 3
   UltimateHealthThreshold: 0.5
   MinAttacksBetweenUltimates: 999
   UltimateTriggeredByHealth: 0
+  stateUltimateHover: JumpArcHold
+  CrescentWaveProjectileConfiguration:
+    ProjectilePrefab: {fileID: 0}
+    ProjectileCount: 1
+    Damage: 20
+    Speed: 25
+    MaxDistance: 25
+    SpawnHeight: 1.2
+    SpawnForwardOffset: 1.2
+    ScaleRange: {x: 1, y: 1}
+    TiltAngleRange: {x: 0, y: 0}
+    SpreadStep: 6
+    DamageCategory: 0
+    CanBeParried: 1
+    CanBeGuarded: 1
+    GuardDamageMultiplier: 0.35
+  CrescentWavePrefab: {fileID: 0}
+  SpareTossSettings:
+    AnimationTrigger: Attack_SpareToss
+    ThrowSequentially: 1
+    ProjectileCount: 1
+    AllowedPathTypes: -1
+    UseStraightPath: 1
+    ReturnsOnStraightPath: 0
+    UseCurvedBoomerang: 0
+    CurveWidthRange: {x: 5, y: 10}
+    OvershootDistanceRange: {x: 3, y: 8}
+    ProjectileSpeedRange: {x: 15, y: 25}
+    UseHoming: 1
+    HomingUpdateInterval: 0.3
+    HomingStrength: 0.5
+    WallLayerMask:
+      serializedVersion: 2
+      m_Bits: 0
+    DestroyOnWallHit: 0
+    ThrowSFX: {fileID: 0}
+    HitSFX: {fileID: 0}
+  ProjectilePrefab: {fileID: 0}
+  ProjectileSpawnPoint: {fileID: 0}
+  KnockbackSettings:
+    KnockbackForce: 15
+    VerticalForce: 5
+    KnockbackRadius: 4
+    Damage: 15
+    AnimationTrigger: Attack_Knockback
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  GapCloseDashSettings:
+    DashSpeed: 25
+    DashDuration: 0.3
+    MinDistanceToUse: 8
+    TargetStopDistance: 3
+    MinAggressionLevel: 4
+    AnimationTrigger: Dash_GapClose
+    DashSFX: {fileID: 0}
+    DashVFX: {fileID: 0}
+  FallbackSpeed: 8
+  FallbackAngularSpeed: 120
+  FallbackAcceleration: 8
+  FallbackStoppingDistance: 2
+  UseDamageReductionEvents: 1
   comboSystem: {fileID: 0}
   dualWieldSystem: {fileID: 0}
   platformController: {fileID: 0}
@@ -8971,6 +9149,7 @@ MonoBehaviour:
   sfxSource: {fileID: 0}
   paramMoveSpeed: MoveSpeed
   paramIsMoving: IsMoving
+  paramIsPlayerHere: IsPlayerHere
   triggerStunned: Stunned
   triggerDeath: Death
   attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
@@ -9181,6 +9360,10 @@ MonoBehaviour:
     IsHeld: 0
     IsReturning: 0
     IsAtRest: 0
+  HoverAnchorLocal: {x: 0.8, y: 1.8, z: -0.2}
+  HoverSpacing: 0.6
+  HoverVerticalStep: 0.12
+  HoverYawSpread: 30
   PickupAnimationDuration: 0.5
   PickupCurve:
     serializedVersion: 2
@@ -9208,6 +9391,15 @@ MonoBehaviour:
     m_RotationOrder: 4
   PickupVFXPrefab: {fileID: 0}
   PickupSFX: {fileID: 0}
+  TossArcDuration: 0.7
+  TossArcHeight: 4
+  MinLandingSpacing: 2
+  LandingRadiusMin: 3
+  LandingRadiusMax: 9
+  LodgedRotationEuler: {x: 180, y: 0, z: 0}
+  TossLaunchSFX: {fileID: 0}
+  TossImpactSFX: {fileID: 0}
+  TossImpactVFX: {fileID: 0}
   ReturnAnimationDuration: 1.5
   ReturnCurve:
     serializedVersion: 2
@@ -18249,11 +18441,11 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 9161943510287696900}
+    m_TransformParent: {fileID: 6444796255983692030}
     m_Modifications:
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.009000005
+      value: 0.009000009
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.y
@@ -18261,7 +18453,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.009
+      value: 0.008999999
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalPosition.x
@@ -18277,7 +18469,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.87421477
+      value: 0.8742147
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.x
@@ -18285,11 +18477,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.19275454
+      value: 0.19275452
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.38933668
+      value: -0.38933662
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

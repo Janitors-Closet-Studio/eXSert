@@ -87,6 +87,7 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class StrongAttacks
             {
                 internal const string AnimeDash = "AnimeDash";
+                internal const string Whirlwind = "Whirlwind";
                 internal const string SpinAttackWindUp = "JumpSpinAttackHPWindup";
                 internal const string SpinWindUp = "JumpSpinAttackWindup";
                 internal const string SpinHold = "JumpSpinAttackHPHoldPose";
@@ -120,6 +121,9 @@ namespace EnemyBehavior.Boss.Cleanser
             { "BlockAndLunge", CleanserAnim.BasicAttacks.BlockAndLunge },
             { "AdvancingCleave", CleanserAnim.BasicAttacks.AdvancingCleave },
             { "SlashtoSlap", CleanserAnim.BasicAttacks.SlashToSlap },
+            { "SlashSlap", CleanserAnim.BasicAttacks.SlashToSlap },
+            { "SlashIntoSlap", CleanserAnim.BasicAttacks.SlashToSlap },
+            { "RakeSpin", CleanserAnim.BasicAttacks.RakeIntoSpinSlash },
             { "JumpSpinAttack_Windup", CleanserAnim.StrongAttacks.SpinWindUp },
             { "JumpSpinAttack_HoldPose", CleanserAnim.StrongAttacks.SpinHold },
             { "JumpSpinAttack_WindDown", CleanserAnim.StrongAttacks.SpinAttackWindDown },
@@ -127,6 +131,8 @@ namespace EnemyBehavior.Boss.Cleanser
             { "JumpArc_Resolution", CleanserAnim.Ultimate.JumpArcResolution },
             { "JumpArc_Cancellation", CleanserAnim.Ultimate.JumpArcCancel },
             { "JumpArcCancellation", CleanserAnim.Ultimate.JumpArcCancel },
+            { "GapClose", "GapCloseDash" },
+            { "Attack_GapCloseDash", "GapCloseDash" },
         };
 
         [Header("Animator Setup")]
@@ -380,6 +386,17 @@ namespace EnemyBehavior.Boss.Cleanser
                 Debug.Log("[CleanserAnimController] AttackMoveStart invoked");
 
             cleanserBrain?.OnAttackMovementStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns DiagUpwardSlash projectile(s).
+        /// </summary>
+        public void SpawnDiagUpwardSlashProjectile()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpawnDiagUpwardSlashProjectile invoked");
+
+            cleanserBrain?.OnDiagUpwardSlashProjectile();
         }
 
         /// <summary>

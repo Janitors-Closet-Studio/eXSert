@@ -37,16 +37,25 @@ namespace EnemyBehavior.Boss.Cleanser
     /// </summary>
     public enum CleanserBasicAttack
     {
-        None,
-        Lunge,                  // Stabbing lunge with wing block during windup
-        OverheadCleave,         // Overhead strike downward
-        SlashIntoSlap,          // Two-part: halberd slash then wing backhand
-        RakeIntoSpinSlash,      // Wing rake followed by 360 spin slash (or just spin slash)
-        SpareToss,              // Projectile throw
-        SpinDash,               // Meta Knight style spinning dash (1 or 3 times)
-        LegSweep,               // Low sweep requiring jump to avoid
-        Knockback,              // Pushes player away using external force
-        MiniCrescentWave        // Quick ranged crescent wave slash
+        None = 0,
+        Lunge = 1,                  // Stabbing lunge with wing block during windup
+        OverheadCleave = 2,         // Overhead strike downward
+        SlashIntoSlap = 3,          // Two-part: halberd slash then wing backhand
+        RakeIntoSpinSlash = 4,      // Wing rake followed by 360 spin slash (or just spin slash)
+        SpareToss = 5,              // Projectile throw
+        // Value 6 was legacy SpinDash (old slot) and is intentionally unused.
+        LegSweep = 7,               // Low sweep requiring jump to avoid
+        Knockback = 8,              // Pushes player away using external force
+        MiniCrescentWave = 9,       // Legacy alias (mapped to DiagUpwardSlash behavior)
+
+        // New/renamed moves appended to preserve existing serialized enum values.
+        Cleave = 10,
+        CleaveAdvance = 11,
+        PommelStrike = 12,
+        DiagUpwardSlash = 13,
+        LungeBlock = 14,
+        WingBash = 15,
+        SpinDash = 16
     }
 
     /// <summary>
@@ -57,7 +66,77 @@ namespace EnemyBehavior.Boss.Cleanser
         None,
         HighDive,               // Leap high then slam down
         AnimeDashSlash,         // Pentagram-style dash attacks around player
-        Whirlwind               // Spinning suction + leap slam
+        Whirlwind,              // Spinning suction + leap slam
+        SpinDash                // Finisher: dashes through lodged spare-weapon points, then player
+    }
+
+    /// <summary>
+    /// Configuration for the Spin Dash attack (uses JumpSpinAttack animation clips/states).
+    /// </summary>
+    [System.Serializable]
+    public class JumpSpinAttackConfig
+    {
+        [Header("Animation States")]
+        [Tooltip("Wind-up animation played before movement starts.")]
+        public string WindupTrigger = "JumpSpinAttackWindup";
+
+        [Tooltip("Optional additional high-power wind-up animation.")]
+        public string HPWindupTrigger = "JumpSpinAttackHPWindup";
+
+        [Tooltip("Looped spin pose while moving toward destination.")]
+        public string HoldPoseTrigger = "JumpSpinAttackHPHoldPose";
+
+        [Tooltip("Wind-down animation played when movement phase ends.")]
+        public string WindDownTrigger = "JumpSpinAttackWindDown";
+
+        [Header("Timing")]
+        [Tooltip("Duration of the initial wind-up phase.")]
+        public float WindupDuration = 0.25f;
+
+        [Tooltip("Duration of the optional HP wind-up phase.")]
+        public float HPWindupDuration = 0.2f;
+
+        [Tooltip("How long the hold-pose loop phase runs.")]
+        public float HoldDuration = 0.9f;
+
+        [Tooltip("Duration of the wind-down phase.")]
+        public float WindDownDuration = 0.25f;
+
+        [Header("Movement")]
+        [Tooltip("Ground movement speed during the hold-pose loop.")]
+        public float MoveSpeed = 12f;
+
+        [Tooltip("Maximum distance to travel during the hold-pose loop.")]
+        public float MaxTravelDistance = 10f;
+
+        [Tooltip("If true, continuously retargets the player during the hold phase.")]
+        public bool TrackPlayerDuringHold = true;
+
+        [Header("Damage")]
+        [Tooltip("Damage per hit tick while spinning.")]
+        public float DamagePerHit = 8f;
+
+        [Tooltip("Hitbox range while spinning.")]
+        public float HitRange = 2.5f;
+
+        [Tooltip("Time between spin hit ticks.")]
+        public float HitInterval = 0.2f;
+
+        [Tooltip("Maximum number of hit ticks that can occur in one use.")]
+        public int MaxHitCount = 6;
+
+        [Header("SFX/VFX")]
+        [Tooltip("SFX played at attack start.")]
+        public AudioClip WindupSFX;
+
+        [Tooltip("SFX played when entering hold phase.")]
+        public AudioClip HoldSFX;
+
+        [Tooltip("SFX played at wind-down.")]
+        public AudioClip WindDownSFX;
+
+        [Tooltip("Optional VFX prefab spawned for the spinning phase.")]
+        public GameObject SpinVFX;
     }
 
     /// <summary>
@@ -87,7 +166,7 @@ namespace EnemyBehavior.Boss.Cleanser
     {
         [Header("Animation")]
         [Tooltip("Animation trigger for the spare toss attack.")]
-        public string AnimationTrigger = "SpareToss";
+        public string AnimationTrigger = "Attack_SpareToss";
 
         [Header("Throw Type")]
         [Tooltip("If true, throws sequentially (one after another). If false, throws simultaneously.")]
@@ -192,37 +271,56 @@ namespace EnemyBehavior.Boss.Cleanser
     }
 
     /// <summary>
-    /// Configuration for the Spin Dash attack.
+    /// Configuration for crescent arc projectile-style attacks.
+    /// Used by DiagUpwardSlash and Ultimate sweep variants.
     /// </summary>
     [System.Serializable]
-    public class SpinDashConfig
+    public class CrescentArcProjectileConfig
     {
-        [Header("Animation")]
-        [Tooltip("Animation trigger for the spin dash attack.")]
-        public string AnimationTrigger = "SpinDash";
+        [Header("Projectile")]
+        [Tooltip("Projectile prefab to spawn for this attack.")]
+        public GameObject ProjectilePrefab;
 
-        [Header("Dash Count")]
-        [Tooltip("If true, randomly chooses between 1 or 3 dashes. If false, uses TripleDash setting.")]
-        public bool RandomDashCount = true;
-        
-        [Tooltip("If RandomDashCount is false, this determines if it's always 3 dashes (true) or 1 dash (false).")]
-        public bool AlwaysTripleDash = false;
-        
-        [Tooltip("Speed of the spin dash.")]
-        public float DashSpeed = 20f;
-        
-        [Tooltip("Duration of each dash in seconds.")]
-        public float DashDuration = 0.4f;
-        
-        [Tooltip("Delay between consecutive dashes when doing triple dash.")]
-        public float DelayBetweenDashes = 0.3f;
+        [Tooltip("How many projectiles are spawned for one cast.")]
+        [Range(1, 5)] public int ProjectileCount = 1;
 
-        [Header("SFX/VFX")]
-        [Tooltip("Sound effect during the dash.")]
-        public AudioClip DashSFX;
-        
-        [Tooltip("VFX prefab spawned during dash (e.g., afterimage trail).")]
-        public GameObject DashVFX;
+        [Tooltip("Damage per projectile hit.")]
+        public float Damage = 20f;
+
+        [Tooltip("Projectile travel speed.")]
+        public float Speed = 25f;
+
+        [Tooltip("Maximum travel distance before despawn.")]
+        public float MaxDistance = 25f;
+
+        [Header("Spawn")]
+        [Tooltip("Height offset from the caster when spawning.")]
+        public float SpawnHeight = 1.2f;
+
+        [Tooltip("Forward offset from the caster when spawning.")]
+        public float SpawnForwardOffset = 1.2f;
+
+        [Tooltip("Scale range applied per projectile. Use same min/max for fixed scale.")]
+        public Vector2 ScaleRange = new Vector2(1f, 1f);
+
+        [Tooltip("Visual tilt angle range in degrees (up/down roll style). Use same min/max for fixed tilt.")]
+        public Vector2 TiltAngleRange = new Vector2(0f, 0f);
+
+        [Tooltip("Additional spread angle between projectiles when ProjectileCount > 1.")]
+        public float SpreadStep = 6f;
+
+        [Header("Damage Rules")]
+        [Tooltip("Attack category to use for guard/parry behavior on hit.")]
+        public AttackCategory DamageCategory = AttackCategory.Halberd;
+
+        [Tooltip("If true, projectile can be parried when category/rules allow it.")]
+        public bool CanBeParried = true;
+
+        [Tooltip("If true, projectile can be guarded and damage is reduced using GuardDamageMultiplier.")]
+        public bool CanBeGuarded = true;
+
+        [Tooltip("Damage multiplier applied when guarding (0.3 = 70% reduction).")]
+        [Range(0f, 1f)] public float GuardDamageMultiplier = 0.35f;
     }
 
     /// <summary>
@@ -233,7 +331,7 @@ namespace EnemyBehavior.Boss.Cleanser
     {
         [Header("Animation")]
         [Tooltip("Animation trigger for the whirlwind attack.")]
-        public string AnimationTrigger = "Whirlwind";
+        public string AnimationTrigger = "Attack_Whirlwind";
 
         [Header("Suction")]
         [Tooltip("Duration of the spinning suction phase.")]
@@ -288,6 +386,19 @@ namespace EnemyBehavior.Boss.Cleanser
     [System.Serializable]
     public class DoubleMaximumSweepConfig
     {
+        [Header("Animation")]
+        [Tooltip("Main double-sweep animation.")]
+        public string UltimateTrigger = "Ultimate";
+
+        [Tooltip("Jump arc animation used for repositioning/float setup.")]
+        public string JumpArcBaseTrigger = "JumpArcBase";
+
+        [Tooltip("Jump arc animation used when ultimate is canceled.")]
+        public string JumpArcCancelTrigger = "JumpArcCancel";
+
+        [Tooltip("Jump arc animation used for final crash-down resolution.")]
+        public string JumpArcResolutionTrigger = "JumpArcResolution";
+
         [Header("Sweep Projectiles")]
         [Tooltip("Speed of the crescent wave projectiles.")]
         public float WaveSpeed = 25f;
@@ -304,14 +415,23 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Damage dealt by each sweep.")]
         public float SweepDamage = 25f;
 
+        [Tooltip("Projectile settings for the low sweep.")]
+        public CrescentArcProjectileConfig LowSweepProjectile = new CrescentArcProjectileConfig();
+
+        [Tooltip("Projectile settings for the mid sweep.")]
+        public CrescentArcProjectileConfig MidSweepProjectile = new CrescentArcProjectileConfig();
+
         [Header("Floating Phase")]
         [Tooltip("Time the Cleanser charges the massive strike in the air.")]
         public float ChargeUpTime = 8f;
+
+        [Tooltip("How long the hover timer is paused whenever Cleanser takes damage during hover phase.")]
+        public float HoverTimerPauseOnDamage = 0.25f;
         
         [Tooltip("Delay added when hit by an aerial attack.")]
         public float AerialHitDelay = 2f;
         
-        [Tooltip("Number of aerial hits required before plunge finisher can cancel.")]
+        [Tooltip("Number of valid plunge-finisher hits required to cancel the ultimate hover phase.")]
         public int RequiredAerialHits = 2;
 
         [Header("Platforms")]
@@ -463,41 +583,6 @@ namespace EnemyBehavior.Boss.Cleanser
     }
 
     /// <summary>
-    /// Configuration for the Mini Crescent Wave ranged attack.
-    /// A quick one-off crescent slash projectile.
-    /// </summary>
-    [System.Serializable]
-    public class MiniCrescentWaveConfig
-    {
-        [Header("Projectile Settings")]
-        [Tooltip("Speed of the crescent wave projectile.")]
-        public float WaveSpeed = 20f;
-        
-        [Tooltip("Damage dealt by the wave.")]
-        public float Damage = 20f;
-        
-        [Tooltip("Width of the wave hitbox.")]
-        public float WaveWidth = 8f;
-        
-        [Tooltip("Height of the wave (relative to Cleanser position).")]
-        public float WaveHeight = 1.5f;
-        
-        [Tooltip("Maximum travel distance before wave dissipates.")]
-        public float MaxDistance = 25f;
-
-        [Header("Animation")]
-        [Tooltip("Animation trigger for the crescent wave slash.")]
-        public string AnimationTrigger = "MiniCrescent";
-
-        [Header("SFX/VFX")]
-        [Tooltip("Sound effect when slashing.")]
-        public AudioClip SlashSFX;
-        
-        [Tooltip("Prefab for the crescent wave projectile.")]
-        public GameObject WavePrefab;
-    }
-
-    /// <summary>
     /// Configuration for the Gap Closing Dash (movement only, no attack).
     /// </summary>
     [System.Serializable]
@@ -522,7 +607,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Header("Animation")]
         [Tooltip("Animation trigger for the dash.")]
-        public string AnimationTrigger = "GapClose";
+        public string AnimationTrigger = "GapCloseDash";
 
         [Header("SFX/VFX")]
         [Tooltip("Sound effect during dash.")]

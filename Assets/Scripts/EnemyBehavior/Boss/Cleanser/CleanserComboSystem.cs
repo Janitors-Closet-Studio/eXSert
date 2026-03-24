@@ -27,7 +27,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Delay before executing this step (seconds).")]
         public float PreDelay = 0f;
         
-        [Tooltip("If true, pick up spare weapon before this attack (for dual wield).")]
+        [Tooltip("If true, acquires one spare weapon into the hover stockpile before this step.")]
         public bool PickupSpareWeaponBefore = false;
         
         /// <summary>
