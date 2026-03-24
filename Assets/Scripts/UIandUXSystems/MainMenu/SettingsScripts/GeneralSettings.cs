@@ -40,6 +40,23 @@ public class GeneralSettings : MonoBehaviour
 
     private void OnEnable()
     {
+        // Load PlayerPrefs for toggles and settings
+        float savedSens = PlayerPrefs.GetFloat("masterSens", defaultSens);
+        if (sensSlider != null)
+            sensSlider.value = savedSens;
+        SettingsManager.Instance.UpdatePlayerCameraSens(savedSens);
+
+        float savedVibration = PlayerPrefs.GetFloat("masterVibrateStrength", defaultVibration);
+        if (vibrationSlider != null)
+            vibrationSlider.value = savedVibration;
+        SettingsManager.Instance.rumbleStrength = savedVibration;
+
+        isInvertYOn = PlayerPrefs.GetInt("masterInvertY", 0) == 1;
+        SetInvertY(isInvertYOn);
+
+        isComboProgressionOn = PlayerPrefs.GetInt("masterCombo", 1) == 1;
+        SetComboProgressionDisplay(isComboProgressionOn);
+
         if (_applyAction != null && _applyAction.action != null)
             _applyAction.action.performed += ctx => GeneralApply();
     }
@@ -54,7 +71,7 @@ public class GeneralSettings : MonoBehaviour
     //All functions below sets values based on player choice
     public void SetSens(float sens)
     {
-        SettingsManager.Instance.sensitivity = sens;
+        SettingsManager.Instance.UpdatePlayerCameraSens(sens);
         // Update live value; defer updating the read-only/static slider until Apply.
         PlayerPrefs.SetFloat("masterSens", SettingsManager.Instance.sensitivity);
     }
@@ -99,7 +116,7 @@ public class GeneralSettings : MonoBehaviour
 
     public void SetInvertY(bool invertYOn)
     {
-        SettingsManager.Instance.invertY = invertYOn;
+        SettingsManager.Instance.UpdatePlayerInvertY(invertYOn);
         Debug.Log("Invert Y: " + !isInvertYOn);
 
         if (invertYOn)
@@ -117,7 +134,7 @@ public class GeneralSettings : MonoBehaviour
 
     public void GeneralApply()
     {
-        SettingsManager.Instance.sensitivity = sensSlider.value;
+        SettingsManager.Instance.UpdatePlayerCameraSens(sensSlider.value);
         PlayerPrefs.SetFloat("masterSens", SettingsManager.Instance.sensitivity);
 
         SettingsManager.Instance.rumbleStrength = vibrationSlider.value;

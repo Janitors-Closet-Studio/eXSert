@@ -65,6 +65,12 @@ public class CameraManager : MonoBehaviour
 
         // Set initial camera priorities
         SetCameraActive(gameplayCamera, true);
+
+        if (SettingsManager.Instance != null)
+        {
+            SettingsManager.Instance.UpdatePlayerCameraSens(SettingsManager.Instance.sensitivity);
+            SettingsManager.Instance.UpdatePlayerInvertY(SettingsManager.Instance.invertY);
+        }
     }
 
     private void CacheOrbitalComponents()

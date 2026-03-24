@@ -58,6 +58,27 @@ public class GraphicsSettings : MonoBehaviour
     void Awake()
     {
         FindGlobalVolume();
+
+        // Load PlayerPrefs for toggles and settings
+        brightnessLevel = PlayerPrefs.GetFloat("masterBrightness", defaultBrightness);
+        if (brightnessSlider != null)
+            brightnessSlider.value = brightnessLevel;
+        SetBrightness(brightnessLevel);
+
+        fpsLevel = PlayerPrefs.GetInt("masterFPS", 60);
+        SetFPS(fpsLevel);
+
+        isMotionBlur = PlayerPrefs.GetInt("masterMotionBlur", 1) == 1;
+        SetMotionBlur(isMotionBlur);
+
+        displayModeLevel = PlayerPrefs.GetInt("masterFullscreen", 0);
+        SetDisplayMode(displayModeLevel);
+
+        isCameraShake = PlayerPrefs.GetInt("masterCameraShake", 1) == 1;
+        SetCameraShake(isCameraShake);
+
+        isResolution1920x1080 = PlayerPrefs.GetInt("masterResolution", 0) == 0;
+        SetResolution(isResolution1920x1080 ? "1920x1080" : "2560x1440");
     }
 
     private void OnEnable()
