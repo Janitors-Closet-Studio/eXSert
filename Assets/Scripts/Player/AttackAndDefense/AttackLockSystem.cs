@@ -140,6 +140,8 @@ public class AttackLockSystem : MonoBehaviour
     private float verticalLeanVelocity; // For smooth vertical lean return
     private float baseVerticalValue; // The vertical axis value when lock-on started
     private bool hasBaseVerticalValue;
+    private BaseEnemyCore currentTargetEnemyCore;
+    private ReticleController currentTargetReticle;
     public bool IsHardLockActive => hardLockActive && currentTarget != null;
     public Transform CurrentHardLockTarget => currentTarget;
 
@@ -171,7 +173,7 @@ public class AttackLockSystem : MonoBehaviour
             SetCameraInputEnabled(true);
         }
         
-        ClearHardLock();
+        ClearHardLock(playReticleExit: false);
     }
 
     private void Update()
@@ -179,14 +181,23 @@ public class AttackLockSystem : MonoBehaviour
         if (!hardLockActive || currentTarget == null)
             return;
 
+        if (IsCurrentTargetDead())
+        {
+            currentTargetReticle?.PlayTargetLost();
+            ClearHardLock(playReticleExit: false);
+            return;
+        }
+
         if (!IsTargetValid(currentTarget, lockOnDistance))
         {
-            currentTarget = FindBestHardLockTarget();
-            if (currentTarget == null)
+            Transform replacementTarget = FindBestHardLockTarget();
+            if (replacementTarget == null)
             {
                 ClearHardLock();
                 return;
             }
+
+            SetHardLockTarget(replacementTarget, playEntryAnimation: true, playExitAnimation: true);
         }
 
         if (steerCamera)
@@ -206,7 +217,11 @@ public class AttackLockSystem : MonoBehaviour
         if (hardLockActive)
         {
             if (currentTarget == null)
-                currentTarget = FindBestHardLockTarget();
+            {
+                Transform fallbackTarget = FindBestHardLockTarget();
+                if (fallbackTarget != null)
+                    SetHardLockTarget(fallbackTarget, playEntryAnimation: true, playExitAnimation: false);
+            }
 
             if (currentTarget != null)
             {
@@ -256,7 +271,7 @@ public class AttackLockSystem : MonoBehaviour
         if (nextTarget == null || nextTarget == currentTarget)
             return;
 
-        currentTarget = nextTarget;
+        SetHardLockTarget(nextTarget, playEntryAnimation: true, playExitAnimation: true);
         ResetLeanState(); // Reset lean when switching targets for clean transition
         AlignPlayerAndCamera(nextTarget, instantCameraAlign: false); // Smooth transition to new target
     }
@@ -268,7 +283,7 @@ public class AttackLockSystem : MonoBehaviour
             return false;
 
         hardLockActive = true;
-        currentTarget = candidate;
+        SetHardLockTarget(candidate, playEntryAnimation: true, playExitAnimation: false);
         ResetLeanState(); // Start with no lean
         SetCameraInputEnabled(false); // Disable automatic input - we read it ourselves for lean effect
         AlignPlayerAndCamera(candidate, instantCameraAlign);
@@ -362,14 +377,100 @@ public class AttackLockSystem : MonoBehaviour
         return movement.TrySnapToSoftLock(worldPosition, desiredRotation);
     }
 
-    private void ClearHardLock()
+    private void ClearHardLock(bool playReticleExit = true)
     {
+        if (playReticleExit)
+            currentTargetReticle?.PlayUnlocked();
+
+        UnsubscribeFromCurrentTargetDeath();
+
         hardLockActive = false;
         currentTarget = null;
+        currentTargetReticle = null;
+        currentTargetEnemyCore = null;
         cameraYawVelocity = 0f;
         cameraPitchVelocity = 0f;
         ResetLeanState();
         SetCameraInputEnabled(true); // Re-enable full camera input
+    }
+
+    private void SetHardLockTarget(Transform target, bool playEntryAnimation, bool playExitAnimation)
+    {
+        if (currentTarget == target)
+        {
+            currentTargetReticle ??= ResolveReticleController(target);
+            if (playEntryAnimation)
+                currentTargetReticle?.PlayLockedOn();
+
+            return;
+        }
+
+        ReticleController previousReticle = currentTargetReticle;
+        UnsubscribeFromCurrentTargetDeath();
+        currentTarget = target;
+        currentTargetReticle = ResolveReticleController(target);
+        currentTargetEnemyCore = ResolveEnemyCore(target);
+        SubscribeToCurrentTargetDeath();
+
+        if (playExitAnimation)
+            previousReticle?.PlayUnlocked();
+
+        if (playEntryAnimation)
+            currentTargetReticle?.PlayLockedOn();
+    }
+
+    private static ReticleController ResolveReticleController(Transform target)
+    {
+        if (target == null)
+            return null;
+
+        return target.GetComponentInChildren<ReticleController>(true);
+    }
+
+    private static BaseEnemyCore ResolveEnemyCore(Transform target)
+    {
+        if (target == null)
+            return null;
+
+        return target.GetComponentInParent<BaseEnemyCore>();
+    }
+
+    private void SubscribeToCurrentTargetDeath()
+    {
+        if (currentTargetEnemyCore == null)
+            return;
+
+        currentTargetEnemyCore.OnDeath -= HandleCurrentTargetDeath;
+        currentTargetEnemyCore.OnDeath += HandleCurrentTargetDeath;
+    }
+
+    private void UnsubscribeFromCurrentTargetDeath()
+    {
+        if (currentTargetEnemyCore == null)
+            return;
+
+        currentTargetEnemyCore.OnDeath -= HandleCurrentTargetDeath;
+    }
+
+    private void HandleCurrentTargetDeath(BaseEnemyCore deadEnemy)
+    {
+        if (deadEnemy == null || deadEnemy != currentTargetEnemyCore)
+            return;
+
+        currentTargetReticle?.PlayTargetLost();
+        ClearHardLock(playReticleExit: false);
+    }
+
+    private bool IsCurrentTargetDead()
+    {
+        if (currentTargetEnemyCore != null)
+            return !currentTargetEnemyCore.isAlive;
+
+        if (currentTarget == null)
+            return false;
+
+        BaseEnemyCore enemy = currentTarget.GetComponentInParent<BaseEnemyCore>();
+        return enemy != null && !enemy.isAlive;
     }
 
     private void ResetLeanState()
