@@ -101,19 +101,15 @@ public class MenuListManager : MonoBehaviour
 
     public void SelectFirstSelectOnBack(GameObject menuToAdd)
     {
-        var firstSelectable = menuToAdd.GetComponent<Selectable>();
-        if (firstSelectable != null)
-        {
-            firstSelectable.Select();
-        }
-        else
-        {
-            var childSelectable = menuToAdd.GetComponentInChildren<Selectable>();
-            if (childSelectable != null)
-            {
-                childSelectable.Select();
-            }
-        }
+        if (menuToAdd == null)
+            return;
+
+        Selectable target = GetValidSelectionFromHistory(menuToAdd);
+        if (target == null)
+            target = GetFirstValidSelectable(menuToAdd);
+
+        if (target != null)
+            SetSelected(target);
     }
 
     public void GoBackToPreviousMenu()
@@ -138,6 +134,53 @@ public class MenuListManager : MonoBehaviour
                 SelectFirstSelectOnBack(newTop);
             }
         }
+    }
+
+    private Selectable GetValidSelectionFromHistory(GameObject targetMenu)
+    {
+        if (selectionHistory.Count == 0)
+            return null;
+
+        Selectable remembered = selectionHistory[0];
+        selectionHistory.RemoveAt(0);
+
+        if (remembered == null || !remembered.IsInteractable() || !remembered.gameObject.activeInHierarchy)
+            return null;
+
+        return remembered.transform.IsChildOf(targetMenu.transform) ? remembered : null;
+    }
+
+    private static Selectable GetFirstValidSelectable(GameObject root)
+    {
+        if (root == null)
+            return null;
+
+        Selectable rootSelectable = root.GetComponent<Selectable>();
+        if (rootSelectable != null && rootSelectable.IsInteractable() && rootSelectable.gameObject.activeInHierarchy)
+            return rootSelectable;
+
+        Selectable[] childSelectables = root.GetComponentsInChildren<Selectable>(true);
+        foreach (Selectable selectable in childSelectables)
+        {
+            if (selectable != null && selectable.IsInteractable() && selectable.gameObject.activeInHierarchy)
+                return selectable;
+        }
+
+        return null;
+    }
+
+    private static void SetSelected(Selectable selectable)
+    {
+        if (selectable == null)
+            return;
+
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+        }
+
+        selectable.Select();
     }
 
     public void SwapBetweenMenus()

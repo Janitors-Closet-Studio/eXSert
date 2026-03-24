@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using Managers.TimeLord;
+using Unity.VisualScripting;
 
 public class PauseManager : Singletons.Singleton<PauseManager>
 {
@@ -32,6 +33,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     [SerializeField] private InputActionReference _navigationMenuActionReference;
     [SerializeField] private InputActionReference _swapMenuActionReference;
     [SerializeField] private InputActionReference _pauseActionReference;
+    [SerializeField] private InputActionReference _backActionReference;
+    [SerializeField, Tooltip("Small debounce to prevent one key press from triggering Pause then Back after action map switch.")]
+    private float inputDebounceSeconds = 0.15f;
 
 
     private MenuListManager menuListManager;
@@ -48,6 +52,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     
     private ActiveMenu currentActiveMenu = ActiveMenu.None;
     private bool settingsMenuOpen = false;
+    private bool isUnpausing = false; // Flag to indicate we're in the process of unpausing (used to delay input block release)
+    private float ignorePauseUntilTime;
+    private float ignoreBackUntilTime;
 
     protected override void Awake()
     {
@@ -76,9 +83,14 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             _swapMenuActionReference.action.performed += OnSwapMenu;
 
         if(_pauseActionReference == null || _pauseActionReference.action == null)
-            Debug.LogWarning($"Pause Input Action Reference is not set in the inspector. Pause/Back button won't work properly");
+            Debug.LogWarning($"Pause Input Action Reference is not set in the inspector. Pause button won't work properly");
         else
-            _pauseActionReference.action.performed += OnPauseOrBack;
+            _pauseActionReference.action.performed += OnPause;
+
+        if(_backActionReference == null || _backActionReference.action == null)
+            Debug.LogWarning($"Back Input Action Reference is not set in the inspector. Back button won't work properly");
+        else
+            _backActionReference.action.performed += OnBack;
 
         SceneManager.sceneLoaded += HandleSceneLoaded;
     }
@@ -87,7 +99,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         // Unsubscribe from runtime Pause action
         if (_pauseActionReference != null && _pauseActionReference.action != null)
-            _pauseActionReference.action.performed -= OnPauseOrBack;
+            _pauseActionReference.action.performed -= OnPause;
+
+        if (_backActionReference != null && _backActionReference.action != null)
+            _backActionReference.action.performed -= OnBack;
 
         if (_navigationMenuActionReference != null && _navigationMenuActionReference.action != null)
             _navigationMenuActionReference.action.performed -= OnNavigationMenu;
@@ -112,27 +127,46 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     }
 
 
-    private void OnPauseOrBack(InputAction.CallbackContext context)
+    private void OnPause(InputAction.CallbackContext context)
     {
+        if (Time.unscaledTime < ignorePauseUntilTime)
+            return;
 
         if(Hint.isHintActive)
         {
-            Debug.Log("[PauseManager] OnPauseOrBack ignored - crane puzzle active");
             return;
         }
 
         if (ConfirmationDialog.AnyOpen)
         {
-            Debug.Log("[PauseManager] OnPauseOrBack ignored - confirmation dialog open");
             return;
         }
-        Debug.Log($"[PauseManager] OnPauseOrBack called - Current menu: {currentActiveMenu}, Menu count: {menuListManager.menusToManage.Count}, IsPaused: {IsPaused}");
 
         if(LogManager.Instance.unreadLogs.Count > 0 || DiaryManager.Instance.unreadDiaries.Count > 0)
             unreadEntriesNotif.SetActive(true);
         else
             unreadEntriesNotif.SetActive(false);
 
+            // If no menu is active, open pause menu
+        if (currentActiveMenu == ActiveMenu.None)
+        {
+            ShowPauseMenu();
+            return;
+        }
+
+        if (HasBlockingSubmenuActive())
+        {
+            return;
+        }
+
+    }
+
+    private void OnBack(InputAction.CallbackContext context)
+    {
+        if (Time.unscaledTime < ignoreBackUntilTime)
+            return;
+
+         
         // If we have more than 2 menus (canvas + first menu), just go back one level
         if (menuListManager.menusToManage.Count > 2)
         {
@@ -146,8 +180,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             CloseSettingsMenu();
             return;
         }
-
-        // If navigation menu is active, back/pause returns to pause menu
+        
         if(currentActiveMenu == ActiveMenu.NavigationMenu)
         {
             SwapToPauseMenu();
@@ -160,23 +193,15 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             ResumeGame();
             return;
         }
-
-        // If no menu is active, open pause menu
-        if (currentActiveMenu == ActiveMenu.None)
-        {
-            ShowPauseMenu();
-            return;
-        }
-
-        if (HasBlockingSubmenuActive())
-        {
-            Debug.Log("[PauseManager] OnPauseOrBack ignored - submenu or popup still active");
-            return;
-        }
     }
-
     private void OnNavigationMenu(InputAction.CallbackContext context)
     {
+        if (isUnpausing)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently unpausing");
+            return;
+        }
+
         if (ConfirmationDialog.AnyOpen)
         {
             Debug.Log("[PauseManager] OnNavigationMenu ignored - confirmation dialog open");
@@ -202,8 +227,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         menuListManager.GoBackToPreviousMenu();
         menuListManager.SelectFirstSelectOnBack(menuListManager.menusToManage[0]);
     }
-
-    
 
     /// <summary>
     /// Closes the settings menu and returns to the pause menu.
@@ -252,6 +275,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void ShowPauseMenu()
     {
+        if (isUnpausing)
+        {
+            Debug.Log("[PauseManager] ShowPauseMenu ignored - currently unpausing");
+            return;
+        }
+
         Debug.Log(Time.timeScale + "is the current timescale when showing pause menu.");  
 
         // Request pause through the coordinator (centralized time scale authority).
@@ -262,6 +291,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.PauseMenu;
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
+
+        // Prevent same physical key press from immediately firing Back after action map switch.
+        ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
+        ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
 
         Debug.Log("Pause Menu Opened");
         
@@ -286,6 +319,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
+
+        // Prevent same physical key press from immediately firing Back after action map switch.
+        ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
+        ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
 
         Debug.Log("Navigation Menu Opened");
         
@@ -326,6 +363,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         HideAllMenus();
 
+        // Prevent immediate re-open from the same key press while returning to Gameplay.
+        ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
+        ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
+
+        StartCoroutine(DelayAfterUnpausing());
+
         Debug.Log("Game Resumed");
         
         // Switch back to Gameplay input
@@ -341,6 +384,13 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             Debug.LogWarning("PlayerInput is null when trying to resume game. Make sure InputReader is set up correctly.");
         }
+    }
+
+    private IEnumerator DelayAfterUnpausing()
+    {
+        isUnpausing = true;
+        yield return new WaitForSeconds(0.25f);
+        isUnpausing = false;
     }
 
     /// <summary>
