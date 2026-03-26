@@ -224,7 +224,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void GoBackOnce()
     {
-        menuListManager.GoBackToPreviousMenu();
+        if (menuListManager.menusToBlock.Contains(menuListManager.menusToManage[0]))
+        {
+            menuListManager.GoBackToPreviousMenu();
+            menuListManager.GoBackToPreviousMenu();
+        }
+        else 
+        {
+            menuListManager.GoBackToPreviousMenu();
+        }
+
         menuListManager.SelectFirstSelectOnBack(menuListManager.menusToManage[0]);
     }
 

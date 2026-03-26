@@ -9,6 +9,8 @@ public class MenuListManager : MonoBehaviour
 {
     [SerializeField] internal List<GameObject> menusToManage;
 
+    [SerializeField] internal List<GameObject> menusToBlock;
+
     [SerializeField] private GameObject firstMenuToOpen;
     [SerializeField] private GameObject canvas;
 
@@ -111,7 +113,7 @@ public class MenuListManager : MonoBehaviour
         {
             menusToManage.Insert(0, menuToAdd);
 
-            if(menuToAdd != firstMenuToOpen && menuToAdd != canvas)
+            if(menuToAdd != firstMenuToOpen && menuToAdd != canvas && !menusToBlock.Contains(menuToAdd))
                 fadeMenus.FadeMenuSafe(menuToAdd, fadeMenus.fadeDuration, true);
 
             if(menuToAdd.tag != "LogUI" && menuToAdd.tag != "DiaryUI")
@@ -154,7 +156,7 @@ public class MenuListManager : MonoBehaviour
         GameObject currentTop = menusToManage[0];
 
         FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
-        if (currentTop != null)
+        if (currentTop != null && !menusToBlock.Contains(currentTop))
             fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
 
         menusToManage.RemoveAt(0);
@@ -178,7 +180,7 @@ public class MenuListManager : MonoBehaviour
         GameObject currentTop = menusToManage[0];
         FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
 
-        if (currentTop != null)
+        if (currentTop != null && !menusToBlock.Contains(currentTop))
             fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
 
         menusToManage.RemoveAt(0);
@@ -255,16 +257,23 @@ public class MenuListManager : MonoBehaviour
         if(menusToManage.Count >= 5){
             GoBackToPreviousMenu();
         }
+
     }
 
     public void ClearMenuList()
     {
         foreach(GameObject menu in menusToManage)
         {
-            menu.SetActive(false);
+            if (!IsProtectedMenu(menu))
+                menu.SetActive(false);
         }
         menusToManage.Clear();
         selectionHistory.Clear();
+    }
+
+    private bool IsProtectedMenu(GameObject menu)
+    {
+        return menu != null && (menu == canvas || menu == firstMenuToOpen);
     }
 
 }
