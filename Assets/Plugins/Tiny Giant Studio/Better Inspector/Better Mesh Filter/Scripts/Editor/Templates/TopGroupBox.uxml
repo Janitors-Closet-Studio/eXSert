@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Button.uss?fileID=7433441132597879392&amp;guid=08db9e3ca263ae74b9fd392cb95ab541&amp;type=3#Button" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Icons.uss?fileID=7433441132597879392&amp;guid=8485147538ab9684288c884484cd04b0&amp;type=3#Icons" />
+    <ui:GroupBox name="TopGroupBox" style="margin-left: -10px; margin-right: -10px; padding-right: 10px; margin-top: -3px; flex-direction: row; padding-top: 0; padding-bottom: 0; padding-left: 0; margin-bottom: 2px; border-bottom-width: 1px; border-bottom-color: rgba(0, 0, 0, 0.39); align-items: center; background-color: rgba(255, 255, 255, 0.1);">
+        <ui:VisualElement style="flex-grow: 1;" />
+        <ui:Button display-tooltip-when-elided="true" name="SettingsButton" tooltip="Opens a context menu." class="iconButton" style="margin-right: 0; flex-shrink: 0; flex-grow: 0; flex-direction: row;">
+            <ui:VisualElement class="menu-icon" style="height: 16px; width: 16px;" />
+        </ui:Button>
+    </ui:GroupBox>
+</ui:UXML>

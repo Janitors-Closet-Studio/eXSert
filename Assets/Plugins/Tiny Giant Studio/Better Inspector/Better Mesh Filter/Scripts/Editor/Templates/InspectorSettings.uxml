@@ -1,0 +1,106 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:Template name="SettingsFilePathUI" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/SettingsPath/SettingsFilePathUI.uxml?fileID=9197481963319205126&amp;guid=5b6a26beba278b04b987c093f57fa421&amp;type=3#SettingsFilePathUI" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Button.uss?fileID=7433441132597879392&amp;guid=08db9e3ca263ae74b9fd392cb95ab541&amp;type=3#Button" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Fields.uss?fileID=7433441132597879392&amp;guid=358e4c0387adee748b33cc10dacb35b5&amp;type=3#Fields" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Icons.uss?fileID=7433441132597879392&amp;guid=8485147538ab9684288c884484cd04b0&amp;type=3#Icons" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Labels.uss?fileID=7433441132597879392&amp;guid=8e783b06ea75cae42a70cbd434239c92&amp;type=3#Labels" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Footer.uss?fileID=7433441132597879392&amp;guid=3e3ef1c26165445469526cc86e434a31&amp;type=3#Footer" />
+    <ui:GroupBox name="InspectorSettings" class="custom-foldout" style="display: flex;">
+        <ui:GroupBox name="Header" class="header" style="align-items: stretch;">
+            <ui:Toggle name="FoldoutToggle" text="Inspector Settings" view-data-key="foldoutInspectorSettings" class="unity-foldout__toggle foldout-toggle" style="min-width: 125px;" />
+            <ui:Label text="Reset to" display-tooltip-when-elided="true" class="unimportant-information-label" style="margin-right: 0;" />
+            <ui:Button text="Default 1" display-tooltip-when-elided="true" name="ResetInspectorSettings" tooltip="Show Most Information In Preview" style="border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; border-top-width: 0; border-bottom-width: 0;" />
+            <ui:Button text="Default 2" display-tooltip-when-elided="true" name="ResetInspectorSettings2" tooltip="Show most information in a separate foldout" style="border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-width: 0; border-top-width: 0;" />
+            <ui:Button text="Minimal" display-tooltip-when-elided="true" name="ResetInspectorSettingsToMinimal" style="border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-width: 0; border-top-width: 0;" />
+            <ui:Button text="Empty" display-tooltip-when-elided="true" name="ResetInspectorSettingsToNothing" style="border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; border-bottom-width: 0; border-top-width: 0; border-right-width: 0;" />
+        </ui:GroupBox>
+        <ui:GroupBox name="Content" class="content" style="padding-top: 0; display: flex;">
+            <ui:GroupBox name="Footer" class="footer">
+                <uie:ToolbarButton text="v2.2.1" display-tooltip-when-elided="true" name="AssetLink" tooltip="Click to check if there are updates available." class="version" />
+                <uie:ToolbarButton text="Documentation" display-tooltip-when-elided="true" name="Documentation" tooltip="Opens the online documentation" />
+                <uie:ToolbarButton text="Other Assets" display-tooltip-when-elided="true" name="OtherAssetsLink" tooltip="Checkout other awesome assets." />
+            </ui:GroupBox>
+            <ui:Toggle label="Mesh field on Top" name="MeshFieldOnTop" />
+            <ui:Toggle name="ShowAssetLocationBelowPreview" label="Mesh Asset Location" tooltip="This shows the mesh location below the mesh picker" style="flex-wrap: nowrap;" />
+            <ui:GroupBox name="InspectorCustomizationFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="FoldoutToggle" text="Visual" view-data-key="foldoutInspectorCustomization" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="content">
+                    <ui:Toggle label="Foldout Animations" name="FoldoutAnimationsToggle" />
+                    <ui:GroupBox style="margin-left: 5px; margin-right: 0; margin-top: 5px; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; align-items: center; flex-direction: row;">
+                        <ui:Toggle name="OverrideFoldoutColorToggle" style="margin-right: 5px; margin-left: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0;" />
+                        <uie:ColorField label="Foldout Color" value="#0000FF05" name="FoldoutColorField" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-shrink: 1; flex-grow: 1;" />
+                    </ui:GroupBox>
+                    <ui:GroupBox style="margin-left: 5px; margin-right: 0; margin-top: 2px; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-direction: row; align-items: center;">
+                        <ui:Toggle name="OverrideInspectorColorToggle" style="margin-right: 5px; margin-left: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0;" />
+                        <uie:ColorField label="Inspector Color" value="#0000FF05" name="InspectorColorField" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-shrink: 1; flex-grow: 1;" />
+                    </ui:GroupBox>
+                    <ui:SliderInt label="Foldout Style" high-value="3" name="FoldoutStyle" low-value="1" tooltip="Some changes are applied after changing selection." />
+                    <ui:SliderInt label="Button Style" high-value="3" name="ButtonStyle" low-value="1" tooltip="Some changes are applied after changing selection." />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox name="MeshPreviewSettingsFoldout" class="custom-foldout" style="display: flex;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="showMeshPreview" style="margin-left: 5px; margin-right: 0; margin-top: 1px; margin-bottom: 1px;" />
+                    <ui:Toggle name="FoldoutToggle" view-data-key="foldoutMeshPreview" text="Mesh Preview" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="content">
+                    <ui:Toggle name="ShowInformationOnPreview" view-data-key="showInformationOnPreviewDataKey" label="Mesh Details" tooltip="This shows the mesh details inside the preview" style="flex-wrap: nowrap;" />
+                    <ui:SliderInt label="Max Preview Amount" high-value="100" tooltip="Maximum amount of previews that will be shown when you select multiple objects." low-value="2" show-input-field="true" name="MaximumPreviewAmount" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox name="InformationFoldoutSettingsFoldout" class="custom-foldout" style="display: flex;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="ShowMeshDetailsInFoldoutToggle" style="flex-wrap: nowrap; flex-direction: row-reverse;" />
+                    <ui:Toggle name="FoldoutToggle" view-data-key="foldoutMeshPreview" text="Information Foldout" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="content">
+                    <ui:Toggle label="Mesh Asset Location " name="ShowAssetLocationInFoldout" tooltip="This shows the mesh asset location in the information foldout" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox name="MeshDetailsSettingsFoldout" class="custom-foldout" style="display: flex;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="FoldoutToggle" view-data-key="foldoutMeshPreview" text="Mesh Details" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="content">
+                    <ui:Toggle label="Vertex" name="showVertexCount" />
+                    <ui:Toggle label="Triangle" name="showTriangleCount" />
+                    <ui:Toggle label="Tangent" name="showTangentCount" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px;" />
+                    <ui:Toggle label="Face" name="showFaceCount" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px;" />
+                    <ui:VisualElement style="flex-direction: row; align-items: center; justify-content: flex-start; margin-top: 2px;">
+                        <ui:Toggle label="Edge" name="showEdgeCount" tooltip="For high poly mesheshes, counting edges can reduce inspector performance." style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px; flex-direction: row; align-items: stretch; flex-grow: 1; max-width: 217px;" />
+                        <ui:Label display-tooltip-when-elided="true" tooltip="For high poly mesheshes, counting edges can reduce inspector performance." class="warning-icon" style="width: 15px; height: 15px;" />
+                    </ui:VisualElement>
+                    <ui:GroupBox style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-direction: row;">
+                        <ui:Toggle label="Runtime Memory Usage" name="ShowRuntimeMemoryUsageBelowPreview" style="margin-right: 10px;" />
+                        <ui:Toggle label="Hide The Label" name="RunTimeMemoryUsageLabelToggle" tooltip="If true, it will only show the memory usage without the label before it." class="my-field" />
+                    </ui:GroupBox>
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox name="ActionSettingsFoldout" class="custom-foldout" style="display: flex;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="showActionsFoldout" view-data-key="showActionsFoldoutDataKey" class="foldoutHeaderToggle" style="flex-direction: row-reverse;" />
+                    <ui:Toggle name="FoldoutToggle" view-data-key="foldoutMeshPreview" text="Action Buttons" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="content">
+                    <ui:Toggle label="Recalculate Normals" name="RecalculateNormals" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px;" />
+                    <ui:Toggle label="Recalculate Tangents" name="RecalculateTangents" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px;" />
+                    <ui:Toggle label="Flip Normals" name="FlipNormals" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px;" />
+                    <ui:Toggle label="Generate Secondary UV Set" name="GenerateSecondaryUVSet" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px;" />
+                    <ui:Toggle label="Smooth Shading" name="SmoothShading" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px; display: none;" />
+                    <ui:Toggle label="Export Mesh" name="SaveMeshAs" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px; display: flex;" />
+                    <ui:Toggle label="Load Mesh from Asset" name="LoadMeshFromAsset" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px; display: none;" />
+                    <ui:Toggle label="Optimize Mesh" name="OptimizeMesh" style="margin-top: 3px; margin-left: 3px; margin-right: 3px; margin-bottom: 3px;" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:Toggle label="Size Foldout" name="ShowMeshSize" />
+            <ui:Toggle label="Debug Tools Foldout" name="showDebugGizmoFoldout" />
+            <ui:Button text="Scale Settings" display-tooltip-when-elided="true" name="ScaleSettingsButton" class="myButton" style="margin-top: 10px; margin-bottom: 10px;" />
+            <ui:Instance template="SettingsFilePathUI" style="margin-bottom: 15px; margin-top: 5px;" />
+            <ui:GroupBox style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; align-items: flex-end;">
+                <ui:Toggle label="Auto Hide This Foldout" name="autoHideInspectorSettings" class="unimportant-information-label" />
+            </ui:GroupBox>
+        </ui:GroupBox>
+    </ui:GroupBox>
+</ui:UXML>
