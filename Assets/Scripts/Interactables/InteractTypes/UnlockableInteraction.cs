@@ -93,6 +93,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.puzzleSource != null)
         {
             SoundManager.Instance.puzzleSource.PlayOneShot(errorSFXClip);
+            RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.2f);
         }
         else if (errorSFXClip != null)
         {

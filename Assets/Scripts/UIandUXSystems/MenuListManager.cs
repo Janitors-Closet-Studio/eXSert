@@ -254,10 +254,34 @@ public class MenuListManager : MonoBehaviour
 
     public void SwapBetweenMenus()
     {
-        if(menusToManage.Count >= 5){
-            GoBackToPreviousMenu();
-        }
+        if (ShouldIgnoreMenuSwap())
+            return;
 
+        if (menusToManage.Count >= 5)
+            GoBackToPreviousMenu();
+    }
+
+    // Overload for UnityEvent<float> sources like Slider.onValueChanged.
+    public void SwapBetweenMenus(float _)
+    {
+        if (ShouldIgnoreMenuSwap())
+            return;
+
+        if (menusToManage.Count >= 5)
+            GoBackToPreviousMenu();
+    }
+
+    private static bool ShouldIgnoreMenuSwap()
+    {
+        if (EventSystem.current == null)
+            return false;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+        if (selected == null)
+            return false;
+
+        // Prevent sliders from unintentionally triggering menu stack pop on value changes.
+        return selected.GetComponentInParent<Slider>() != null;
     }
 
     public void ClearMenuList()
