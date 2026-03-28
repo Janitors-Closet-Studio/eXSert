@@ -1,0 +1,40 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Button.uss?fileID=7433441132597879392&amp;guid=08db9e3ca263ae74b9fd392cb95ab541&amp;type=3#Button" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Labels.uss?fileID=7433441132597879392&amp;guid=8e783b06ea75cae42a70cbd434239c92&amp;type=3#Labels" />
+    <ui:GroupBox name="Buttons" class="custom-foldout" style="display: flex; margin-top: 5px;">
+        <ui:GroupBox name="Header" class="header">
+            <ui:Toggle name="FoldoutToggle" text="Actions" view-data-key="foldoutButtons" class="unity-foldout__toggle foldout-toggle" />
+        </ui:GroupBox>
+        <ui:GroupBox name="Content" class="content">
+            <ui:GroupBox style="flex-direction: row; flex-wrap: wrap; transition-duration: 1s; flex-shrink: initial; flex-grow: initial; flex-basis: 100%; justify-content: flex-start; padding-top: 5px; padding-right: 5px; padding-bottom: 5px; padding-left: 5px; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 2px;">
+                <ui:Button text="Optimize Mesh" display-tooltip-when-elided="true" name="OptimizeMesh" style="min-height: 25px; min-width: 100px;" />
+                <ui:Button text="Recalculate Normals" display-tooltip-when-elided="true" name="RecalculateNormals" tooltip="Recalculates the normals of the Mesh from the triangles and vertices. Note that RecalculateNormals does not generate tangents automatically, to do that use RecalculateTangents." style="min-height: 25px; min-width: 100px;" />
+                <ui:Button text="Recalculate Tangents" display-tooltip-when-elided="true" name="RecalculateTangents" tooltip="Recalculates the tangents of the Mesh from the normals and texture coordinates. After modifying the vertices and the normals of the Mesh, tangents need to be updated if the Mesh is rendered using Shaders that reference normal maps. Unity calculates tangents using the vertex positions, normals and texture coordinates of the Mesh." style="min-height: 25px; min-width: 100px;" />
+                <ui:Button text="Flip Normals" display-tooltip-when-elided="true" name="FlipNormals" tooltip="Flips the direction of the normals." style="min-height: 25px; min-width: 100px;" />
+                <ui:Button text="Subdivide Mesh" display-tooltip-when-elided="true" name="subDivideMesh" tooltip="Save the current mesh as an asset" style="display: none; min-height: 25px; min-width: 100px;" />
+                <ui:Button text="Export mesh" display-tooltip-when-elided="true" name="exportMesh" tooltip="Save the current mesh as an asset" style="min-height: 25px; min-width: 100px;" />
+            </ui:GroupBox>
+            <ui:GroupBox name="GenerateSecondaryUVsetGroupBox" class="custom-foldout" style="flex-grow: 1; margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="FoldoutToggle" text="Generate Lightmap UVs" view-data-key="GenerateSecondaryUVsetButton" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="content">
+                    <ui:Label text="Compute a unique UV layout for a Mesh, and store it in Mesh.uv2. This is useful for static lightnings.&#10;&#10;When you import a model asset, the Model Import Settings inspector can do this.&#10;This function is mostly useful for procedurally generated meshes.&#10;" tooltip="If this process requires multiple UV charts to flatten the the mesh, the mesh might contain more vertices than before. If the mesh uses 16-bit indices (see Mesh.indexFormat) and the process would result in more vertices than are possible to use with 16-bit indices, this function fails and returns false. " class="unimportant-information-label" style="white-space: normal; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; margin-top: 5px; margin-right: 5px; margin-bottom: 10px; margin-left: 5px;" />
+                    <ui:GroupBox tooltip="Advanced settings for lightmap UV generation." style="margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                        <ui:GroupBox style="align-items: flex-end; margin-top: 0; margin-right: 0; margin-bottom: 5px; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                            <ui:Button text="Reset Settings" display-tooltip-when-elided="true" name="ResetGenerateSecondaryUVSetButton" class="myButton" style="min-height: auto;" />
+                        </ui:GroupBox>
+                        <ui:SliderInt label="Hard Angle" value="88" high-value="180" tooltip="Angle between neighbor triangles that will generate seam." view-data-key="HardAngle" name="HardAngleSlider" fill="true" show-input-field="true" />
+                        <ui:SliderInt label="Angle Error" value="7" high-value="75" tooltip="Measured in percents. Angle error measures deviation of UV angles from geometry angles. " low-value="1" view-data-key="AngleError" name="AngleErrorSlider" fill="true" show-input-field="true" />
+                        <ui:SliderInt label="Area Error" value="13" high-value="75" low-value="1" tooltip="Measured in percents. Area error measures deviation of UV triangles area from geometry triangles if they were uniformly scaled." name="AreaErrorSlider" view-data-key="AreaError" show-input-field="true" fill="true" />
+                        <ui:SliderInt label="Pack Margin" value="1" high-value="64" low-value="1" tooltip="How much uv-islands will be padded. Measured in pixels assumingg mesh will cover an entire 1024x1024 lightmap." view-data-key="PackMargin" name="PackMarginSlider" fill="true" show-input-field="true" />
+                    </ui:GroupBox>
+                    <ui:Button text="Generate" display-tooltip-when-elided="true" name="GenerateSecondaryUVSet" tooltip="Generate Secondary UV Set" class="myButton" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox style="align-items: flex-end;">
+                <ui:Toggle label="Do not apply actions to asset, use instance" value="true" tooltip="If turned on, when using the buttons below, a instance of the mesh is created and the modification is applied to that one. If turned off, if the mesh is an asset, the asset is modified. If you are unsure, just leave it turned on." name="doNotApplyActionToAsset" class="unimportant-information-label" style="margin-left: 12px;" />
+            </ui:GroupBox>
+        </ui:GroupBox>
+    </ui:GroupBox>
+</ui:UXML>

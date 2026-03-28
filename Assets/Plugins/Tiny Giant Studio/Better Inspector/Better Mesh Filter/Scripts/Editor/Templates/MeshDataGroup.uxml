@@ -1,0 +1,41 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/StyleSheets/BetterMeshStyleSheet.uss?fileID=7433441132597879392&amp;guid=c9a431aaf1473414b81348d21a284053&amp;type=3#BetterMeshStyleSheet" />
+    <ui:GroupBox name="MeshDataGroup" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-wrap: wrap; flex-direction: row; color: rgb(195, 195, 195); justify-content: center;">
+        <ui:GroupBox name="VerticesGroup" style="flex-direction: row; flex-wrap: wrap; justify-content: center; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+            <ui:GroupBox class="meshInformationItem" style="flex-direction: row;">
+                <ui:Label text="18897" display-tooltip-when-elided="true" name="Value" />
+                <ui:Label text="Vertices" />
+            </ui:GroupBox>
+            <ui:GroupBox name="SubmeshGroup" class="meshInformationItem" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; min-width: auto; flex-direction: row; justify-content: center;">
+                <ui:Label text="," display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5; display: none;" />
+                <ui:Label text="6" display-tooltip-when-elided="true" name="SubmeshValue" tooltip="Amount of submeshes" />
+                <ui:Label text="Submeshes" style="opacity: 0.8;" />
+                <ui:Label text="(1496, 9750, 7055, 326, 170, 100)" display-tooltip-when-elided="true" name="SubmeshVertices" tooltip="Vertex count for each submeshes." />
+            </ui:GroupBox>
+        </ui:GroupBox>
+        <ui:GroupBox name="TrianglesGroup" class="meshInformationItem">
+            <ui:Label text="0" display-tooltip-when-elided="true" name="Value" tooltip="Length" />
+            <ui:Label text="Triangles" style="opacity: 0.8;" />
+            <ui:Label text="," display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5; display: none;" />
+        </ui:GroupBox>
+        <ui:GroupBox name="TangentsGroup" class="meshInformationItem">
+            <ui:Label text="0" display-tooltip-when-elided="true" name="Value" tooltip="Length" />
+            <ui:Label text="Tangents" style="opacity: 0.8;" />
+            <ui:Label text="," display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5; display: none;" />
+        </ui:GroupBox>
+        <ui:GroupBox name="FaceGroup" class="meshInformationItem">
+            <ui:Label text="0" display-tooltip-when-elided="true" name="Value" tooltip="Length" />
+            <ui:Label text="Faces" style="opacity: 0.8;" />
+            <ui:Label text="," display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5; display: none;" />
+        </ui:GroupBox>
+        <ui:GroupBox name="EdgeGroup" class="meshInformationItem">
+            <ui:Label text="0" display-tooltip-when-elided="true" name="Value" tooltip="Length" />
+            <ui:Label text="Edges" style="opacity: 0.8;" />
+            <ui:Label text="," display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5; display: none;" />
+        </ui:GroupBox>
+        <ui:GroupBox tooltip="Total runtime memory used by an object, including data stored on both the CPU and GPU, as well as any overhead like alignment or padding. That&apos;s why it might seem double of what it should be. It’s useful for understanding an object’s actual memory footprint." name="RuntimeMemoryUsageGroupBox" style="flex-direction: row; margin-left: 5px; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; opacity: 0.7; justify-content: center; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.39);">
+            <ui:Button text="Runtime Memory Usage" display-tooltip-when-elided="true" name="RuntimeMemoryUsageExplaination" tooltip="Click to open documentation" class="unfocusedButton" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+            <ui:Label text="Memory Usage" display-tooltip-when-elided="true" name="MemoryUsageInFoldout" style="white-space: normal; margin-left: 5px; margin-right: 5px; margin-top: 5px; margin-bottom: 5px;" />
+        </ui:GroupBox>
+    </ui:GroupBox>
+</ui:UXML>
