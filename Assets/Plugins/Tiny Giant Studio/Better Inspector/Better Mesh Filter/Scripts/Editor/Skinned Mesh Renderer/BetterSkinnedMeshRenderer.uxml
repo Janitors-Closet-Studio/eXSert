@@ -1,0 +1,123 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:Template name="TopGroupBox" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/TopGroupBox.uxml?fileID=9197481963319205126&amp;guid=fe61dd261122e3f48a34bac018ab07c1&amp;type=3#TopGroupBox" />
+    <ui:Template name="InspectorSettings" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/InspectorSettings.uxml?fileID=9197481963319205126&amp;guid=e3e6a8f598969f144bf26e956991b8d4&amp;type=3#InspectorSettings" />
+    <ui:Template name="MeshPreviewContainers" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/MeshPreviewContainers.uxml?fileID=9197481963319205126&amp;guid=7f975240e659f4b4eaf5cfd4721d06aa&amp;type=3#MeshPreviewContainers" />
+    <ui:Template name="Informations" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/Informations.uxml?fileID=9197481963319205126&amp;guid=2ce6932dbf48d7f4ebaa1daf031a857a&amp;type=3#Informations" />
+    <ui:Template name="MeshSize Foldout" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/MeshSize%20Foldout.uxml?fileID=9197481963319205126&amp;guid=f03fb81a199992d49a9756949300219e&amp;type=3#MeshSize Foldout" />
+    <ui:Template name="Actions Foldout" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/Actions%20Foldout.uxml?fileID=9197481963319205126&amp;guid=6ee5db72bbcc1c6469a640b39f5d6f9a&amp;type=3#Actions Foldout" />
+    <ui:Template name="MeshDebugContents" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/MeshDebugContents.uxml?fileID=9197481963319205126&amp;guid=93c5217adbd39204bbdbd7da774fd6ba&amp;type=3#MeshDebugContents" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Fields.uss?fileID=7433441132597879392&amp;guid=358e4c0387adee748b33cc10dacb35b5&amp;type=3#Fields" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Icons.uss?fileID=7433441132597879392&amp;guid=8485147538ab9684288c884484cd04b0&amp;type=3#Icons" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Labels.uss?fileID=7433441132597879392&amp;guid=8e783b06ea75cae42a70cbd434239c92&amp;type=3#Labels" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Button.uss?fileID=7433441132597879392&amp;guid=08db9e3ca263ae74b9fd392cb95ab541&amp;type=3#Button" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/StyleSheets/BetterMeshStyleSheet.uss?fileID=7433441132597879392&amp;guid=c9a431aaf1473414b81348d21a284053&amp;type=3#BetterMeshStyleSheet" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/StyleSheets/MaterialsList.uss?fileID=7433441132597879392&amp;guid=6dcf0ecef3bb80243bf5bf055753d0a1&amp;type=3#MaterialsList" />
+    <ui:GroupBox picking-mode="Ignore" name="RootHolder" style="margin-left: -15px; margin-right: -10px; margin-top: -25px; margin-bottom: 20px; padding-left: 10px; padding-right: 10px; padding-top: 25px; padding-bottom: 0; transition-duration: 0.5s;">
+        <ui:Instance template="TopGroupBox" name="TopGroupBox" />
+        <ui:Instance template="InspectorSettings" />
+        <ui:Instance template="MeshPreviewContainers" name="MeshPreviewContainers" />
+        <ui:VisualElement name="MainContainer" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; display: flex;">
+            <ui:GroupBox name="MeshFieldGroupBox" style="margin-left: 0; margin-right: 0; margin-top: 5px; margin-bottom: 2px; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-direction: column; align-items: stretch;">
+                <uie:ObjectField type="UnityEngine.Mesh, UnityEngine.CoreModule" binding-path="m_Mesh" name="MeshField" allow-scene-objects="true" tooltip="The mesh used by this renderer." label="Mesh" class="my-field" style="margin-left: 0; margin-right: 0; margin-bottom: 0; margin-top: 0; overflow: visible; visibility: visible; flex-grow: 1; flex-shrink: 1; -unity-text-align: middle-center; font-size: 13px; transition-property: background-color; transition-duration: 0.5s;" />
+                <ui:Label text="Asset Location  Asset Location  Asset Location  Asset Location  Asset Location  Asset Location  " display-tooltip-when-elided="true" name="AssetLocationOutsideFoldout" class="unimportant-information-label" style="-unity-text-align: middle-center;" />
+                <ui:GroupBox style="flex-direction: row; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                    <uie:ObjectField label="Root Bone  " tooltip="Transform with which the bounds move, and the space in which skinning is computed." type="UnityEngine.Transform, UnityEngine.CoreModule" binding-path="m_RootBone" class="my-field" style="margin-top: 2px; flex-grow: 1;" />
+                    <ui:Label tabindex="-1" text="3" parse-escape-sequences="true" display-tooltip-when-elided="true" name="BonesCounter" style="-unity-text-align: middle-center; padding-right: 0; margin-left: 5px;" />
+                    <ui:Label tabindex="-1" text="Bones" parse-escape-sequences="true" display-tooltip-when-elided="true" class="unimportant-information-label" style="-unity-text-align: middle-center; margin-left: 2px; padding-left: 2px;" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+        </ui:VisualElement>
+        <ui:GroupBox name="OverrideOfTheDefaultInspector" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+            <ui:GroupBox view-data-key="boundingBoxFoldoutGroupBox" name="BoundingBoxFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="FoldoutToggle" text="Bounds" value="false" view-data-key="BoundsFoldoutDataKey" class="unity-foldout__toggle foldout-toggle" />
+                    <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="EditBoundingVolumeButton" class="toggledOnButton toolbarComboButton">
+                        <ui:VisualElement name="Icon" class="editBounds-icon" style="flex-grow: 1;" />
+                        <ui:Label text="Edit Bounds" name="Label" />
+                    </ui:Button>
+                    <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="AutoFitBoundsButton" class="toolbarComboButton">
+                        <ui:VisualElement name="Icon" class="autoFitBounds-icon" style="flex-grow: 1; width: 10px; height: 10px; margin-right: 2px; margin-left: 5px;" />
+                        <ui:Label text="Auto Fit Bounds" name="Label" />
+                    </ui:Button>
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="container content">
+                    <ui:GroupBox name="BoundsGroupBox" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                        <ui:Vector3Field label="Center" name="BoundsCenter" class="my-field" style="margin-left: -3px;" />
+                        <ui:Vector3Field label="Extent" name="BoundsExtentField" class="my-field" style="margin-left: -3px; margin-bottom: 2px;" />
+                    </ui:GroupBox>
+                    <uie:PropertyField binding-path="m_Quality" style="margin-left: -2px;" />
+                    <ui:Toggle binding-path="m_UpdateWhenOffscreen" label="Update When Offscreen " tooltip="If an accurate bounding volume representation should be calculated every frame." class="my-field" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox name="BlendShapesFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+                <ui:GroupBox name="Header" class="header" style="padding-left: 1px;">
+                    <ui:Toggle name="FoldoutToggle" text="Blend Shapes" value="false" view-data-key="BlendShapesFoldoutDataKey" class="unity-foldout__toggle foldout-toggle unity-binding--prefab-override" style="padding-left: 4px;" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="container content">
+                    <ui:GroupBox name="BlendShapesList">
+                        <ui:Slider label="Slider" high-value="100" show-input-field="true" class="special-slider my-field" />
+                    </ui:GroupBox>
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <uie:PropertyField binding-path="m_Materials" />
+            <ui:GroupBox name="LightningFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="FoldoutToggle" text="Lightning" value="false" view-data-key="LightningFoldoutDataKey" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="container content">
+                    <uie:PropertyField binding-path="m_CastShadows" tooltip="Specifies whether geometry creates shadows or not when a shadow-casting Light shines on it." />
+                    <ui:Toggle label="Recieve Shadows" binding-path="m_ReceiveShadows" tooltip="When enabled, any shadows cast from other objects are drawn on the geometry." />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox name="ProbesFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="FoldoutToggle" text="Probes" value="false" view-data-key="ProbesDataKey" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="container content">
+                    <ui:EnumField label="Light Probes" type="UnityEngine.Rendering.LightProbeUsage, UnityEngine.CoreModule" name="LightProbeEnumField" tooltip="Specifies how Light Probes will handle the interpolation of lighting and occlusion. Disabled if the object is set to receive Global Illuminiation from lightmaps." class="unity-binding--prefab-override" />
+                    <ui:IntegerField label="Light Probe" value="42" binding-path="m_LightProbeUsage" name="LightProbeBindingField" style="display: none;" />
+                    <uie:PropertyField binding-path="m_LightProbeVolumeOverride" label="Proxy Volume Override" tooltip="If set, the renderer will use the Light Probe Proxy Volume component from another GameObject." name="LightProbeVolumeOverrideField" style="margin-left: 20px;" />
+                    <ui:EnumField label="Reflection Probe" type="UnityEngine.Rendering.ReflectionProbeUsage, UnityEngine.CoreModule" binding-path="m_ReflectionProbeUsage" value="Simple" name="ReflectionProbeEnumField" />
+                    <ui:IntegerField binding-path="m_ReflectionProbeUsage" name="ReflectionProbeBindingField" label="Reflection Probe" style="display: none;" />
+                    <uie:ObjectField label="Anchor Override" binding-path="m_ProbeAnchor" tooltip="Specifies the Transform position that will be used for sampling the light probes and reflection probes." type="UnityEngine.Transform, UnityEngine.CoreModule" name="AnchorOverrideField" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:GroupBox name="AdditionalSettingsFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+                <ui:GroupBox name="Header" class="header">
+                    <ui:Toggle name="FoldoutToggle" text="Additional Settings" value="false" view-data-key="AdditionalSettingsFoldoutDataKey" class="unity-foldout__toggle foldout-toggle" />
+                </ui:GroupBox>
+                <ui:GroupBox name="Content" class="container content">
+                    <uie:PropertyField binding-path="m_SkinnedMotionVectors" />
+                    <uie:PropertyField binding-path="m_DynamicOccludee" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+        </ui:GroupBox>
+        <ui:GroupBox name="DefaultInspectorContainer" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;" />
+        <ui:Instance template="Informations" />
+        <ui:Instance template="MeshSize Foldout" />
+        <ui:Instance template="Actions Foldout" />
+        <ui:GroupBox name="DebugFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+            <ui:GroupBox name="Header" class="header">
+                <ui:Toggle name="FoldoutToggle" text="Debug" value="false" view-data-key="DebugFoldoutDataKey" class="unity-foldout__toggle foldout-toggle" />
+            </ui:GroupBox>
+            <ui:GroupBox name="Content" class="container content">
+                <ui:Instance template="MeshDebugContents" />
+                <ui:GroupBox name="DebugPropertiesFoldout" class="custom-foldout" style="display: flex; margin-top: 5px;">
+                    <ui:GroupBox name="Header" class="header">
+                        <ui:Toggle name="FoldoutToggle" text="Properties" value="false" view-data-key="DebugPropertiesFoldoutDataKey" class="unity-foldout__toggle foldout-toggle" />
+                    </ui:GroupBox>
+                    <ui:GroupBox name="Content" class="container content">
+                        <uie:PropertyField binding-path="m_LightmapIndex" />
+                        <uie:PropertyField binding-path="m_LightmapTilingOffset" />
+                        <uie:PropertyField binding-path="m_ScaleInLightmap" />
+                        <uie:PropertyField binding-path="m_ReceiveGI" />
+                        <uie:PropertyField binding-path="m_StaticBatchRoot" />
+                        <uie:PropertyField binding-path="m_AABB" name="AABBBindingField" />
+                        <uie:PropertyField binding-path="m_DirtyAABB" tooltip="Internal flag: marks bounds as outdated" />
+                        <uie:PropertyField binding-path="m_BlendShapeWeights" name="BlendShapesPropertyField" />
+                    </ui:GroupBox>
+                </ui:GroupBox>
+            </ui:GroupBox>
+        </ui:GroupBox>
+    </ui:GroupBox>
+</ui:UXML>

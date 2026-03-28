@@ -1,0 +1,28 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:Template name="TopGroupBox" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/TopGroupBox.uxml?fileID=9197481963319205126&amp;guid=fe61dd261122e3f48a34bac018ab07c1&amp;type=3#TopGroupBox" />
+    <ui:Template name="InspectorSettings" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/InspectorSettings.uxml?fileID=9197481963319205126&amp;guid=e3e6a8f598969f144bf26e956991b8d4&amp;type=3#InspectorSettings" />
+    <ui:Template name="MeshPreviewContainers" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/MeshPreviewContainers.uxml?fileID=9197481963319205126&amp;guid=7f975240e659f4b4eaf5cfd4721d06aa&amp;type=3#MeshPreviewContainers" />
+    <ui:Template name="Informations" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/Informations.uxml?fileID=9197481963319205126&amp;guid=2ce6932dbf48d7f4ebaa1daf031a857a&amp;type=3#Informations" />
+    <ui:Template name="MeshSize Foldout" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/MeshSize%20Foldout.uxml?fileID=9197481963319205126&amp;guid=f03fb81a199992d49a9756949300219e&amp;type=3#MeshSize Foldout" />
+    <ui:Template name="Actions Foldout" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/Actions%20Foldout.uxml?fileID=9197481963319205126&amp;guid=6ee5db72bbcc1c6469a640b39f5d6f9a&amp;type=3#Actions Foldout" />
+    <ui:Template name="MeshDebugContents" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/MeshDebugContents.uxml?fileID=9197481963319205126&amp;guid=93c5217adbd39204bbdbd7da774fd6ba&amp;type=3#MeshDebugContents" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Fields.uss?fileID=7433441132597879392&amp;guid=358e4c0387adee748b33cc10dacb35b5&amp;type=3#Fields" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Icons.uss?fileID=7433441132597879392&amp;guid=8485147538ab9684288c884484cd04b0&amp;type=3#Icons" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Labels.uss?fileID=7433441132597879392&amp;guid=8e783b06ea75cae42a70cbd434239c92&amp;type=3#Labels" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Button.uss?fileID=7433441132597879392&amp;guid=08db9e3ca263ae74b9fd392cb95ab541&amp;type=3#Button" />
+    <ui:GroupBox name="RootHolder" picking-mode="Ignore" style="margin-left: -15px; margin-right: -10px; margin-top: -25px; margin-bottom: 0; padding-left: 10px; padding-right: 10px; padding-top: 25px; padding-bottom: 0; transition-duration: 0.5s;">
+        <ui:Instance template="TopGroupBox" name="TopGroupBox" />
+        <ui:Instance template="InspectorSettings" style="margin-top: 5px;" />
+        <ui:Instance template="MeshPreviewContainers" name="MeshPreviewContainers" />
+        <ui:VisualElement name="MainContainer" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0;">
+            <ui:GroupBox name="MeshFieldGroupBox" style="margin-left: 0; margin-right: 0; margin-top: 5px; margin-bottom: 2px; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-direction: column; align-items: stretch;">
+                <uie:ObjectField type="UnityEngine.Mesh, UnityEngine.CoreModule" binding-path="m_Mesh" name="mesh" allow-scene-objects="true" style="margin-left: 0; margin-right: 0; margin-bottom: 0; margin-top: 0; overflow: visible; visibility: visible; flex-grow: 1; -unity-text-align: middle-center; font-size: 13px; transition-property: background-color; transition-duration: 0.5s;" />
+                <ui:Label text="Asset Location  Asset Location  Asset Location  Asset Location  Asset Location  Asset Location  " display-tooltip-when-elided="true" name="AssetLocationOutsideFoldout" class="unimportant-information-label" style="-unity-text-align: middle-center;" />
+            </ui:GroupBox>
+            <ui:Instance template="Informations" style="margin-top: 5px;" />
+            <ui:Instance template="MeshSize Foldout" style="margin-top: 5px;" />
+            <ui:Instance template="Actions Foldout" />
+            <ui:Instance template="MeshDebugContents" style="margin-top: 5px;" />
+        </ui:VisualElement>
+    </ui:GroupBox>
+</ui:UXML>

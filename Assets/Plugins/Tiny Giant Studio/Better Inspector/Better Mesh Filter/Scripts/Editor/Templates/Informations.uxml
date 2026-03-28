@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:Template name="MeshDataGroup" src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Better%20Mesh%20Filter/Scripts/Editor/Templates/MeshDataGroup.uxml?fileID=9197481963319205126&amp;guid=a538da97195261444af2705b00276275&amp;type=3#MeshDataGroup" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Labels.uss?fileID=7433441132597879392&amp;guid=8e783b06ea75cae42a70cbd434239c92&amp;type=3#Labels" />
+    <ui:GroupBox name="Information" class="custom-foldout" style="display: flex; margin-top: 5px;">
+        <ui:GroupBox name="Header" class="header">
+            <ui:Toggle name="FoldoutToggle" text="Information" view-data-key="foldoutInformation" tooltip="Mesh data is represented differently in different 3D applications, which can lead to slight differences in mesh information between external application and Unity. It shouldn&apos;t be big though." class="unity-foldout__toggle foldout-toggle" />
+        </ui:GroupBox>
+        <ui:GroupBox name="Content" class="content" style="display: flex; opacity: 1; flex-direction: column; flex-shrink: 1;">
+            <ui:Instance template="MeshDataGroup" name="MeshDataGroup" style="margin-bottom: 5px; align-items: flex-start;" />
+            <ui:GroupBox name="AssetLocationInFoldoutGroupBox" style="flex-direction: row; margin-left: 5px; margin-right: 5px; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-wrap: wrap;">
+                <ui:Label text="Asset Location : " display-tooltip-when-elided="true" class="unfocusedLabel unimportant-information-label" style="margin-left: 0; padding-left: 0;" />
+                <ui:Label text="LocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocationLocation" display-tooltip-when-elided="true" name="assetLocation" style="white-space: normal; flex-shrink: 1; overflow: hidden;" />
+            </ui:GroupBox>
+        </ui:GroupBox>
+    </ui:GroupBox>
+</ui:UXML>
