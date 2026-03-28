@@ -1,0 +1,161 @@
+.iconButton {
+    background-color: rgba(0, 0, 0, 0);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    width: 20px;
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    height: 20px;
+    opacity: 0.75;
+    transition-property: opacity;
+    transition-duration: 0.25s;
+}
+
+.iconButton:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    opacity: 1;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.iconButton:active {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    opacity: 1;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.iconButton:active {
+    background-color: rgba(5, 147, 224, 0.2);
+}
+
+.toolbarComboButton-normal {
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    padding-left: 2px;
+    padding-right: 2px;
+    min-width: 28px;
+    margin-left: 1px;
+    margin-right: 1px;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.toolbarComboButton-shortened {
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    padding-left: 1px;
+    padding-right: 1px;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-left: 1px;
+    margin-right: 1px;
+    margin-top: 0;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.toolbarComboButton {
+    -unity-text-align: middle-left;
+    background-color: rgba(0, 0, 0, 0);
+    opacity: 0.9;
+    transition-property: opacity;
+    transition-duration: 0.25s;
+    flex-direction: row;
+    flex-shrink: 1;
+    justify-content: center;
+    align-items: center;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.toolbarComboButton:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.toolbarComboButton:active {
+    background-color: rgba(5, 147, 224, 0.2);
+}
+
+.toolbarComboButton #Icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.toolbarComboButton #Label {
+    opacity: 0.8;
+    font-size: 11px;
+}
+
+.text-button {
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+.text-button:hover {
+    background-color: var(--unity-colors-button-background);
+    opacity: 1;
+}
+
+.text-button:active {
+    background-color: var(--unity-colors-button-background-pressed);
+    opacity: 1;
+}
+
+.toolbarComboButton-shortened #Label {
+    display: none;
+}
+
+.toolbarComboButton-normal #Label {
+    display: flex;
+}
+
+.unfocusedItem {
+    opacity: 0.7;
+    transition-property: opacity;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-in;
+}
+
+.unfocusedItem:hover {
+    opacity: 1;
+}
