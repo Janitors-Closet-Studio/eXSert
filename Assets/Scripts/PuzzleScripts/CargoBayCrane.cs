@@ -475,42 +475,89 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
         GetRayData(out var originA, out var originB, out var originC, out var originD, out var castDir);
 
-        if (targetObject != null)
+        int allLayersMask = ~0;
+        bool foundNonTarget = false;
+
+        if (EvaluateFirstValidHit(originA, castDir, allLayersMask, out bool hitTargetA))
         {
-            float distanceToTarget = Vector3.Distance(magnetExtender.transform.position, targetObject.transform.position);
+            if (hitTargetA)
+                return GrabTargetAndReturn();
+            foundNonTarget = true;
         }
 
-        // Raycast with all layers to detect any object below, not just grabLayerMask
-        int allLayersMask = ~0; // All layers
-        bool hitFirst = Physics.Raycast(originA, castDir, out var hit, magnetDetectLength, allLayersMask);
-        bool hitSecond = Physics.Raycast(originB, castDir, out var hit2, magnetDetectLength, allLayersMask);
-        bool hitThird = Physics.Raycast(originC, castDir, out var hit3, magnetDetectLength, allLayersMask);
-        bool hitFourth = Physics.Raycast(originD, castDir, out var hit4, magnetDetectLength, allLayersMask);
-
-        if(hitFirst || hitSecond || hitThird || hitFourth)
+        if (EvaluateFirstValidHit(originB, castDir, allLayersMask, out bool hitTargetB))
         {
-            
-            if((hitFirst && IsTargetCollider(hit.collider)) || (hitSecond && IsTargetCollider(hit2.collider)) 
-                || (hitThird && IsTargetCollider(hit3.collider)) || (hitFourth && IsTargetCollider(hit4.collider)))
-            {
-                
-                if (craneGrabObjectScript != null)
-                {
-                    craneGrabObjectScript.GrabObject(targetObject);
-                    isGrabbed = true;
-                }
-                
-                return DetectionResult.Target;
-            }
-            else
-            {
-                string hitName = hitFirst ? hit.collider.gameObject.name : hitSecond ? hit2.collider.gameObject.name 
-                    : hitThird ? hit3.collider.gameObject.name : hit4.collider.gameObject.name;
-                return DetectionResult.Wrong;
-            }
+            if (hitTargetB)
+                return GrabTargetAndReturn();
+            foundNonTarget = true;
         }
+
+        if (EvaluateFirstValidHit(originC, castDir, allLayersMask, out bool hitTargetC))
+        {
+            if (hitTargetC)
+                return GrabTargetAndReturn();
+            foundNonTarget = true;
+        }
+
+        if (EvaluateFirstValidHit(originD, castDir, allLayersMask, out bool hitTargetD))
+        {
+            if (hitTargetD)
+                return GrabTargetAndReturn();
+            foundNonTarget = true;
+        }
+
+        if (foundNonTarget)
+            return DetectionResult.Wrong;
 
         return DetectionResult.None;
+    }
+
+    private DetectionResult GrabTargetAndReturn()
+    {
+        if (craneGrabObjectScript != null)
+        {
+            craneGrabObjectScript.GrabObject(targetObject);
+            isGrabbed = true;
+        }
+
+        return DetectionResult.Target;
+    }
+
+    private bool EvaluateFirstValidHit(Vector3 origin, Vector3 direction, int layerMask, out bool firstValidHitWasTarget)
+    {
+        firstValidHitWasTarget = false;
+
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, magnetDetectLength, layerMask, QueryTriggerInteraction.Ignore);
+        if (hits == null || hits.Length == 0)
+            return false;
+
+        Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider col = hits[i].collider;
+            if (ShouldIgnoreHitCollider(col))
+                continue;
+
+            firstValidHitWasTarget = IsTargetCollider(col);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool ShouldIgnoreHitCollider(Collider collider)
+    {
+        if (collider == null)
+            return true;
+
+        if (magnetExtender != null && (collider.transform == magnetExtender.transform || collider.transform.IsChildOf(magnetExtender.transform)))
+            return true;
+
+        if (collider.transform == transform || collider.transform.IsChildOf(transform))
+            return true;
+
+        return false;
     }
 
     private bool IsTargetCollider(Collider collider)
@@ -518,7 +565,13 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         if (collider == null || targetObject == null)
             return false;
 
-        return collider.gameObject == targetObject || collider.transform.IsChildOf(targetObject.transform);
+        if (collider.gameObject == targetObject)
+            return true;
+
+        Transform targetTransform = targetObject.transform;
+        return collider.transform.IsChildOf(targetTransform)
+            || targetTransform.IsChildOf(collider.transform)
+            || collider.transform.root == targetTransform.root;
     }
 
     private void GetRayData(out Vector3 originA, out Vector3 originB, out Vector3 originC, out Vector3 originD, out Vector3 castDir)

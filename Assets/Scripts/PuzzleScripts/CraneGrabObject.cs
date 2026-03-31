@@ -45,11 +45,10 @@ public class CraneGrabObject : MonoBehaviour
     {
         Transform parent = grabAnchor != null ? grabAnchor : cargoBayCrane.magnetExtender.transform;
 
-        // Parent to the anchor, keep world scale, then snap to the desired local offset
+        // Parent to the anchor while preserving world-space transform to avoid visible snapping.
         Vector3 worldScale = obj.transform.lossyScale;
         obj.transform.SetParent(parent, true);
         PreserveWorldScale(obj.transform, worldScale);
-        obj.transform.localPosition = grabLocalOffset;
     }
 
     private void PreserveWorldScale(Transform target, Vector3 worldScale)

@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System;
 using System.Collections;
 using UnityEngine.SceneManagement;
 
@@ -50,7 +49,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         interactId = _interactId.Trim().ToLowerInvariant();
     }
 
-    protected virtual void OnEnable()
+    public virtual void OnEnable()
     {
         if (_interactInputAction != null)
         {
@@ -60,7 +59,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         }
     }
 
-    protected virtual void OnDisable()
+    public virtual void OnDisable()
     {
         if (_interactInputAction != null)
             _interactInputAction.action.performed -= OnInteract;
