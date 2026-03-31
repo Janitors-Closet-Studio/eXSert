@@ -12,6 +12,9 @@
 
 using System;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class PuzzleInteraction : UnlockableInteraction
 {
@@ -23,26 +26,49 @@ public class PuzzleInteraction : UnlockableInteraction
     [Tooltip("0 = first console, 1 = second console")]
     [SerializeField] private int consoleIndex = 0;
 
+    [Header("Debug")]
+    [SerializeField] private bool verboseDebug = true;
+
     public event Action ButtonPressed;
     public event Action<PuzzleInteraction> ButtonPressedWithSender;
 
     public int ConsoleIndex => consoleIndex;
 
+    private string DebugPrefix => $"[PuzzleInteraction:{name}]";
+
+    private void LogVerbose(string message)
+    {
+        if (verboseDebug)
+            Debug.Log($"{DebugPrefix} {message}");
+    }
+
     private void Start()
     {
+        LogVerbose($"Start | activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled} consoleIndex={consoleIndex}");
         FindPlayerReference();
     }
 
     protected override void ExecuteInteraction()
     {
+        int senderSubscriberCount = ButtonPressedWithSender == null ? 0 : ButtonPressedWithSender.GetInvocationList().Length;
+        int basicSubscriberCount = ButtonPressed == null ? 0 : ButtonPressed.GetInvocationList().Length;
+        LogVerbose($"ExecuteInteraction called | senderSubscribers={senderSubscriberCount} basicSubscribers={basicSubscriberCount}");
+
         ButtonPressed?.Invoke();
         ButtonPressedWithSender?.Invoke(this);
+        LogVerbose("Events invoked.");
 
         PlayerAnimationController playerAnimator = GetPlayerAnimator();
         if (playerAnimator != null)
         {
             playerAnimator.PlayIdle();
         }
+    }
+
+    public void TriggerFromInspector()
+    {
+        LogVerbose("TriggerFromInspector pressed.");
+        ExecuteInteraction();
     }
 
     private void FindPlayerReference()
@@ -73,3 +99,29 @@ public class PuzzleInteraction : UnlockableInteraction
         return null;
     }
 }
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(PuzzleInteraction))]
+public class PuzzleInteractionEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        EditorGUILayout.Space();
+
+        PuzzleInteraction interaction = (PuzzleInteraction)target;
+        GUI.enabled = Application.isPlaying;
+        if (GUILayout.Button("Trigger Puzzle Event"))
+        {
+            interaction.TriggerFromInspector();
+        }
+        GUI.enabled = true;
+
+        if (!Application.isPlaying)
+        {
+            EditorGUILayout.HelpBox("Enter Play Mode to trigger the puzzle event from Inspector.", MessageType.Info);
+        }
+    }
+}
+#endif
