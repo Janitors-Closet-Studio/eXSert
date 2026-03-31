@@ -35808,7 +35808,7 @@ PrefabInstance:
       objectReference: {fileID: 2016756741}
     - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: magnetDetectLength
-      value: 0.3
+      value: 0.15
       objectReference: {fileID: 0}
     - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: secondTargetObject
@@ -35822,6 +35822,10 @@ PrefabInstance:
       propertyPath: secondTargetDropZone
       value: 
       objectReference: {fileID: 1336178764}
+    - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: invertForwardBackward
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3276642748270603368, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_Mesh
       value: 
@@ -35860,7 +35864,7 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
     - target: {fileID: 4965247282811737687, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: requiredItemID
-      value: FirstCrane
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4965247282811737687, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: _interactionPrompt
@@ -35937,6 +35941,26 @@ PrefabInstance:
     - target: {fileID: 6617599607814815568, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_LocalPosition.y
       value: 15.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 7287136403351281049, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8092081
+      objectReference: {fileID: 0}
+    - target: {fileID: 7287136403351281049, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7287136403351281049, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 6.83
+      objectReference: {fileID: 0}
+    - target: {fileID: 7287136403351281049, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8631346809535284705, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: objectiveText
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:

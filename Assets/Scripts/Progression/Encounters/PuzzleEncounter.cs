@@ -27,11 +27,12 @@ namespace Progression.Encounters
 
         protected override void SetupEncounter()
         {
-            part = overridePuzzlePart != null ? overridePuzzlePart : FindPieces<PuzzlePart>();
-            consoleSelectable = part as IConsoleSelectable;
             interactPoints = (overrideInteractPoints != null && overrideInteractPoints.Length > 0)
                 ? overrideInteractPoints
                 : GetComponentsInChildren<PuzzleInteraction>();
+
+            part = ResolvePuzzlePart(interactPoints);
+            consoleSelectable = part as IConsoleSelectable;
 
             if (part == null)
                 return;
@@ -52,6 +53,28 @@ namespace Progression.Encounters
                 else
                     interactPoint.ButtonPressed += part.ConsoleInteracted;
             }
+        }
+
+        private PuzzlePart ResolvePuzzlePart(PuzzleInteraction[] interactionPoints)
+        {
+            if (overridePuzzlePart != null)
+                return overridePuzzlePart;
+
+            if (interactionPoints != null)
+            {
+                for (int i = 0; i < interactionPoints.Length; i++)
+                {
+                    PuzzleInteraction interactionPoint = interactionPoints[i];
+                    if (interactionPoint == null)
+                        continue;
+
+                    PuzzlePart parentPart = interactionPoint.GetComponentInParent<PuzzlePart>();
+                    if (parentPart != null)
+                        return parentPart;
+                }
+            }
+
+            return FindPieces<PuzzlePart>();
         }
 
         protected override void CleanupEncounter()

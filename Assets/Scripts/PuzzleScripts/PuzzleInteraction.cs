@@ -68,7 +68,7 @@ public class PuzzleInteraction : UnlockableInteraction
     public void TriggerFromInspector()
     {
         LogVerbose("TriggerFromInspector pressed.");
-        ExecuteInteraction();
+        Interact();
     }
 
     private void FindPlayerReference()
