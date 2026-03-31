@@ -72,6 +72,10 @@ public class PlayerAttackManager : MonoBehaviour
 
     public static event Action<PlayerAttack> OnAttack;
 
+    // New, more explicit events for tutorial / listeners that need to know which attack-type was used:
+    public static event Action<PlayerAttack> OnSingleAttack;
+    public static event Action<PlayerAttack> OnAoeAttack;
+
     private void Awake()
     {
         EnsureDebugDefaultsApplied();
@@ -444,6 +448,26 @@ public class PlayerAttackManager : MonoBehaviour
             animationController?.PlayAttack(attackId);
 
         OnAttack?.Invoke(attackData);
+
+        // Fire more specific events to make it trivial for listeners (like TutorialHandler)
+        // to react to single-target vs aoe attacks without extra filtering.
+        if (attackData != null)
+        {
+            switch (attackData.attackType)
+            {
+                case AttackType.LightSingle:
+                    OnSingleAttack?.Invoke(attackData);
+                    break;
+                case AttackType.HeavyAOE:
+                    OnAoeAttack?.Invoke(attackData);
+                    break;
+                default:
+                    // No specific event for other attack types yet, but log them for visibility.
+                    Debug.Log($"[PlayerAttackManager] No specific event for attack type {attackData.attackType} on '{attackData.attackName}' ({attackId})");
+                    break;
+
+            }
+        }
 
         Debug.Log($"[PlayerAttackManager] Executing attack {attackData.attackName} ({attackId})");
     }
