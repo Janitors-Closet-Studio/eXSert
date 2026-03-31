@@ -108,7 +108,7 @@ public class SettingsManager : Singleton<SettingsManager>
 
     private ComboProgressionUIController FindComboProgressionUIController()
     {
-        ComboProgressionUIController controller = FindObjectOfType<ComboProgressionUIController>();
+        ComboProgressionUIController controller = FindFirstObjectByType<ComboProgressionUIController>(FindObjectsInactive.Include);
         if (controller == null)
         {
             Debug.LogWarning("No ComboProgressionUIController found in the scene.");

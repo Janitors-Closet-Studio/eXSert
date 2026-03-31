@@ -24,7 +24,9 @@ public class NavigationLogSO : ScriptableObject
     public string logDescription;
     public Image logImage;
     public bool isFound;
-    public bool isRead;
+    public bool isRead { get; private set; }
+
+    public event Action LogRead;
 
     //This ensures that the idName cannot be repeated
     private void OnValidate()
@@ -38,6 +40,13 @@ public class NavigationLogSO : ScriptableObject
 #endif
 
 
+    }
+
+    public void MarkAsFound()
+    {
+        isFound = true;
+        LogRead?.Invoke();
+        Debug.Log($"Log {logID} marked as found.");
     }
 
 }

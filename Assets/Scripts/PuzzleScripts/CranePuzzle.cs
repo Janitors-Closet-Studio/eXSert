@@ -305,6 +305,12 @@ public class CranePuzzle : PuzzlePart
 
         SwitchPuzzleCamera();
 
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+            moveCoroutine = null;
+        }
+
         moveCoroutine = StartCoroutine(MoveCraneCoroutine());
 
         Debug.Log("Crane Puzzle Started");
@@ -435,12 +441,18 @@ public class CranePuzzle : PuzzlePart
     #region PuzzlePart Methods
     public override void ConsoleInteracted()
     {
+        if (puzzleActive)
+            return;
+
         StartPuzzle();
     }
     // Called by whatever system starts this puzzle
     public override void StartPuzzle()
         
     {   
+        if (puzzleActive)
+            return;
+
         IsCranePuzzleActive = true;
         DisableInteractUIDuringPuzzle();
         PauseManager.Instance?.SetGameplayHUDVisible(false);
@@ -564,6 +576,10 @@ public class CranePuzzle : PuzzlePart
         if (actionToRead != null)
         {
             cachedMoveInput = actionToRead.ReadValue<Vector2>();
+        }
+        else
+        {
+            cachedMoveInput = Vector2.zero;
         }
     }
 

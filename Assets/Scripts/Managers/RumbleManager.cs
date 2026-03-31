@@ -41,6 +41,7 @@ public class RumbleManager : Singleton<RumbleManager>
                 pad.SetMotorSpeeds(lowFreq * SettingsManager.Instance.rumbleStrength, highFreq * SettingsManager.Instance.rumbleStrength);
                 
                 StartCoroutine(StopRumble(duration, pad));
+                Debug.Log("Rumble Activated with low frequency: " + lowFreq + " and high frequency: " + highFreq + " for duration: " + duration);
             }
         }
 
