@@ -27,6 +27,7 @@ namespace UIandUXSystems.HUD
     public struct HUDMessage
     {
         public HUDMessageType type;
+        [TextArea]
         public string message;
 
         public HUDMessage(HUDMessageType type, string message)

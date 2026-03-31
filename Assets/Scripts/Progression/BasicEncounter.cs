@@ -120,9 +120,9 @@ namespace Progression.Encounters
         {
             if (debugMessagesEnabled) Debug.Log($"[BasicEncounter] Encounter completed: {name}");
 
-            OnEncounterCompleted?.Invoke();
-
             isCompleted = true;
+
+            OnEncounterCompleted?.Invoke();
 
             if (enableZoneOnComplete && encounterToEnable != null)
                 encounterToEnable.EnableZone();

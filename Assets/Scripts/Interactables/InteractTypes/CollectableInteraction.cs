@@ -21,6 +21,8 @@ public abstract class CollectableInteraction : InteractionManager
 
     protected override void Interact()
     {
+        // Keep collectID in sync in case subclasses assign interactId after Awake.
+        collectID = this.interactId;
 
         ExecuteInteraction();
         AfterExecuteInteraction();
@@ -85,7 +87,8 @@ public abstract class CollectableInteraction : InteractionManager
             yield break;
         }
 
-        collectText.text = "Collected: " + collectID.Trim();
+        string collectedLabel = string.IsNullOrWhiteSpace(collectID) ? "Unknown" : collectID.Trim();
+        collectText.text = "Collected: " + collectedLabel;
 
         if(collectBottomText != null)
             collectBottomText.text = bottomFlavorText;
