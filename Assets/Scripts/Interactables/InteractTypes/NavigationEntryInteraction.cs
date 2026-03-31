@@ -20,15 +20,19 @@ public class NavigationEntryInteraction : CollectableInteraction
     [SerializeField] private bool isDiary;
     [SerializeField] private bool isLog;
 
-    private void OnEnable()
+    public override void OnEnable()
     {
+        base.OnEnable();
+
         AssignId();
         SubscribeBasedOnDataType();
         
     }
 
-    private void OnDisable()
+    public override void OnDisable()
     {
+        base.OnDisable();
+
         UnSubscribeBasedOnDataType();
     }
 
