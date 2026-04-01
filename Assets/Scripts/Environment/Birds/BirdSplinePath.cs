@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Splines;
 
 [DisallowMultipleComponent]
+// Thin wrapper around Unity's SplineContainer that also exposes optional perch transforms.
 public class BirdSplinePath : MonoBehaviour
 {
     [SerializeField]
@@ -45,13 +46,7 @@ public class BirdSplinePath : MonoBehaviour
         }
     }
 
-    public float ApproximateLength
-    {
-        get
-        {
-            return HasValidPath ? splineContainer.CalculateLength(splineIndex) : 0f;
-        }
-    }
+    public float ApproximateLength { get { return HasValidPath ? splineContainer.CalculateLength(splineIndex) : 0f; } }
 
     private void Reset()
     {
@@ -94,6 +89,7 @@ public class BirdSplinePath : MonoBehaviour
             return tangent.normalized;
         }
 
+        // Fallback keeps orientation stable near degenerate spline samples.
         Vector3 fallback = GetEndPosition() - GetStartPosition();
         if (fallback.sqrMagnitude > 0.0001f)
         {
@@ -110,6 +106,7 @@ public class BirdSplinePath : MonoBehaviour
             return startPoint.position;
         }
 
+        // If no perch transform is assigned, use the spline endpoint directly.
         return HasValidPath ? GetPoint(0f) : transform.position;
     }
 
@@ -169,3 +166,4 @@ public class BirdSplinePath : MonoBehaviour
         }
     }
 }
+

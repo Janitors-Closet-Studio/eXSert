@@ -90,6 +90,11 @@ public class BirdFlightCycleEditor : Editor
                 birdFlightCycle.DebugStartReturnFlight();
             }
 
+            if (GUILayout.Button("Start Assigned Return Route"))
+            {
+                birdFlightCycle.DebugStartAssignedReturnRoute();
+            }
+
             if (GUILayout.Button("Reset Bird To Origin"))
             {
                 birdFlightCycle.DebugResetToOrigin();

@@ -2,8 +2,10 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Animator))]
+// Drives the full bird loop: perch, takeoff, spline flight, landing, destination idle, and return.
 public class BirdFlightCycle : MonoBehaviour
 {
+    // The state machine is split by direction so outbound and return can reuse the same update flow.
     private enum BirdState
     {
         IdleAtOrigin = 0,
@@ -91,10 +93,18 @@ public class BirdFlightCycle : MonoBehaviour
     private string perchingIdleState = "Perching_Idle";
 
     [SerializeField]
+    [Tooltip("If enabled, each bird starts its idle loop from a different random point.")]
+    private bool randomizeIdleStartTime = true;
+
+    [SerializeField]
     private string liftOffState = "Lift_Off";
 
     [SerializeField]
     private string flyingState = "Flying";
+
+    [SerializeField]
+    [Tooltip("Optional clip reference used to insert a pause between Flying loops.")]
+    private AnimationClip flyingAnimationClip;
 
     [SerializeField]
     private string landingState = "Landing";
@@ -103,6 +113,37 @@ public class BirdFlightCycle : MonoBehaviour
     [Min(0f)]
     [Tooltip("Crossfade duration used when switching between bird animation states.")]
     private float animationCrossFade = 0.08f;
+
+    [SerializeField]
+    [Min(0f)]
+    [Tooltip("Optional delay inserted between Flying animation loops.")]
+    private float flyingLoopPauseDuration = 0.15f;
+
+    [Header("Flight Bob")]
+    [SerializeField]
+    [Min(0f)]
+    [Tooltip("Upward velocity added each time a Flap animation event fires.")]
+    private float flapLiftImpulse = 0.6f;
+
+    [SerializeField]
+    [Min(0f)]
+    [Tooltip("Downward acceleration applied while the bird is not flapping.")]
+    private float glideFallAcceleration = 1.8f;
+
+    [SerializeField]
+    [Min(0f)]
+    [Tooltip("Maximum upward offset above the spline caused by flap lift.")]
+    private float maxFlightRiseOffset = 0.35f;
+
+    [SerializeField]
+    [Min(0f)]
+    [Tooltip("Maximum downward offset below the spline caused by gliding.")]
+    private float maxFlightDropOffset = 0.45f;
+
+    [SerializeField]
+    [Min(0f)]
+    [Tooltip("How quickly the bird recenters onto the spline before touchdown.")]
+    private float landingVerticalAlignmentSpeed = 2.5f;
 
     [Header("Perch Alignment")]
     [SerializeField]
@@ -130,6 +171,12 @@ public class BirdFlightCycle : MonoBehaviour
     private bool isInitialized;
     private bool landingAnimationTriggeredInFlight;
     private float landingAnimationElapsed;
+    private float currentFlightVerticalOffset;
+    private float currentFlightVerticalVelocity;
+    private float flyingLoopElapsed;
+    private float flyingLoopPauseTimer;
+    private bool isFlyingLoopPaused;
+    private float idleNormalizedTimeOffset;
 
     private void Awake()
     {
@@ -137,6 +184,8 @@ public class BirdFlightCycle : MonoBehaviour
         {
             animator = GetComponent<Animator>();
         }
+
+        InitializeIdleOffset();
 
         InitializeAtOrigin();
     }
@@ -147,6 +196,8 @@ public class BirdFlightCycle : MonoBehaviour
         {
             animator = GetComponent<Animator>();
         }
+
+        idleNormalizedTimeOffset = Mathf.Clamp01(idleNormalizedTimeOffset);
     }
 
     private void Update()
@@ -214,10 +265,46 @@ public class BirdFlightCycle : MonoBehaviour
         BeginReturnCycle();
     }
 
+    [ContextMenu("Start Assigned Return Route")]
+    public void DebugStartAssignedReturnRoute()
+    {
+        if (!HasRequiredSetup() || returnPath == null || !returnPath.HasValidPath)
+        {
+            return;
+        }
+
+        transform.position = returnPath.GetStartPosition();
+        if (snapToPerchRotation)
+        {
+            transform.rotation = returnPath.GetStartRotation();
+        }
+
+        BeginFlightCycle(
+            returnPath,
+            reversePath: false,
+            BirdState.LiftOffToOrigin,
+            returnPath.EndPoint,
+            returnPath.GetStartPosition(),
+            returnPath.GetEndPosition(),
+            setWaitingForExit: false
+        );
+    }
+
     [ContextMenu("Reset Bird To Origin")]
     public void DebugResetToOrigin()
     {
         InitializeAtOrigin();
+    }
+
+    public void Flap()
+    {
+        if (!IsInFlightState())
+        {
+            return;
+        }
+
+        // Animation events add lift on demand so flap timing stays authored in the clip.
+        currentFlightVerticalVelocity += flapLiftImpulse;
     }
 
     public void EditorPreviewAlongPath(float normalizedProgress, bool previewReturnTrip)
@@ -345,6 +432,8 @@ public class BirdFlightCycle : MonoBehaviour
         isInitialized = true;
         landingAnimationTriggeredInFlight = false;
         landingAnimationElapsed = 0f;
+        ResetFlightMotionOffsets();
+        ResetFlyingLoopPlayback();
 
         SnapToPerch(GetOriginPerch());
         PlayState(perchingIdleState);
@@ -389,11 +478,14 @@ public class BirdFlightCycle : MonoBehaviour
         }
 
         currentState = nextState;
+        ResetFlyingLoopPlayback();
         PlayState(flyingState);
     }
 
     private void UpdateFlight(BirdState landingStateToEnter)
     {
+        UpdateFlyingLoopPause();
+
         float safeLength = Mathf.Max(activePathLength, 0.01f);
         float remainingDistanceBeforeMove = Mathf.Max(
             0f,
@@ -410,7 +502,11 @@ public class BirdFlightCycle : MonoBehaviour
         }
 
         float clampedProgress = Mathf.Clamp01(flightProgress);
-        transform.position = EvaluateActiveFlightPoint(clampedProgress);
+        Vector3 flightPoint = EvaluateActiveFlightPoint(clampedProgress);
+
+        // Flight bob is layered on top of the spline so designers can keep authoring the travel arc in Splines.
+        UpdateFlightVerticalOffset(remainingDistanceBeforeMove);
+        transform.position = flightPoint + Vector3.up * currentFlightVerticalOffset;
         RotateAlongFlightPath(clampedProgress);
 
         if (flightProgress < 1f)
@@ -421,6 +517,7 @@ public class BirdFlightCycle : MonoBehaviour
         SnapToPerch(activeTargetPerch);
         currentState = landingStateToEnter;
         stateTimer = Mathf.Max(0f, landingDuration - landingAnimationElapsed);
+        ResetFlyingLoopPlayback();
 
         if (!landingAnimationTriggeredInFlight)
         {
@@ -434,6 +531,7 @@ public class BirdFlightCycle : MonoBehaviour
         float travelledDistance = Mathf.Clamp01(flightProgress) * pathLength;
         float remainingDistance = Mathf.Max(0f, pathLength - travelledDistance);
 
+        // Use the tighter of the two ramps so the bird accelerates away from the perch and decelerates into landing.
         float accelerationMultiplier = EvaluateSpeedRamp(travelledDistance, accelerationDistance);
         float decelerationMultiplier = EvaluateSpeedRamp(remainingDistance, decelerationDistance);
         float speedMultiplier = Mathf.Min(accelerationMultiplier, decelerationMultiplier);
@@ -480,40 +578,63 @@ public class BirdFlightCycle : MonoBehaviour
 
     private void BeginOutboundCycle()
     {
-        activePath = outboundPath;
-        activePathReversed = false;
-        activeTargetPerch = GetDestinationPerch();
-        fallbackFlightStart = outboundPath.GetStartPosition();
-        fallbackFlightEnd = outboundPath.GetEndPosition();
-        activePathLength = Mathf.Max(
-            activePath.ApproximateLength,
-            Vector3.Distance(fallbackFlightStart, fallbackFlightEnd)
+        BeginFlightCycle(
+            outboundPath,
+            reversePath: false,
+            BirdState.LiftOffToDestination,
+            GetDestinationPerch(),
+            outboundPath.GetStartPosition(),
+            outboundPath.GetEndPosition(),
+            setWaitingForExit: true
         );
-        flightProgress = 0f;
-        landingAnimationTriggeredInFlight = false;
-        landingAnimationElapsed = 0f;
-        currentState = BirdState.LiftOffToDestination;
-        stateTimer = liftOffDuration;
-        waitingForPlayerExit = true;
-        PlayState(liftOffState);
     }
 
     private void BeginReturnCycle()
     {
         if (returnPath != null && returnPath.HasValidPath)
         {
-            activePath = returnPath;
-            activePathReversed = false;
+            // Prefer the authored return spline when present.
+            BeginFlightCycle(
+                returnPath,
+                reversePath: false,
+                BirdState.LiftOffToOrigin,
+                GetOriginPerch(),
+                returnPath.GetStartPosition(),
+                returnPath.GetEndPosition(),
+                setWaitingForExit: false
+            );
         }
         else
         {
-            activePath = outboundPath;
-            activePathReversed = true;
+            // If no dedicated return route exists, reuse the outbound spline in reverse.
+            BeginFlightCycle(
+                outboundPath,
+                reversePath: true,
+                BirdState.LiftOffToOrigin,
+                GetOriginPerch(),
+                outboundPath.GetEndPosition(),
+                outboundPath.GetStartPosition(),
+                setWaitingForExit: false
+            );
         }
+    }
 
-        activeTargetPerch = GetOriginPerch();
-        fallbackFlightStart = outboundPath.GetEndPosition();
-        fallbackFlightEnd = outboundPath.GetStartPosition();
+    private void BeginFlightCycle(
+        BirdSplinePath path,
+        bool reversePath,
+        BirdState liftOffStateToEnter,
+        Transform targetPerch,
+        Vector3 startPosition,
+        Vector3 endPosition,
+        bool setWaitingForExit
+    )
+    {
+        // Centralized setup keeps outbound, fallback return, and authored return routes consistent.
+        activePath = path;
+        activePathReversed = reversePath;
+        activeTargetPerch = targetPerch;
+        fallbackFlightStart = startPosition;
+        fallbackFlightEnd = endPosition;
         activePathLength = Mathf.Max(
             activePath.ApproximateLength,
             Vector3.Distance(fallbackFlightStart, fallbackFlightEnd)
@@ -521,8 +642,11 @@ public class BirdFlightCycle : MonoBehaviour
         flightProgress = 0f;
         landingAnimationTriggeredInFlight = false;
         landingAnimationElapsed = 0f;
-        currentState = BirdState.LiftOffToOrigin;
+        ResetFlightMotionOffsets();
+        ResetFlyingLoopPlayback();
+        currentState = liftOffStateToEnter;
         stateTimer = liftOffDuration;
+        waitingForPlayerExit = setWaitingForExit;
         PlayState(liftOffState);
     }
 
@@ -544,9 +668,100 @@ public class BirdFlightCycle : MonoBehaviour
             return;
         }
 
+        // Landing can start before touchdown because the clip already contains approach motion.
         landingAnimationTriggeredInFlight = true;
         landingAnimationElapsed = 0f;
         PlayState(landingState);
+    }
+
+    private void UpdateFlightVerticalOffset(float remainingDistance)
+    {
+        // The bird drifts down between flap events, then gets pulled back to the spline before landing.
+        currentFlightVerticalVelocity -= glideFallAcceleration * Time.deltaTime;
+        currentFlightVerticalOffset += currentFlightVerticalVelocity * Time.deltaTime;
+        currentFlightVerticalOffset = Mathf.Clamp(
+            currentFlightVerticalOffset,
+            -maxFlightDropOffset,
+            maxFlightRiseOffset
+        );
+
+        float alignmentDistance = Mathf.Max(landingAnimationLeadDistance, decelerationDistance);
+        if (alignmentDistance > 0f && remainingDistance <= alignmentDistance)
+        {
+            currentFlightVerticalOffset = Mathf.MoveTowards(
+                currentFlightVerticalOffset,
+                0f,
+                landingVerticalAlignmentSpeed * Time.deltaTime
+            );
+
+            if (currentFlightVerticalOffset == 0f && currentFlightVerticalVelocity < 0f)
+            {
+                currentFlightVerticalVelocity = 0f;
+            }
+        }
+    }
+
+    private void UpdateFlyingLoopPause()
+    {
+        if (!IsInFlightState())
+        {
+            return;
+        }
+
+        if (flyingAnimationClip == null || flyingLoopPauseDuration <= 0f)
+        {
+            return;
+        }
+
+        if (isFlyingLoopPaused)
+        {
+            flyingLoopPauseTimer -= Time.deltaTime;
+            if (flyingLoopPauseTimer > 0f)
+            {
+                // Only animation playback pauses here; spline motion continues in UpdateFlight.
+                return;
+            }
+
+            isFlyingLoopPaused = false;
+            flyingLoopElapsed = 0f;
+            animator.speed = 1f;
+            PlayState(flyingState);
+            return;
+        }
+
+        flyingLoopElapsed += Time.deltaTime;
+        if (flyingLoopElapsed < flyingAnimationClip.length)
+        {
+            return;
+        }
+
+        isFlyingLoopPaused = true;
+        flyingLoopPauseTimer = flyingLoopPauseDuration;
+        animator.speed = 0f;
+    }
+
+    private void ResetFlightMotionOffsets()
+    {
+        currentFlightVerticalOffset = 0f;
+        currentFlightVerticalVelocity = 0f;
+    }
+
+    private void ResetFlyingLoopPlayback()
+    {
+        flyingLoopElapsed = 0f;
+        flyingLoopPauseTimer = 0f;
+        isFlyingLoopPaused = false;
+
+        if (animator != null)
+        {
+            animator.speed = 1f;
+        }
+    }
+
+    private bool IsInFlightState()
+    {
+        return currentState == BirdState.FlyingToDestination
+            || currentState == BirdState.FlyingToOrigin;
     }
 
     private Transform GetOriginPerch()
@@ -703,7 +918,27 @@ public class BirdFlightCycle : MonoBehaviour
             return;
         }
 
-        animator.CrossFadeInFixedTime(stateHash, animationCrossFade, 0, 0f);
+        animator.speed = 1f;
+
+        float normalizedTimeOffset = 0f;
+        if (stateName == perchingIdleState)
+        {
+            // Each bird keeps a stable idle phase offset so multiple perchers do not sync back up.
+            normalizedTimeOffset = idleNormalizedTimeOffset;
+        }
+
+        animator.CrossFadeInFixedTime(stateHash, animationCrossFade, 0, normalizedTimeOffset);
+    }
+
+    private void InitializeIdleOffset()
+    {
+        if (!randomizeIdleStartTime)
+        {
+            idleNormalizedTimeOffset = 0f;
+            return;
+        }
+
+        idleNormalizedTimeOffset = Random.value;
     }
 
     private void OnDrawGizmosSelected()
