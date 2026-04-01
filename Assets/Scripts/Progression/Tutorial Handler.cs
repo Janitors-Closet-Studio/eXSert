@@ -55,8 +55,8 @@ public class TutorialHandler : MonoBehaviour
 
     private void OnEnable()
     {
-       // tutorialEntry.OnEntryCollected += OnEntryCollected;
-        // tutorialEntry.OnEntryRead += OnEntryRead;
+        tutorialEntry.OnEntryCollected += OnEntryCollected;
+        tutorialEntry.OnEntryRead += OnEntryRead;
 
         // Subscribe to PlayerAttackManager attack-type events
         PlayerAttackManager.OnSingleAttack += OnPlayerAttack;
@@ -69,8 +69,8 @@ public class TutorialHandler : MonoBehaviour
 
     private void OnDisable()
     {
-       // tutorialEntry.OnEntryCollected -= OnEntryCollected;
-        // tutorialEntry.OnEntryRead -= OnEntryRead;
+        tutorialEntry.OnEntryCollected -= OnEntryCollected;
+        tutorialEntry.OnEntryRead -= OnEntryRead;
 
         // Unsubscribe from PlayerAttackManager events
         PlayerAttackManager.OnSingleAttack -= OnPlayerAttack;
