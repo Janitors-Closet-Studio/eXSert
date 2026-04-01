@@ -6,9 +6,16 @@
 
 using UnityEngine.UI;
 using UnityEngine;
+using System;
 
 public class NavigationEntryInteraction : CollectableInteraction
 {
+    private enum EntryType
+    {
+        None,
+        Diary,
+        Log
+    }
 
     [Space(10)]
     [Header("Navigation Entry Data")]
@@ -20,20 +27,21 @@ public class NavigationEntryInteraction : CollectableInteraction
     [SerializeField] private bool isDiary;
     [SerializeField] private bool isLog;
 
-    public override void OnEnable()
+    public event Action<string> OnEntryCollected;
+    public event Action OnEntryRead;
+
+    protected override void OnEnable()
     {
         base.OnEnable();
-
         AssignId();
         SubscribeBasedOnDataType();
         
     }
 
-    public override void OnDisable()
+    protected override void OnDisable()
     {
-        base.OnDisable();
-
         UnSubscribeBasedOnDataType();
+        base.OnDisable();
     }
 
     private void OnDiaryStateChange(Diaries diaries)
@@ -54,76 +62,151 @@ public class NavigationEntryInteraction : CollectableInteraction
 
     private void SubscribeBasedOnDataType()
     {
-        if(isDiary)
+        EntryType entryType = ResolveEntryType();
+        if (entryType == EntryType.Diary)
         {
-            var diarySO = entryData as DiarySO;
-            EventsManager.Instance.diaryEvents.onDiaryStateChange += OnDiaryStateChange;
+            if (EventsManager.Instance != null && EventsManager.Instance.diaryEvents != null)
+                EventsManager.Instance.diaryEvents.onDiaryStateChange += OnDiaryStateChange;
         }
-        else if(isLog)
+        else if (entryType == EntryType.Log)
         {
-            var logSO = entryData as NavigationLogSO;
-            EventsManager.Instance.logEvents.onLogStateChange += OnLogStateChange;
+            if (EventsManager.Instance != null && EventsManager.Instance.logEvents != null)
+                EventsManager.Instance.logEvents.onLogStateChange += OnLogStateChange;
+
+            ((NavigationLogSO) entryData).LogRead += OnEntryRead;
         }
     }
 
     private void UnSubscribeBasedOnDataType()
     {
-        if (isDiary)
+        EntryType entryType = ResolveEntryType();
+        if (entryType == EntryType.Diary)
         {
-            var diarySO = entryData as DiarySO;
             if (EventsManager.Instance != null && EventsManager.Instance.diaryEvents != null)
                 EventsManager.Instance.diaryEvents.onDiaryStateChange -= OnDiaryStateChange;
         }
-        else if (isLog)
+        else if (entryType == EntryType.Log)
         {
-            var logSO = entryData as NavigationLogSO;
             if (EventsManager.Instance != null && EventsManager.Instance.logEvents != null)
                 EventsManager.Instance.logEvents.onLogStateChange -= OnLogStateChange;
+
+            ((NavigationLogSO)entryData).LogRead -= OnEntryRead;
         }
     }
 
     private void AssignId()
     {
-        if(isDiary)
+        EntryType entryType = ResolveEntryType();
+
+        if (entryType == EntryType.Diary)
         {
             var diarySO = entryData as DiarySO;
+            if (diarySO == null)
+            {
+                Debug.LogError($"{gameObject.name}: Entry data is not a valid DiarySO.");
+                return;
+            }
+
             this.interactId = diarySO.diaryID;
         }
-        else if(isLog)
+        else if (entryType == EntryType.Log)
         {
             var logSO = entryData as NavigationLogSO;
+            if (logSO == null)
+            {
+                Debug.LogError($"{gameObject.name}: Entry data is not a valid NavigationLogSO.");
+                return;
+            }
+
             this.interactId = logSO.logID;
+        }
+        else
+        {
+            this.interactId = string.Empty;
+            Debug.LogError($"{gameObject.name}: Entry type is not configured. Assign entry data and set exactly one type.");
         }
     }
 
     protected override void ExecuteInteraction()
     {
+        AssignId();
+
         if (string.IsNullOrEmpty(this.interactId))
         {
             Debug.LogError($"{gameObject.name}: interactId is not set! Cannot process interaction.");
             return;
         }
 
-        if(isLog)
+        EntryType entryType = ResolveEntryType();
+
+        if (entryType == EntryType.Log)
         {
             var logSO = entryData as NavigationLogSO;
-            
+            if (logSO == null)
+            {
+                Debug.LogError($"{gameObject.name}: Missing or invalid NavigationLogSO.");
+                return;
+            }
+
             logSO.isFound = true;
 
-            EventsManager.Instance.logEvents.FoundLog(this.interactId);
+            if (EventsManager.Instance != null && EventsManager.Instance.logEvents != null)
+                EventsManager.Instance.logEvents.FoundLog(this.interactId);
 
-            LogManager.Instance.unreadLogs.Add(logSO);
+            if (LogManager.Instance != null)
+                LogManager.Instance.unreadLogs.Add(logSO);
         }
-        else if(isDiary)
+        else if (entryType == EntryType.Diary)
         {
             var diarySO = entryData as DiarySO;
+            if (diarySO == null)
+            {
+                Debug.LogError($"{gameObject.name}: Missing or invalid DiarySO.");
+                return;
+            }
+
             this.interactId = diarySO.diaryID;
             diarySO.isFound = true;
 
-            EventsManager.Instance.diaryEvents.FoundDiary(this.interactId);
+            if (EventsManager.Instance != null && EventsManager.Instance.diaryEvents != null)
+                EventsManager.Instance.diaryEvents.FoundDiary(this.interactId);
             
-            DiaryManager.Instance.unreadDiaries.Add(diarySO);
+            if (DiaryManager.Instance != null)
+                DiaryManager.Instance.unreadDiaries.Add(diarySO);
         }
+        else
+        {
+            Debug.LogError($"{gameObject.name}: Cannot execute interaction because entry type is invalid.");
+            return;
+        }
+
+        Debug.Log($"Collected entry with id: {this.interactId}");
+        OnEntryCollected?.Invoke(interactId);
+    }
+
+    private EntryType ResolveEntryType()
+    {
+        if (entryData is DiarySO)
+        {
+            isDiary = true;
+            isLog = false;
+            return EntryType.Diary;
+        }
+
+        if (entryData is NavigationLogSO)
+        {
+            isLog = true;
+            isDiary = false;
+            return EntryType.Log;
+        }
+
+        if (isDiary && !isLog)
+            return EntryType.Diary;
+
+        if (isLog && !isDiary)
+            return EntryType.Log;
+
+        return EntryType.None;
     }
 
 }
