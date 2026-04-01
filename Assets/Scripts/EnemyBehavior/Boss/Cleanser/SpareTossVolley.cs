@@ -59,16 +59,41 @@ namespace EnemyBehavior.Boss.Cleanser
             wt.SetParent(null);
 
             Vector3 startPos = wt.position;
-            Vector3 control = (startPos + landingPos) * 0.5f + Vector3.up * owner.TossArcHeight;
+            float launchHeight = Mathf.Max(0f, owner.TossLaunchHeight);
+            float apexJitter = Mathf.Max(0f, owner.TossApexHorizontalRandom);
+            Vector3 apex = startPos
+                + Vector3.up * launchHeight
+                + new Vector3(Random.Range(-apexJitter, apexJitter), 0f, Random.Range(-apexJitter, apexJitter));
+
+            float totalDuration = Mathf.Max(0.05f, owner.TossArcDuration);
+            float launchPortion = Mathf.Clamp(owner.TossLaunchPortion, 0.05f, 0.95f);
+            float launchDuration = totalDuration * launchPortion;
+            float rainDuration = Mathf.Max(0.01f, totalDuration - launchDuration);
 
             float elapsed = 0f;
             bool appliedFallingHit = false;
-            while (elapsed < owner.TossArcDuration)
+            while (elapsed < totalDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / owner.TossArcDuration);
-                float u = 1f - t;
-                wt.position = u * u * startPos + 2f * u * t * control + t * t * landingPos;
+
+                if (elapsed <= launchDuration)
+                {
+                    float tUp = Mathf.Clamp01(elapsed / launchDuration);
+                    wt.position = Vector3.Lerp(startPos, apex, tUp);
+                }
+                else
+                {
+                    float tDown = Mathf.Clamp01((elapsed - launchDuration) / rainDuration);
+                    float easedDown = tDown * tDown;
+                    wt.position = Vector3.Lerp(apex, landingPos, easedDown);
+
+                    Vector3 descendDir = (landingPos - wt.position).normalized;
+                    if (descendDir.sqrMagnitude > 0.0001f)
+                    {
+                        Quaternion targetRot = Quaternion.LookRotation(descendDir, Vector3.up) * Quaternion.Euler(owner.LodgedRotationEuler);
+                        wt.rotation = Quaternion.Slerp(wt.rotation, targetRot, Time.deltaTime * 20f);
+                    }
+                }
 
                 if (!appliedFallingHit)
                 {
@@ -79,7 +104,9 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             wt.position = landingPos;
-            wt.rotation = Quaternion.Euler(owner.LodgedRotationEuler.x, Random.Range(0f, 360f), owner.LodgedRotationEuler.z);
+            Quaternion bladeDown = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            Quaternion randomYaw = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+            wt.rotation = randomYaw * bladeDown * Quaternion.Euler(owner.LodgedRotationEuler);
             weapon.IsHeld = false;
             weapon.IsAtRest = false;
             weapon.IsReturning = false;
@@ -137,6 +164,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private Vector3 PickLandingPosition(Vector3 center, List<Vector3> usedPositions, CleanserDualWieldSystem owner)
         {
             const int attempts = 24;
+            float minSpacing = Mathf.Max(0f, owner.MinLandingSpacing);
+
             for (int i = 0; i < attempts; i++)
             {
                 float angle = Random.Range(0f, Mathf.PI * 2f);
@@ -144,23 +173,45 @@ namespace EnemyBehavior.Boss.Cleanser
                 Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
                 candidate.y = owner.transform.position.y;
 
-                bool overlaps = false;
-                for (int j = 0; j < usedPositions.Count; j++)
-                {
-                    if (Vector3.Distance(candidate, usedPositions[j]) < owner.MinLandingSpacing)
-                    {
-                        overlaps = true;
-                        break;
-                    }
-                }
-
-                if (!overlaps)
+                if (GetMinDistanceToUsed(candidate, usedPositions) >= minSpacing)
                     return candidate;
             }
 
-            Vector3 fallback = center + Random.onUnitSphere * owner.LandingRadiusMax;
-            fallback.y = owner.transform.position.y;
-            return fallback;
+            // Dense fallback: choose the point with highest separation from existing landings.
+            Vector3 best = center;
+            float bestMinDistance = -1f;
+            for (int i = 0; i < 64; i++)
+            {
+                float angle = (i / 64f) * Mathf.PI * 2f;
+                float radius = owner.LandingRadiusMax;
+                Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+                candidate.y = owner.transform.position.y;
+
+                float minDist = GetMinDistanceToUsed(candidate, usedPositions);
+                if (minDist > bestMinDistance)
+                {
+                    bestMinDistance = minDist;
+                    best = candidate;
+                }
+            }
+
+            return best;
+        }
+
+        private float GetMinDistanceToUsed(Vector3 candidate, List<Vector3> usedPositions)
+        {
+            if (usedPositions == null || usedPositions.Count == 0)
+                return float.MaxValue;
+
+            float minDist = float.MaxValue;
+            for (int j = 0; j < usedPositions.Count; j++)
+            {
+                float d = Vector3.Distance(candidate, usedPositions[j]);
+                if (d < minDist)
+                    minDist = d;
+            }
+
+            return minDist;
         }
     }
 }
