@@ -1,5 +1,6 @@
 using System;
 using UIandUXSystems.HUD;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace Progression
@@ -77,6 +78,15 @@ namespace Progression
         public void EnableZone()
         {
             zoneEnabled = true;
+            if (progressionCollider == null)
+            {
+                progressionCollider = GetComponent<BoxCollider>();
+            }
+            if (progressionCollider == null)
+            {
+                Debug.LogError($"[{GetType()}]Cannot enable zone because the BoxCollider component is missing.");
+                return;
+            }
             UpdateCollider();
 
             // If the player is already in the zone when it gets enabled, we need to manually trigger the enter logic since OnTriggerEnter won't be called until they exit and re-enter.
@@ -86,6 +96,15 @@ namespace Progression
         public void DisableZone()
         {
             zoneEnabled = false;
+            if (progressionCollider == null)
+            {
+                progressionCollider = GetComponent<BoxCollider>();
+            }
+            if (progressionCollider == null)
+            {
+                Debug.LogError($"[{GetType()}] Cannot enable zone because the BoxCollider component is missing.");
+                return;
+            }
             UpdateCollider();
         }
 

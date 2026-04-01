@@ -64,11 +64,8 @@ public class ComboProgressionUIController : MonoBehaviour
     {
         if (!SettingsManager.Instance.comboProgression)
         {
-            this.gameObject.SetActive(false);
-        }
-        else
-        {
-            this.gameObject.SetActive(true);
+            ResetDisplay();
+            return;
         }
 
         PlayerAttackManager.OnAttack += HandleAttack;
@@ -117,6 +114,9 @@ public class ComboProgressionUIController : MonoBehaviour
 
     private void HandleAttack(PlayerAttack attack)
     {
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+            return;
+
         if (attack == null)
             return;
 
@@ -227,7 +227,7 @@ public class ComboProgressionUIController : MonoBehaviour
 
     private void PlayPop(GameObject target)
     {
-        if (target == null)
+        if (target == null || !isActiveAndEnabled || !gameObject.activeInHierarchy)
             return;
 
         CacheBaseScale(target);

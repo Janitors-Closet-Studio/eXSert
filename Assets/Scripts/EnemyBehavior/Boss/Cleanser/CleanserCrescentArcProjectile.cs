@@ -18,6 +18,10 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private float hitRadius = 0.45f;
         [Tooltip("Safety lifetime to auto-destroy projectile if it does not hit anything.")]
         [SerializeField] private float maxLifetime = 5f;
+        [Tooltip("If enabled, this projectile force-staggers player on hit.")]
+        [SerializeField] private bool staggerPlayerOnHit = false;
+        [Tooltip("Forced stagger duration for player when this projectile hits.")]
+        [SerializeField, Range(0.05f, 2f)] private float playerHitStaggerDuration = 0.4f;
 
         private Vector3 moveDirection;
         private float speed;
@@ -127,10 +131,15 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (hit.TryGetComponent<IHealthSystem>(out var health))
                 {
                     health.LoseHP(finalDamage);
+                    if (staggerPlayerOnHit && health is PlayerHealthBarManager playerHealth)
+                        playerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
                 }
                 else
                 {
-                    hit.GetComponentInParent<IHealthSystem>()?.LoseHP(finalDamage);
+                    var parentHealth = hit.GetComponentInParent<IHealthSystem>();
+                    parentHealth?.LoseHP(finalDamage);
+                    if (staggerPlayerOnHit && parentHealth is PlayerHealthBarManager parentPlayerHealth)
+                        parentPlayerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
                 }
 
                 return true;

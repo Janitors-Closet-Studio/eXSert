@@ -85,33 +85,23 @@ public class GeneralSettings : MonoBehaviour
 
     public void SetComboProgressionDisplay(bool displayOn)
     {
-        SettingsManager.Instance.comboProgression = displayOn;
-        Debug.Log($"[SetComboProgressionDisplay] Called with displayOn={displayOn}");
+        isComboProgressionOn = displayOn;
 
-        if (displayOn)
-        {
-            isComboProgressionOn = true;
-            comboProgressionText.text = "On";
-        }
-        else
-        {
-            isComboProgressionOn = false;
-            comboProgressionText.text = "Off";
-        }
+        if (comboProgressionText != null)
+            comboProgressionText.text = isComboProgressionOn ? "On" : "Off";
 
-        Debug.Log($"[SetComboProgressionDisplay] isComboProgressionOn={isComboProgressionOn}");
+        SettingsManager.Instance.UpdateComboProgressionDisplay(isComboProgressionOn);
+        PlayerPrefs.SetInt("masterCombo", isComboProgressionOn ? 1 : 0);
 
-        if (isComboProgressionOn)
-        {
-            PlayerPrefs.SetInt("masterCombo", 1);
-            SettingsManager.Instance.comboProgression = true;
-        }
-        else
-        {
-            PlayerPrefs.SetInt("masterCombo", 0);
-            SettingsManager.Instance.comboProgression = false;
-        }
-        Debug.Log($"[SetComboProgressionDisplay] SettingsManager.Instance.comboProgression={SettingsManager.Instance.comboProgression}");
+        Debug.Log($"[SetComboProgressionDisplay] displayOn={displayOn}, applied={SettingsManager.Instance.comboProgression}");
+    }
+
+    public void ToggleComboProgressionDisplay(bool onOrOff)
+    {
+        if(onOrOff)
+            SetComboProgressionDisplay(true);
+        else             
+            SetComboProgressionDisplay(false);
     }
 
     public void SetInvertY(bool invertYOn)

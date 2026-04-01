@@ -14,6 +14,7 @@ public class InteractionUI : Singleton<InteractionUI>
     public TMP_Text _hintNameText;
     public TMP_Text _hintDescriptionText;
     public GameObject hintUI;
+    public GameObject collectUI;
 
     public static InteractionUI TryGetExisting()
     {
@@ -28,6 +29,7 @@ public class InteractionUI : Singleton<InteractionUI>
     {
         base.Awake();
         HideInteractPrompt();
+        HideCollectUI();
     }
 
     private void OnEnable()
@@ -51,6 +53,16 @@ public class InteractionUI : Singleton<InteractionUI>
 
         if (_interactIcon != null)
             _interactIcon.gameObject.SetActive(false);
+    }
+
+    public void HideCollectUI()
+    {
+        if (collectUI != null)
+            collectUI.SetActive(false);
+        if (_collectText != null)            
+            _collectText.gameObject.SetActive(false);
+        if (_collectBottomText != null)           
+             _collectBottomText.gameObject.SetActive(false);
     }
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)

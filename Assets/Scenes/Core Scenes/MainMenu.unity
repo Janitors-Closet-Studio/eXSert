@@ -3471,6 +3471,10 @@ MonoBehaviour:
   - {fileID: 986958214}
   - {fileID: 803164746}
   - {fileID: 1712585145}
+  settingPageMenus:
+  - {fileID: 1223060380}
+  - {fileID: 1223060381}
+  - {fileID: 1223060379}
   firstMenuToOpen: {fileID: 1041919910}
   canvas: {fileID: 360202559}
 --- !u!114 &1041919915
@@ -3988,6 +3992,10 @@ PrefabInstance:
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
       value: SwapBetweenMenus
       objectReference: {fileID: 0}
+    - target: {fileID: 1754259214835398792, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ToggleComboProgressionDisplay
+      objectReference: {fileID: 0}
     - target: {fileID: 1905128390279645443, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[1].m_Mode
       value: 0
@@ -4348,6 +4356,10 @@ PrefabInstance:
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
       value: SwapBetweenMenus
       objectReference: {fileID: 0}
+    - target: {fileID: 6988281727402005923, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ToggleComboProgressionDisplay
+      objectReference: {fileID: 0}
     - target: {fileID: 7133610896501654307, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -4528,6 +4540,21 @@ PrefabInstance:
 --- !u!224 &1223060378 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4535898305433637882, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+  m_PrefabInstance: {fileID: 1223060377}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1223060379 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4293728450771074516, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+  m_PrefabInstance: {fileID: 1223060377}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1223060380 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7348654118715166874, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+  m_PrefabInstance: {fileID: 1223060377}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1223060381 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8173967944021420439, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
   m_PrefabInstance: {fileID: 1223060377}
   m_PrefabAsset: {fileID: 0}
 --- !u!224 &1238553474 stripped

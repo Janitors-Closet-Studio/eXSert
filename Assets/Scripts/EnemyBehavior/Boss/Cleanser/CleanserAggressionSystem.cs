@@ -269,6 +269,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isCountering;
         private bool forcedMaxAggression;
         private bool isAggressionLocked;
+        private bool isAggressionProcessingPaused;
         private SphereCollider aggressionRangeCollider;
         private float guardCheckTimer;
 
@@ -278,6 +279,8 @@ namespace EnemyBehavior.Boss.Cleanser
         public bool IsCountering => isCountering;
         public AggressionModifierConfig Modifiers => modifiers;
         public AggressionLevelMultiplierConfig LevelMultipliers => levelMultipliers;
+        public SphereCollider AggressionRangeCollider => aggressionRangeCollider;
+        public bool IsAggressionProcessingPaused => isAggressionProcessingPaused;
 
         private void Awake()
         {
@@ -298,6 +301,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void Update()
         {
+            if (isAggressionProcessingPaused) return;
+
             UpdateGuardDetection();
             UpdateIdleTracking();
             UpdateAggressionDecay();
@@ -381,6 +386,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void OnTriggerEnter(Collider other)
         {
+            if (isAggressionProcessingPaused) return;
+
             if (((1 << other.gameObject.layer) & playerLayerMask) != 0)
             {
                 playerInAggressionRange = true;
@@ -392,6 +399,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void OnTriggerExit(Collider other)
         {
+            if (isAggressionProcessingPaused) return;
+
             if (((1 << other.gameObject.layer) & playerLayerMask) != 0)
             {
                 playerInAggressionRange = false;
@@ -413,7 +422,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void AddAggression(float amount)
         {
-            if (isAggressionLocked) return;
+            if (isAggressionLocked || isAggressionProcessingPaused) return;
 
             float multiplier = levelMultipliers.GetMultiplier(currentLevel);
             float finalAmount = amount * multiplier;
@@ -433,7 +442,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void RemoveAggression(float amount)
         {
-            if (isAggressionLocked) return;
+            if (isAggressionLocked || isAggressionProcessingPaused) return;
 
             aggressionValue = Mathf.Clamp(aggressionValue - amount, minAggressionValue, maxAggressionValue);
 
@@ -441,6 +450,11 @@ namespace EnemyBehavior.Boss.Cleanser
             if (enableDebugLogs)
                 EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Aggression] Removed {0:F2}. Total: {1:F2}", amount, aggressionValue));
 #endif
+        }
+
+        public void SetAggressionProcessingPaused(bool paused)
+        {
+            isAggressionProcessingPaused = paused;
         }
 
         /// <summary>

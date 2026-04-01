@@ -14,6 +14,7 @@ public class PlayerAttackManager : MonoBehaviour
     [SerializeField] private AttackDatabase attackDatabase;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private AttackLockSystem attackLockSystem;
     [SerializeField, Tooltip("Registry of VFX anchor points on the player rig.")]
     private PlayerVfxAnchorRegistry vfxAnchorRegistry;
 
@@ -43,6 +44,76 @@ public class PlayerAttackManager : MonoBehaviour
     [SerializeField, Tooltip("Cross-fade duration when exiting a plunge into combat idle.")]
     [Range(0f, 1f)] private float plungeIdleBlendTime = 0.25f;
 
+    [Header("Plunge Drone Effects")]
+    [SerializeField, Tooltip("Enable plunge-specific drone effects (shared splash + optional physics collapse).")]
+    private bool enablePlungeDroneEffects = true;
+    [SerializeField, Tooltip("Enable simple rigidbody physics collapse for drones killed by plunge.")]
+    private bool enablePlungeDronePhysicsCollapse = true;
+    [SerializeField, Range(0f, 10f), Tooltip("Shared splash radius around a drone killed by plunge to damage nearby drones.")]
+    private float plungeDroneSharedSplashRadius = 2.5f;
+    [SerializeField, Tooltip("Layer mask used for nearby drone splash checks.")]
+    private LayerMask plungeDroneSplashMask = ~0;
+    [SerializeField, Range(0f, 60f), Tooltip("Downward velocity applied when drone collapse starts.")]
+    private float plungeDroneCollapseDownwardVelocity = 16f;
+    [SerializeField, Range(0f, 30f), Tooltip("Horizontal push applied away from impact center when drone collapse starts.")]
+    private float plungeDroneCollapseRadialForce = 6f;
+
+    [Header("Aerial Drone Reposition Assist")]
+    [SerializeField, Tooltip("When enabled, light aerial hits on alive drones nudge them away for cleaner follow-up aerial assist.")]
+    private bool enableLightAerialDroneReposition = true;
+    [SerializeField, Range(0f, 8f), Tooltip("Horizontal displacement applied to drones hit by light aerial attacks.")]
+    private float lightAerialDroneRepositionDistance = 1.8f;
+    [SerializeField, Range(-1f, 3f), Tooltip("Vertical offset applied when nudging drones on light aerial hit.")]
+    private float lightAerialDroneRepositionVerticalOffset = 0.35f;
+    [SerializeField, Range(0f, 2f), Tooltip("Only apply light-aerial drone reposition when player is this much below the drone.")]
+    private float lightAerialDroneRepositionMinPlayerBelow = 0.1f;
+    [SerializeField, Range(0f, 1f), Tooltip("Blend between away-from-player direction (0) and attacker-forward direction (1).")]
+    private float lightAerialDroneRepositionForwardBias = 0.45f;
+
+    [Header("Enemy Hit Stagger")]
+    [SerializeField, Tooltip("Master toggle: all player attacks stagger enemies on confirmed hit.")]
+    private bool staggerEnemiesOnAllAttacks;
+    [SerializeField, Tooltip("If master is off, single-target attacks can still stagger.")]
+    private bool staggerOnSingleTargetAttacks = true;
+    [SerializeField, Tooltip("If master is off, AoE attacks can still stagger.")]
+    private bool staggerOnAoeAttacks;
+    [SerializeField, Tooltip("If master is off, aerial attacks can still stagger.")]
+    private bool staggerOnAerialAttacks = true;
+    [SerializeField, Tooltip("Single-target combo part toggle: SX1")]
+    private bool staggerOnSx1 = true;
+    [SerializeField, Tooltip("Single-target combo part toggle: SX2")]
+    private bool staggerOnSx2 = true;
+    [SerializeField, Tooltip("Single-target combo part toggle: SX3")]
+    private bool staggerOnSx3 = true;
+    [SerializeField, Tooltip("Single-target combo part toggle: SX4")]
+    private bool staggerOnSx4 = true;
+    [SerializeField, Tooltip("Single-target combo part toggle: SX5")]
+    private bool staggerOnSx5 = true;
+    [SerializeField, Tooltip("Heavy combo part toggle: AY1")]
+    private bool staggerOnAy1 = true;
+    [SerializeField, Tooltip("Heavy combo part toggle: AY2")]
+    private bool staggerOnAy2 = true;
+    [SerializeField, Tooltip("Heavy combo part toggle: AY3")]
+    private bool staggerOnAy3 = true;
+    [SerializeField, Tooltip("Aerial combo part toggle: AC_X1 / ACX1")]
+    private bool staggerOnAcX1 = true;
+    [SerializeField, Tooltip("Aerial combo part toggle: AC_X2 / ACX2")]
+    private bool staggerOnAcX2 = true;
+    [SerializeField, Tooltip("Aerial combo part toggle: Plunge / Heavy Aerial finisher")]
+    private bool staggerOnPlunge = true;
+    [SerializeField, Range(0.05f, 2f), Tooltip("Enemy stagger duration from player hitboxes.")]
+    private float enemyStaggerDuration = 0.35f;
+
+    [Header("Attack Forward Move Blocking")]
+    [SerializeField, Tooltip("If enabled, attack forward movement is skipped when an alive enemy is too close in front of the player.")]
+    private bool blockAttackForwardMoveWhenEnemyNear = true;
+    [SerializeField, Tooltip("If enabled, attack forward movement is skipped while soft-lock positional nudge motion is still active to prevent bounce-back.")]
+    private bool blockAttackForwardMoveDuringSoftLockMotion = true;
+    [SerializeField, Range(0f, 5f), Tooltip("Distance threshold to block attack forward movement when an enemy is in front.")]
+    private float attackForwardMoveBlockDistance = 1.25f;
+    [SerializeField, Range(0f, 180f), Tooltip("Front cone angle used for attack forward-move blocking.")]
+    private float attackForwardMoveBlockAngle = 80f;
+
     [Header("Debug")]
     [SerializeField, Tooltip("When enabled, logs plunge hitbox damage (base x multiplier) when the hitbox spawns, even if no enemy is hit.")]
     private bool debugPlungeDamage = true;
@@ -62,15 +133,55 @@ public class PlayerAttackManager : MonoBehaviour
     private Coroutine heavyMoveRoutine;
     private bool lastAttackWasAoe;
     private float currentAttackDamageMultiplier = 1f;
+    private readonly Collider[] forwardMoveBlockHits = new Collider[24];
+
+    public bool IsAttackInProgress => currentAttack != null;
 
     [Header("Input Buffering")]
     [SerializeField, Range(0.05f, 0.6f)] private float inputBufferWindow = 0.25f;
 
+    [Header("Attack Speed")]
+    [SerializeField, Range(0.1f, 3f), Tooltip("Global speed multiplier applied to all player attacks.")]
+    private float globalAttackSpeedMultiplier = 1f;
+
+    [Header("Single Target Light (SX)")]
+    [SerializeField, Range(0.1f, 3f)] private float sx1SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float sx2SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float sx3SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float sx4SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float sx5SpeedMultiplier = 1f;
+
+    [Header("Heavy (AY)")]
+    [SerializeField, Range(0.1f, 3f)] private float ay1SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float ay2SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float ay3SpeedMultiplier = 1f;
+
+    [Header("Aerial Combo (AC)")]
+    [SerializeField, Range(0.1f, 3f)] private float acX1SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float acX2SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float plungeSpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float airDashAttackSpeedMultiplier = 1f;
+
+    [Header("Special / Guard")]
+    [SerializeField, Range(0.1f, 3f)] private float launcherSpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float guardAttackSpeedMultiplier = 1f;
+
+    [Header("Legacy / Optional (AX)")]
+    [SerializeField, Range(0.1f, 3f)] private float ax1SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float ax2SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float ax3SpeedMultiplier = 1f;
+    [SerializeField, Range(0.1f, 3f)] private float ax4SpeedMultiplier = 1f;
+
     private enum AttackButton { None, Light, Heavy }
     private AttackButton bufferedAttackButton = AttackButton.None;
     private float bufferedAttackExpiresAt = -1f;
+    private float currentAttackSpeedMultiplier = 1f;
 
     public static event Action<PlayerAttack> OnAttack;
+
+    // New, more explicit events for tutorial / listeners that need to know which attack-type was used:
+    public static event Action<PlayerAttack> OnSingleAttack;
+    public static event Action<PlayerAttack> OnAoeAttack;
 
     private void Awake()
     {
@@ -81,6 +192,7 @@ public class PlayerAttackManager : MonoBehaviour
         aerialComboManager ??= GetComponent<AerialComboManager>() ?? GetComponentInChildren<AerialComboManager>() ?? GetComponentInParent<AerialComboManager>();
         characterController ??= GetComponent<CharacterController>();
         playerMovement ??= GetComponent<PlayerMovement>() ?? GetComponentInChildren<PlayerMovement>() ?? GetComponentInParent<PlayerMovement>();
+        attackLockSystem ??= GetComponent<AttackLockSystem>() ?? GetComponentInChildren<AttackLockSystem>() ?? GetComponentInParent<AttackLockSystem>();
         vfxAnchorRegistry ??= GetComponent<PlayerVfxAnchorRegistry>() ?? GetComponentInChildren<PlayerVfxAnchorRegistry>() ?? GetComponentInParent<PlayerVfxAnchorRegistry>();
 
         if (attackDatabase == null)
@@ -143,6 +255,8 @@ public class PlayerAttackManager : MonoBehaviour
         StopSpecialAttackAutoCancelRoutine();
 
         ClearHitbox();
+        currentAttackSpeedMultiplier = 1f;
+        animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
     }
 
@@ -213,7 +327,8 @@ public class PlayerAttackManager : MonoBehaviour
         );
 
         StartGuardAttackFlow(guardAttack);
-        ScheduleSpecialAttackAutoCancel(GetAnimationDurationOrFallback(guardAttack, guardAttackAutoCancelDuration));
+        float guardAutoCancel = GetAnimationDurationOrFallback(guardAttack, guardAttackAutoCancelDuration);
+        ScheduleSpecialAttackAutoCancel(ScaleDurationForAttack(guardAutoCancel, guardAttack));
     }
 
     private bool TryExecuteDashLauncherAttack()
@@ -240,7 +355,8 @@ public class PlayerAttackManager : MonoBehaviour
             controller => controller?.PlayLauncher()
         );
 
-        ScheduleSpecialAttackAutoCancel(GetAnimationDurationOrFallback(launcherAttack, launcherAutoCancelDuration));
+        float launcherAutoCancel = GetAnimationDurationOrFallback(launcherAttack, launcherAutoCancelDuration);
+        ScheduleSpecialAttackAutoCancel(ScaleDurationForAttack(launcherAutoCancel, launcherAttack));
 
         return true;
     }
@@ -417,6 +533,7 @@ public class PlayerAttackManager : MonoBehaviour
     {
         currentAttack = attackData;
         currentAttackDamageMultiplier = 1f;
+        currentAttackSpeedMultiplier = ResolveAttackSpeedMultiplier(attackData, attackId);
 
         if (currentAttack != null
             && currentAttack.attackType == AttackType.HeavyAerial
@@ -433,6 +550,7 @@ public class PlayerAttackManager : MonoBehaviour
             }
         }
         InputReader.inputBusy = true;
+        animationController?.SetAnimatorSpeed(currentAttackSpeedMultiplier);
 
         UpdateLastAttackType(attackData);
 
@@ -444,6 +562,26 @@ public class PlayerAttackManager : MonoBehaviour
             animationController?.PlayAttack(attackId);
 
         OnAttack?.Invoke(attackData);
+
+        // Fire more specific events to make it trivial for listeners (like TutorialHandler)
+        // to react to single-target vs aoe attacks without extra filtering.
+        if (attackData != null)
+        {
+            switch (attackData.attackType)
+            {
+                case AttackType.LightSingle:
+                    OnSingleAttack?.Invoke(attackData);
+                    break;
+                case AttackType.HeavyAOE:
+                    OnAoeAttack?.Invoke(attackData);
+                    break;
+                default:
+                    // No specific event for other attack types yet, but log them for visibility.
+                    Debug.Log($"[PlayerAttackManager] No specific event for attack type {attackData.attackType} on '{attackData.attackName}' ({attackId})");
+                    break;
+
+            }
+        }
 
         Debug.Log($"[PlayerAttackManager] Executing attack {attackData.attackName} ({attackId})");
     }
@@ -457,6 +595,9 @@ public class PlayerAttackManager : MonoBehaviour
         if (distance <= 0f)
             return;
 
+        if (ShouldBlockAttackForwardMove())
+            return;
+
         Vector3 forward = transform.forward;
         forward.y = 0f;
         if (forward.sqrMagnitude <= 0.0001f)
@@ -464,6 +605,7 @@ public class PlayerAttackManager : MonoBehaviour
         forward.Normalize();
 
         float duration = attackData.forwardMoveDuration;
+        duration = ScaleDurationForAttack(duration, attackData);
         if (playerMovement != null)
         {
             playerMovement.StartAttackForwardMove(forward, distance, duration);
@@ -480,6 +622,56 @@ public class PlayerAttackManager : MonoBehaviour
             StopCoroutine(heavyMoveRoutine);
 
         heavyMoveRoutine = StartCoroutine(HeavyAttackForwardMoveRoutine(forward, distance, duration));
+    }
+
+    private bool ShouldBlockAttackForwardMove()
+    {
+        if (blockAttackForwardMoveDuringSoftLockMotion && attackLockSystem != null && attackLockSystem.IsSoftLockMotionInProgress)
+            return true;
+
+        if (!blockAttackForwardMoveWhenEnemyNear)
+            return false;
+
+        float threshold = Mathf.Max(0f, attackForwardMoveBlockDistance);
+        if (threshold <= 0f)
+            return false;
+
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            origin,
+            threshold,
+            forwardMoveBlockHits,
+            Physics.AllLayers,
+            QueryTriggerInteraction.Ignore);
+
+        Vector3 playerForward = transform.forward;
+        playerForward.y = 0f;
+        if (playerForward.sqrMagnitude > 0.0001f)
+            playerForward.Normalize();
+        else
+            playerForward = Vector3.forward;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = forwardMoveBlockHits[i];
+            if (col == null)
+                continue;
+
+            BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
+            if (enemy == null || !enemy.isAlive)
+                continue;
+
+            Vector3 toEnemy = enemy.transform.position - transform.position;
+            toEnemy.y = 0f;
+            if (toEnemy.sqrMagnitude <= 0.0001f)
+                return true;
+
+            float angle = Vector3.Angle(playerForward, toEnemy.normalized);
+            if (angle <= attackForwardMoveBlockAngle)
+                return true;
+        }
+
+        return false;
     }
 
     private IEnumerator HeavyAttackForwardMoveRoutine(Vector3 forward, float distance, float duration)
@@ -541,7 +733,8 @@ public class PlayerAttackManager : MonoBehaviour
         var source = attackAudioSource != null ? attackAudioSource : fallbackSfxSource;
         if (source == null)
         {
-            Debug.LogError("[PlayerAttackManager] No AudioSource available! attackAudioSource and fallbackSfxSource are both null. Check SoundManager.Instance.");
+            if (!PlayerMovement.IsTestingOrDebugMode)
+                Debug.LogError("[PlayerAttackManager] No AudioSource available! attackAudioSource and fallbackSfxSource are both null. Check SoundManager.Instance.");
             return;
         }
 
@@ -576,19 +769,62 @@ public class PlayerAttackManager : MonoBehaviour
         if (activeHitbox != null
             && currentAttack != null
             && ReferenceEquals(attack, currentAttack)
-            && currentAttack.attackType == AttackType.HeavyAerial
             && activeHitbox.TryGetComponent<HitboxDamageManager>(out var damageManager))
         {
-            float multiplier = Mathf.Max(1f, currentAttackDamageMultiplier);
-            float scaledDamage = currentAttack.damage * multiplier;
-            damageManager.Configure(currentAttack.attackName, scaledDamage, currentAttack.maxTargetsPerActivation);
+            bool isHeavyAerial = currentAttack.attackType == AttackType.HeavyAerial;
+            bool isLightAerial = currentAttack.attackType == AttackType.LightAerial;
 
-            if (debugPlungeDamage)
+            if (isHeavyAerial)
             {
-                Debug.Log(
-                    $"[PlayerAttackManager] Plunge hitbox spawned: '{currentAttack.attackId}' base={currentAttack.damage} x{multiplier:0.##} => {scaledDamage:0.##}"
-                );
+                float multiplier = Mathf.Max(1f, currentAttackDamageMultiplier);
+                float scaledDamage = currentAttack.damage * multiplier;
+                damageManager.Configure(currentAttack.attackName, scaledDamage, currentAttack.maxTargetsPerActivation);
+                damageManager.ConfigurePlungeDroneEffects(
+                    enablePlungeDroneEffects,
+                    enablePlungeDronePhysicsCollapse,
+                    plungeDroneSharedSplashRadius,
+                    plungeDroneSplashMask,
+                    plungeDroneCollapseDownwardVelocity,
+                    plungeDroneCollapseRadialForce);
+
+                if (debugPlungeDamage)
+                {
+                    Debug.Log(
+                        $"[PlayerAttackManager] Plunge hitbox spawned: '{currentAttack.attackId}' base={currentAttack.damage} x{multiplier:0.##} => {scaledDamage:0.##}"
+                    );
+                }
             }
+
+            damageManager.ConfigureAerialDroneReposition(
+                isLightAerial,
+                transform.position,
+                transform.forward);
+            damageManager.ConfigureAerialDroneRepositionSettings(
+                enableLightAerialDroneReposition,
+                lightAerialDroneRepositionDistance,
+                lightAerialDroneRepositionVerticalOffset,
+                lightAerialDroneRepositionMinPlayerBelow,
+                lightAerialDroneRepositionForwardBias);
+            damageManager.ConfigureAttackType(currentAttack.attackType);
+            damageManager.ConfigureAttackId(currentAttack.attackId);
+            damageManager.ConfigureAttackerContext(transform.position);
+            damageManager.ConfigureEnemyHitStaggerSettings(
+                staggerEnemiesOnAllAttacks,
+                staggerOnSingleTargetAttacks,
+                staggerOnAoeAttacks,
+                staggerOnAerialAttacks,
+                staggerOnSx1,
+                staggerOnSx2,
+                staggerOnSx3,
+                staggerOnSx4,
+                staggerOnSx5,
+                staggerOnAy1,
+                staggerOnAy2,
+                staggerOnAy3,
+                staggerOnAcX1,
+                staggerOnAcX2,
+                staggerOnPlunge,
+                enemyStaggerDuration);
         }
 
         PlayAttackVfx(attack, spawnPosition, spawnRotation);
@@ -666,6 +902,8 @@ public class PlayerAttackManager : MonoBehaviour
         float lifetime = overrideDuration >= 0f
             ? overrideDuration
             : attack.hitboxDuration;
+
+        lifetime = ScaleDurationForAttack(lifetime, attack);
 
         BeginHitboxLifetime(lifetime);
     }
@@ -784,7 +1022,8 @@ public class PlayerAttackManager : MonoBehaviour
             if (plungeRecoveryRoutine != null)
                 StopCoroutine(plungeRecoveryRoutine);
 
-            plungeRecoveryRoutine = StartCoroutine(PlungeRecoveryRoutine());
+            float delay = ScaleDurationByCurrentAttackSpeed(plungeRecoveryDelay);
+            plungeRecoveryRoutine = StartCoroutine(PlungeRecoveryRoutine(delay));
         }
         else
         {
@@ -792,9 +1031,9 @@ public class PlayerAttackManager : MonoBehaviour
         }
     }
 
-    private IEnumerator PlungeRecoveryRoutine()
+    private IEnumerator PlungeRecoveryRoutine(float delay)
     {
-        yield return new WaitForSeconds(plungeRecoveryDelay);
+        yield return new WaitForSeconds(Mathf.Max(0f, delay));
         plungeRecoveryRoutine = null;
         CompleteCancelWindow();
     }
@@ -821,6 +1060,8 @@ public class PlayerAttackManager : MonoBehaviour
 
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
+        currentAttackSpeedMultiplier = 1f;
+        animationController?.ResetAnimatorSpeed();
 
         if (TryConsumeBufferedAttack())
             return;
@@ -925,6 +1166,8 @@ public class PlayerAttackManager : MonoBehaviour
         playerMovement?.CancelPlungeState();
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
+        currentAttackSpeedMultiplier = 1f;
+        animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
         playerMovement?.SuppressLocomotionAnimations(false);
         playerMovement?.ForceLocomotionRefresh();
@@ -937,6 +1180,65 @@ public class PlayerAttackManager : MonoBehaviour
         {
             tierComboManager?.CancelComboResetCountdown();
         }
+    }
+
+    private float ResolveAttackSpeedMultiplier(PlayerAttack attackData, string attackId)
+    {
+        float resolved = Mathf.Max(0.1f, globalAttackSpeedMultiplier);
+        string id = !string.IsNullOrWhiteSpace(attackId)
+            ? attackId
+            : attackData != null ? attackData.attackId : null;
+
+        if (string.IsNullOrWhiteSpace(id))
+            return resolved;
+
+        string normalized = id.Trim().ToUpperInvariant();
+        float perAttack = normalized switch
+        {
+            "SX1" => sx1SpeedMultiplier,
+            "SX2" => sx2SpeedMultiplier,
+            "SX3" => sx3SpeedMultiplier,
+            "SX4" => sx4SpeedMultiplier,
+            "SX5" => sx5SpeedMultiplier,
+
+            "AY1" => ay1SpeedMultiplier,
+            "AY2" => ay2SpeedMultiplier,
+            "AY3" => ay3SpeedMultiplier,
+
+            "AC_X1" => acX1SpeedMultiplier,
+            "AC_X2" => acX2SpeedMultiplier,
+            "PLUNGE" => plungeSpeedMultiplier,
+            "AIRDASH" => airDashAttackSpeedMultiplier,
+
+            "LAUNCHER" => launcherSpeedMultiplier,
+            "G_ATTACK" => guardAttackSpeedMultiplier,
+
+            "AX1" => ax1SpeedMultiplier,
+            "AX2" => ax2SpeedMultiplier,
+            "AX3" => ax3SpeedMultiplier,
+            "AX4" => ax4SpeedMultiplier,
+
+            _ => 1f
+        };
+
+        resolved *= Mathf.Max(0.1f, perAttack);
+
+        return Mathf.Max(0.1f, resolved);
+    }
+
+    private float ScaleDurationByCurrentAttackSpeed(float duration)
+    {
+        float speed = Mathf.Max(0.1f, currentAttackSpeedMultiplier);
+        return Mathf.Max(0f, duration) / speed;
+    }
+
+    private float ScaleDurationForAttack(float duration, PlayerAttack attackData)
+    {
+        float speed = currentAttack != null && ReferenceEquals(currentAttack, attackData)
+            ? Mathf.Max(0.1f, currentAttackSpeedMultiplier)
+            : ResolveAttackSpeedMultiplier(attackData, attackData != null ? attackData.attackId : null);
+
+        return Mathf.Max(0f, duration) / speed;
     }
     #endregion
 }

@@ -10,6 +10,10 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
     [SerializeField] private float splashRadius = 4f;
     [SerializeField] private float damage = 20f;
     [SerializeField] private LayerMask hitMask = ~0;
+    [SerializeField, Tooltip("If enabled, explosive turret projectile splash force-staggers the player.")]
+    private bool staggerPlayerOnSplash = true;
+    [SerializeField, Range(0.05f, 2f), Tooltip("Forced stagger duration for player when hit by explosive splash.")]
+    private float playerSplashStaggerDuration = 0.4f;
 
     [Header("Effects")]
     [SerializeField] private GameObject explosionVFXPrefab;
@@ -52,9 +56,14 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
             if (!playerHit && h.CompareTag("Player"))
                 playerHit = true;
 
-            // Leave actual damage to the future parry/damage system
-            // var hp = h.GetComponent<IHealthSystem>();
-            // if (hp != null) hp.LoseHP(damage);
+            var hp = h.GetComponentInParent<IHealthSystem>();
+            if (hp != null)
+            {
+                hp.LoseHP(damage);
+
+                if (staggerPlayerOnSplash && hp is PlayerHealthBarManager playerHealth)
+                    playerHealth.ApplyForcedStagger(playerSplashStaggerDuration, resetCombo: true);
+            }
         }
 
         if (playerHit)

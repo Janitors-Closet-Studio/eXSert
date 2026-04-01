@@ -272,6 +272,11 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         parryStunCoroutine = StartCoroutine(ParryStunRoutine(duration));
     }
 
+    public override void ApplyHitStagger(float duration)
+    {
+        ApplyParryStun(duration);
+    }
+
     private IEnumerator ParryStunRoutine(float duration)
     {
         isParryStunned = true;
@@ -1198,11 +1203,24 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
 
     private void PlaySFXOnHit()
     {
-        if (hitSFX != null && hitSFX.Length > 0)
+        if (hitSFX == null || hitSFX.Length == 0)
+            return;
+
+        int index = Random.Range(0, hitSFX.Length);
+        AudioClip clip = hitSFX[index];
+        if (clip == null)
+            return;
+
+        SoundManager soundManager = SoundManager.Instance;
+        AudioSource source = soundManager != null ? soundManager.sfxSource : null;
+        if (source == null)
         {
-            int index = Random.Range(0, hitSFX.Length);
-            SoundManager.Instance.sfxSource.PlayOneShot(hitSFX[index]);
+            if (!PlayerMovement.IsTestingOrDebugMode)
+                Debug.LogError("[BaseEnemy] Cannot play hit SFX because SoundManager.sfxSource is missing.");
+            return;
         }
+
+        source.PlayOneShot(clip);
     }
 
     #region Movement SFX

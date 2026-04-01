@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 
 [RequireComponent(typeof(BoxCollider))]
-public class ElevatorLift : MonoBehaviour
+public class ElevatorLift : PuzzlePart, IConsoleSelectable
 {
     // FixedUpdate movement reverted; coroutine will handle movement
 
@@ -25,6 +25,9 @@ public class ElevatorLift : MonoBehaviour
 
     [Tooltip("Assign the desired local positions for the elevator lift to move to for each floor, in order from first to third floor")]
     [SerializeField] private Vector3[] desiredLiftPosition;
+    [SerializeField] private bool lockXMovement;
+    [SerializeField] private bool lockYMovement;
+    [SerializeField] private bool lockZMovement;
     [SerializeField] private float liftSpeed = 1f;
 
     [Tooltip("Assign the corresponding floor button UI elements in the inspector, in order from first to third floor; exit button should last.")]
@@ -62,6 +65,8 @@ public class ElevatorLift : MonoBehaviour
             cachedCameraPriority = elevatorCamera.Priority;
 
         TryResolveRuntimeActions();
+
+        TryResolveLockCoordinates();
     }
 
     private void OnDisable()
@@ -87,6 +92,25 @@ public class ElevatorLift : MonoBehaviour
     private void Update()
     {
         TryTriggerGroundRecallFailsafe();
+    }
+
+    private void TryResolveLockCoordinates()
+    {
+        if (desiredLiftPosition == null || desiredLiftPosition.Length == 0)
+            return;
+
+        for (int i = 0; i < desiredLiftPosition.Length; i++)
+        {
+            Vector3 pos = desiredLiftPosition[i];
+            if (lockXMovement)
+                pos.x = elevatorLift.transform.localPosition.x;
+            if (lockYMovement)
+                pos.y = elevatorLift.transform.localPosition.y;
+            if (lockZMovement)
+                pos.z = elevatorLift.transform.localPosition.z;
+
+            desiredLiftPosition[i] = pos;
+        }
     }
 
     private bool TryResolveRuntimeActions()
@@ -153,6 +177,26 @@ public class ElevatorLift : MonoBehaviour
             runtimeSecondFloorAction.performed -= MoveToSecondFloor;
         if (runtimeThirdFloorAction != null)
             runtimeThirdFloorAction.performed -= MoveToThirdFloor;
+    }
+
+    public override void StartPuzzle()
+    {
+        EnterElevatorLiftMenu();
+    }
+
+    public override void EndPuzzle()
+    {
+        ReturnToGameplay();
+    }
+
+    public override void ConsoleInteracted()
+    {
+        EnterElevatorLiftMenu();
+    }
+
+    public void ConsoleInteracted(PuzzleInteraction interaction)
+    {
+        EnterElevatorLiftMenu();
     }
 
     public void EnterElevatorLiftMenu()

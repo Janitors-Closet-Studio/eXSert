@@ -52,6 +52,10 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Attack Queue Settings")]
         [Tooltip("If true, this boss is exempt from the EnemyAttackQueueManager and attacks freely.")]
         [SerializeField] private bool exemptFromAttackQueue = true;
+
+        [Header("Attack Speed")]
+        [Tooltip("Global multiplier applied to all Cleanser attack animation speed multipliers.")]
+        [Min(0.1f)] public float GlobalAttackSpeedMultiplier = 1f;
         
         [Header("Basic Attack Configurations")]
         [Tooltip("Basic melee attack descriptor: Lunge.")]
@@ -80,8 +84,8 @@ namespace EnemyBehavior.Boss.Cleanser
         public KnockbackAttackConfig KnockbackSettings = new KnockbackAttackConfig();
 
         [Header("Strong Attack Configurations")]
-        [Tooltip("Strong finisher descriptor: High Dive.")]
-        public CleanserAttackDescriptor HighDiveAttack;
+        [Tooltip("Configuration for High Dive strong finisher.")]
+        public HighDiveConfig HighDiveAttack = new HighDiveConfig();
         [Tooltip("Detailed settings for the Anime Dash Slash strong finisher.")]
         public AnimeDashSlashConfig AnimeDashSettings = new AnimeDashSlashConfig();
         [Tooltip("Configuration for the SpinDash strong finisher (uses JumpSpinAttack animation clips/states).")]
@@ -95,6 +99,8 @@ namespace EnemyBehavior.Boss.Cleanser
         public DoubleMaximumSweepConfig UltimateSettings = new DoubleMaximumSweepConfig();
         [Tooltip("Positions where Cleanser can jump to perform the double sweep setup.")]
         public List<Transform> DoubleSweepPositions = new List<Transform>();
+        [Tooltip("Center point of the arena used before entering ultimate hover phase.")]
+        [SerializeField] private Transform ultimateArenaCenterPoint;
         [Tooltip("Duration of stun when ultimate is canceled by aerial plunge finisher.")]
         public float AerialFinisherStunDuration = 3f;
         [Tooltip("Health percentage at which ultimate becomes available.")]
@@ -103,22 +109,16 @@ namespace EnemyBehavior.Boss.Cleanser
         public int MinAttacksBetweenUltimates = 15;
         [Tooltip("If true, ultimate triggers by health threshold. If false, triggers by attacks since last ultimate.")]
         public bool UltimateTriggeredByHealth = true;
-        [Tooltip("Animator state used during dedicated ultimate hover phase.")]
-        [SerializeField] private string stateUltimateHover = "JumpArcHold";
-
-        [Header("Crescent Wave Projectile Configuration")]
-        [Tooltip("Shared crescent-wave projectile settings used by DiagUpwardSlash and ultimate sweeps.")]
-        public CrescentArcProjectileConfig CrescentWaveProjectileConfiguration = new CrescentArcProjectileConfig();
-        [Tooltip("Legacy fallback projectile prefab used if per-attack crescent prefab is not assigned.")]
-        public GameObject CrescentWavePrefab;
 
         [Header("Spare Toss Configuration")]
         [Tooltip("Behavior settings for spare toss projectiles.")]
         public SpareTossConfig SpareTossSettings = new SpareTossConfig();
-        [Tooltip("Prefab for the thrown weapon projectile (visual only - the actual spare weapon returns magnetically).")]
-        public GameObject ProjectilePrefab;
-        [Tooltip("Transform where spare toss projectiles spawn from (typically the hand).")]
-        public Transform ProjectileSpawnPoint;
+        [Tooltip("Visual prefabs that can be used for spare-weapon stockpile/toss. Selection avoids immediate repeats.")]
+        [FormerlySerializedAs("ProjectilePrefab")]
+        public List<GameObject> ProjectilePrefabs = new List<GameObject>();
+        [Tooltip("Spawn points where spare weapons can emerge from before moving into the stockpile.")]
+        [FormerlySerializedAs("ProjectileSpawnPoint")]
+        public List<Transform> ProjectileSpawnPoints = new List<Transform>();
 
         [Header("Movement Configuration")]
         [Tooltip("Configuration for the gap-closing dash (movement only, no hitbox).")]
@@ -135,6 +135,12 @@ namespace EnemyBehavior.Boss.Cleanser
         public float FallbackStoppingDistance = 2f;
 
         [Header("Misc Configuration")]
+
+        [Header("Player Stagger")]
+        [Tooltip("Forced stagger duration for Cleanser melee hits.")]
+        [SerializeField, Range(0.05f, 2f)] private float meleeHitStaggerDuration = 0.4f;
+        [Tooltip("If enabled, player combo is reset when Cleanser melee stagger is applied.")]
+        [SerializeField] private bool resetPlayerComboOnMeleeStagger = true;
 
         [Header("Windup Damage Reduction")]
         [Tooltip("If true, check for animation events to enable/disable damage reduction.")]
@@ -220,6 +226,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private AttackCategory currentAttackCategory = AttackCategory.Halberd;
         private bool pickedUpWeaponThisCombo;
         private float baseAgentSpeed;
+        private float baseAgentAngularSpeed;
+        private float baseAgentAcceleration;
         private bool waitingForUltimateLowSweepEvent;
         private bool waitingForUltimateMidSweepEvent;
         private Vector3 pendingUltimateSweepTargetPos;
@@ -230,9 +238,18 @@ namespace EnemyBehavior.Boss.Cleanser
         private Coroutine spinDashHitboxRearmCoroutine;
         private int spinDashRemainingHits;
         private float spinDashTriggerDamage;
+        private bool whirlwindDamagePhaseActive;
+        private bool whirlwindDamageArmed;
+        private Collider whirlwindDamageCollider;
+        private bool whirlwindDamageColliderInitiallyEnabled;
+        private Coroutine whirlwindDamageRearmCoroutine;
+        private float whirlwindDamageRearmDelay;
+        private int whirlwindLoopCycleIndex = -1;
         private bool animeDashTriggerArmed;
         private float animeDashTriggerDamage;
         private float defaultAnimatorSpeed = 1f;
+        private bool isExecutingGapCloseDash;
+        private float currentComboMovementSpeedMultiplier = 1f;
 
         #region IQueuedAttacker Implementation
         
@@ -419,6 +436,12 @@ namespace EnemyBehavior.Boss.Cleanser
             animController = animController ?? GetComponent<CleanserAnimController>() ?? GetComponentInChildren<CleanserAnimController>();
             animator = animator ?? GetComponentInChildren<Animator>();
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
+
+            if (dualWieldSystem != null)
+            {
+                dualWieldSystem.SetSpareWeaponVisualPrefabs(ProjectilePrefabs);
+                dualWieldSystem.SetProjectileSpawnPoints(ProjectileSpawnPoints);
+            }
             
             ApplyMovementSettings();
             InitializeHealthBar();
@@ -450,7 +473,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 agent.speed = speed;
                 baseAgentSpeed = speed;
                 agent.angularSpeed = profile.AngularSpeed;
+                baseAgentAngularSpeed = profile.AngularSpeed;
                 agent.acceleration = profile.Acceleration;
+                baseAgentAcceleration = profile.Acceleration;
                 agent.stoppingDistance = profile.StoppingDistance;
                 agent.avoidancePriority = profile.AvoidancePriority;
 #if UNITY_EDITOR
@@ -463,7 +488,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 agent.speed = FallbackSpeed;
                 baseAgentSpeed = FallbackSpeed;
                 agent.angularSpeed = FallbackAngularSpeed;
+                baseAgentAngularSpeed = FallbackAngularSpeed;
                 agent.acceleration = FallbackAcceleration;
+                baseAgentAcceleration = FallbackAcceleration;
                 agent.stoppingDistance = FallbackStoppingDistance;
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), "[Cleanser] No profile assigned, using fallback movement settings.");
@@ -528,6 +555,8 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             EndSpinDashHitboxPhase();
+            EndWhirlwindDamagePhase();
+            aggressionSystem?.SetAggressionProcessingPaused(false);
             SetAllMeleeHitboxesEnabled(false);
             ResetAnimationSpeed();
         }
@@ -580,7 +609,7 @@ namespace EnemyBehavior.Boss.Cleanser
             float normalizedSpeed = agent.speed > 0f ? speed / agent.speed : 0f;
 
             // Prevent locomotion updates from interrupting active attack/ultimate/stun animations.
-            if (isExecutingAttack || isExecutingUltimate || isStunned)
+            if (isExecutingAttack || isExecutingUltimate || isStunned || isExecutingGapCloseDash)
                 return;
             
             // Use animation controller if available, otherwise fall back to direct animator
@@ -604,10 +633,16 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void UpdateAggressionBasedSpeed()
         {
-            if (agent == null || aggressionSystem == null) return;
-            
-            float speedMultiplier = aggressionSystem.GetSpeedMultiplier();
-            agent.speed = baseAgentSpeed * speedMultiplier;
+            if (agent == null) return;
+
+            float speedMultiplier = aggressionSystem != null ? aggressionSystem.GetSpeedMultiplier() : 1f;
+            float comboSpeedMultiplier = comboSystem != null && comboSystem.IsExecutingCombo
+                ? Mathf.Max(0.1f, currentComboMovementSpeedMultiplier)
+                : 1f;
+
+            agent.speed = baseAgentSpeed * speedMultiplier * comboSpeedMultiplier;
+            agent.angularSpeed = baseAgentAngularSpeed * comboSpeedMultiplier;
+            agent.acceleration = baseAgentAcceleration * comboSpeedMultiplier;
         }
 
         private void UpdatePlayerGuardingAggression()
@@ -756,6 +791,12 @@ namespace EnemyBehavior.Boss.Cleanser
                 };
             }
 
+            if (DiagUpwardSlashAttack != null)
+            {
+                if (DiagUpwardSlashAttack.ProjectileConfig == null)
+                    DiagUpwardSlashAttack.ProjectileConfig = new CrescentArcProjectileConfig();
+            }
+
             if (string.IsNullOrEmpty(WingBashAttack?.ID))
             {
                 WingBashAttack = new CleanserAttackDescriptor
@@ -819,19 +860,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 };
             }
 
-            if (string.IsNullOrEmpty(HighDiveAttack?.ID))
-            {
-                HighDiveAttack = new CleanserAttackDescriptor
-                {
-                    ID = "HighDive",
-                    Category = AttackCategory.Halberd,
-                    BaseDamage = 40f,
-                    Cooldown = 8f,
-                    RangeMin = 0f,
-                    RangeMax = 10f,
-                    AnimationTrigger = "Attack_HighDive"
-                };
-            }
+            if (HighDiveAttack == null)
+                HighDiveAttack = new HighDiveConfig();
 
             if (AnimeDashSettings == null)
                 AnimeDashSettings = new AnimeDashSlashConfig();
@@ -991,6 +1021,7 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             comboSystem.StartCombo(combo);
             pickedUpWeaponThisCombo = false;
+            currentComboMovementSpeedMultiplier = combo != null ? Mathf.Max(0.1f, combo.ComboMovementSpeedMultiplier) : 1f;
             
             while (comboSystem.IsExecutingCombo)
             {
@@ -998,16 +1029,61 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (step == null)
                     break;
 
-                // Step-directed pickup (designer controlled).
-                if (step.PickupSpareWeaponBefore && dualWieldSystem != null
-                    && !dualWieldSystem.IsHoldingSpareWeapon
-                    && dualWieldSystem.AvailableSpareWeaponCount > 0)
+                ComboStep nextStep = comboSystem.GetNextStep();
+
+                int pickupCountForStep = comboSystem != null
+                    ? comboSystem.GetSpareWeaponPickupCountForStep(step)
+                    : Mathf.Max(0, step.SpareWeaponsToAddBeforeStep);
+
+                // Step-directed stockpiling (designer controlled).
+                if (pickupCountForStep > 0 && dualWieldSystem != null && dualWieldSystem.AvailableSpareWeaponCount > 0)
                 {
-                    dualWieldSystem.PickupSpareWeapon();
-                    yield return new WaitUntil(() => !dualWieldSystem.IsPickingUp);
-                    pickedUpWeaponThisCombo = true;
+                    int pickupsCompleted = 0;
+                    while (pickupsCompleted < pickupCountForStep && dualWieldSystem.AvailableSpareWeaponCount > 0)
+                    {
+                        if (!dualWieldSystem.PickupSpareWeapon())
+                            break;
+
+                        yield return new WaitUntil(() => !dualWieldSystem.IsPickingUp);
+                        pickupsCompleted++;
+                        pickedUpWeaponThisCombo = true;
+                    }
                 }
                 
+                bool hasCurrentStepRange = TryGetComboStepDesiredRange(step, out float stepRangeMin, out float stepRangeMax);
+                bool hasNextStepRange = TryGetComboStepDesiredRange(nextStep, out float nextStepRangeMin, out float nextStepRangeMax);
+
+                if (hasCurrentStepRange)
+                {
+                    float currentDistance = GetPlayerDistanceXZ();
+                    bool isInCurrentStepRange = IsDistanceInRange(currentDistance, stepRangeMin, stepRangeMax);
+                    bool isInNextStepRange = hasNextStepRange && IsDistanceInRange(currentDistance, nextStepRangeMin, nextStepRangeMax);
+
+                    if (!isInCurrentStepRange)
+                    {
+                        float desiredMin = stepRangeMin;
+                        float desiredMax = stepRangeMax;
+
+                        if (hasNextStepRange && TryGetRangeIntersection(stepRangeMin, stepRangeMax, nextStepRangeMin, nextStepRangeMax, out float overlapMin, out float overlapMax))
+                        {
+                            desiredMin = overlapMin;
+                            desiredMax = overlapMax;
+                        }
+
+                        yield return MoveIntoStepRange(desiredMin, desiredMax);
+                    }
+                    else if (isInNextStepRange && agent != null && agent.hasPath)
+                    {
+                        agent.ResetPath();
+                    }
+
+                    if (!IsDistanceInRange(GetPlayerDistanceXZ(), stepRangeMin, stepRangeMax))
+                    {
+                        yield return null;
+                        continue;
+                    }
+                }
+
                 if (step.PreDelay > 0f)
                 {
                     yield return new WaitForSeconds(step.PreDelay);
@@ -1029,6 +1105,10 @@ namespace EnemyBehavior.Boss.Cleanser
                 
                 yield return null;
             }
+
+            currentComboMovementSpeedMultiplier = 1f;
+            if (agent != null && agent.hasPath)
+                agent.ResetPath();
             
             // Clean up stockpiled/lodged spare weapons at END of combo.
             if (dualWieldSystem != null)
@@ -1088,7 +1168,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 case CleanserBasicAttack.LegSweep:
                     yield return ExecuteAttackWithAnimationEvents(LegSweepAttack);
                     break;
-                case CleanserBasicAttack.Knockback:
+                case (CleanserBasicAttack)8:
+                    // Legacy serialized value: Knockback is no longer selectable in combo-authoring list.
                     yield return ExecuteKnockbackAttack();
                     break;
                 case (CleanserBasicAttack)9:
@@ -1103,6 +1184,219 @@ namespace EnemyBehavior.Boss.Cleanser
             
             isExecutingAttack = false;
             NotifyAttackEnd();
+        }
+
+        private bool TryGetComboStepDesiredRange(ComboStep step, out float rangeMin, out float rangeMax)
+        {
+            rangeMin = 0f;
+            rangeMax = 0f;
+
+            if (step == null)
+                return false;
+
+            if (step.IsFinisher)
+                return TryGetStrongAttackDesiredRange(step.StrongAttack, out rangeMin, out rangeMax);
+
+            CleanserAttackDescriptor descriptor = step.BasicAttack switch
+            {
+                CleanserBasicAttack.Lunge => LungeAttack,
+                CleanserBasicAttack.LungeBlock => LungeBlockAttack,
+                CleanserBasicAttack.OverheadCleave => OverheadCleaveAttack,
+                CleanserBasicAttack.Cleave => CleaveAttack,
+                CleanserBasicAttack.CleaveAdvance => CleaveAdvanceAttack,
+                CleanserBasicAttack.PommelStrike => PommelStrikeAttack,
+                CleanserBasicAttack.DiagUpwardSlash => DiagUpwardSlashAttack,
+                CleanserBasicAttack.WingBash => WingBashAttack,
+                CleanserBasicAttack.SlashIntoSlap => SlashIntoSlapAttack,
+                CleanserBasicAttack.RakeIntoSpinSlash => RakeIntoSpinSlashAttack,
+                CleanserBasicAttack.LegSweep => LegSweepAttack,
+                CleanserBasicAttack.SpareToss => null,
+                (CleanserBasicAttack)8 => null,
+                _ => null
+            };
+
+            if (descriptor == null)
+                return false;
+
+            rangeMin = Mathf.Max(0f, descriptor.RangeMin);
+            rangeMax = Mathf.Max(rangeMin + 0.1f, descriptor.RangeMax);
+            return true;
+        }
+
+        private bool TryGetStrongAttackDesiredRange(CleanserStrongAttack attackType, out float rangeMin, out float rangeMax)
+        {
+            rangeMin = 0f;
+            rangeMax = 0f;
+
+            switch (attackType)
+            {
+                case CleanserStrongAttack.HighDive:
+                {
+                    var cfg = HighDiveAttack;
+                    if (cfg == null) return false;
+                    rangeMin = Mathf.Max(0f, cfg.RangeMin);
+                    rangeMax = Mathf.Max(rangeMin + 0.1f, cfg.RangeMax);
+                    return true;
+                }
+                case CleanserStrongAttack.AnimeDashSlash:
+                {
+                    var cfg = AnimeDashSettings;
+                    if (cfg == null) return false;
+                    rangeMin = Mathf.Max(0f, cfg.RangeMin);
+                    rangeMax = Mathf.Max(rangeMin + 0.1f, cfg.RangeMax);
+                    return true;
+                }
+                case CleanserStrongAttack.Whirlwind:
+                {
+                    var cfg = WhirlwindSettings;
+                    if (cfg == null) return false;
+                    rangeMin = Mathf.Max(0f, cfg.RangeMin);
+                    rangeMax = Mathf.Max(rangeMin + 0.1f, cfg.RangeMax);
+                    return true;
+                }
+                case CleanserStrongAttack.SpinDash:
+                {
+                    var cfg = SpinDashSettings;
+                    if (cfg == null) return false;
+                    rangeMin = Mathf.Max(0f, cfg.RangeMin);
+                    rangeMax = Mathf.Max(rangeMin + 0.1f, cfg.RangeMax);
+                    return true;
+                }
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsDistanceInRange(float distance, float rangeMin, float rangeMax)
+        {
+            float minRange = Mathf.Max(0f, rangeMin);
+            float maxRange = Mathf.Max(minRange + 0.1f, rangeMax);
+            return distance >= minRange && distance <= maxRange;
+        }
+
+        private bool TryGetRangeIntersection(float minA, float maxA, float minB, float maxB, out float overlapMin, out float overlapMax)
+        {
+            overlapMin = Mathf.Max(minA, minB);
+            overlapMax = Mathf.Min(maxA, maxB);
+            return overlapMax >= overlapMin;
+        }
+
+        private float GetPlayerDistanceXZ()
+        {
+            if (player == null)
+                return float.MaxValue;
+
+            Vector3 toPlayer = player.position - transform.position;
+            toPlayer.y = 0f;
+            return toPlayer.magnitude;
+        }
+
+        private IEnumerator MoveIntoStepRange(float rangeMin, float rangeMax)
+        {
+            if (player == null || agent == null)
+                yield break;
+
+            float originalStoppingDistance = agent.stoppingDistance;
+            float minRange = Mathf.Max(0f, rangeMin);
+            float maxRange = Mathf.Max(minRange + 0.1f, rangeMax);
+            float elapsed = 0f;
+            const float maxMoveDuration = 4f;
+            bool hasEvaluatedDashChanceForThisReposition = false;
+            bool shouldUseDashForThisReposition = false;
+            bool dashExecutedThisReposition = false;
+
+            while (elapsed < maxMoveDuration)
+            {
+                Vector3 toPlayer = player.position - transform.position;
+                toPlayer.y = 0f;
+                float distance = toPlayer.magnitude;
+
+                if (IsDistanceInRange(distance, minRange, maxRange))
+                    break;
+
+                if (distance > maxRange)
+                {
+                    if (!hasEvaluatedDashChanceForThisReposition)
+                    {
+                        shouldUseDashForThisReposition = ShouldUseComboGapCloseDash(distance);
+                        hasEvaluatedDashChanceForThisReposition = true;
+                    }
+
+                    if (shouldUseDashForThisReposition && !dashExecutedThisReposition)
+                    {
+                        dashExecutedThisReposition = true;
+                        yield return ExecuteGapClosingDash();
+                        elapsed += 0.01f;
+                        continue;
+                    }
+
+                    agent.stoppingDistance = Mathf.Max(0.1f, maxRange * 0.9f);
+                    agent.SetDestination(player.position);
+                }
+                else
+                {
+                    Vector3 awayDir = (transform.position - player.position);
+                    awayDir.y = 0f;
+                    if (awayDir.sqrMagnitude < 0.001f)
+                        awayDir = -transform.forward;
+
+                    awayDir.Normalize();
+
+                    float retreatDistanceNeeded = Mathf.Max(0.25f, minRange - distance);
+                    Vector3 desiredRetreatTarget = player.position + awayDir * minRange;
+                    desiredRetreatTarget.y = transform.position.y;
+
+                    Vector3 retreatTarget = transform.position + awayDir * retreatDistanceNeeded;
+                    retreatTarget.y = transform.position.y;
+
+                    if (NavMesh.SamplePosition(desiredRetreatTarget, out NavMeshHit desiredHit, 2.5f, NavMesh.AllAreas))
+                    {
+                        retreatTarget = desiredHit.position;
+                    }
+                    else if (NavMesh.SamplePosition(retreatTarget, out NavMeshHit fallbackHit, 2.5f, NavMesh.AllAreas))
+                    {
+                        retreatTarget = fallbackHit.position;
+                    }
+
+                    agent.stoppingDistance = 0.05f;
+                    agent.SetDestination(retreatTarget);
+
+                    if (!agent.hasPath || agent.pathStatus == NavMeshPathStatus.PathInvalid)
+                    {
+                        float manualBackstepSpeed = Mathf.Max(0.5f, agent.speed);
+                        agent.Move(awayDir * manualBackstepSpeed * Time.deltaTime);
+                    }
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            agent.stoppingDistance = originalStoppingDistance;
+            agent.ResetPath();
+        }
+
+        private bool ShouldUseComboGapCloseDash(float distanceToPlayer)
+        {
+            if (GapCloseDashSettings == null)
+                return false;
+
+            if (distanceToPlayer < Mathf.Max(0f, GapCloseDashSettings.MinDistanceToUse))
+                return false;
+
+            AggressionLevel level = aggressionSystem != null ? aggressionSystem.CurrentLevel : AggressionLevel.Level1;
+            float chance = Mathf.Clamp01(GapCloseDashSettings.GetComboDashChance(level));
+            float roll = Random.value;
+            bool shouldDash = roll <= chance;
+
+#if UNITY_EDITOR
+            float aggressionValue = aggressionSystem != null ? aggressionSystem.AggressionValue : 0f;
+            EnemyBehaviorDebugLogBools.Log(
+                nameof(CleanserBrain),
+                $"[Cleanser] ComboDash check: dist={distanceToPlayer:F2}, agg={aggressionValue:F2}, level={level}, chance={chance:P0}, roll={roll:F3}, dash={shouldDash}");
+#endif
+
+            return shouldDash;
         }
 
         private IEnumerator ExecuteStrongAttack(CleanserStrongAttack attackType)
@@ -1169,6 +1463,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             // Trigger the single animation clip
+            attackMovementTriggered = false;
             TriggerAnimation(attack.AnimationTrigger);
             
             // Wait for animation to complete via animation event calling OnAttackAnimationComplete()
@@ -1180,11 +1475,18 @@ namespace EnemyBehavior.Boss.Cleanser
             while (!attackAnimationComplete && elapsed < timeout)
             {
                 elapsed += Time.deltaTime;
-                
-                // Continuous hit checking while hitbox is active
-                if (isHitboxActive)
+
+                if (attack.IncludesMovement && !attackMovementTriggered && elapsed >= 0.1f)
                 {
-                    CheckMeleeHit(currentAttack.BaseDamage, currentAttackCategory);
+                    attackMovementTriggered = true;
+                    StartCoroutine(DoAttackMovement());
+                }
+                
+                // Continuous hit checking while hitbox is active (single hit per enabled window)
+                if (isHitboxActive && !hasAppliedDamageThisHitboxWindow)
+                {
+                    if (CheckMeleeHit(currentAttack.BaseDamage, currentAttackCategory, 3f, currentAttack.StaggerPlayerOnHit))
+                        hasAppliedDamageThisHitboxWindow = true;
                 }
                 
                 yield return null;
@@ -1201,13 +1503,13 @@ namespace EnemyBehavior.Boss.Cleanser
 
             ResetAnimationSpeed();
             
-            // If we timed out (no animation), do a basic hit check
-            if (elapsed >= timeout)
+            // If we timed out (no animation), do a single fallback hit check only if no hit landed yet.
+            if (elapsed >= timeout && !hasAppliedDamageThisHitboxWindow)
             {
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.LogWarning(nameof(CleanserBrain), $"[Cleanser] Attack '{attack.ID}' timed out waiting for animation event. Using fallback.");
 #endif
-                CheckMeleeHit(attack.BaseDamage, attack.Category);
+                CheckMeleeHit(attack.BaseDamage, attack.Category, 3f, attack.StaggerPlayerOnHit);
             }
             
             currentAttack = null;
@@ -1217,7 +1519,9 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool attackAnimationComplete = false;
         private bool isHitboxActive = false;
         private bool hasAppliedDamageThisHitboxWindow = false;
+        private bool attackMovementTriggered = false;
         private CleanserAttackDescriptor currentAttack;
+        private bool currentAttackShouldStaggerPlayer;
 
         /// <summary>
         /// Animation Event: Called when the attack animation is complete.
@@ -1264,7 +1568,6 @@ namespace EnemyBehavior.Boss.Cleanser
         public void OnAttackHitboxEnd()
         {
             isHitboxActive = false;
-            hasAppliedDamageThisHitboxWindow = false;
             SetAllMeleeHitboxesEnabled(false);
             
             // Play impact SFX/VFX when hitbox ends (attack follow-through)
@@ -1354,6 +1657,7 @@ namespace EnemyBehavior.Boss.Cleanser
         public void OnAttackMovementStart()
         {
             if (!isExecutingAttack || player == null) return;
+            attackMovementTriggered = true;
             StartCoroutine(DoAttackMovement());
         }
 
@@ -1365,7 +1669,7 @@ namespace EnemyBehavior.Boss.Cleanser
             if (!isExecutingAttack || player == null)
                 return;
 
-            SpawnCrescentArcProjectiles(CrescentWaveProjectileConfiguration, player.position, 0f);
+            SpawnCrescentArcProjectiles(DiagUpwardSlashAttack != null ? DiagUpwardSlashAttack.ProjectileConfig : null, player.position, 0f);
         }
 
         /// <summary>
@@ -1388,8 +1692,11 @@ namespace EnemyBehavior.Boss.Cleanser
             if (!isExecutingUltimate)
                 return;
 
+            if (!waitingForUltimateLowSweepEvent)
+                return;
+
             waitingForUltimateLowSweepEvent = false;
-            SpawnCrescentWave(UltimateSettings.LowSweepHeight, pendingUltimateSweepTargetPos);
+            SpawnCrescentWave(UltimateSettings.LowSweepProjectile, pendingUltimateSweepTargetPos);
             PlaySFX(UltimateSettings.SweepSFX);
         }
 
@@ -1401,8 +1708,11 @@ namespace EnemyBehavior.Boss.Cleanser
             if (!isExecutingUltimate)
                 return;
 
+            if (!waitingForUltimateMidSweepEvent)
+                return;
+
             waitingForUltimateMidSweepEvent = false;
-            SpawnCrescentWave(UltimateSettings.MidSweepHeight, pendingUltimateSweepTargetPos);
+            SpawnCrescentWave(UltimateSettings.MidSweepProjectile, pendingUltimateSweepTargetPos);
             PlaySFX(UltimateSettings.SweepSFX);
         }
 
@@ -1536,7 +1846,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     yield return null;
                 }
 
-                yield return new WaitForSeconds(0.05f);
+                dualWieldSystem?.ConsumeClosestLodgedWeapon(target, 2f);
             }
 
             // Final dash ends at the player.
@@ -1592,33 +1902,45 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (player == null) yield break;
 
-            ApplyAnimationSpeedMultiplier(HighDiveAttack.AnimationSpeedMultiplier);
-            TriggerAnimation("Attack_HighDive");
-            PlaySFX(HighDiveAttack.AttackSFX);
+            var settings = HighDiveAttack ?? new HighDiveConfig();
+
+            ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
+            PlaySFX(settings.AttackSFX);
             
             Vector3 startPos = transform.position;
-            Vector3 peakPos = startPos + Vector3.up * 8f;
+            Vector3 peakPos = startPos + Vector3.up * Mathf.Max(0.1f, settings.LeapHeight);
+            Vector3 toPlayer = player.position - startPos;
+            toPlayer.y = 0f;
+            Vector3 leapDirection = toPlayer.sqrMagnitude > 0.001f ? toPlayer.normalized : transform.forward;
+            float horizontalDistance = Mathf.Max(0f, settings.HorizontalLeapDistance);
+
+            Vector3 targetPos = startPos + leapDirection * horizontalDistance;
+            targetPos.y = startPos.y;
             
             agent.enabled = false;
+
+            TriggerAnimation(UltimateSettings.JumpArcBaseTrigger);
             
             // Jump up
             float elapsed = 0f;
-            while (elapsed < 0.6f)
+            float leapUpDuration = Mathf.Max(0.01f, settings.LeapUpDuration);
+            while (elapsed < leapUpDuration)
             {
                 elapsed += Time.deltaTime;
-                transform.position = Vector3.Lerp(startPos, peakPos, elapsed / 0.6f);
+                transform.position = Vector3.Lerp(startPos, peakPos, elapsed / leapUpDuration);
                 yield return null;
             }
+
+            TriggerAnimation(UltimateSettings.JumpArcResolutionTrigger);
             
             // Slam down
-            Vector3 targetPos = player.position;
-            targetPos.y = startPos.y;
             elapsed = 0f;
+            float slamDownDuration = Mathf.Max(0.01f, settings.SlamDownDuration);
             
-            while (elapsed < 0.4f)
+            while (elapsed < slamDownDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / 0.4f;
+                float t = elapsed / slamDownDuration;
                 Vector3 pos = Vector3.Lerp(peakPos, targetPos, t);
                 pos.y = Mathf.Lerp(peakPos.y, startPos.y, t);
                 transform.position = pos;
@@ -1629,13 +1951,13 @@ namespace EnemyBehavior.Boss.Cleanser
             agent.Warp(transform.position);
             
             // Impact VFX/SFX
-            if (HighDiveAttack.ImpactVFX != null)
+            if (settings.ImpactVFX != null)
             {
-                Instantiate(HighDiveAttack.ImpactVFX, transform.position, Quaternion.identity);
+                Instantiate(settings.ImpactVFX, transform.position, Quaternion.identity);
             }
-            PlaySFX(HighDiveAttack.ImpactSFX);
-            
-            CheckAoEHit(HighDiveAttack.BaseDamage, 4f, AttackCategory.Halberd);
+            PlaySFX(settings.ImpactSFX);
+
+            ApplyConfiguredLeapSlamDamage(settings.SlamDamage, AttackCategory.Halberd, settings.SlamDamageConfig, settings.StaggerPlayerOnHit);
             
             yield return new WaitForSeconds(0.8f);
             ResetAnimationSpeed();
@@ -1743,7 +2065,7 @@ namespace EnemyBehavior.Boss.Cleanser
                             else
                             {
                                 float animeDashRange = Mathf.Max(0.1f, settings.HitRange);
-                                hitAppliedThisDash = CheckMeleeHit(settings.DamagePerHit, AttackCategory.Halberd, animeDashRange);
+                                hitAppliedThisDash = CheckMeleeHit(settings.DamagePerHit, AttackCategory.Halberd, animeDashRange, settings.StaggerPlayerOnHit);
                             }
                         }
                     }
@@ -1780,81 +2102,122 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ExecuteWhirlwind()
         {
-            ApplyAnimationSpeedMultiplier(WhirlwindSettings.AnimationSpeedMultiplier);
-            // Use animation trigger from config
-            TriggerAnimation(WhirlwindSettings.AnimationTrigger);
-            PlaySFX(WhirlwindSettings.SpinSFX);
-            
-            if (WhirlwindSettings.SpinVFX != null)
+            var settings = WhirlwindSettings ?? new WhirlwindConfig();
+
+            ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
+            TriggerAnimation(settings.AnimationTrigger);
+            PlaySFX(settings.SpinSFX);
+
+            GameObject spinVfxInstance = null;
+            if (settings.SpinVFX != null)
             {
-                Instantiate(WhirlwindSettings.SpinVFX, transform.position, Quaternion.identity, transform);
+                spinVfxInstance = Instantiate(settings.SpinVFX, transform.position, Quaternion.identity, transform);
             }
-            
-            yield return new WaitForSeconds(0.4f);
-            
+
+            bool aggressionPausedForWhirlwind = false;
+            if (aggressionSystem != null && settings.PauseAggressionChangesDuringWhirlwind)
+            {
+                aggressionSystem.SetAggressionProcessingPaused(true);
+                aggressionPausedForWhirlwind = true;
+            }
+
+            BeginWhirlwindDamagePhase(aggressionSystem != null ? aggressionSystem.AggressionRangeCollider : null, settings.DamageColliderRearmDelay);
+
             if (suctionEffect != null)
             {
-                suctionEffect.BasePullStrength = WhirlwindSettings.SuctionStrength;
-                suctionEffect.MaxPullStrength = WhirlwindSettings.MaxSuctionStrength;
-                suctionEffect.EffectiveRadius = WhirlwindSettings.SuctionRadius;
+                suctionEffect.BasePullStrength = settings.SuctionStrength;
+                suctionEffect.MaxPullStrength = settings.MaxSuctionStrength;
+                suctionEffect.EffectiveRadius = settings.SuctionRadius;
                 suctionEffect.SetPlayerReferences(player, playerMovement);
-                suctionEffect.StartSuction(WhirlwindSettings.SuctionDuration);
+                suctionEffect.StartSuction(settings.SuctionDuration);
             }
-            
+
             float suctionElapsed = 0f;
-            float lastDamageTick = 0f;
-            
-            while (suctionElapsed < WhirlwindSettings.SuctionDuration)
+            float moveSpeed = Mathf.Max(0.1f, baseAgentSpeed * Mathf.Clamp(settings.ChaseSpeedMultiplier, 0.05f, 1f));
+            whirlwindLoopCycleIndex = -1;
+
+            while (suctionElapsed < settings.SuctionDuration)
             {
                 suctionElapsed += Time.deltaTime;
-                
+
+                EnsureWhirlwindAnimationLoop(settings.AnimationTrigger);
+
                 if (player != null)
                 {
-                    Vector3 dir = (player.position - transform.position).normalized;
-                    agent.Move(dir * 2f * Time.deltaTime);
+                    Vector3 dir = player.position - transform.position;
+                    dir.y = 0f;
+                    if (dir.sqrMagnitude > 0.001f)
+                    {
+                        agent.Move(dir.normalized * moveSpeed * Time.deltaTime);
+                    }
                 }
-                
-                if (suctionElapsed - lastDamageTick >= WhirlwindSettings.DamageTickInterval)
-                {
-                    lastDamageTick = suctionElapsed;
-                    CheckAoEHit(WhirlwindSettings.DamagePerTick, 3f, AttackCategory.Wing);
-                }
-                
+
+                TryApplyWhirlwindTickDamage(settings);
                 yield return null;
+            }
+
+            EndWhirlwindDamagePhase();
+            if (aggressionPausedForWhirlwind && aggressionSystem != null)
+            {
+                aggressionSystem.SetAggressionProcessingPaused(false);
+            }
+
+            if (spinVfxInstance != null)
+            {
+                Destroy(spinVfxInstance);
             }
             
             // Leap slam
             if (player != null)
             {
                 Vector3 leapDir = (player.position - transform.position).normalized;
-                Vector3 leapTarget = transform.position + leapDir * WhirlwindSettings.LeapDistance;
+                Vector3 leapTarget = transform.position + leapDir * settings.LeapDistance;
                 Vector3 startPos = transform.position;
                 Vector3 peakPos = (startPos + leapTarget) * 0.5f + Vector3.up * 4f;
                 
                 agent.enabled = false;
+
+                TriggerAnimation(UltimateSettings.JumpArcBaseTrigger);
+
+                float leapUpDuration = Mathf.Max(0.01f, settings.LeapDuration * 0.45f);
+                float slamDownDuration = Mathf.Max(0.01f, settings.LeapDuration - leapUpDuration);
                 
                 float leapElapsed = 0f;
-                while (leapElapsed < WhirlwindSettings.LeapDuration)
+                while (leapElapsed < leapUpDuration)
                 {
                     leapElapsed += Time.deltaTime;
-                    float t = leapElapsed / WhirlwindSettings.LeapDuration;
-                    Vector3 pos = (1 - t) * (1 - t) * startPos + 2 * (1 - t) * t * peakPos + t * t * leapTarget;
+                    float t = leapElapsed / leapUpDuration;
+                    Vector3 pos = Vector3.Lerp(startPos, peakPos, t);
                     transform.position = pos;
                     yield return null;
                 }
+
+                TriggerAnimation(UltimateSettings.JumpArcResolutionTrigger);
+
+                leapElapsed = 0f;
+                while (leapElapsed < slamDownDuration)
+                {
+                    leapElapsed += Time.deltaTime;
+                    float t = leapElapsed / slamDownDuration;
+                    Vector3 pos = Vector3.Lerp(peakPos, leapTarget, t);
+                    transform.position = pos;
+                    yield return null;
+                }
+
+                transform.position = leapTarget;
                 
                 agent.enabled = true;
                 agent.Warp(transform.position);
             }
             
             // Impact
-            if (WhirlwindSettings.SlamVFX != null)
+            if (settings.SlamVFX != null)
             {
-                Instantiate(WhirlwindSettings.SlamVFX, transform.position, Quaternion.identity);
+                Instantiate(settings.SlamVFX, transform.position, Quaternion.identity);
             }
-            PlaySFX(WhirlwindSettings.SlamSFX);
-            
-            CheckAoEHit(WhirlwindSettings.SlamDamage, WhirlwindSettings.SlamAoERadius, AttackCategory.Halberd);
+            PlaySFX(settings.SlamSFX);
+
+            ApplyConfiguredLeapSlamDamage(settings.SlamDamage, AttackCategory.Wing, settings.SlamDamageConfig, settings.StaggerPlayerOnHit);
             
             yield return new WaitForSeconds(0.8f);
             ResetAnimationSpeed();
@@ -1924,11 +2287,22 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (player == null) yield break;
 
-            float dist = Vector3.Distance(transform.position, player.position);
+            Vector3 startPos = transform.position;
+            Vector3 playerPos = player.position;
+            startPos.y = transform.position.y;
+            playerPos.y = transform.position.y;
+
+            Vector3 toPlayer = playerPos - startPos;
+            float dist = toPlayer.magnitude;
             if (dist < GapCloseDashSettings.MinDistanceToUse) yield break;
+
+            float stopDistance = Mathf.Max(0f, GapCloseDashSettings.TargetStopDistance);
+            float dashDistance = Mathf.Max(0f, dist - stopDistance);
+            if (dashDistance <= 0.01f) yield break;
 
             yield return FaceTarget(player, 0.1f);
 
+            isExecutingGapCloseDash = true;
             ApplyAnimationSpeedMultiplier(GapCloseDashSettings.AnimationSpeedMultiplier);
             TriggerAnimation(GapCloseDashSettings.AnimationTrigger);
             PlaySFX(GapCloseDashSettings.DashSFX);
@@ -1938,34 +2312,33 @@ namespace EnemyBehavior.Boss.Cleanser
                 Instantiate(GapCloseDashSettings.DashVFX, transform.position, transform.rotation, transform);
             }
 
-            // Calculate target position (stop at TargetStopDistance from player)
-            Vector3 dirToPlayer = (player.position - transform.position).normalized;
-            float dashDistance = Mathf.Min(dist - GapCloseDashSettings.TargetStopDistance, 
-                                           GapCloseDashSettings.DashSpeed * GapCloseDashSettings.DashDuration);
-            Vector3 targetPos = transform.position + dirToPlayer * dashDistance;
+            // Calculate target position once: stop at TargetStopDistance from player's current position.
+            Vector3 dirToPlayer = toPlayer.normalized;
+            Vector3 targetPos = startPos + dirToPlayer * dashDistance;
+            float dashDuration = Mathf.Max(0.01f, GapCloseDashSettings.DashDuration);
+            float computedDashSpeed = dashDistance / dashDuration;
 
-            // Execute dash movement (no hitbox)
+            // Execute dash movement over fixed duration; speed is derived from distance / duration.
             float elapsed = 0f;
             agent.enabled = false;
 
-            while (elapsed < GapCloseDashSettings.DashDuration)
+            while (elapsed < dashDuration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / GapCloseDashSettings.DashDuration;
-                
-                // Smooth dash curve
-                float smoothT = Mathf.SmoothStep(0f, 1f, t);
-                Vector3 newPos = Vector3.Lerp(transform.position, targetPos, smoothT * Time.deltaTime * 10f);
-                transform.position = Vector3.MoveTowards(transform.position, targetPos, GapCloseDashSettings.DashSpeed * Time.deltaTime);
+                float t = Mathf.Clamp01(elapsed / dashDuration);
+                transform.position = Vector3.Lerp(startPos, targetPos, t);
                 
                 yield return null;
             }
 
+            transform.position = targetPos;
+
             agent.enabled = true;
             agent.Warp(transform.position);
+            isExecutingGapCloseDash = false;
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Gap-closing dash completed. Distance closed: {dashDistance:F2}");
+            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Gap-closing dash completed. Distance closed: {dashDistance:F2}, computed speed: {computedDashSpeed:F2}");
 #endif
 
             yield return new WaitForSeconds(0.2f);
@@ -2030,39 +2403,38 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (DoubleSweepPositions.Count > 0)
             {
-                TriggerAnimation(UltimateSettings.JumpArcBaseTrigger);
+                TriggerAnimation(UltimateSettings.JumpFullTrigger);
                 Transform sweepPos = DoubleSweepPositions[Random.Range(0, DoubleSweepPositions.Count)];
-                yield return JumpToPosition(sweepPos.position, 1f);
+                yield return JumpToPosition(sweepPos.position, Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration));
             }
             
-            Vector3 arenaCenter = player != null ? player.position : transform.position + transform.forward * 10f;
+            Vector3 arenaCenter = ultimateArenaCenterPoint != null
+                ? ultimateArenaCenterPoint.position
+                : (player != null ? player.position : transform.position + transform.forward * 10f);
             yield return FaceTarget(arenaCenter, 0.3f);
             
-            // Sweeps
-            if (CanSpawnUltimateSweep(UltimateSettings.LowSweepProjectile))
-            {
-                pendingUltimateSweepTargetPos = arenaCenter;
-                waitingForUltimateLowSweepEvent = true;
-                TriggerAnimation(UltimateSettings.UltimateTrigger);
-                yield return WaitForUltimateLowSweepEventOrFallback();
-            }
-            yield return new WaitForSeconds(0.8f);
+            // Double-sweep animation plays once; both sweep events/fallbacks are handled during that single playback.
+            pendingUltimateSweepTargetPos = arenaCenter;
+            waitingForUltimateLowSweepEvent = CanSpawnUltimateSweep(UltimateSettings.LowSweepProjectile);
+            waitingForUltimateMidSweepEvent = CanSpawnUltimateSweep(UltimateSettings.MidSweepProjectile);
+
+            TriggerAnimation(UltimateSettings.UltimateTrigger);
+            yield return WaitForUltimateSweepEventsOrFallback();
+            yield return WaitForAnimationStateToFinish(UltimateSettings.UltimateTrigger, 2f);
+
+            // After double sweep completes, jump to arena center before entering hover ascent.
+            TriggerAnimation(UltimateSettings.JumpFullTrigger);
+            yield return JumpToPosition(arenaCenter, Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration));
             
-            if (CanSpawnUltimateSweep(UltimateSettings.MidSweepProjectile))
-            {
-                pendingUltimateSweepTargetPos = arenaCenter;
-                waitingForUltimateMidSweepEvent = true;
-                TriggerAnimation(UltimateSettings.UltimateTrigger);
-                yield return WaitForUltimateMidSweepEventOrFallback();
-            }
-            yield return new WaitForSeconds(0.5f);
-            
-            Vector3 floatPos = arenaCenter + Vector3.up * UltimateSettings.PlatformRiseHeight;
+            Vector3 floatPos = arenaCenter + Vector3.up * UltimateSettings.HoverHeightOffset;
             TriggerAnimation(UltimateSettings.JumpArcBaseTrigger);
             yield return JumpToPosition(floatPos, 0.8f);
+            TriggerAnimation(UltimateSettings.JumpArcHoldTrigger);
             
             if (platformController != null)
             {
+                platformController.OrbitCenter = transform;
+                platformController.HeightReference = ultimateArenaCenterPoint;
                 platformController.RaisePlatforms();
             }
             
@@ -2121,11 +2493,11 @@ namespace EnemyBehavior.Boss.Cleanser
             isExecutingUltimate = false;
         }
 
-        private IEnumerator WaitForUltimateLowSweepEventOrFallback()
+        private IEnumerator WaitForUltimateSweepEventsOrFallback()
         {
-            const float fallbackTimeout = 0.35f;
+            const float fallbackTimeout = 2f;
             float elapsed = 0f;
-            while (waitingForUltimateLowSweepEvent && elapsed < fallbackTimeout)
+            while ((waitingForUltimateLowSweepEvent || waitingForUltimateMidSweepEvent) && elapsed < fallbackTimeout)
             {
                 elapsed += Time.deltaTime;
                 yield return null;
@@ -2134,91 +2506,29 @@ namespace EnemyBehavior.Boss.Cleanser
             if (waitingForUltimateLowSweepEvent)
             {
                 waitingForUltimateLowSweepEvent = false;
-                SpawnCrescentWave(UltimateSettings.LowSweepHeight, pendingUltimateSweepTargetPos);
+                SpawnCrescentWave(UltimateSettings.LowSweepProjectile, pendingUltimateSweepTargetPos);
                 PlaySFX(UltimateSettings.SweepSFX);
-            }
-        }
-
-        private IEnumerator WaitForUltimateMidSweepEventOrFallback()
-        {
-            const float fallbackTimeout = 0.35f;
-            float elapsed = 0f;
-            while (waitingForUltimateMidSweepEvent && elapsed < fallbackTimeout)
-            {
-                elapsed += Time.deltaTime;
-                yield return null;
             }
 
             if (waitingForUltimateMidSweepEvent)
             {
                 waitingForUltimateMidSweepEvent = false;
-                SpawnCrescentWave(UltimateSettings.MidSweepHeight, pendingUltimateSweepTargetPos);
+                SpawnCrescentWave(UltimateSettings.MidSweepProjectile, pendingUltimateSweepTargetPos);
                 PlaySFX(UltimateSettings.SweepSFX);
             }
         }
 
-        private void SpawnCrescentWave(float height, Vector3 targetPos)
+        private void SpawnCrescentWave(CrescentArcProjectileConfig sourceConfig, Vector3 targetPos)
         {
-            CrescentArcProjectileConfig sourceConfig = height <= (UltimateSettings.LowSweepHeight + 0.01f)
-                ? UltimateSettings.LowSweepProjectile
-                : UltimateSettings.MidSweepProjectile;
-
-            if (sourceConfig != null)
-            {
-                var runtimeConfig = new CrescentArcProjectileConfig
-                {
-                    ProjectilePrefab = sourceConfig.ProjectilePrefab != null
-                        ? sourceConfig.ProjectilePrefab
-                        : CrescentWaveProjectileConfiguration?.ProjectilePrefab,
-                    ProjectileCount = sourceConfig.ProjectileCount,
-                    Damage = UltimateSettings.SweepDamage,
-                    Speed = sourceConfig.Speed > 0f ? sourceConfig.Speed : UltimateSettings.WaveSpeed,
-                    MaxDistance = sourceConfig.MaxDistance,
-                    SpawnHeight = sourceConfig.SpawnHeight,
-                    SpawnForwardOffset = sourceConfig.SpawnForwardOffset,
-                    ScaleRange = sourceConfig.ScaleRange,
-                    TiltAngleRange = sourceConfig.TiltAngleRange,
-                    SpreadStep = sourceConfig.SpreadStep,
-                    DamageCategory = sourceConfig.DamageCategory
-                };
-
-                if (runtimeConfig.ProjectilePrefab != null)
-                {
-                    SpawnCrescentArcProjectiles(runtimeConfig, targetPos, height);
-                    return;
-                }
-            }
-
-            // Legacy fallback to rigidbody-style wave prefab.
-            if (CrescentWavePrefab != null)
-            {
-                Vector3 spawnPos = transform.position;
-                spawnPos.y = transform.position.y + height;
-
-                var waveObj = Instantiate(CrescentWavePrefab, spawnPos, Quaternion.identity);
-                var rb = waveObj.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    Vector3 dir = (targetPos - spawnPos).normalized;
-                    dir.y = 0;
-                    rb.linearVelocity = dir * UltimateSettings.WaveSpeed;
-                }
-
-                var waveProjectile = waveObj.GetComponent<CleanserProjectile>();
-                if (waveProjectile != null)
-                {
-                    waveProjectile.Damage = UltimateSettings.SweepDamage;
-                }
-
-                Destroy(waveObj, 5f);
+            if (sourceConfig == null || sourceConfig.ProjectilePrefab == null)
                 return;
-            }
+
+            SpawnCrescentArcProjectiles(sourceConfig, targetPos, 0f);
         }
 
         private bool CanSpawnUltimateSweep(CrescentArcProjectileConfig config)
         {
-            bool hasSharedPrefab = CrescentWaveProjectileConfiguration != null && CrescentWaveProjectileConfiguration.ProjectilePrefab != null;
-            return hasSharedPrefab || (config != null && config.ProjectilePrefab != null) || CrescentWavePrefab != null;
+            return config != null && config.ProjectilePrefab != null;
         }
 
         private IEnumerator ExecuteUltimateHoverPhase()
@@ -2227,8 +2537,6 @@ namespace EnemyBehavior.Boss.Cleanser
             ultimateCanceledByAerial = false;
             aerialHitsReceived = 0;
             ultimateHoverPauseTimer = 0f;
-
-            TriggerAnimation(stateUltimateHover);
 
             float chargeElapsed = 0f;
             while (chargeElapsed < UltimateSettings.ChargeUpTime)
@@ -2249,6 +2557,11 @@ namespace EnemyBehavior.Boss.Cleanser
                 {
                     chargeElapsed += Time.deltaTime;
                 }
+
+                float hoverRotateSpeed = UltimateSettings.HoverRotationSpeed;
+                if (Mathf.Abs(hoverRotateSpeed) > 0.001f)
+                    transform.Rotate(Vector3.up, hoverRotateSpeed * Time.deltaTime, Space.World);
+
                 yield return null;
             }
             isInUltimateHoverPhase = false;
@@ -2279,9 +2592,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     + transform.forward * config.SpawnForwardOffset
                     + Vector3.up * (config.SpawnHeight + additionalHeight);
 
-                GameObject prefabToSpawn = config.ProjectilePrefab != null
-                    ? config.ProjectilePrefab
-                    : CrescentWaveProjectileConfiguration?.ProjectilePrefab;
+                GameObject prefabToSpawn = config.ProjectilePrefab;
 
                 if (prefabToSpawn == null)
                     continue;
@@ -2606,7 +2917,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
 
             float clamped = Mathf.Max(0.01f, speedMultiplier);
-            animator.speed = defaultAnimatorSpeed * clamped;
+            float globalMultiplier = Mathf.Max(0.1f, GlobalAttackSpeedMultiplier);
+            animator.speed = defaultAnimatorSpeed * clamped * globalMultiplier;
         }
 
         private void ResetAnimationSpeed()
@@ -2644,17 +2956,17 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
-        private bool CheckMeleeHit(float damage, AttackCategory category, float range = 3f)
+        private bool CheckMeleeHit(float damage, AttackCategory category, float range = 3f, bool shouldStaggerPlayer = false)
         {
             if (player == null) return false;
             
             float dist = Vector3.Distance(transform.position, player.position);
             if (dist > range) return false;
             
-            return ApplyMeleeHitToPlayer(damage, category);
+            return ApplyMeleeHitToPlayer(damage, category, shouldStaggerPlayer);
         }
 
-        private bool ApplyMeleeHitToPlayer(float damage, AttackCategory category)
+        private bool ApplyMeleeHitToPlayer(float damage, AttackCategory category, bool shouldStaggerPlayer)
         {
             if (player == null) return false;
 
@@ -2683,18 +2995,22 @@ namespace EnemyBehavior.Boss.Cleanser
             if (player.TryGetComponent<IHealthSystem>(out var health))
             {
                 health.LoseHP(damage);
+
+                if (shouldStaggerPlayer && health is PlayerHealthBarManager playerHealth)
+                    playerHealth.ApplyForcedStagger(meleeHitStaggerDuration, resetPlayerComboOnMeleeStagger);
+
                 return true;
             }
             
             return false;
         }
 
-        private bool TryApplyTriggerHitToPlayer(float damage, AttackCategory category)
+        private bool TryApplyTriggerHitToPlayer(float damage, AttackCategory category, bool shouldStaggerPlayer = false)
         {
             if (player == null)
                 return false;
 
-            return ApplyMeleeHitToPlayer(damage, category);
+            return ApplyMeleeHitToPlayer(damage, category, shouldStaggerPlayer);
         }
 
         private float GetActiveHitboxRange(AttackCategory category)
@@ -2847,7 +3163,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (spinDashHitboxPhaseActive && spinDashHitboxArmed && spinDashRemainingHits > 0)
             {
-                if (TryApplyTriggerHitToPlayer(spinDashTriggerDamage, AttackCategory.Halberd))
+                if (TryApplyTriggerHitToPlayer(spinDashTriggerDamage, AttackCategory.Halberd, SpinDashSettings.StaggerPlayerOnHit))
                 {
                     spinDashRemainingHits--;
                     spinDashHitboxArmed = false;
@@ -2864,7 +3180,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             else if (animeDashTriggerArmed)
             {
-                if (TryApplyTriggerHitToPlayer(animeDashTriggerDamage, AttackCategory.Halberd))
+                if (TryApplyTriggerHitToPlayer(animeDashTriggerDamage, AttackCategory.Halberd, AnimeDashSettings != null && AnimeDashSettings.StaggerPlayerOnHit))
                 {
                     animeDashTriggerArmed = false;
                     if (spinDashHitboxCollider != null)
@@ -2891,14 +3207,198 @@ namespace EnemyBehavior.Boss.Cleanser
             spinDashHitboxRearmCoroutine = null;
         }
 
-        private void CheckAoEHit(float damage, float radius, AttackCategory category)
+        private void BeginWhirlwindDamagePhase(Collider sharedCollider, float rearmDelay)
+        {
+            whirlwindDamagePhaseActive = true;
+            whirlwindDamageArmed = true;
+            whirlwindDamageRearmDelay = Mathf.Max(0f, rearmDelay);
+            whirlwindDamageCollider = sharedCollider;
+
+            if (whirlwindDamageCollider != null)
+            {
+                whirlwindDamageColliderInitiallyEnabled = whirlwindDamageCollider.enabled;
+                whirlwindDamageCollider.enabled = true;
+            }
+        }
+
+        private void EndWhirlwindDamagePhase()
+        {
+            whirlwindDamagePhaseActive = false;
+            whirlwindDamageArmed = false;
+
+            if (whirlwindDamageRearmCoroutine != null)
+            {
+                StopCoroutine(whirlwindDamageRearmCoroutine);
+                whirlwindDamageRearmCoroutine = null;
+            }
+
+            if (whirlwindDamageCollider != null)
+            {
+                whirlwindDamageCollider.enabled = whirlwindDamageColliderInitiallyEnabled;
+            }
+
+            whirlwindDamageCollider = null;
+        }
+
+        private void EnsureWhirlwindAnimationLoop(string animationTrigger)
+        {
+            if (string.IsNullOrEmpty(animationTrigger) || animController == null)
+                return;
+
+            if (!animController.IsPlaying(animationTrigger, out float normalizedTime))
+            {
+                TriggerAnimation(animationTrigger);
+                return;
+            }
+
+            int cycle = Mathf.FloorToInt(normalizedTime);
+            float cycleTime = normalizedTime - cycle;
+            if (cycleTime >= 0.92f && cycle != whirlwindLoopCycleIndex)
+            {
+                whirlwindLoopCycleIndex = cycle;
+                TriggerAnimation(animationTrigger);
+            }
+        }
+
+        private bool TryApplyWhirlwindTickDamage(WhirlwindConfig settings)
+        {
+            if (!whirlwindDamagePhaseActive || !whirlwindDamageArmed || player == null || settings == null)
+                return false;
+
+            float outerRadius = GetWhirlwindOuterRadius(settings);
+            if (outerRadius <= 0.01f)
+                return false;
+
+            float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+            if (distanceToPlayer > outerRadius)
+                return false;
+
+            if (whirlwindDamageCollider != null)
+            {
+                Vector3 closestPoint = whirlwindDamageCollider.ClosestPoint(player.position);
+                if ((closestPoint - player.position).sqrMagnitude > 0.0001f)
+                    return false;
+            }
+
+            float innerRadius = outerRadius * Mathf.Clamp01(settings.FullDamageRadiusPercent);
+            float edgePercent = Mathf.Clamp01(settings.EdgeDamagePercent);
+
+            float damagePercent = 1f;
+            if (distanceToPlayer > innerRadius && outerRadius > innerRadius)
+            {
+                float t = Mathf.InverseLerp(innerRadius, outerRadius, distanceToPlayer);
+                damagePercent = Mathf.Lerp(1f, edgePercent, t);
+            }
+
+            float finalDamage = settings.DamagePerTick * Mathf.Clamp01(damagePercent);
+            if (finalDamage <= 0f)
+                return false;
+
+            if (!TryApplyTriggerHitToPlayer(finalDamage, AttackCategory.Wing, settings.StaggerPlayerOnHit))
+                return false;
+
+            whirlwindDamageArmed = false;
+            if (whirlwindDamageCollider != null)
+                whirlwindDamageCollider.enabled = false;
+
+            if (whirlwindDamageRearmCoroutine != null)
+                StopCoroutine(whirlwindDamageRearmCoroutine);
+
+            whirlwindDamageRearmCoroutine = StartCoroutine(RearmWhirlwindDamageAfterDelay());
+            return true;
+        }
+
+        private float GetWhirlwindOuterRadius(WhirlwindConfig settings)
+        {
+            if (whirlwindDamageCollider != null)
+            {
+                Bounds bounds = whirlwindDamageCollider.bounds;
+                float extent = Mathf.Max(bounds.extents.x, bounds.extents.z);
+                if (extent > 0.01f)
+                    return extent;
+            }
+
+            return Mathf.Max(0f, settings.SuctionRadius);
+        }
+
+        private IEnumerator RearmWhirlwindDamageAfterDelay()
+        {
+            if (whirlwindDamageRearmDelay > 0f)
+                yield return WaitForSecondsCache.Get(whirlwindDamageRearmDelay);
+
+            if (whirlwindDamagePhaseActive)
+            {
+                whirlwindDamageArmed = true;
+                if (whirlwindDamageCollider != null)
+                    whirlwindDamageCollider.enabled = true;
+            }
+
+            whirlwindDamageRearmCoroutine = null;
+        }
+
+        private bool ApplyConfiguredLeapSlamDamage(float baseDamage, AttackCategory category, LeapSlamDamageConfig config, bool shouldStaggerPlayer)
+        {
+            if (player == null)
+                return false;
+
+            float finalDamage = GetConfiguredLeapSlamDamage(baseDamage, config);
+            if (finalDamage <= 0f)
+                return false;
+
+            return TryApplyTriggerHitToPlayer(finalDamage, category, shouldStaggerPlayer);
+        }
+
+        private float GetConfiguredLeapSlamDamage(float baseDamage, LeapSlamDamageConfig config)
+        {
+            if (player == null)
+                return 0f;
+
+            LeapSlamDamageConfig resolved = config ?? new LeapSlamDamageConfig();
+
+            Collider areaCollider = null;
+            if (resolved.UseAggroCollider)
+            {
+                areaCollider = aggressionSystem != null ? aggressionSystem.AggressionRangeCollider : null;
+            }
+
+            float outerRange = Mathf.Max(0.1f, resolved.Range);
+            if (areaCollider != null)
+            {
+                Bounds b = areaCollider.bounds;
+                float extent = Mathf.Max(b.extents.x, b.extents.z);
+                if (extent > 0.01f)
+                    outerRange = extent;
+
+                Vector3 closestPoint = areaCollider.ClosestPoint(player.position);
+                if ((closestPoint - player.position).sqrMagnitude > 0.0001f)
+                    return 0f;
+            }
+
+            float distance = Vector3.Distance(transform.position, player.position);
+            if (distance > outerRange)
+                return 0f;
+
+            float innerRange = outerRange * Mathf.Clamp01(resolved.FullDamageRadiusPercent);
+            float edgePercent = Mathf.Clamp01(resolved.EdgeDamagePercent);
+
+            float damagePercent = 1f;
+            if (distance > innerRange && outerRange > innerRange)
+            {
+                float t = Mathf.InverseLerp(innerRange, outerRange, distance);
+                damagePercent = Mathf.Lerp(1f, edgePercent, t);
+            }
+
+            return baseDamage * Mathf.Clamp01(damagePercent);
+        }
+
+        private void CheckAoEHit(float damage, float radius, AttackCategory category, bool shouldStaggerPlayer = false)
         {
             if (player == null) return;
             
             float dist = Vector3.Distance(transform.position, player.position);
             if (dist <= radius)
             {
-                CheckMeleeHit(damage, category, radius);
+                CheckMeleeHit(damage, category, radius, shouldStaggerPlayer);
             }
         }
 
@@ -2982,6 +3482,8 @@ namespace EnemyBehavior.Boss.Cleanser
             
             TriggerAnimation(triggerDeath);
             ResetAnimationSpeed();
+            EndWhirlwindDamagePhase();
+            aggressionSystem?.SetAggressionProcessingPaused(false);
             UnregisterFromAttackQueue();
             
 #if UNITY_EDITOR

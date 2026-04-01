@@ -3201,7 +3201,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.size
-      value: 1
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[1].Steps.Array.size
@@ -3236,20 +3236,28 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: Combos.Array.data[0].ComboMovementSpeedMultiplier
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[0].IsFinisher
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[1].IsFinisher
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[0].BasicAttack
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: Combos.Array.data[0].Steps.Array.data[11].IsFinisher
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[1].BasicAttack
-      value: 0
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[2].BasicAttack
@@ -3265,23 +3273,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[5].BasicAttack
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
-      propertyPath: Combos.Array.data[0].Steps.Array.data[6].BasicAttack
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
-      propertyPath: Combos.Array.data[0].Steps.Array.data[7].BasicAttack
+      propertyPath: Combos.Array.data[0].Steps.Array.data[6].BasicAttack
       value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
-      propertyPath: Combos.Array.data[0].Steps.Array.data[8].BasicAttack
+      propertyPath: Combos.Array.data[0].Steps.Array.data[7].BasicAttack
       value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
-      propertyPath: Combos.Array.data[0].Steps.Array.data[9].BasicAttack
+      propertyPath: Combos.Array.data[0].Steps.Array.data[8].BasicAttack
       value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: Combos.Array.data[0].Steps.Array.data[9].BasicAttack
+      value: 14
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[1].Steps.Array.data[0].BasicAttack
@@ -3301,15 +3309,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[0].StrongAttack
-      value: 2
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[10].BasicAttack
-      value: 14
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[11].BasicAttack
-      value: 15
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[12].BasicAttack
@@ -3317,7 +3325,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: Combos.Array.data[0].Steps.Array.data[1].StrongAttack
-      value: 2
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2043449410682325222, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: Combos.Array.data[0].Steps.Array.data[11].StrongAttack
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4109895899566118951, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: PlayerLayerMask.m_Bits
+      value: 64
       objectReference: {fileID: 0}
     - target: {fileID: 4119839093308741906, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3364,8 +3380,96 @@ PrefabInstance:
       value: Boss_Cleanser
       objectReference: {fileID: 0}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LungeAttack.ID
+      value: Lunge
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: CleaveAttack.ID
+      value: Cleave
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: WingBashAttack.ID
+      value: WingBash
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LungeBlockAttack.ID
+      value: LungeBlock
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LungeAttack.RangeMin
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: CleaveAttack.RangeMax
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: PommelStrikeAttack.ID
+      value: PommelStrike
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: exemptFromAttackQueue
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: CleaveAdvanceAttack.ID
+      value: CleaveAdvance
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: HighDiveAttack.RangeMax
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: HighDiveAttack.RangeMin
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LegSweepAttack.RangeMax
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: WingBashAttack.RangeMax
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: DiagUpwardSlashAttack.ID
+      value: DiagUpwardSlash
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LungeBlockAttack.RangeMax
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: AnimeDashSettings.TurnSpeed
       value: 1440
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: GlobalAttackSpeedMultiplier
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: PommelStrikeAttack.RangeMax
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: CleaveAdvanceAttack.RangeMax
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SlashIntoSlapAttack.RangeMax
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: CleaveAttack.AnimationTrigger
+      value: Attack_Cleave
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: HighDiveAttack.LeapUpDuration
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: OverheadCleaveAttack.RangeMax
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: AnimeDashSettings.HitWindowEnd
@@ -3376,16 +3480,84 @@ PrefabInstance:
       value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: DiagUpwardSlashAttack.RangeMax
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: DiagUpwardSlashAttack.RangeMin
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: AnimeDashSettings.PostDashDelay
       value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: HighDiveAttack.SlamDownDuration
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: WingBashAttack.AnimationTrigger
+      value: Attack_WingBash
       objectReference: {fileID: 0}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: AnimeDashSettings.HitWindowStart
       value: 0.25
       objectReference: {fileID: 0}
     - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
-      propertyPath: AnimeDashSettings.DashTravelDuration
+      propertyPath: RakeIntoSpinSlashAttack.RangeMax
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: GapCloseDashSettings.DashDuration
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LungeBlockAttack.AnimationTrigger
+      value: Attack_LungeBlock
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: LungeBlockAttack.IncludesMovement
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: PommelStrikeAttack.AnimationTrigger
+      value: Attack_PommelStrike
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: AnimeDashSettings.DashTravelDuration
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: CleaveAdvanceAttack.AnimationTrigger
+      value: Attack_CleaveAdvance
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: CleaveAdvanceAttack.IncludesMovement
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: SlashIntoSlapAttack.AnimationTrigger
+      value: Attack_SlashToSlap
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: DiagUpwardSlashAttack.AnimationTrigger
+      value: Attack_DiagUpwardSlash
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: UltimateSettings.JumpFullTravelDuration
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: RakeIntoSpinSlashAttack.AnimationTrigger
+      value: Attack_RakeIntoSpinSlash
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: UltimateSettings.LowSweepProjectile.DamageCategory
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5616243074537824121, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: UltimateSettings.MidSweepProjectile.DamageCategory
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6499608910825327414, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: enableDebugLogs
@@ -3394,6 +3566,10 @@ PrefabInstance:
     - target: {fileID: 6771214594897935139, guid: f312d42639079a04aa13b6e33074c394, type: 3}
       propertyPath: m_Radius
       value: 1.21
+      objectReference: {fileID: 0}
+    - target: {fileID: 8538692178904831450, guid: f312d42639079a04aa13b6e33074c394, type: 3}
+      propertyPath: stockpileLookTargetForwardOffset
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

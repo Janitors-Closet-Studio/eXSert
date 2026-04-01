@@ -72,6 +72,25 @@ namespace Progression.Checkpoints
 
             if (currentCheckpoint == null)
             {
+                if (PlayerMovement.IsTestingOrDebugMode)
+                {
+                    Debug.LogWarning("[Checkpoint] No checkpoint is set, but Testing/Debug mode is enabled on PlayerMovement. Skipping checkpoint respawn requirements for test scene play.");
+
+                    if (PlayerObject != null)
+                    {
+                        PlayerMovement move = PlayerObject.GetComponent<PlayerMovement>();
+                        if (move != null)
+                        {
+                            move.enabled = true;
+                            move.TrySnapToSoftLock(PlayerObject.transform.position, PlayerObject.transform.rotation);
+                        }
+
+                        PlayerObject.SetActive(true);
+                    }
+
+                    return;
+                }
+
                 Debug.LogError("No checkpoint has been triggered yet! Cannot respawn player.");
                 return;
             }

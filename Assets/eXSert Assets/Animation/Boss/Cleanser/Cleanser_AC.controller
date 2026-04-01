@@ -20,7 +20,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -3498904677912278071, guid: 76f1b72af4047934c9e32e6200f37218, type: 3}
+  m_Motion: {fileID: 7400000, guid: 2338c1b3b40a6f040884924660d7a6b6, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -105,9 +105,6 @@ AnimatorStateMachine:
     m_State: {fileID: -5643004691974626923}
     m_Position: {x: -100, y: 480, z: 0}
   - serializedVersion: 1
-    m_State: {fileID: -7697600275082897043}
-    m_Position: {x: -100, y: 530, z: 0}
-  - serializedVersion: 1
     m_State: {fileID: -922784799564768877}
     m_Position: {x: -100, y: 630, z: 0}
   - serializedVersion: 1
@@ -137,6 +134,9 @@ AnimatorStateMachine:
   - serializedVersion: 1
     m_State: {fileID: -6508959524828474622}
     m_Position: {x: 580, y: 340, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -5246645415604270703}
+    m_Position: {x: -100, y: 530, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -147,32 +147,6 @@ AnimatorStateMachine:
   m_ExitPosition: {x: 800, y: 50, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
   m_DefaultState: {fileID: 2826463718586470122}
---- !u!1102 &-7697600275082897043
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: CleaveAdvance
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions: []
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 292086253798988793, guid: 710bcc09abf713c499953e67979378e6, type: 3}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
 --- !u!1102 &-7459671032565205625
 AnimatorState:
   serializedVersion: 6
@@ -193,7 +167,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -206873701609767433, guid: 035d989d4a161a746b08f514c3103223, type: 3}
+  m_Motion: {fileID: 7400000, guid: 4a46853436149a74caf613df26320fa6, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -245,7 +219,33 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 5697579394043331837, guid: b7bbccc8e86824946a44e8e8f6f33c4e, type: 3}
+  m_Motion: {fileID: 7400000, guid: 79fe95bc202bf654ab4626ceec182e83, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &-5246645415604270703
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: CleaveAdvance
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: bc266cbab8f2a0b45aee815016350623, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -271,7 +271,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -2964396012148669161, guid: 1bcf678bf22622d4791bd9e0ca8e08a2, type: 3}
+  m_Motion: {fileID: 1253572308117973618, guid: ae442aec7ee940d4f88c972997439d0b, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -375,7 +375,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 2037574188348572203, guid: a02467488d99b2b40abd979e808d2408, type: 3}
+  m_Motion: {fileID: 7400000, guid: 9c502af995f14784a93e04b4b72689d6, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -590,13 +590,13 @@ AnimatorController:
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: Attack_SlashSlap
+  - m_Name: Attack_SlashToSlap
     m_Type: 9
     m_DefaultFloat: 0
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
-  - m_Name: Attack_RakeSpin
+  - m_Name: Attack_RakeIntoSpinSlash
     m_Type: 9
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -747,6 +747,12 @@ AnimatorController:
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}
   - m_Name: GapCloseDash
+    m_Type: 9
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: JumpFull
     m_Type: 9
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -1180,7 +1186,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -3871501781636462817, guid: 2584127276472774eb3f3377f41e4a59, type: 3}
+  m_Motion: {fileID: 7400000, guid: 8beea68bc29b8a04ea64bcd76b59614d, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -1206,7 +1212,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 2100765978858758247, guid: 2e2dcca293df56b4fa1fb2970b2a8eb1, type: 3}
+  m_Motion: {fileID: 7400000, guid: 7057961acc178ea47a9684be641ceac8, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 

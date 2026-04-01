@@ -54,6 +54,12 @@ public class PlayerLifeBoxDetector : MonoBehaviour
 
     private void TryKillPlayer()
     {
+        if (PlayerMovement.IsTestingOrDebugMode)
+        {
+            Debug.Log("[PlayerLifeBoxDetector] Testing/Debug mode enabled on PlayerMovement. Skipping out-of-lifebox death handling.");
+            return;
+        }
+
         if (!killPlayerWhenOutOfLifeBox) return;
 
         Debug.Log("Player is out of bounds of life boxes! Killing player");

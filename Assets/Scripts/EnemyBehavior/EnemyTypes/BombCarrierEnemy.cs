@@ -45,6 +45,10 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     public float explosionRadius = 3f;
     [SerializeField, Tooltip("Damage dealt to all targets within the explosion radius.")]
     private float explosionDamage = 100f;
+    [SerializeField, Tooltip("If enabled, bomb explosions force-stagger the player.")]
+    private bool staggerPlayerOnExplosion = true;
+    [SerializeField, Range(0.05f, 2f), Tooltip("Forced stagger duration applied to the player on bomb explosion.")]
+    private float playerExplosionStaggerDuration = 0.45f;
     [SerializeField, Tooltip("If true, the bomb bot will randomly select an attack behavior on spawn.")]
     private bool randomizeBehavior = false;
     [SerializeField, Tooltip("The attack behavior this bomb bot will use.")]
@@ -530,7 +534,11 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
         {
             if (!hit.isTrigger)
             {
-                hit.GetComponent<IHealthSystem>()?.LoseHP(explosionDamage);
+                IHealthSystem health = hit.GetComponent<IHealthSystem>();
+                health?.LoseHP(explosionDamage);
+
+                if (staggerPlayerOnExplosion && health is PlayerHealthBarManager playerHealth)
+                    playerHealth.ApplyForcedStagger(playerExplosionStaggerDuration, resetCombo: true);
             }
         }
 
