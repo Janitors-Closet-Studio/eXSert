@@ -64,7 +64,9 @@ MonoBehaviour:
   hingePivot: {fileID: 0}
   lightBulb: {fileID: 0}
   lockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  lockedLightBulbEmissionColor: {r: 0.38, g: 0, b: 0, a: 1}
   unlockedLightBulbColor: {r: 0, g: 0, b: 0, a: 0}
+  unlockedLightBulbEmissionColor: {r: 0, g: 0.13, b: 0.054166675, a: 1}
   doorLight: {fileID: 0}
   lockedLightColor: {r: 0, g: 0, b: 0, a: 0}
   unlockedLightColor: {r: 0, g: 0, b: 0, a: 0}
@@ -136,6 +138,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2910355090036607666, guid: d10bc1ec0c14f8c43a9a8375f4ccbffe, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3827489899559290246}
+    - targetCorrespondingSourceObject: {fileID: 2910355090036607666, guid: d10bc1ec0c14f8c43a9a8375f4ccbffe, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7865857151605794784}
   m_SourcePrefab: {fileID: 100100000, guid: d10bc1ec0c14f8c43a9a8375f4ccbffe, type: 3}
 --- !u!4 &2687358077990640753 stripped
 Transform:
@@ -168,6 +173,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 6.0000014, y: 4.4999995, z: 0.15000002}
   m_Center: {x: -0.0000042915344, y: 2.2546575, z: -0.00001335144}
+--- !u!208 &7865857151605794784
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3314853025781696203}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 3.0000002, y: 2.25, z: 0.075}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 2.255, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1001 &840521356948146032
 PrefabInstance:
   m_ObjectHideFlags: 0

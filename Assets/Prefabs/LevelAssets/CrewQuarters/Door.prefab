@@ -42,6 +42,7 @@ GameObject:
   - component: {fileID: 6752007114636858674}
   - component: {fileID: 175163030191510768}
   - component: {fileID: 5925842294498272219}
+  - component: {fileID: 8821268700190610447}
   m_Layer: 0
   m_Name: Door
   m_TagString: Untagged
@@ -85,12 +86,17 @@ MonoBehaviour:
   _interactionPrompt: Press to Open
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   requiredItemID: 
+  lockedInteractionPrompt: LOCKED
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
       m_Calls: []
   doorHandlers:
   - {fileID: 98182257937175027}
+  onlyInteractableOnce: 0
+  usePuzzleCameraOnInteraction: 0
+  puzzleCinemachineCamera: {fileID: 0}
+  puzzleCameraDurationSeconds: 2
 --- !u!65 &5925842294498272219
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -112,6 +118,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.5, y: 2.45, z: 2.5}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!208 &8821268700190610447
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8070690124105004441}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.5, y: 0.5, z: 0.5}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1001 &3382555856392308841
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -198,6 +220,15 @@ MonoBehaviour:
   doorParts: []
   openSpeed: 2
   hingePivot: {fileID: 788580226970741485}
+  lightBulb: {fileID: 0}
+  lockedLightBulbColor: {r: 0.6313726, g: 0, b: 0, a: 1}
+  lockedLightBulbEmissionColor: {r: 0.38, g: 0, b: 0, a: 1}
+  unlockedLightBulbColor: {r: 0.11372549, g: 0.78431374, b: 0.078431375, a: 1}
+  unlockedLightBulbEmissionColor: {r: 0, g: 0.13, b: 0.054166675, a: 1}
+  doorLight: {fileID: 0}
+  lockedLightColor: {r: 1, g: 0.11764706, b: 0.11764706, a: 1}
+  unlockedLightColor: {r: 0.26666668, g: 0.6509804, b: 0.34901962, a: 1}
+  lightFadeSpeed: 2
 --- !u!65 &3682277934187709703
 BoxCollider:
   m_ObjectHideFlags: 0
