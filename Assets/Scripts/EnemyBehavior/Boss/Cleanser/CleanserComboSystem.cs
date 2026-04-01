@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace EnemyBehavior.Boss.Cleanser
 {
@@ -27,8 +28,9 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Delay before executing this step (seconds).")]
         public float PreDelay = 0f;
         
-        [Tooltip("If true, acquires one spare weapon into the hover stockpile before this step.")]
-        public bool PickupSpareWeaponBefore = false;
+        [Tooltip("How many spare weapons to acquire into the hover stockpile before this step.")]
+        [FormerlySerializedAs("PickupSpareWeaponBefore")]
+        [Min(0)] public int SpareWeaponsToAddBeforeStep = 0;
         
         /// <summary>
         /// Returns true if this step has a valid attack assigned.
@@ -59,6 +61,10 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("Cooldown after using this combo before it can be selected again.")]
         public float ComboCooldown = 5f;
+
+        [Header("Movement")]
+        [Tooltip("Multiplier applied to Cleanser walk/reposition speed while executing this combo.")]
+        [Min(0.1f)] public float ComboMovementSpeedMultiplier = 1f;
 
         [Header("Aggression Requirements")]
         [Tooltip("Minimum aggression level required to use this combo (1-5).")]
@@ -236,6 +242,19 @@ namespace EnemyBehavior.Boss.Cleanser
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserComboSystem), $"[CleanserCombo] Starting combo: {combo.ComboName} with {combo.StepCount} steps.");
+
+            ComboStep firstStep = GetCurrentStep();
+            string firstAttackId = "None";
+            if (firstStep != null)
+            {
+                firstAttackId = firstStep.IsFinisher
+                    ? firstStep.StrongAttack.ToString()
+                    : firstStep.BasicAttack.ToString();
+            }
+
+            EnemyBehaviorDebugLogBools.Log(
+                nameof(CleanserComboSystem),
+                $"[CleanserCombo] Step 1/{combo.StepCount}. Attack={firstAttackId}");
 #endif
         }
 
@@ -248,6 +267,18 @@ namespace EnemyBehavior.Boss.Cleanser
                 return null;
                 
             return currentCombo.Steps[currentStepIndex];
+        }
+
+        public ComboStep GetNextStep()
+        {
+            if (currentCombo == null)
+                return null;
+
+            int nextIndex = currentStepIndex + 1;
+            if (nextIndex < 0 || nextIndex >= currentCombo.StepCount)
+                return null;
+
+            return currentCombo.Steps[nextIndex];
         }
 
         /// <summary>
@@ -268,7 +299,18 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserComboSystem), $"[CleanserCombo] Advanced to step {currentStepIndex + 1}/{currentCombo.StepCount}.");
+            ComboStep currentStep = GetCurrentStep();
+            string attackId = "None";
+            if (currentStep != null)
+            {
+                attackId = currentStep.IsFinisher
+                    ? currentStep.StrongAttack.ToString()
+                    : currentStep.BasicAttack.ToString();
+            }
+
+            EnemyBehaviorDebugLogBools.Log(
+                nameof(CleanserComboSystem),
+                $"[CleanserCombo] Advanced to step {currentStepIndex + 1}/{currentCombo.StepCount}. Attack={attackId}");
 #endif
             return true;
         }
@@ -332,14 +374,23 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (step == null)
                 return false;
-                
-            if (step.PickupSpareWeaponBefore)
-                return true;
-                
+
+            return GetSpareWeaponPickupCountForStep(step) > 0;
+        }
+
+        public int GetSpareWeaponPickupCountForStep(ComboStep step)
+        {
+            if (step == null)
+                return 0;
+
+            int explicitCount = Mathf.Max(0, step.SpareWeaponsToAddBeforeStep);
+            if (explicitCount > 0)
+                return explicitCount;
+
             if (AutoPickupBeforeStrongAttack && step.IsFinisher && step.StrongAttack != CleanserStrongAttack.None)
-                return true;
-                
-            return false;
+                return 1;
+
+            return 0;
         }
 
         /// <summary>

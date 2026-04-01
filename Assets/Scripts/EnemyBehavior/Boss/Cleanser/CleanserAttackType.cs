@@ -3,6 +3,7 @@
 // Works with: CleanserBrain, CleanserComboSystem
 
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace EnemyBehavior.Boss.Cleanser
 {
@@ -45,7 +46,7 @@ namespace EnemyBehavior.Boss.Cleanser
         SpareToss = 5,              // Projectile throw
         // Value 6 is intentionally unused (legacy slot).
         LegSweep = 7,               // Low sweep requiring jump to avoid
-        Knockback = 8,              // Pushes player away using external force
+        // Value 8 was Knockback and is intentionally excluded from combo-authoring list.
         // Value 9 was legacy MiniCrescentWave and is intentionally unused.
 
         // New/renamed moves appended to preserve existing serialized enum values.
@@ -106,6 +107,13 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Ground movement speed during the hold-pose loop.")]
         public float MoveSpeed = 12f;
 
+        [Header("Range")]
+        [Tooltip("Minimum distance to player for SpinDash to be eligible.")]
+        public float RangeMin = 2f;
+
+        [Tooltip("Maximum distance to player for SpinDash to be eligible.")]
+        public float RangeMax = 14f;
+
         [Tooltip("Distance threshold: above this, dash segment travel time uses LongDistanceTravelDuration instead of MoveSpeed.")]
         public float MaxTravelDistance = 10f;
 
@@ -118,6 +126,9 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Damage")]
         [Tooltip("Damage per hit tick while spinning.")]
         public float DamagePerHit = 8f;
+
+        [Tooltip("If true, SpinDash hits force-stagger the player.")]
+        public bool StaggerPlayerOnHit = true;
 
         [Tooltip("Hitbox range while spinning.")]
         public float HitRange = 2.5f;
@@ -161,6 +172,13 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Delay after all dashes complete before returning control.")]
         public float PostDashDelay = 0f;
 
+        [Header("Range")]
+        [Tooltip("Minimum distance to player for Anime Dash Slash to be eligible.")]
+        public float RangeMin = 4f;
+
+        [Tooltip("Maximum distance to player for Anime Dash Slash to be eligible.")]
+        public float RangeMax = 20f;
+
         [Header("Dash Path")]
         [Tooltip("Number of dash target positions used for this attack.")]
         public int DashTargetCount = 5;
@@ -187,6 +205,9 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Damage")]
         [Tooltip("Damage applied when the dash hit window connects.")]
         public float DamagePerHit = 12f;
+
+        [Tooltip("If true, Anime Dash hits force-stagger the player.")]
+        public bool StaggerPlayerOnHit = true;
 
         [Tooltip("If true, AnimeDash uses the SpinDash collider bounds for hit range. If false, uses FallbackHitRange.")]
         public bool UseSpinDashColliderForHitRange = true;
@@ -237,59 +258,69 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Playback speed multiplier for the spare toss animation clip.")]
         public float AnimationSpeedMultiplier = 1f;
 
-        [Header("Throw Type")]
-        [Tooltip("If true, throws sequentially (one after another). If false, throws simultaneously.")]
+        [Header("Legacy Projectile Path Settings (Unused by current Spare Toss volley)")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public bool ThrowSequentially = true;
         
-        [Tooltip("Number of weapons to throw (1 or 2).")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         [Range(1, 2)] public int ProjectileCount = 1;
 
-        [Header("Path Type Selection")]
-        [Tooltip("Which path types are allowed. One will be randomly selected at runtime.")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public SpareTossPathType AllowedPathTypes = SpareTossPathType.Straight | SpareTossPathType.StraightReturn | SpareTossPathType.CurvedBoomerang;
 
-        [Header("Path Type (Runtime - Read Only)")]
-        [Tooltip("Straight path to target. Set at runtime based on AllowedPathTypes.")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public bool UseStraightPath = true;
         
-        [Tooltip("If true, projectile returns like a boomerang even on straight path. Set at runtime.")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public bool ReturnsOnStraightPath = false;
         
-        [Tooltip("Curved boomerang path (goes past player, curves back). Set at runtime.")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public bool UseCurvedBoomerang = false;
 
-        [Header("Boomerang Settings")]
-        [Tooltip("How far the boomerang curves outward from the throw direction (min, max).")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public Vector2 CurveWidthRange = new Vector2(5f, 10f);
         
-        [Tooltip("How far past the player the boomerang travels before returning (min, max).")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public Vector2 OvershootDistanceRange = new Vector2(3f, 8f);
         
-        [Tooltip("Speed of the projectile (min, max).")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public Vector2 ProjectileSpeedRange = new Vector2(15f, 25f);
 
-        [Header("Homing")]
-        [Tooltip("If true, boomerang updates target position at intervals.")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public bool UseHoming = true;
         
-        [Tooltip("How often the homing target updates (seconds).")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public float HomingUpdateInterval = 0.3f;
         
-        [Tooltip("How strongly the projectile tracks the target (higher = sharper turns).")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         [Range(0f, 1f)] public float HomingStrength = 0.5f;
 
-        [Header("Collision")]
-        [Tooltip("Layer mask for wall collision checks.")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public LayerMask WallLayerMask;
         
-        [Tooltip("If true, projectile is destroyed on wall impact. If false, bounces/stops.")]
+        [HideInInspector]
+        [Tooltip("Legacy: no longer used by current volley-based spare toss.")]
         public bool DestroyOnWallHit = true;
 
         [Header("SFX")]
         [Tooltip("Sound effect when throwing the weapon.")]
         public AudioClip ThrowSFX;
         
-        [Tooltip("Sound effect when projectile hits something.")]
+        [HideInInspector]
+        [Tooltip("Legacy projectile hit SFX (unused by current volley-based spare toss).")]
         public AudioClip HitSFX;
 
         /// <summary>
@@ -393,6 +424,76 @@ namespace EnemyBehavior.Boss.Cleanser
     }
 
     /// <summary>
+    /// Shared settings for leap/slam impact damage checks.
+    /// </summary>
+    [System.Serializable]
+    public class LeapSlamDamageConfig
+    {
+        [Tooltip("If true, uses the Cleanser aggression collider bounds as the damage area for slam impact.")]
+        public bool UseAggroCollider = false;
+
+        [Tooltip("Range used when UseAggroCollider is false, or when the aggro collider is unavailable.")]
+        [FormerlySerializedAs("FallbackRange")]
+        public float Range = 4f;
+
+        [Tooltip("Inner percentage of the effective range that deals full damage.")]
+        [Range(0f, 1f)] public float FullDamageRadiusPercent = 1f;
+
+        [Tooltip("Damage percentage dealt at the outer edge of the effective range.")]
+        [Range(0f, 1f)] public float EdgeDamagePercent = 1f;
+    }
+
+    /// <summary>
+    /// Configuration for the High Dive strong attack.
+    /// </summary>
+    [System.Serializable]
+    public class HighDiveConfig
+    {
+        [Header("Animation")]
+        [Tooltip("Playback speed multiplier for the high dive sequence.")]
+        public float AnimationSpeedMultiplier = 1f;
+
+        [Header("Range")]
+        [Tooltip("Minimum distance to player for High Dive to be eligible.")]
+        public float RangeMin = 4f;
+
+        [Tooltip("Maximum distance to player for High Dive to be eligible.")]
+        public float RangeMax = 18f;
+
+        [Tooltip("Duration of the upward leap phase.")]
+        public float LeapUpDuration = 0.6f;
+
+        [Tooltip("Duration of the downward slam phase.")]
+        public float SlamDownDuration = 0.4f;
+
+        [Tooltip("Peak height reached during the leap.")]
+        public float LeapHeight = 8f;
+
+        [Tooltip("Fixed horizontal distance traveled during the leap from the takeoff point.")]
+        public float HorizontalLeapDistance = 8f;
+
+        [Header("Damage")]
+        [Tooltip("Damage dealt by the slam impact.")]
+        public float SlamDamage = 40f;
+
+        [Tooltip("If true, HighDive slam hit force-staggers the player.")]
+        public bool StaggerPlayerOnHit = true;
+
+        [Tooltip("Controls how high-dive slam impact damage range and falloff are evaluated.")]
+        public LeapSlamDamageConfig SlamDamageConfig = new LeapSlamDamageConfig { Range = 4f, FullDamageRadiusPercent = 1f, EdgeDamagePercent = 1f };
+
+        [Header("SFX/VFX")]
+        [Tooltip("Sound effect played when High Dive starts.")]
+        public AudioClip AttackSFX;
+
+        [Tooltip("Sound effect played on slam impact.")]
+        public AudioClip ImpactSFX;
+
+        [Tooltip("VFX prefab spawned on slam impact.")]
+        public GameObject ImpactVFX;
+    }
+
+    /// <summary>
     /// Configuration for the Whirlwind strong attack.
     /// </summary>
     [System.Serializable]
@@ -405,9 +506,19 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Playback speed multiplier for the whirlwind animation clip.")]
         public float AnimationSpeedMultiplier = 1f;
 
+        [Header("Range")]
+        [Tooltip("Minimum distance to player for Whirlwind to be eligible.")]
+        public float RangeMin = 2f;
+
+        [Tooltip("Maximum distance to player for Whirlwind to be eligible.")]
+        public float RangeMax = 12f;
+
         [Header("Suction")]
         [Tooltip("Duration of the spinning suction phase.")]
         public float SuctionDuration = 4f;
+
+        [Tooltip("Movement speed multiplier (relative to Cleanser walking speed) while spinning toward the player.")]
+        [Range(0.05f, 1f)] public float ChaseSpeedMultiplier = 0.35f;
         
         [Tooltip("Pull strength of the suction effect.")]
         public float SuctionStrength = 12f;
@@ -419,11 +530,24 @@ namespace EnemyBehavior.Boss.Cleanser
         public float SuctionRadius = 15f;
 
         [Header("Damage")]
-        [Tooltip("Delay between damage ticks when player is inside whirlwind.")]
-        public float DamageTickInterval = 0.5f;
+        [Tooltip("Delay before the shared whirlwind/aggression collider is re-enabled after a successful damage tick.")]
+        [FormerlySerializedAs("DamageTickInterval")]
+        public float DamageColliderRearmDelay = 0.5f;
         
         [Tooltip("Damage per tick.")]
         public float DamagePerTick = 5f;
+
+        [Tooltip("If true, Whirlwind damage hits force-stagger the player.")]
+        public bool StaggerPlayerOnHit = true;
+
+        [Tooltip("Inner percentage of the whirlwind collider radius that deals full damage.")]
+        [Range(0f, 1f)] public float FullDamageRadiusPercent = 0.4f;
+
+        [Tooltip("Damage percentage dealt at the outer edge of the whirlwind collider.")]
+        [Range(0f, 1f)] public float EdgeDamagePercent = 0f;
+
+        [Tooltip("If true, aggression value changes are paused while whirlwind is active.")]
+        public bool PauseAggressionChangesDuringWhirlwind = true;
 
         [Header("Leap Slam")]
         [Tooltip("Fixed distance the Cleanser leaps for the slam (direction toward player).")]
@@ -432,11 +556,11 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Duration of the leap.")]
         public float LeapDuration = 0.6f;
         
-        [Tooltip("AoE radius of the slam.")]
-        public float SlamAoERadius = 5f;
-        
         [Tooltip("Damage dealt by the slam.")]
         public float SlamDamage = 30f;
+
+        [Tooltip("Controls how whirlwind leap/slam impact damage range and falloff are evaluated.")]
+        public LeapSlamDamageConfig SlamDamageConfig = new LeapSlamDamageConfig { Range = 5f, FullDamageRadiusPercent = 1f, EdgeDamagePercent = 1f };
 
         [Header("SFX/VFX")]
         [Tooltip("Looping sound during spin phase.")]
@@ -468,28 +592,22 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Jump arc animation used for repositioning/float setup.")]
         public string JumpArcBaseTrigger = "JumpArcBase";
 
+        [Tooltip("Looping hover animation played while charging in the air.")]
+        public string JumpArcHoldTrigger = "JumpArcHold";
+
         [Tooltip("Jump arc animation used when ultimate is canceled.")]
         public string JumpArcCancelTrigger = "JumpArcCancel";
 
         [Tooltip("Jump arc animation used for final crash-down resolution.")]
         public string JumpArcResolutionTrigger = "JumpArcResolution";
 
-        [Header("Sweep Projectiles")]
-        [Tooltip("Speed of the crescent wave projectiles.")]
-        public float WaveSpeed = 25f;
-        
-        [Tooltip("Height of the low sweep relative to Cleanser position.")]
-        public float LowSweepHeight = 0.5f;
-        
-        [Tooltip("Height of the mid sweep relative to Cleanser position.")]
-        public float MidSweepHeight = 3f;
-        
-        [Tooltip("Width of the crescent wave hitbox.")]
-        public float WaveWidth = 20f;
-        
-        [Tooltip("Damage dealt by each sweep.")]
-        public float SweepDamage = 25f;
+        [Tooltip("Jump animation used when relocating to sweep/start positions.")]
+        public string JumpFullTrigger = "JumpFull";
 
+        [Tooltip("Travel duration for JumpFull repositioning hops.")]
+        public float JumpFullTravelDuration = 1f;
+
+        [Header("Sweep Projectiles")]
         [Tooltip("Projectile settings for the low sweep.")]
         public CrescentArcProjectileConfig LowSweepProjectile = new CrescentArcProjectileConfig();
 
@@ -497,30 +615,23 @@ namespace EnemyBehavior.Boss.Cleanser
         public CrescentArcProjectileConfig MidSweepProjectile = new CrescentArcProjectileConfig();
 
         [Header("Floating Phase")]
+        [Tooltip("Hover Y offset relative to Ultimate Arena Center Point.")]
+        public float HoverHeightOffset = 6f;
+
         [Tooltip("Time the Cleanser charges the massive strike in the air.")]
         public float ChargeUpTime = 8f;
 
         [Tooltip("How long the hover timer is paused whenever Cleanser takes damage during hover phase.")]
         public float HoverTimerPauseOnDamage = 0.25f;
+
+        [Tooltip("Yaw rotation speed (degrees/sec) while hovering. Can be negative for opposite direction.")]
+        public float HoverRotationSpeed = 20f;
         
         [Tooltip("Delay added when hit by an aerial attack.")]
         public float AerialHitDelay = 2f;
         
         [Tooltip("Number of valid plunge-finisher hits required to cancel the ultimate hover phase.")]
         public int RequiredAerialHits = 2;
-
-        [Header("Platforms")]
-        [Tooltip("Height platforms rise to (relative to arena floor).")]
-        public float PlatformRiseHeight = 6f;
-        
-        [Tooltip("Radius of platform orbit around Cleanser.")]
-        public float PlatformOrbitRadius = 4f;
-        
-        [Tooltip("Speed of platform orbit (degrees per second).")]
-        public float PlatformOrbitSpeed = 30f;
-        
-        [Tooltip("Time for platforms to rise.")]
-        public float PlatformRiseTime = 1.5f;
 
         [Header("Massive Strike")]
         [Tooltip("Damage dealt if massive strike is NOT canceled.")]
@@ -611,6 +722,13 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("If true, attack can stun the player.")]
         public bool CanStunPlayer = false;
 
+        [Tooltip("If true, this attack's hit windows force-stagger the player.")]
+        public bool StaggerPlayerOnHit = true;
+
+        [Header("Projectile (Optional)")]
+        [Tooltip("Optional projectile settings for attacks that spawn projectiles (for example DiagUpwardSlash).")]
+        public CrescentArcProjectileConfig ProjectileConfig = new CrescentArcProjectileConfig();
+
         [Header("SFX/VFX")]
         [Tooltip("Sound effect played at attack start.")]
         public AudioClip AttackSFX;
@@ -670,7 +788,8 @@ namespace EnemyBehavior.Boss.Cleanser
     public class GapClosingDashConfig
     {
         [Header("Dash Settings")]
-        [Tooltip("Speed of the dash.")]
+        [HideInInspector]
+        [Tooltip("Legacy field (unused). Dash movement speed is now derived from distance / DashDuration.")]
         public float DashSpeed = 25f;
         
         [Tooltip("Duration of the dash.")]
@@ -683,8 +802,38 @@ namespace EnemyBehavior.Boss.Cleanser
         public float TargetStopDistance = 3f;
 
         [Header("Aggression Requirements")]
-        [Tooltip("Minimum aggression level required to use this dash.")]
+        [HideInInspector]
+        [Tooltip("Legacy field (unused). Dash usage is now chance-based per aggression level.")]
         public int MinAggressionLevel = 4;
+
+        [Header("Combo Dash Chance by Aggression")]
+        [Tooltip("Chance to use gap-close dash during combo repositioning at aggression Level 1.")]
+        [Range(0f, 1f)] public float ComboDashChanceLevel1 = 0.2f;
+
+        [Tooltip("Chance to use gap-close dash during combo repositioning at aggression Level 2.")]
+        [Range(0f, 1f)] public float ComboDashChanceLevel2 = 0.4f;
+
+        [Tooltip("Chance to use gap-close dash during combo repositioning at aggression Level 3.")]
+        [Range(0f, 1f)] public float ComboDashChanceLevel3 = 0.7f;
+
+        [Tooltip("Chance to use gap-close dash during combo repositioning at aggression Level 4.")]
+        [Range(0f, 1f)] public float ComboDashChanceLevel4 = 1f;
+
+        [Tooltip("Chance to use gap-close dash during combo repositioning at aggression Level 5.")]
+        [Range(0f, 1f)] public float ComboDashChanceLevel5 = 1f;
+
+        public float GetComboDashChance(AggressionLevel level)
+        {
+            switch (level)
+            {
+                case AggressionLevel.Level1: return ComboDashChanceLevel1;
+                case AggressionLevel.Level2: return ComboDashChanceLevel2;
+                case AggressionLevel.Level3: return ComboDashChanceLevel3;
+                case AggressionLevel.Level4: return ComboDashChanceLevel4;
+                case AggressionLevel.Level5: return ComboDashChanceLevel5;
+                default: return ComboDashChanceLevel1;
+            }
+        }
 
         [Header("Animation")]
         [Tooltip("Animation trigger for the dash.")]
