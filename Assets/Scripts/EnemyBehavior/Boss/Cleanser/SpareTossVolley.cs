@@ -27,7 +27,12 @@ namespace EnemyBehavior.Boss.Cleanser
             CleanserDualWieldSystem owner)
         {
             if (weaponsToLaunch == null || weaponsToLaunch.Count == 0 || owner == null)
+            {
+                Debug.LogWarning("[SpareTossVolley] LaunchVolley aborted due to invalid input (null/empty weapons or null owner).", this);
                 yield break;
+            }
+
+            Debug.Log($"[SpareTossVolley] LaunchVolley begin. Requested={weaponsToLaunch.Count}, Center={center}", this);
 
             CachePlayer();
 
@@ -39,7 +44,10 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 var weapon = weaponsToLaunch[i];
                 if (weapon == null || weapon.WeaponObject == null)
+                {
+                    Debug.LogWarning($"[SpareTossVolley] Skipping invalid weapon at index {i}.", this);
                     continue;
+                }
 
                 Vector3 landingPos = PickLandingPosition(center, usedLandingPositions, owner);
                 usedLandingPositions.Add(landingPos);
@@ -47,10 +55,14 @@ namespace EnemyBehavior.Boss.Cleanser
                 routines.Add(StartCoroutine(TossWeaponToGroundCoroutine(weapon, landingPos, owner, () => completed++)));
             }
 
+            Debug.Log($"[SpareTossVolley] Launch routines started={routines.Count}.", this);
+
             while (completed < routines.Count)
             {
                 yield return null;
             }
+
+            Debug.Log($"[SpareTossVolley] LaunchVolley complete. Completed={completed}.", this);
         }
 
         private IEnumerator TossWeaponToGroundCoroutine(SpareWeapon weapon, Vector3 landingPos, CleanserDualWieldSystem owner, System.Action onComplete)
@@ -171,7 +183,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 float angle = Random.Range(0f, Mathf.PI * 2f);
                 float radius = Random.Range(owner.LandingRadiusMin, owner.LandingRadiusMax);
                 Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-                candidate.y = owner.transform.position.y;
+                candidate.y = owner.transform.position.y + owner.LodgedHeightOffset;
 
                 if (GetMinDistanceToUsed(candidate, usedPositions) >= minSpacing)
                     return candidate;
@@ -185,7 +197,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 float angle = (i / 64f) * Mathf.PI * 2f;
                 float radius = owner.LandingRadiusMax;
                 Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-                candidate.y = owner.transform.position.y;
+                candidate.y = owner.transform.position.y + owner.LodgedHeightOffset;
 
                 float minDist = GetMinDistanceToUsed(candidate, usedPositions);
                 if (minDist > bestMinDistance)

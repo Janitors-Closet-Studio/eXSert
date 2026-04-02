@@ -11,6 +11,14 @@ public class TestPlayer : MonoBehaviour, IHealthSystem
     public float maxHP => maxHealth;
     
     private Vector2 moveInput;
+    private PlayerMovement playerMovement;
+
+    private void Awake()
+    {
+        playerMovement = GetComponent<PlayerMovement>()
+            ?? GetComponentInParent<PlayerMovement>()
+            ?? GetComponentInChildren<PlayerMovement>();
+    }
     
     public void LoseHP(float damage)
     {
@@ -23,6 +31,10 @@ public class TestPlayer : MonoBehaviour, IHealthSystem
     
     void Update()
     {
+        // If full PlayerMovement exists, let it own movement so external velocity/knockback tests are valid.
+        if (playerMovement != null)
+            return;
+
         // Read WASD/Arrow keys using the new Input System
         var keyboard = Keyboard.current;
         if (keyboard == null) return;

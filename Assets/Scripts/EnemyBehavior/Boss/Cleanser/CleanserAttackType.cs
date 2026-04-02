@@ -123,6 +123,9 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("If true, continuously updates the final dash target toward the player's current position.")]
         public bool TrackPlayerDuringHold = false;
 
+        [Tooltip("How far beyond the player's position the final spin dash target extends.")]
+        public float FinalPlayerOvershootDistance = 1.5f;
+
         [Header("Damage")]
         [Tooltip("Damage per hit tick while spinning.")]
         public float DamagePerHit = 8f;
@@ -138,6 +141,15 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Maximum number of hit ticks that can occur in one use.")]
         public int MaxHitCount = 6;
+
+        [Tooltip("Brief pause duration applied when SpinDash successfully hits the player.")]
+        [Min(0f)] public float HitStopDurationOnPlayerHit = 0.1f;
+
+        [Tooltip("Temporary movement speed multiplier applied after a SpinDash hit to create impact slowdown.")]
+        [Range(0.1f, 1f)] public float MoveSpeedMultiplierOnPlayerHit = 0.5f;
+
+        [Tooltip("How long the temporary SpinDash movement slowdown lasts after each successful hit.")]
+        [Min(0f)] public float MoveSpeedSlowDurationOnPlayerHit = 0.2f;
 
         [Header("SFX/VFX")]
         [Tooltip("SFX played at attack start.")]
@@ -179,24 +191,65 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Maximum distance to player for Anime Dash Slash to be eligible.")]
         public float RangeMax = 20f;
 
-        [Header("Dash Path")]
-        [Tooltip("Number of dash target positions used for this attack.")]
-        public int DashTargetCount = 5;
+        [Header("Pattern Selection")]
+        [Tooltip("If true, uses the rapid circling + random dash-through pattern instead of the legacy star/pentagram path.")]
+        public bool UseCircularDashPattern = true;
 
-        [Tooltip("Distance from center to each dash target position.")]
+        [Header("Circular Pattern")]
+        [Tooltip("Circle radius around center while performing the new circular Anime Dash pattern.")]
         public float DashTargetRadius = 6f;
-
-        [Tooltip("Angle step between dash target points in degrees (144 creates star-like pattern).")]
-        public float DashAngleStepDegrees = 144f;
 
         [Tooltip("If true, captures player position once at dash start as the center point.")]
         public bool UsePlayerPositionAsCenterAtStart = true;
 
+        [Tooltip("If true, keeps the player as a continuously updating center while circling.")]
+        public bool FollowPlayerAsCenterContinuously = true;
+
+        [Tooltip("If true (and not continuously following), re-centers on player's current position before each dash-through.")]
+        public bool RecenterOnEachDashThrough = true;
+
+        [Tooltip("Minimum number of dash-throughs during circular Anime Dash.")]
+        [Range(1, 12)] public int DashThroughCountMin = 4;
+
+        [Tooltip("Maximum number of dash-throughs during circular Anime Dash.")]
+        [Range(1, 12)] public int DashThroughCountMax = 6;
+
+        [Header("Legacy Pentagram Pattern (UseCircularDashPattern = false)")]
+        [Tooltip("Number of dash target positions used by the legacy pentagram/star path.")]
+        public int DashTargetCount = 5;
+
+        [Tooltip("Angle step between legacy dash target points in degrees (144 creates star-like pattern).")]
+        public float DashAngleStepDegrees = 144f;
+
         [Header("Dash Timing")]
-        [Tooltip("Duration to move from one dash target to the next.")]
+        [Tooltip("Duration to move from one dash target to the next (legacy pattern).")]
         public float DashTravelDuration = 0.15f;
 
-        [Tooltip("How long to remain at each target before moving to the next.")]
+        [Tooltip("Minimum circle time before each abrupt dash-through.")]
+        [Min(0.01f)] public float CircleDurationMin = 0.2f;
+
+        [Tooltip("Maximum circle time before each abrupt dash-through.")]
+        [Min(0.01f)] public float CircleDurationMax = 0.45f;
+
+        [Tooltip("Minimum random time to keep circling before triggering the next dash-through.")]
+        [Min(0.01f)] public float TimeBetweenDashThroughMin = 0.35f;
+
+        [Tooltip("Maximum random time to keep circling before triggering the next dash-through.")]
+        [Min(0.01f)] public float TimeBetweenDashThroughMax = 0.8f;
+
+        [Tooltip("Angular speed used while rapidly circling around the center.")]
+        public float CircleAngularSpeedDegPerSec = 720f;
+
+        [Tooltip("Minimum circling speed as a fraction of CircleAngularSpeedDegPerSec/TurnSpeed during deceleration half (0-1).")]
+        [Range(0f, 1f)] public float CircleDecelMinSpeedPercent = 0.125f;
+
+        [Tooltip("Duration of each abrupt dash-through across the center.")]
+        [Min(0.01f)] public float DashThroughDuration = 0.16f;
+
+        [Tooltip("Short delay inserted after circling and before each dash-through begins (circular pattern only).")]
+        [Min(0f)] public float PreDashThroughDelay = 0.05f;
+
+        [Tooltip("How long to remain at each target before moving to the next (legacy pattern).")]
         public float PauseAtTargetDuration = 0.1f;
 
         [Tooltip("How quickly the boss rotates to face the dash direction.")]
@@ -206,8 +259,23 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Damage applied when the dash hit window connects.")]
         public float DamagePerHit = 12f;
 
+        [Tooltip("If true, Anime Dash keeps the hitbox active through both circling and dash-through movement (SpinDash-style multi-hit behavior).")]
+        public bool UseContinuousHitboxDuringCircle = true;
+
+        [Tooltip("Maximum number of hit ticks during one Anime Dash use when continuous hitbox is enabled.")]
+        [Min(1)] public int MaxHitCount = 8;
+
         [Tooltip("If true, Anime Dash hits force-stagger the player.")]
         public bool StaggerPlayerOnHit = true;
+
+        [Tooltip("Brief pause duration applied when Anime Dash successfully hits the player (continuous mode).")]
+        [Min(0f)] public float HitStopDurationOnPlayerHit = 0.08f;
+
+        [Tooltip("Temporary movement speed multiplier applied after Anime Dash hit in continuous mode.")]
+        [Range(0.1f, 1f)] public float MoveSpeedMultiplierOnPlayerHit = 0.6f;
+
+        [Tooltip("How long Anime Dash movement slowdown lasts after each successful hit in continuous mode.")]
+        [Min(0f)] public float MoveSpeedSlowDurationOnPlayerHit = 0.15f;
 
         [Tooltip("If true, AnimeDash uses the SpinDash collider bounds for hit range. If false, uses FallbackHitRange.")]
         public bool UseSpinDashColliderForHitRange = true;
@@ -453,6 +521,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Playback speed multiplier for the high dive sequence.")]
         public float AnimationSpeedMultiplier = 1f;
 
+        [Tooltip("How many seconds before upward phase ends to trigger JumpArcResolution. Use this to align slam-down animation with landing.")]
+        [Min(0f)] public float JumpArcResolutionLeadTime = 0f;
+
+        [Tooltip("Playback speed multiplier specifically for JumpArcResolution during High Dive.")]
+        [Min(0.1f)] public float JumpArcResolutionAnimSpeedMultiplier = 1f;
+
         [Header("Range")]
         [Tooltip("Minimum distance to player for High Dive to be eligible.")]
         public float RangeMin = 4f;
@@ -506,6 +580,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Playback speed multiplier for the whirlwind animation clip.")]
         public float AnimationSpeedMultiplier = 1f;
 
+        [Tooltip("How many seconds before leap-up ends to trigger JumpArcResolution. Use this to align slam-down animation with landing.")]
+        [Min(0f)] public float JumpArcResolutionLeadTime = 0f;
+
+        [Tooltip("Playback speed multiplier specifically for JumpArcResolution during Whirlwind leap slam.")]
+        [Min(0.1f)] public float JumpArcResolutionAnimSpeedMultiplier = 1f;
+
         [Header("Range")]
         [Tooltip("Minimum distance to player for Whirlwind to be eligible.")]
         public float RangeMin = 2f;
@@ -519,6 +599,12 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Movement speed multiplier (relative to Cleanser walking speed) while spinning toward the player.")]
         [Range(0.05f, 1f)] public float ChaseSpeedMultiplier = 0.35f;
+
+        [Tooltip("Minimum world-space movement speed while spinning toward the player. Final speed uses the higher of this value or (baseSpeed * ChaseSpeedMultiplier).")]
+        [Min(0f)] public float MinimumChaseSpeed = 1.5f;
+
+        [Tooltip("How close the Cleanser tries to stay from the player during Whirlwind chase. Prevents overshoot/rubber-banding.")]
+        [Min(0f)] public float ChaseStopDistance = 1.25f;
         
         [Tooltip("Pull strength of the suction effect.")]
         public float SuctionStrength = 12f;
@@ -588,6 +674,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Playback speed multiplier applied to ultimate animation clips.")]
         public float AnimationSpeedMultiplier = 1f;
+
+        [Tooltip("Playback speed multiplier specifically for JumpArcResolution during ultimate slam-down.")]
+        [Min(0.1f)] public float JumpArcResolutionAnimSpeedMultiplier = 1f;
 
         [Tooltip("Jump arc animation used for repositioning/float setup.")]
         public string JumpArcBaseTrigger = "JumpArcBase";

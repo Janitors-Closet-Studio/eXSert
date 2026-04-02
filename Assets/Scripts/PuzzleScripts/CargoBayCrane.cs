@@ -239,15 +239,15 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
     protected IEnumerator MoveCraneToPosition(GameObject crane, Vector3 targetPosition, float duration)
     {
+        // ...existing code...
+        // Old horizontal collision logic removed; now handled in CranePuzzle.CraneMovement
         Vector3 startPosition = crane.transform.localPosition;
         CranePart cranePart = craneParts.Find(p => p.partObject == crane);
-
         Vector3 finalTarget = new Vector3(
             cranePart.moveX ? targetPosition.x : startPosition.x,
             cranePart.moveY ? targetPosition.y : startPosition.y,
             cranePart.moveZ ? targetPosition.z : startPosition.z
         );
-        
         if (cranePart.moveX)
             finalTarget.x = Mathf.Clamp(finalTarget.x, cranePart.minX, cranePart.maxX);
         if (cranePart.moveY)
@@ -255,14 +255,14 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         if (cranePart.moveZ)
             finalTarget.z = Mathf.Clamp(finalTarget.z, cranePart.minZ, cranePart.maxZ);
         float elapsed = 0f;
-
         while (elapsed < duration)
         {
-            crane.transform.localPosition = Vector3.Lerp(startPosition, finalTarget, elapsed / duration);
+            float t = elapsed / duration;
+            Vector3 nextPosition = Vector3.Lerp(startPosition, finalTarget, t);
+            crane.transform.localPosition = nextPosition;
             elapsed += Time.deltaTime;
             yield return null;
         }
-
         crane.transform.localPosition = finalTarget;
     }
 
@@ -336,52 +336,60 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         float droppedDistance = 0f;
         bool reachedDropTarget = false;
 
+
         Collider targetCollider = targetObject != null ? targetObject.GetComponentInChildren<Collider>() : null;
+        Collider activeDropZoneCollider = activeTargetDropZone != null ? activeTargetDropZone.GetComponent<Collider>() : null;
+
+
+        // Offset to adjust for mesh/collider mismatch (tweak as needed)
+        float crateBottomOffset = 0.5f; // Set negative if collider is above mesh, positive if below
+        int obstacleMask = LayerMask.GetMask("Default", "Ground");
+
         // Lower magnet until collision or max distance reached
         while (droppedDistance < maxDropDistance && !reachedDropTarget)
         {
             float step = dropSpeed * Time.deltaTime;
+
+            // --- Vertical raycast from magnet tip to prevent clipping ---
+            Vector3 magnetTip = magnetExtender.transform.position;
+            float raycastLength = step + 0.05f; // slightly more than step
+            RaycastHit verticalHit;
+            if (Physics.Raycast(magnetTip, Vector3.down, out verticalHit, raycastLength, obstacleMask, QueryTriggerInteraction.Ignore))
+            {
+                Debug.Log($"[CraneDrop] Magnet vertical ray hit: {verticalHit.collider.name} at {verticalHit.point.y:F3}, stopping extension.");
+                reachedDropTarget = true;
+                break;
+            }
+
             magnetExtender.transform.localPosition += Vector3.down * step;
             droppedDistance += step;
 
             if (targetCollider != null)
             {
-                // Check for collisions with objects other than the target and magnet
                 Bounds bounds = targetCollider.bounds;
-                
-                // Gets all collider overlaps at the target object's bounds - only check Ground layer
-                Collider[] hits = Physics.OverlapBox(bounds.center, bounds.extents, targetCollider.transform.rotation, LayerMask.GetMask("Ground"), QueryTriggerInteraction.Ignore);
-                for (int i = 0; i < hits.Length; i++)
+                // Raycast from the center bottom of the crate straight down
+                Vector3 rayOrigin = new Vector3(bounds.center.x, bounds.min.y + crateBottomOffset, bounds.center.z);
+                float rayLength = 0.2f; // slightly more than threshold
+                RaycastHit hit;
+                if (Physics.Raycast(rayOrigin, Vector3.down, out hit, rayLength, LayerMask.GetMask("Ground"), QueryTriggerInteraction.Ignore))
                 {
-                    Collider hitCol = hits[i];
-                    
-                    // Skip the target's own collider
-                    if (hitCol == targetCollider) continue;
-                    
-                    // Check if hit is the target object or any child of it
-                    bool hitTargetObject = IsTargetCollider(hitCol);
-                    
-                    if (!hitTargetObject)
+                    float distanceToGround = rayOrigin.y - hit.point.y;
+                    Debug.Log($"[CraneDrop] Raycast hit: {hit.collider.name}, Crate bottom: {rayOrigin.y:F3}, Ground: {hit.point.y:F3}, Distance: {distanceToGround:F3}");
+                    if (distanceToGround <= 0.05f)
                     {
-                        // Calculate distance between bottom of target object and top of ground surface
-                        float distanceToGround = bounds.min.y - hitCol.bounds.max.y;
-                        
-                        // Stop when object is very close to ground (within 0.05 units)
-                        if (distanceToGround <= 0.05f)
-                        {
-                            reachedDropTarget = true;
-                            break;
-                        }
+                        Debug.Log("[CraneDrop] Stopping drop: crate reached ground threshold.");
+                        reachedDropTarget = true;
+                        break;
                     }
                 }
             }
 
             yield return null;
         }
-        
-        // Snap magnet to final drop position
-        magnetExtender.transform.localPosition = new Vector3(dropStartPos.x, magnetExtender.transform.localPosition.y, dropStartPos.z);
-        onComplete?.Invoke(reachedDropTarget);
+
+            // Snap magnet to final drop position
+            magnetExtender.transform.localPosition = new Vector3(dropStartPos.x, magnetExtender.transform.localPosition.y, dropStartPos.z);
+            onComplete?.Invoke(reachedDropTarget);
     }
 
     protected IEnumerator RetractMagnet(GameObject magnet, Vector3 originalPosition, float duration)

@@ -1,3 +1,4 @@
+    
 /*
     Written by Brandon Wahl
 
@@ -73,6 +74,8 @@ public class ShowIfYAttribute : PropertyAttribute { }
 public class ShowIfZAttribute : PropertyAttribute { }
 
 public class CranePuzzle : PuzzlePart 
+    // For mesh color logic (DoorHandler style)
+    
 {
     
     // Static flag to block pause menu globally
@@ -99,6 +102,7 @@ public class CranePuzzle : PuzzlePart
     // List of crane parts to move
     [Header("Crane Parts")]
     [SerializeField] protected List<CranePart> craneParts = new List<CranePart>();
+    [SerializeField] private GameObject magnetBase;
 
     [Space(10)]
 
@@ -122,6 +126,7 @@ public class CranePuzzle : PuzzlePart
     [Tooltip("Optional override for forward/backward speed. Uses Crane Move Speed when set to 0 or less")]
     [SerializeField] private float forwardBackwardMoveSpeed = 0f;
     #endregion
+
 
     internal bool isMoving = false;
     private bool puzzleActive = false;
@@ -663,6 +668,31 @@ public class CranePuzzle : PuzzlePart
                 continue;
             }
 
+
+            // Use magnetBase for collision checks instead of craneParts[0]
+            if (magnetBase != null)
+            {
+                RaycastHit forwardHit;
+                Ray forwardRay = new Ray(magnetBase.transform.position, magnetBase.transform.forward);
+                bool hasForwardHit = Physics.Raycast(forwardRay, out forwardHit, 1f, LayerMask.GetMask("Default"), QueryTriggerInteraction.Ignore);
+
+                RaycastHit backwardHit;
+                Ray backwardRay = new Ray(magnetBase.transform.position, -magnetBase.transform.forward);
+                bool hasBackwardHit = Physics.Raycast(backwardRay, out backwardHit, 1f, LayerMask.GetMask("Default"), QueryTriggerInteraction.Ignore);
+
+                if ((cachedMoveInput.y > 0.1f && hasForwardHit) || (cachedMoveInput.y < -0.1f && hasBackwardHit))
+                {
+                    isMoving = false;
+                    yield return null;
+                    continue;
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[CranePuzzle] magnetBase is not assigned!");
+            }
+
+
             CraneMovement();
 
             yield return null;
@@ -675,54 +705,99 @@ public class CranePuzzle : PuzzlePart
     public virtual void CraneMovement()
     {
         GetProcessedMoveInput(out float xInput, out float yInput, out float zInput);
-
         bool hasInput = cachedMoveInput.sqrMagnitude > 0.0001f;
         isMoving = hasInput;
 
-        if (hasInput)
+        float moveAmountX = 0f, moveAmountY = 0f, moveAmountZ = 0f;
+        if (magnetBase != null && hasInput && magnetBase.GetComponent<Collider>() != null)
         {
-            for (int i = 0; i < craneParts.Count; i++)
-            {
-                CranePart part = craneParts[i];
-                if (part == null || part.partObject == null) continue;
+            Collider magnetCol = magnetBase.GetComponent<Collider>();
+            Vector3 origin = magnetBase.transform.position;
+            Quaternion orientation = magnetBase.transform.rotation;
+            Vector3 halfExtents = magnetCol.bounds.extents;
+            int layerMask = LayerMask.GetMask("Obstacle");
 
-                Vector3 basePos = part.useWorldPosition ? part.partObject.transform.position : part.partObject.transform.localPosition;
-                Vector3 next = basePos;
+            moveAmountX = GetAxisMoveAmount(xInput, magnetBase.transform.right, craneMoveSpeed, origin, halfExtents, orientation, layerMask, magnetCol, "X");
+            moveAmountY = GetAxisMoveAmount(yInput, magnetBase.transform.up, craneMoveSpeed, origin, halfExtents, orientation, layerMask, magnetCol, "Y");
+            moveAmountZ = GetAxisMoveAmount(zInput, magnetBase.transform.forward, GetForwardBackwardMoveSpeed(), origin, halfExtents, orientation, layerMask, magnetCol, "Z");
+        }
+        else if (hasInput)
+        {
+            Debug.LogWarning("[CranePuzzle] magnetBase is not assigned for CraneMovement!");
+        }
 
-                if (part.moveX)
-                {
-                    next.x += xInput * craneMoveSpeed * Time.deltaTime;
-                }
-                if (part.moveY)
-                {
-                    next.y += yInput * craneMoveSpeed * Time.deltaTime;
-                }
-                if (part.moveZ)
-                {
-                    next.z += zInput * GetForwardBackwardMoveSpeed() * Time.deltaTime;
-                }
-
-                if (part.moveX)
-                {
-                    next.x = Mathf.Clamp(next.x, part.minX, part.maxX);
-                }
-                if (part.moveY)
-                {
-                    next.y = Mathf.Clamp(next.y, part.minY, part.maxY);
-                }
-                if (part.moveZ)
-                {
-                    next.z = Mathf.Clamp(next.z, part.minZ, part.maxZ);
-                }
-
-                if (part.useWorldPosition)
-                    part.partObject.transform.position = next;
-                else
-                    part.partObject.transform.localPosition = next;
-            }
+        // Move crane parts after collision/movement logic
+        for (int i = 0; i < craneParts.Count; i++)
+        {
+            CranePart part = craneParts[i];
+            if (part == null || part.partObject == null) continue;
+            Vector3 basePos = part.useWorldPosition ? part.partObject.transform.position : part.partObject.transform.localPosition;
+            Vector3 next = basePos;
+            if (part.moveX) next.x += moveAmountX;
+            if (part.moveY) next.y += moveAmountY;
+            if (part.moveZ) next.z += moveAmountZ;
+            if (part.moveX) next.x = Mathf.Clamp(next.x, part.minX, part.maxX);
+            if (part.moveY) next.y = Mathf.Clamp(next.y, part.minY, part.maxY);
+            if (part.moveZ) next.z = Mathf.Clamp(next.z, part.minZ, part.maxZ);
+            if (part.useWorldPosition)
+                part.partObject.transform.position = next;
+            else
+                part.partObject.transform.localPosition = next;
         }
     }
 
+    /// <summary>
+    /// Calculates the allowed movement along a given axis, performing overlap and boxcast checks to prevent collisions.
+    /// Returns the actual move amount (may be zero if blocked).
+    /// </summary>
+    /// <param name="input">User input for this axis</param>
+    /// <param name="axis">World axis direction (right, up, forward)</param>
+    /// <param name="speed">Movement speed for this axis</param>
+    /// <param name="origin">Start position for collision checks</param>
+    /// <param name="halfExtents">Half extents of the collider for box checks</param>
+    /// <param name="orientation">Rotation of the collider</param>
+    /// <param name="layerMask">Layer mask for collision</param>
+    /// <param name="magnetCol">Reference to the magnet's collider (to ignore self)</param>
+    /// <param name="axisLabel">Label for debug logs (X, Y, Z)</param>
+    /// <returns>Allowed move amount for this axis</returns>
+    private float GetAxisMoveAmount(float input, Vector3 axis, float speed, Vector3 origin, Vector3 halfExtents, Quaternion orientation, int layerMask, Collider magnetCol, string axisLabel)
+    {
+        // Ignore if no input for this axis
+        if (Mathf.Abs(input) < 0.0001f) return 0f;
+        float tryMove = input * speed * Time.deltaTime;
+        Vector3 worldMoveDir = axis * Mathf.Sign(tryMove);
+        Vector3 nextWorldPos = origin + worldMoveDir * tryMove;
+
+        // Check for overlap at the intended next position
+        Collider[] overlaps = Physics.OverlapBox(nextWorldPos, halfExtents, orientation, layerMask, QueryTriggerInteraction.Ignore);
+        foreach (var c in overlaps)
+        {
+            if (c != magnetCol && !c.isTrigger)
+            {
+                Debug.Log($"[CranePuzzle][OverlapBlock-{axisLabel}] Would overlap {c.name} at {nextWorldPos}, blocking {axisLabel} move.");
+                return 0f;
+            }
+        }
+
+        // Check for blocking objects along the path
+        RaycastHit hitInfo;
+        float distance = Mathf.Abs(tryMove);
+        bool hit = Physics.BoxCast(origin, halfExtents, worldMoveDir, out hitInfo, orientation, distance, layerMask, QueryTriggerInteraction.Ignore);
+        if (hit)
+        {
+            float allowedMove = hitInfo.distance - 0.01f;
+            allowedMove = Mathf.Max(0f, allowedMove);
+            Debug.Log($"[CranePuzzle] [BoxCast-{axisLabel}] Blocked by {hitInfo.collider.name} at {hitInfo.point}, allowedMove: {allowedMove}, requested: {distance}, origin: {origin}, dir: {worldMoveDir}, colliderLayer: {LayerMask.LayerToName(hitInfo.collider.gameObject.layer)}, isTrigger: {hitInfo.collider.isTrigger}");
+            return Mathf.Sign(tryMove) * allowedMove;
+        }
+        else
+        {
+            Debug.Log($"[CranePuzzle] [BoxCast-{axisLabel}] No hit, moving full distance: {distance}, origin: {origin}, dir: {worldMoveDir}");
+            return tryMove;
+        }
+    }
+        // Light/mesh color feedback for blocked state
+        
     public CraneMovementDirection GetCurrentMovementDirection()
     {
         if (!isMoving)

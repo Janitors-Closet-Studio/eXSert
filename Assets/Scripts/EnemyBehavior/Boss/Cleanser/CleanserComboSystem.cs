@@ -117,19 +117,67 @@ namespace EnemyBehavior.Boss.Cleanser
     /// </summary>
     public class CleanserComboSystem : MonoBehaviour
     {
+        [System.Serializable]
+        public class RecoveryAggressionDurationMultiplier
+        {
+            [Tooltip("Duration multiplier at aggression Level 1.")]
+            public float Level1 = 1.35f;
+
+            [Tooltip("Duration multiplier at aggression Level 2.")]
+            public float Level2 = 1.15f;
+
+            [Tooltip("Duration multiplier at aggression Level 3.")]
+            public float Level3 = 1f;
+
+            [Tooltip("Duration multiplier at aggression Level 4.")]
+            public float Level4 = 0.8f;
+
+            [Tooltip("Duration multiplier at aggression Level 5.")]
+            public float Level5 = 0.65f;
+
+            public float GetMultiplier(AggressionLevel level)
+            {
+                switch (level)
+                {
+                    case AggressionLevel.Level1: return Mathf.Max(0.05f, Level1);
+                    case AggressionLevel.Level2: return Mathf.Max(0.05f, Level2);
+                    case AggressionLevel.Level3: return Mathf.Max(0.05f, Level3);
+                    case AggressionLevel.Level4: return Mathf.Max(0.05f, Level4);
+                    case AggressionLevel.Level5: return Mathf.Max(0.05f, Level5);
+                    default: return 1f;
+                }
+            }
+        }
+
         [Header("Combo Configuration")]
         [Tooltip("List of available combos. Designer can add/remove combos and configure steps.")]
         public List<CleanserCombo> Combos = new List<CleanserCombo>();
 
         [Header("Post-Finisher Settings")]
-        [Tooltip("Recovery/cooldown time after completing a combo finisher (player attack window).")]
-        public float PostFinisherRecovery = 3f;
+        [Tooltip("Vulnerability window after completing a combo finisher.")]
+        [FormerlySerializedAs("PostFinisherRecovery")]
+        [Min(0f)] public float VulnerableRecoveryDuration = 1.5f;
+
+        [Tooltip("Additional lockout duration before a new combo can start. Movement/repositioning is still allowed.")]
+        [Min(0f)] public float ComboRestartBufferDuration = 2f;
+
+        [Tooltip("If true, durations are scaled by aggression level (slower at low aggression, faster at high aggression).")]
+        public bool ScaleRecoveryDurationsByAggression = true;
+
+        [Tooltip("Per-aggression duration multipliers for finisher recovery windows.")]
+        public RecoveryAggressionDurationMultiplier RecoveryDurationMultipliers = new RecoveryAggressionDurationMultiplier();
         
         [Tooltip("If true, Cleanser is vulnerable to increased damage during post-finisher recovery.")]
         public bool VulnerableDuringRecovery = true;
         
         [Tooltip("Damage multiplier during post-finisher recovery.")]
         [Range(1f, 3f)] public float RecoveryDamageMultiplier = 1.5f;
+
+        [Tooltip("If true, vulnerable recovery phase fully halts movement.")]
+        public bool StopMovementDuringVulnerableRecovery = false;
+
+        [Tooltip("Movement speed multiplier during vulnerable recovery when movement is allowed.")]
+        [Range(0f, 1f)] public float VulnerableRecoveryMovementSpeedMultiplier = 0.45f;
 
         [Header("Spare Weapon Integration")]
         [Tooltip("If true, automatically picks up spare weapon before strong attack finishers.")]
@@ -140,8 +188,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private CleanserCombo currentCombo;
         private int currentStepIndex;
         private bool isExecutingCombo;
-        private bool isInRecovery;
-        private float recoveryEndTime;
+        private float vulnerableRecoveryEndTime;
+        private float comboRestartBufferEndTime;
         private CleanserAggressionSystem aggressionSystem;
 
         private void Awake()
@@ -155,18 +203,42 @@ namespace EnemyBehavior.Boss.Cleanser
         public bool IsExecutingCombo => isExecutingCombo;
         
         /// <summary>
-        /// Returns true if in post-finisher recovery (vulnerability window).
+        /// Returns true if in post-finisher vulnerability window.
         /// </summary>
-        public bool IsInRecovery => isInRecovery && Time.time < recoveryEndTime;
+        public bool IsInRecovery => IsInVulnerableRecovery;
+
+        /// <summary>
+        /// Returns true while vulnerability window is active after a finisher.
+        /// </summary>
+        public bool IsInVulnerableRecovery => Time.time < vulnerableRecoveryEndTime;
+
+        /// <summary>
+        /// Returns true while combo start is locked after a finisher.
+        /// </summary>
+        public bool IsComboStartLocked => Time.time < comboRestartBufferEndTime;
         
         /// <summary>
         /// Returns the damage multiplier based on current state.
         /// </summary>
         public float GetDamageMultiplier()
         {
-            if (VulnerableDuringRecovery && IsInRecovery)
+            if (VulnerableDuringRecovery && IsInVulnerableRecovery)
                 return RecoveryDamageMultiplier;
             return 1f;
+        }
+
+        /// <summary>
+        /// Returns movement speed multiplier for recovery state.
+        /// </summary>
+        public float GetRecoveryMovementSpeedMultiplier()
+        {
+            if (!IsInVulnerableRecovery)
+                return 1f;
+
+            if (StopMovementDuringVulnerableRecovery)
+                return 0f;
+
+            return Mathf.Clamp01(VulnerableRecoveryMovementSpeedMultiplier);
         }
 
         /// <summary>
@@ -188,6 +260,9 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <returns>Selected combo or null if none are eligible.</returns>
         public CleanserCombo SelectCombo(float distanceToPlayer, int aggressionLevel)
         {
+            if (IsComboStartLocked)
+                return null;
+
             List<CleanserCombo> eligible = new List<CleanserCombo>();
             int totalWeight = 0;
 
@@ -238,7 +313,8 @@ namespace EnemyBehavior.Boss.Cleanser
             currentCombo = combo;
             currentStepIndex = 0;
             isExecutingCombo = true;
-            isInRecovery = false;
+            vulnerableRecoveryEndTime = 0f;
+            comboRestartBufferEndTime = 0f;
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserComboSystem), $"[CleanserCombo] Starting combo: {combo.ComboName} with {combo.StepCount} steps.");
@@ -332,10 +408,15 @@ namespace EnemyBehavior.Boss.Cleanser
             
             if (hadFinisher)
             {
-                isInRecovery = true;
-                recoveryEndTime = Time.time + PostFinisherRecovery;
+                float vulnerableDuration = GetScaledRecoveryDuration(VulnerableRecoveryDuration);
+                float comboBufferDuration = GetScaledRecoveryDuration(ComboRestartBufferDuration);
+
+                vulnerableRecoveryEndTime = Time.time + vulnerableDuration;
+                comboRestartBufferEndTime = Time.time + Mathf.Max(vulnerableDuration, comboBufferDuration);
 #if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserComboSystem), $"[CleanserCombo] Combo {currentCombo.ComboName} complete. Entering {PostFinisherRecovery}s recovery.");
+                EnemyBehaviorDebugLogBools.Log(
+                    nameof(CleanserComboSystem),
+                    $"[CleanserCombo] Combo {currentCombo.ComboName} complete. Vulnerable={vulnerableDuration:F2}s, ComboLock={Mathf.Max(vulnerableDuration, comboBufferDuration):F2}s.");
 #endif
             }
             else
@@ -398,9 +479,19 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public float GetRecoveryTimeRemaining()
         {
-            if (!IsInRecovery)
+            if (!IsInVulnerableRecovery)
                 return 0f;
-            return Mathf.Max(0f, recoveryEndTime - Time.time);
+            return Mathf.Max(0f, vulnerableRecoveryEndTime - Time.time);
+        }
+
+        /// <summary>
+        /// Returns combo-start lock time remaining, or 0 if unlocked.
+        /// </summary>
+        public float GetComboStartLockTimeRemaining()
+        {
+            if (!IsComboStartLocked)
+                return 0f;
+            return Mathf.Max(0f, comboRestartBufferEndTime - Time.time);
         }
 
         /// <summary>
@@ -408,10 +499,35 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void EndRecoveryEarly()
         {
-            isInRecovery = false;
+            vulnerableRecoveryEndTime = 0f;
+            comboRestartBufferEndTime = 0f;
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserComboSystem), "[CleanserCombo] Recovery ended early.");
 #endif
+        }
+
+        /// <summary>
+        /// Ends only the combo-start lockout while preserving vulnerable recovery timing.
+        /// </summary>
+        public void EndComboStartLockEarly()
+        {
+            comboRestartBufferEndTime = 0f;
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(nameof(CleanserComboSystem), "[CleanserCombo] Combo start lock ended early.");
+#endif
+        }
+
+        private float GetScaledRecoveryDuration(float baseDuration)
+        {
+            float clampedBase = Mathf.Max(0f, baseDuration);
+            if (!ScaleRecoveryDurationsByAggression || aggressionSystem == null)
+                return clampedBase;
+
+            float multiplier = RecoveryDurationMultipliers != null
+                ? RecoveryDurationMultipliers.GetMultiplier(aggressionSystem.CurrentLevel)
+                : 1f;
+
+            return clampedBase * Mathf.Max(0.05f, multiplier);
         }
 
 #if UNITY_EDITOR

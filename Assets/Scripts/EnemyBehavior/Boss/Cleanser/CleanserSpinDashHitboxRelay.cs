@@ -10,5 +10,10 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             Owner?.HandleSpinDashHitboxTrigger(other);
         }
+
+        private void OnTriggerStay(Collider other)
+        {
+            Owner?.HandleSpinDashHitboxTrigger(other);
+        }
     }
 }
