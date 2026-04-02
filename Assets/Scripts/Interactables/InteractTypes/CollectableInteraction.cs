@@ -12,6 +12,7 @@ public abstract class CollectableInteraction : InteractionManager
     [SerializeField] private float uiDisplayDuration = 4f;
     [SerializeField] private float uiFadeDuration = 2f;
     [SerializeField] private string bottomFlavorText = "Press Pause to View";
+    private bool fadeOutComplete = false;   
 
     protected override void Awake()
     {
@@ -68,9 +69,12 @@ public abstract class CollectableInteraction : InteractionManager
         
         yield return new WaitForSeconds(uiFadeDuration + uiDisplayDuration + uiFadeDuration); // Wait for fade-in + display + fade-out to complete
 
+        while (!fadeOutComplete)
+            yield return null; // Wait until fade-out is complete before deactivating the interactable
+
         DeactivateInteractable(interaction);
 
-        yield return null; // Placeholder for any additional logic if needed
+        yield return null; 
     }
 
     private IEnumerator FadeInUI(float fadeDuration, float displayDuration)
@@ -134,7 +138,7 @@ public abstract class CollectableInteraction : InteractionManager
 
         // Fade in collectUI background first
         float elapsedTime = 0f;
-        while(elapsedTime < fadeDuration)
+        while(elapsedTime < fadeDuration / 2)
         {
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(elapsedTime / fadeDuration);
@@ -198,6 +202,7 @@ public abstract class CollectableInteraction : InteractionManager
         float elapsedTime = 0f;
         while (elapsedTime < fadeDuration)
         {
+            Debug.Log("Fading out collect UI... Elapsed time: " + elapsedTime.ToString("F2") + "s");
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(1f - (elapsedTime / fadeDuration));
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
@@ -212,6 +217,7 @@ public abstract class CollectableInteraction : InteractionManager
             collectBottomText.gameObject.SetActive(false);
         if (collectUI != null)
             collectUI.SetActive(false);
+        fadeOutComplete = true;
     }
 
     private IEnumerator FadeInAndFadeOutUI(float fadeDuration, float displayDuration)
