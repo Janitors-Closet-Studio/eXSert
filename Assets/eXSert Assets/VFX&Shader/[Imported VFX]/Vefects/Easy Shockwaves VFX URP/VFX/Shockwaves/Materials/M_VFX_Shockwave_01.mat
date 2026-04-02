@@ -11,8 +11,10 @@ Material:
   m_Shader: {fileID: 4800000, guid: 60ffc169b2e46424ab2dae7e73d467cd, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_ValidKeywords:
+  - _RECEIVE_SHADOWS_OFF
+  m_InvalidKeywords:
+  - _RECEIVESHADOWS_OFF
   m_LightmapFlags: 0
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -94,7 +96,7 @@ Material:
     - _OpacityMultiply: 1
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _ReceiveShadows: 1
+    - _ReceiveShadows: 0
     - _Src: 5
     - _ZTest: 2
     - _ZWrite: 0
@@ -113,3 +115,4 @@ Material:
     - _TileControl: {r: 5, g: 5, b: 3, a: 0}
     - _TileUVS: {r: 1, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
