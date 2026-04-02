@@ -39,6 +39,7 @@ public class InteractionUI : Singleton<InteractionUI>
 
     private void OnDisable()
     {
+        Debug.Log("turning off interaction UI and unsubscribing from scene loaded event\n" + System.Environment.StackTrace);
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
 
@@ -47,8 +48,8 @@ public class InteractionUI : Singleton<InteractionUI>
         if (_interactText != null)
         {
             _interactText.gameObject.SetActive(false);
-            if (_interactText.transform.parent != null)
-                _interactText.transform.parent.gameObject.SetActive(false);
+            if (_interactText.transform != null)
+                _interactText.transform.gameObject.SetActive(false);
         }
 
         if (_interactIcon != null)
