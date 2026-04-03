@@ -1639,7 +1639,8 @@ public class PlayerMovement : MonoBehaviour
             if (enemy == null || !enemy.isAlive)
                 continue;
 
-            Vector3 toEnemy = enemy.transform.position - transform.position;
+            Transform candidateTarget = col.transform != null ? col.transform : enemy.transform;
+            Vector3 toEnemy = candidateTarget.position - transform.position;
             Vector3 toEnemyFlat = new Vector3(toEnemy.x, 0f, toEnemy.z);
             if (toEnemyFlat.sqrMagnitude <= 0.0001f)
                 continue;
@@ -1680,7 +1681,7 @@ public class PlayerMovement : MonoBehaviour
                     takeCandidate = true;
                 else if (Mathf.Approximately(viewportScore, bestViewportScore) && prioritizeHigherAerialTargets)
                 {
-                    float heightDelta = enemy.transform.position.y - transform.position.y;
+                    float heightDelta = candidateTarget.position.y - transform.position.y;
                     if (heightDelta > bestHeightDelta + 0.02f)
                         takeCandidate = true;
                     else if (Mathf.Abs(heightDelta - bestHeightDelta) <= 0.02f && sqrDistance < bestSqrDistance)
@@ -1693,7 +1694,7 @@ public class PlayerMovement : MonoBehaviour
             }
             else if (prioritizeHigherAerialTargets)
             {
-                float heightDelta = enemy.transform.position.y - transform.position.y;
+                float heightDelta = candidateTarget.position.y - transform.position.y;
                 if (heightDelta > bestHeightDelta + 0.02f)
                     takeCandidate = true;
                 else if (Mathf.Abs(heightDelta - bestHeightDelta) <= 0.02f && sqrDistance < bestSqrDistance)
@@ -1707,10 +1708,10 @@ public class PlayerMovement : MonoBehaviour
             if (takeCandidate)
             {
                 bestSqrDistance = sqrDistance;
-                bestHeightDelta = enemy.transform.position.y - transform.position.y;
+                bestHeightDelta = candidateTarget.position.y - transform.position.y;
                 bestIsDrone = isDrone;
                 bestViewportScore = viewportScore;
-                target = enemy.transform;
+                target = candidateTarget;
             }
         }
 

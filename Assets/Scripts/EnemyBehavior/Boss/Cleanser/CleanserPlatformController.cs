@@ -6,6 +6,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace EnemyBehavior.Boss.Cleanser
 {
@@ -19,8 +20,11 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("The platform GameObject.")]
         public GameObject PlatformObject;
         
-        [Tooltip("The collider used for player detection.")]
-        public Collider PlatformCollider;
+        [Tooltip("Box collider used as the platform surface for player standing.")]
+        public BoxCollider PlatformCollider;
+
+        [Tooltip("Optional elevated box trigger used for mount detection above the platform surface.")]
+        public BoxCollider MountCheckCollider;
         
         [Tooltip("Starting angle in the orbit (degrees).")]
         public float StartAngle = 0f;
@@ -29,6 +33,11 @@ namespace EnemyBehavior.Boss.Cleanser
         [HideInInspector] public Quaternion RestRotation;
         [HideInInspector] public float CurrentAngle;
         [HideInInspector] public bool IsRisen;
+        [HideInInspector] public float OrbitBaseHeight;
+        [HideInInspector] public float BobAmplitude;
+        [HideInInspector] public float BobFrequency;
+        [HideInInspector] public float BobPhase;
+        [HideInInspector] public bool IsRuntimeInstantiated;
     }
 
     /// <summary>
@@ -63,15 +72,29 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Transform that platforms orbit around (usually Cleanser).")]
         public Transform OrbitCenter;
 
+        [Header("Platform Bob")]
+        [Tooltip("If true, each floating platform applies independent vertical bob while raised.")]
+        public bool EnablePlatformBob = true;
+
+        [Tooltip("Per-platform bob amplitude range (world units).")]
+        public Vector2 PlatformBobAmplitudeRange = new Vector2(0.03f, 0.09f);
+
+        [Tooltip("Per-platform bob frequency range (cycles per second).")]
+        public Vector2 PlatformBobFrequencyRange = new Vector2(0.6f, 1.4f);
+
         [Header("Player Mounting")]
         [Tooltip("Layer mask for detecting the player.")]
         public LayerMask PlayerLayerMask;
-        
-        [Tooltip("Distance above platform surface to check for player.")]
-        public float MountCheckHeight = 1f;
-        
-        [Tooltip("Radius of mount detection check.")]
-        public float MountCheckRadius = 1f;
+
+        [Tooltip("Local Y offset for the elevated mount-check box collider above each platform.")]
+        [FormerlySerializedAs("MountCheckHeight")]
+        public float MountCheckBoxYOffset = 1f;
+
+        [Tooltip("Extra size added to the elevated mount-check box collider.")]
+        public Vector3 MountCheckBoxExtraSize = new Vector3(0.2f, 1f, 0.2f);
+
+        [Tooltip("Grace time before unmounting when mount-check overlap is momentarily lost.")]
+        [Min(0f)] public float MountExitGraceSeconds = 0.15f;
 
         [Header("VFX")]
         [Tooltip("VFX prefab spawned when platforms rise.")]
@@ -85,8 +108,15 @@ namespace EnemyBehavior.Boss.Cleanser
         private Transform mountedPlayer;
         private FloatingPlatform mountedPlatform;
         private Transform originalPlayerParent;
+        private float mountedLastInsideTime;
         private Coroutine orbitCoroutine;
         private Coroutine riseCoroutine;
+        private static readonly Collider[] mountCheckBuffer = new Collider[16];
+        private bool useConfiguredScenePlatforms;
+        private GameObject configuredScenePrimaryPlatform;
+        private GameObject configuredSceneSecondaryPlatform;
+        private GameObject configuredPrimaryPlatformPrefab;
+        private GameObject configuredSecondaryPlatformPrefab;
 
         /// <summary>
         /// Returns true if platforms are currently raised and orbiting.
@@ -100,17 +130,237 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void Awake()
         {
+            EnsureConfiguredPlatformsExist();
+
             // Cache rest positions
             foreach (var platform in Platforms)
             {
-                if (platform?.PlatformObject != null)
-                {
-                    platform.RestPosition = platform.PlatformObject.transform.position;
-                    platform.RestRotation = platform.PlatformObject.transform.rotation;
-                    platform.CurrentAngle = platform.StartAngle;
-                    platform.IsRisen = false;
-                }
+                CachePlatformRestState(platform);
             }
+        }
+
+        private void ConfigurePlatformBob(FloatingPlatform platform)
+        {
+            if (platform == null)
+                return;
+
+            if (!EnablePlatformBob)
+            {
+                platform.BobAmplitude = 0f;
+                platform.BobFrequency = 0f;
+                platform.BobPhase = 0f;
+                return;
+            }
+
+            float minAmplitude = Mathf.Max(0f, Mathf.Min(PlatformBobAmplitudeRange.x, PlatformBobAmplitudeRange.y));
+            float maxAmplitude = Mathf.Max(minAmplitude, Mathf.Max(PlatformBobAmplitudeRange.x, PlatformBobAmplitudeRange.y));
+            float minFrequency = Mathf.Max(0f, Mathf.Min(PlatformBobFrequencyRange.x, PlatformBobFrequencyRange.y));
+            float maxFrequency = Mathf.Max(minFrequency, Mathf.Max(PlatformBobFrequencyRange.x, PlatformBobFrequencyRange.y));
+
+            platform.BobAmplitude = Random.Range(minAmplitude, maxAmplitude);
+            platform.BobFrequency = Random.Range(minFrequency, maxFrequency);
+            platform.BobPhase = Random.Range(0f, Mathf.PI * 2f);
+        }
+
+        public void ConfigurePlatformSources(
+            bool useScenePlatforms,
+            GameObject scenePrimary,
+            GameObject sceneSecondary,
+            GameObject prefabPrimary,
+            GameObject prefabSecondary = null)
+        {
+            useConfiguredScenePlatforms = useScenePlatforms;
+            configuredScenePrimaryPlatform = scenePrimary;
+            configuredSceneSecondaryPlatform = sceneSecondary;
+            configuredPrimaryPlatformPrefab = prefabPrimary;
+            configuredSecondaryPlatformPrefab = prefabSecondary;
+        }
+
+        public void ConfigurePlatformPrefabs(GameObject primaryPrefab, GameObject secondaryPrefab = null)
+        {
+            configuredPrimaryPlatformPrefab = primaryPrefab;
+            configuredSecondaryPlatformPrefab = secondaryPrefab;
+            useConfiguredScenePlatforms = false;
+            configuredScenePrimaryPlatform = null;
+            configuredSceneSecondaryPlatform = null;
+        }
+
+        private void EnsureConfiguredPlatformsExist()
+        {
+            if (useConfiguredScenePlatforms)
+            {
+                EnsurePlatformSlots(2);
+
+                for (int i = 0; i < 2; i++)
+                {
+                    FloatingPlatform platform = Platforms[i];
+                    GameObject sceneObject = i == 0
+                        ? configuredScenePrimaryPlatform
+                        : configuredSceneSecondaryPlatform;
+
+                    if (sceneObject == null)
+                        continue;
+
+                    platform.PlatformObject = sceneObject;
+                    platform.IsRuntimeInstantiated = false;
+
+                    if (platform.PlatformCollider == null)
+                    {
+                        platform.PlatformCollider = EnsurePlatformSurfaceCollider(sceneObject);
+                    }
+
+                    EnsurePlatformMountCheckCollider(platform);
+
+                    CachePlatformRestState(platform);
+                }
+
+                return;
+            }
+
+            if (configuredPrimaryPlatformPrefab == null)
+                return;
+
+            EnsurePlatformSlots(2);
+
+            for (int i = 0; i < 2; i++)
+            {
+                FloatingPlatform platform = Platforms[i];
+
+                if (platform.PlatformObject == null)
+                {
+                    GameObject prefab = i == 0
+                        ? configuredPrimaryPlatformPrefab
+                        : (configuredSecondaryPlatformPrefab != null ? configuredSecondaryPlatformPrefab : configuredPrimaryPlatformPrefab);
+
+                    if (prefab == null)
+                        continue;
+
+                    if (Mathf.Abs(platform.StartAngle) < 0.001f)
+                        platform.StartAngle = i == 0 ? 0f : 180f;
+
+                    Vector3 spawnPos = GetConfiguredPlatformRestPosition(platform.StartAngle);
+                    GameObject platformObject = Instantiate(prefab, spawnPos, Quaternion.identity);
+                    platformObject.name = $"{prefab.name}_UltimatePlatform_{i + 1}";
+                    platform.PlatformObject = platformObject;
+                    platform.IsRuntimeInstantiated = true;
+                }
+
+                if (platform.PlatformCollider == null && platform.PlatformObject != null)
+                {
+                    platform.PlatformCollider = EnsurePlatformSurfaceCollider(platform.PlatformObject);
+                }
+
+                EnsurePlatformMountCheckCollider(platform);
+
+                CachePlatformRestState(platform);
+            }
+        }
+
+        private void EnsurePlatformSlots(int requiredCount)
+        {
+            for (int i = 0; i < requiredCount; i++)
+            {
+                if (Platforms.Count <= i)
+                {
+                    Platforms.Add(new FloatingPlatform { StartAngle = i == 0 ? 0f : 180f });
+                    continue;
+                }
+
+                if (Platforms[i] == null)
+                    Platforms[i] = new FloatingPlatform { StartAngle = i == 0 ? 0f : 180f };
+            }
+        }
+
+        private Vector3 GetConfiguredPlatformRestPosition(float angleDeg)
+        {
+            Vector3 centerPos = OrbitCenter != null ? OrbitCenter.position : transform.position;
+            float baseHeight = HeightReference != null ? HeightReference.position.y : centerPos.y;
+            float angleRad = angleDeg * Mathf.Deg2Rad;
+
+            return new Vector3(
+                centerPos.x + Mathf.Cos(angleRad) * OrbitRadius,
+                baseHeight,
+                centerPos.z + Mathf.Sin(angleRad) * OrbitRadius);
+        }
+
+        private void CachePlatformRestState(FloatingPlatform platform)
+        {
+            if (platform?.PlatformObject == null)
+                return;
+
+            platform.RestPosition = platform.PlatformObject.transform.position;
+            platform.RestRotation = platform.PlatformObject.transform.rotation;
+            platform.CurrentAngle = platform.StartAngle;
+            platform.IsRisen = false;
+            platform.OrbitBaseHeight = platform.RestPosition.y;
+
+            if (platform.MountCheckCollider != null)
+            {
+                platform.MountCheckCollider.transform.localRotation = Quaternion.identity;
+                platform.MountCheckCollider.transform.localPosition = new Vector3(0f, MountCheckBoxYOffset, 0f);
+            }
+        }
+
+        private BoxCollider EnsurePlatformSurfaceCollider(GameObject platformObject)
+        {
+            if (platformObject == null)
+                return null;
+
+            BoxCollider box = platformObject.GetComponent<BoxCollider>();
+            if (box == null)
+                box = platformObject.AddComponent<BoxCollider>();
+
+            box.isTrigger = false;
+            EnsurePlatformPhysicsBody(platformObject);
+            return box;
+        }
+
+        private void EnsurePlatformPhysicsBody(GameObject platformObject)
+        {
+            if (platformObject == null)
+                return;
+
+            Rigidbody rb = platformObject.GetComponent<Rigidbody>();
+            if (rb == null)
+                rb = platformObject.AddComponent<Rigidbody>();
+
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+        }
+
+        private void EnsurePlatformMountCheckCollider(FloatingPlatform platform)
+        {
+            if (platform == null || platform.PlatformObject == null || platform.PlatformCollider == null)
+                return;
+
+            if (platform.MountCheckCollider == null)
+            {
+                Transform existing = platform.PlatformObject.transform.Find("MountCheckBox");
+                if (existing != null)
+                    platform.MountCheckCollider = existing.GetComponent<BoxCollider>();
+            }
+
+            if (platform.MountCheckCollider == null)
+            {
+                GameObject mountCheckObj = new GameObject("MountCheckBox");
+                mountCheckObj.transform.SetParent(platform.PlatformObject.transform, false);
+                platform.MountCheckCollider = mountCheckObj.AddComponent<BoxCollider>();
+            }
+
+            platform.MountCheckCollider.isTrigger = true;
+            platform.MountCheckCollider.center = Vector3.zero;
+            platform.MountCheckCollider.size = platform.PlatformCollider.size + MountCheckBoxExtraSize;
+            platform.MountCheckCollider.transform.localRotation = Quaternion.identity;
+            platform.MountCheckCollider.transform.localPosition = new Vector3(0f, MountCheckBoxYOffset, 0f);
+        }
+
+        private static Vector3 GetWorldHalfExtents(BoxCollider box)
+        {
+            Vector3 worldScale = box.transform.lossyScale;
+            Vector3 absScale = new Vector3(Mathf.Abs(worldScale.x), Mathf.Abs(worldScale.y), Mathf.Abs(worldScale.z));
+            return Vector3.Scale(box.size, absScale) * 0.5f;
         }
 
         /// <summary>
@@ -120,6 +370,8 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (platformsActive)
                 return;
+
+            EnsureConfiguredPlatformsExist();
 
             if (riseCoroutine != null)
                 StopCoroutine(riseCoroutine);
@@ -176,6 +428,8 @@ namespace EnemyBehavior.Boss.Cleanser
                     baseHeight + RiseHeight,
                     orbitPos.z + Mathf.Sin(angle) * OrbitRadius
                 );
+                platform.OrbitBaseHeight = targetPos.y;
+                ConfigurePlatformBob(platform);
                 targetPositions.Add(targetPos);
             }
 
@@ -278,6 +532,15 @@ namespace EnemyBehavior.Boss.Cleanser
                 platform.PlatformObject.transform.position = platform.RestPosition;
                 platform.PlatformObject.transform.rotation = platform.RestRotation;
                 platform.IsRisen = false;
+
+                if (!useConfiguredScenePlatforms && platform.IsRuntimeInstantiated)
+                {
+                    Destroy(platform.PlatformObject);
+                    platform.PlatformObject = null;
+                    platform.PlatformCollider = null;
+                    platform.MountCheckCollider = null;
+                    platform.IsRuntimeInstantiated = false;
+                }
             }
 
             platformsActive = false;
@@ -307,9 +570,15 @@ namespace EnemyBehavior.Boss.Cleanser
                     float rad = platform.CurrentAngle * Mathf.Deg2Rad;
                     Vector3 newPos = new Vector3(
                         centerPos.x + Mathf.Cos(rad) * OrbitRadius,
-                        platform.PlatformObject.transform.position.y, // Keep current height
+                        platform.OrbitBaseHeight,
                         centerPos.z + Mathf.Sin(rad) * OrbitRadius
                     );
+
+                    if (platform.BobAmplitude > 0f && platform.BobFrequency > 0f)
+                    {
+                        float bobOffset = Mathf.Sin((Time.time * platform.BobFrequency * Mathf.PI * 2f) + platform.BobPhase) * platform.BobAmplitude;
+                        newPos.y += bobOffset;
+                    }
 
                     // Move platform
                     platform.PlatformObject.transform.position = newPos;
@@ -338,20 +607,44 @@ namespace EnemyBehavior.Boss.Cleanser
                 // Check if player has jumped off
                 if (mountedPlayer != null && mountedPlatform != null)
                 {
-                    Vector3 checkPos = mountedPlatform.PlatformObject.transform.position + Vector3.up * MountCheckHeight;
-                    Collider[] hits = Physics.OverlapSphere(checkPos, MountCheckRadius * 1.5f, PlayerLayerMask);
+                    BoxCollider mountCheckCollider = mountedPlatform.MountCheckCollider;
+                    if (mountCheckCollider == null)
+                    {
+                        UnmountPlayer();
+                        return;
+                    }
+
+                    Vector3 checkCenter = mountCheckCollider.transform.TransformPoint(mountCheckCollider.center);
+                    Vector3 checkHalfExtents = GetWorldHalfExtents(mountCheckCollider);
+                    checkHalfExtents *= 1.1f;
+                    int hitCount = Physics.OverlapBoxNonAlloc(
+                        checkCenter,
+                        checkHalfExtents,
+                        mountCheckBuffer,
+                        mountCheckCollider.transform.rotation,
+                        PlayerLayerMask,
+                        QueryTriggerInteraction.Collide);
                     
                     bool stillOnPlatform = false;
-                    foreach (var hit in hits)
+                    for (int i = 0; i < hitCount; i++)
                     {
-                        if (hit.transform == mountedPlayer || hit.transform.IsChildOf(mountedPlayer))
+                        Collider hit = mountCheckBuffer[i];
+                        if (hit == null)
+                            continue;
+
+                        Transform hitRoot = hit.transform.root;
+                        if (hitRoot == mountedPlayer || hit.transform == mountedPlayer || hit.transform.IsChildOf(mountedPlayer))
                         {
                             stillOnPlatform = true;
                             break;
                         }
                     }
-                    
-                    if (!stillOnPlatform)
+
+                    if (stillOnPlatform)
+                    {
+                        mountedLastInsideTime = Time.time;
+                    }
+                    else if (Time.time - mountedLastInsideTime > MountExitGraceSeconds)
                     {
                         UnmountPlayer();
                     }
@@ -365,14 +658,29 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (platform?.PlatformObject == null || !platform.IsRisen)
                     continue;
 
-                Vector3 checkPos = platform.PlatformObject.transform.position + Vector3.up * MountCheckHeight;
-                Collider[] hits = Physics.OverlapSphere(checkPos, MountCheckRadius, PlayerLayerMask);
+                BoxCollider mountCheckCollider = platform.MountCheckCollider;
+                if (mountCheckCollider == null)
+                    continue;
 
-                foreach (var hit in hits)
+                int hitCount = Physics.OverlapBoxNonAlloc(
+                    mountCheckCollider.transform.TransformPoint(mountCheckCollider.center),
+                    GetWorldHalfExtents(mountCheckCollider),
+                    mountCheckBuffer,
+                    mountCheckCollider.transform.rotation,
+                    PlayerLayerMask,
+                    QueryTriggerInteraction.Collide);
+
+                for (int i = 0; i < hitCount; i++)
                 {
-                    if (hit.CompareTag("Player"))
+                    Collider hit = mountCheckBuffer[i];
+                    if (hit == null)
+                        continue;
+
+                    Transform hitRoot = hit.transform.root;
+                    bool isPlayer = hit.CompareTag("Player") || (hitRoot != null && hitRoot.CompareTag("Player"));
+                    if (isPlayer)
                     {
-                        MountPlayer(hit.transform, platform);
+                        MountPlayer(hitRoot != null ? hitRoot : hit.transform, platform);
                         return;
                     }
                 }
@@ -384,9 +692,10 @@ namespace EnemyBehavior.Boss.Cleanser
             mountedPlayer = player;
             mountedPlatform = platform;
             originalPlayerParent = player.parent;
+            mountedLastInsideTime = Time.time;
             
             // Parent player to platform
-            player.SetParent(platform.PlatformObject.transform);
+            player.SetParent(platform.PlatformObject.transform, true);
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserPlatformController), $"[CleanserPlatforms] Player mounted on platform.");
@@ -404,6 +713,7 @@ namespace EnemyBehavior.Boss.Cleanser
             mountedPlayer = null;
             mountedPlatform = null;
             originalPlayerParent = null;
+            mountedLastInsideTime = 0f;
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserPlatformController), "[CleanserPlatforms] Player dismounted from platform.");
@@ -479,10 +789,17 @@ namespace EnemyBehavior.Boss.Cleanser
                 
                 // Draw mount check area
                 Gizmos.color = Color.blue;
-                Gizmos.DrawWireSphere(
-                    platform.PlatformObject.transform.position + Vector3.up * MountCheckHeight,
-                    MountCheckRadius
-                );
+                if (platform.MountCheckCollider != null)
+                {
+                    Vector3 lossy = platform.MountCheckCollider.transform.lossyScale;
+                    Vector3 absLossy = new Vector3(Mathf.Abs(lossy.x), Mathf.Abs(lossy.y), Mathf.Abs(lossy.z));
+                    Gizmos.matrix = Matrix4x4.TRS(
+                        platform.MountCheckCollider.transform.TransformPoint(platform.MountCheckCollider.center),
+                        platform.MountCheckCollider.transform.rotation,
+                        absLossy);
+                    Gizmos.DrawWireCube(Vector3.zero, platform.MountCheckCollider.size);
+                    Gizmos.matrix = Matrix4x4.identity;
+                }
             }
         }
 

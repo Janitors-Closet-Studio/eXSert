@@ -141,10 +141,19 @@ namespace EnemyBehavior.Boss.Cleanser
         public float AerialFinisherStunDuration = 3f;
         [Tooltip("Health percentage at which ultimate becomes available.")]
         [Range(0f, 1f)] public float UltimateHealthThreshold = 0.5f;
-        [Tooltip("Minimum attacks between ultimate uses when using attack-count trigger mode.")]
-        public int MinAttacksBetweenUltimates = 15;
-        [Tooltip("If true, ultimate triggers by health threshold. If false, triggers by attacks since last ultimate.")]
+        [Tooltip("Minimum combos between ultimate uses when using combo-count trigger mode.")]
+        [FormerlySerializedAs("MinAttacksBetweenUltimates")]
+        public int MinCombosBetweenUltimates = 3;
+        [Tooltip("If true, ultimate triggers by health threshold. If false, triggers by combos since last ultimate.")]
         public bool UltimateTriggeredByHealth = true;
+
+        [Header("Floating Aerial Target Assist")]
+        [Tooltip("Optional collider used as aerial target-assist proxy while Cleanser is in ultimate floating phase. If empty, a runtime sphere trigger is created.")]
+        [SerializeField] private Collider floatingAerialAssistCollider;
+        [Tooltip("Local Y offset for floating aerial target-assist proxy relative to Cleanser root.")]
+        [SerializeField] private float floatingAerialAssistYOffset = -2.5f;
+        [Tooltip("Radius used when auto-creating floating aerial target-assist sphere proxy.")]
+        [SerializeField, Min(0.1f)] private float floatingAerialAssistRadius = 1.5f;
 
         [Header("Spare Toss Configuration")]
         [Tooltip("Behavior settings for spare toss projectiles.")]
@@ -277,6 +286,13 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Hard safety timeout for waiting on JumpArcMoveStart to prevent soft-locks.")]
         [SerializeField, Min(0.1f)] private float jumpArcMoveEventMaxWait = 3f;
 
+        [Tooltip("If true, JumpFull movement can start after fallback delay even without JumpFullMoveStart event.")]
+        [SerializeField] private bool allowJumpFullMoveFallback = true;
+        [Tooltip("Time to wait for JumpFullMoveStart before fallback can start movement.")]
+        [SerializeField, Min(0.01f)] private float jumpFullMoveEventFallbackDelay = 0.6f;
+        [Tooltip("Hard safety timeout for waiting on JumpFullMoveStart to prevent soft-locks.")]
+        [SerializeField, Min(0.1f)] private float jumpFullMoveEventMaxWait = 2f;
+
         [Header("Attack Indicator VFX")]
         [Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
         [SerializeField] private GameObject attackIndicatorPrefab;
@@ -305,9 +321,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isExecutingAttack;
         private bool isInUltimateHoverPhase;
         private bool ultimateCanceledByAerial;
-        private int attacksSinceUltimate;
+        private int combosSinceUltimate;
         private bool hasUsedUltimate;
-        private int aerialHitsReceived;
         private float ultimateHoverPauseTimer;
         private Coroutine mainLoopCoroutine;
         private Coroutine currentAttackCoroutine;
@@ -357,6 +372,9 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isStrafingMovement;
         private bool waitingForJumpArcMovementEvent;
         private bool jumpArcMovementEventReceived;
+        private bool waitingForJumpFullMovementEvent;
+        private bool jumpFullMovementEventReceived;
+        private Collider runtimeFloatingAerialAssistCollider;
 
         #region IQueuedAttacker Implementation
         
@@ -1187,6 +1205,7 @@ namespace EnemyBehavior.Boss.Cleanser
             comboSystem.StartCombo(combo);
             pickedUpWeaponThisCombo = false;
             currentComboMovementSpeedMultiplier = combo != null ? Mathf.Max(0.1f, combo.ComboMovementSpeedMultiplier) : 1f;
+            bool comboExecutedAnyStep = false;
             
             while (comboSystem.IsExecutingCombo)
             {
@@ -1268,8 +1287,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 {
                     yield return ExecuteBasicAttack(step.BasicAttack);
                 }
-                
-                attacksSinceUltimate++;
+
+                comboExecutedAnyStep = true;
                 
                 if (!comboSystem.AdvanceStep())
                     break;
@@ -1294,6 +1313,9 @@ namespace EnemyBehavior.Boss.Cleanser
                     dualWieldSystem.ReturnAllLodgedWeaponsToRest();
                 }
             }
+
+            if (comboExecutedAnyStep)
+                combosSinceUltimate++;
         }
 
         private IEnumerator ExecuteBasicAttack(CleanserBasicAttack attackType)
@@ -1903,6 +1925,17 @@ namespace EnemyBehavior.Boss.Cleanser
             jumpArcMovementEventReceived = true;
         }
 
+        /// <summary>
+        /// Animation Event: Called when JumpFull movement should begin.
+        /// </summary>
+        public void OnJumpFullMovementStart()
+        {
+            if (!waitingForJumpFullMovementEvent)
+                return;
+
+            jumpFullMovementEventReceived = true;
+        }
+
         private IEnumerator WaitForJumpArcMovementEventOrFallback()
         {
             waitingForJumpArcMovementEvent = true;
@@ -1936,6 +1969,39 @@ namespace EnemyBehavior.Boss.Cleanser
             waitingForJumpArcMovementEvent = false;
         }
 
+        private IEnumerator WaitForJumpFullMovementEventOrFallback()
+        {
+            waitingForJumpFullMovementEvent = true;
+            jumpFullMovementEventReceived = false;
+
+            float fallbackDelay = Mathf.Max(0.01f, jumpFullMoveEventFallbackDelay);
+            float maxWait = Mathf.Max(fallbackDelay, jumpFullMoveEventMaxWait);
+            float elapsed = 0f;
+
+            while (!jumpFullMovementEventReceived && elapsed < maxWait)
+            {
+                if (allowJumpFullMoveFallback && elapsed >= fallbackDelay)
+                    break;
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (!jumpFullMovementEventReceived)
+            {
+                if (allowJumpFullMoveFallback && elapsed >= fallbackDelay)
+                {
+                    Debug.LogWarning("[Cleanser] JumpFullMoveStart event not received before fallback delay. Starting jump movement via fallback.", this);
+                }
+                else
+                {
+                    Debug.LogWarning("[Cleanser] JumpFullMoveStart event not received before hard timeout. Starting jump movement via safety timeout.", this);
+                }
+            }
+
+            waitingForJumpFullMovementEvent = false;
+        }
+
         /// <summary>
         /// Animation Event: Spawns DiagUpwardSlash projectile(s) while the halberd hitbox attack is active.
         /// </summary>
@@ -1943,6 +2009,11 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (!isExecutingAttack || player == null)
                 return;
+
+            Vector3 toPlayer = player.position - transform.position;
+            toPlayer.y = 0f;
+            if (toPlayer.sqrMagnitude > 0.001f)
+                transform.rotation = Quaternion.LookRotation(toPlayer.normalized);
 
             SpawnCrescentArcProjectiles(DiagUpwardSlashAttack != null ? DiagUpwardSlashAttack.ProjectileConfig : null, player.position, 0f);
         }
@@ -2584,6 +2655,9 @@ namespace EnemyBehavior.Boss.Cleanser
             offset = offset.normalized * radius;
 
             float angle = Mathf.Atan2(offset.z, offset.x);
+            float afterImageSpawnTimer = 0f;
+            float smokeSpawnTimer = 0f;
+            Vector3 previousCirclePosition = transform.position;
 
             for (int dashIndex = 0; dashIndex < dashThroughCount; dashIndex++)
             {
@@ -2646,6 +2720,58 @@ namespace EnemyBehavior.Boss.Cleanser
                         Quaternion tangentRot = Quaternion.LookRotation(tangent.normalized);
                         transform.rotation = Quaternion.RotateTowards(transform.rotation, tangentRot, currentTurnSpeed * Time.deltaTime);
                     }
+
+                    Vector3 frameMove = transform.position - previousCirclePosition;
+                    frameMove.y = 0f;
+                    float currentMoveSpeed = frameMove.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
+                    float currentAngularSpeedDegPerSec = radius > 0.0001f
+                        ? (currentMoveSpeed / radius) * Mathf.Rad2Deg
+                        : 0f;
+                    float maxCircleMoveSpeed = Mathf.Max(0.0001f, radius * circleAngularSpeedRad);
+                    float normalizedCircleSpeed = Mathf.Clamp01(currentMoveSpeed / maxCircleMoveSpeed);
+
+                    float afterImageSpawnInterval = Mathf.Max(
+                        0.01f,
+                        settings.CircleAfterImageSpawnInterval * Mathf.Lerp(
+                            1f,
+                            Mathf.Clamp(settings.CircleAfterImageSpawnIntervalAtMaxSpeedMultiplier, 0.05f, 1f),
+                            normalizedCircleSpeed));
+                    float afterImageLifetime = Mathf.Max(
+                        0.01f,
+                        settings.CircleAfterImageLifetime * Mathf.Lerp(
+                            1f,
+                            Mathf.Clamp(settings.CircleAfterImageLifetimeAtMaxSpeedMultiplier, 0.05f, 1f),
+                            normalizedCircleSpeed));
+
+                    afterImageSpawnTimer = Mathf.Min(afterImageSpawnTimer, afterImageSpawnInterval);
+
+                    afterImageSpawnTimer -= Time.deltaTime;
+                    if (settings.CircleAfterImageVFX != null && afterImageSpawnTimer <= 0f)
+                    {
+                        GameObject afterImage = Instantiate(settings.CircleAfterImageVFX, transform.position, transform.rotation);
+                        Destroy(afterImage, afterImageLifetime);
+                        afterImageSpawnTimer = afterImageSpawnInterval;
+                    }
+
+                    float smokeSpawnInterval = Mathf.Max(0.01f, settings.CircleSmokeTrailSpawnInterval);
+                    smokeSpawnTimer -= Time.deltaTime;
+                    if (settings.CircleSmokeTrailVFX != null && smokeSpawnTimer <= 0f)
+                    {
+                        if (currentAngularSpeedDegPerSec >= Mathf.Max(0f, settings.CircleSmokeTrailMinAngularSpeedDegPerSec))
+                        {
+                            Vector3 smokePos = transform.position + Vector3.up * settings.CircleSmokeTrailYOffset;
+                            Quaternion smokeRot = transform.rotation;
+                            if (frameMove.sqrMagnitude > 0.0001f)
+                                smokeRot = Quaternion.LookRotation(-frameMove.normalized, Vector3.up);
+
+                            GameObject smokeTrail = Instantiate(settings.CircleSmokeTrailVFX, smokePos, smokeRot);
+                            Destroy(smokeTrail, Mathf.Max(0.01f, settings.CircleSmokeTrailLifetime));
+                        }
+
+                        smokeSpawnTimer = smokeSpawnInterval;
+                    }
+
+                    previousCirclePosition = transform.position;
 
                     yield return null;
                 }
@@ -3087,7 +3213,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             else
             {
-                return attacksSinceUltimate >= MinAttacksBetweenUltimates;
+                return combosSinceUltimate >= Mathf.Max(1, MinCombosBetweenUltimates);
             }
         }
 
@@ -3116,8 +3242,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             isExecutingUltimate = true;
             hasUsedUltimate = true;
-            attacksSinceUltimate = 0;
-            aerialHitsReceived = 0;
+            combosSinceUltimate = 0;
             waitingForUltimateLowSweepEvent = false;
             waitingForUltimateMidSweepEvent = false;
             
@@ -3130,8 +3255,13 @@ namespace EnemyBehavior.Boss.Cleanser
             if (DoubleSweepPositions.Count > 0)
             {
                 TriggerAnimation(UltimateSettings.JumpFullTrigger);
+                yield return WaitForJumpFullMovementEventOrFallback();
                 Transform sweepPos = DoubleSweepPositions[Random.Range(0, DoubleSweepPositions.Count)];
-                yield return JumpToPosition(sweepPos.position, Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration));
+                yield return JumpToPosition(
+                    sweepPos.position,
+                    Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration),
+                    true,
+                    Mathf.Max(0f, UltimateSettings.JumpFullArcApexHeight));
             }
             
             Vector3 arenaCenter = ultimateArenaCenterPoint != null
@@ -3150,28 +3280,48 @@ namespace EnemyBehavior.Boss.Cleanser
 
             // After double sweep completes, jump to arena center before entering hover ascent.
             TriggerAnimation(UltimateSettings.JumpFullTrigger);
-            yield return JumpToPosition(arenaCenter, Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration));
+            yield return WaitForJumpFullMovementEventOrFallback();
+            yield return JumpToPosition(
+                arenaCenter,
+                Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration),
+                true,
+                Mathf.Max(0f, UltimateSettings.JumpFullArcApexHeight));
             
-            Vector3 floatPos = arenaCenter + Vector3.up * UltimateSettings.HoverHeightOffset;
+            float hoverBaseY = (ultimateArenaCenterPoint != null ? ultimateArenaCenterPoint.position.y : arenaCenter.y) + UltimateSettings.HoverHeightOffset;
+            Vector3 floatPos = new Vector3(arenaCenter.x, hoverBaseY, arenaCenter.z);
             TriggerJumpArcBaseAnimation();
             yield return WaitForJumpArcMovementEventOrFallback();
-            yield return JumpToPosition(floatPos, 0.8f);
+            yield return JumpToPosition(floatPos, 0.8f, false);
             TriggerAnimation(UltimateSettings.JumpArcHoldTrigger);
+            SetFloatingAerialAssistActive(true);
             
             if (platformController != null)
             {
                 platformController.OrbitCenter = transform;
                 platformController.HeightReference = ultimateArenaCenterPoint;
+                platformController.ConfigurePlatformSources(
+                    UltimateSettings.UseSceneFloatingPlatforms,
+                    UltimateSettings.SceneFloatingPlatformPrimary,
+                    UltimateSettings.SceneFloatingPlatformSecondary,
+                    UltimateSettings.FloatingPlatformPrefabPrimary,
+                    UltimateSettings.FloatingPlatformPrefabSecondary);
                 platformController.RaisePlatforms();
             }
             
             if (UltimateSettings.PlayCutsceneOnFirstUse)
             {
-                yield return new WaitForSeconds(UltimateSettings.CutsceneDuration);
+                float cutsceneElapsed = 0f;
+                while (cutsceneElapsed < UltimateSettings.CutsceneDuration)
+                {
+                    ApplyUltimateHoverPositionLock(cutsceneElapsed, hoverBaseY);
+                    cutsceneElapsed += Time.deltaTime;
+                    yield return null;
+                }
                 UltimateSettings.PlayCutsceneOnFirstUse = false;
             }
             
-            yield return ExecuteUltimateHoverPhase();
+            yield return ExecuteUltimateHoverPhase(hoverBaseY);
+            SetFloatingAerialAssistActive(false);
             bool canceled = ultimateCanceledByAerial;
             
             if (platformController != null)
@@ -3200,6 +3350,12 @@ namespace EnemyBehavior.Boss.Cleanser
                 }
                 
                 yield return ApplyStun(AerialFinisherStunDuration);
+            }
+
+            if (agent != null && !agent.enabled)
+            {
+                agent.enabled = true;
+                agent.Warp(transform.position);
             }
             
             // Reset spare stockpile/lodged state after ultimate.
@@ -3258,11 +3414,10 @@ namespace EnemyBehavior.Boss.Cleanser
             return config != null && config.ProjectilePrefab != null;
         }
 
-        private IEnumerator ExecuteUltimateHoverPhase()
+        private IEnumerator ExecuteUltimateHoverPhase(float hoverBaseY)
         {
             isInUltimateHoverPhase = true;
             ultimateCanceledByAerial = false;
-            aerialHitsReceived = 0;
             ultimateHoverPauseTimer = 0f;
 
             float chargeElapsed = 0f;
@@ -3285,13 +3440,32 @@ namespace EnemyBehavior.Boss.Cleanser
                     chargeElapsed += Time.deltaTime;
                 }
 
-                float hoverRotateSpeed = UltimateSettings.HoverRotationSpeed;
-                if (Mathf.Abs(hoverRotateSpeed) > 0.001f)
-                    transform.Rotate(Vector3.up, hoverRotateSpeed * Time.deltaTime, Space.World);
+                ApplyUltimateHoverPositionLock(chargeElapsed, hoverBaseY);
 
                 yield return null;
             }
             isInUltimateHoverPhase = false;
+        }
+
+        private void ApplyUltimateHoverPositionLock(float hoverElapsedTime, float fallbackHoverBaseY)
+        {
+            float hoverBaseY = ultimateArenaCenterPoint != null
+                ? ultimateArenaCenterPoint.position.y + UltimateSettings.HoverHeightOffset
+                : fallbackHoverBaseY;
+
+            float bobAmplitude = Mathf.Max(0f, UltimateSettings.HoverBobAmplitude);
+            float bobFrequency = Mathf.Max(0f, UltimateSettings.HoverBobFrequency);
+            float bobOffset = (bobAmplitude > 0f && bobFrequency > 0f)
+                ? Mathf.Sin(hoverElapsedTime * bobFrequency * Mathf.PI * 2f) * bobAmplitude
+                : 0f;
+
+            Vector3 lockedPos = transform.position;
+            lockedPos.y = hoverBaseY + bobOffset;
+            transform.position = lockedPos;
+
+            float hoverRotateSpeed = UltimateSettings.HoverRotationSpeed;
+            if (Mathf.Abs(hoverRotateSpeed) > 0.001f)
+                transform.Rotate(Vector3.up, hoverRotateSpeed * Time.deltaTime, Space.World);
         }
 
         private void SpawnCrescentArcProjectiles(CrescentArcProjectileConfig config, Vector3 targetPos, float additionalHeight = 0f)
@@ -3316,7 +3490,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 Vector3 dir = Quaternion.AngleAxis(finalYaw, Vector3.up) * baseDir;
 
                 Vector3 spawnPos = transform.position
-                    + transform.forward * config.SpawnForwardOffset
+                    + dir * config.SpawnForwardOffset
                     + Vector3.up * (config.SpawnHeight + additionalHeight);
 
                 GameObject prefabToSpawn = config.ProjectilePrefab;
@@ -3325,7 +3499,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     continue;
 
                 float tiltAngle = Random.Range(config.TiltAngleRange.x, config.TiltAngleRange.y);
-                Quaternion spawnRot = Quaternion.LookRotation(dir) * Quaternion.Euler(tiltAngle, 0f, 0f);
+                Quaternion spawnRot = Quaternion.LookRotation(dir) * Quaternion.AngleAxis(tiltAngle, Vector3.forward);
                 GameObject projectile = Instantiate(prefabToSpawn, spawnPos, spawnRot);
 
                 float scale = Random.Range(config.ScaleRange.x, config.ScaleRange.y);
@@ -3368,12 +3542,24 @@ namespace EnemyBehavior.Boss.Cleanser
 
                 // Fallback path if prefab uses Rigidbody-only motion.
                 var rb = projectile.GetComponent<Rigidbody>();
-                if (rb != null)
+                if (rb != null && !rb.isKinematic)
                 {
                     rb.linearVelocity = dir * config.Speed;
+                    Destroy(projectile, 5f);
+                    continue;
                 }
 
-                Destroy(projectile, 5f);
+                // Last-resort fallback for simple test prefabs (e.g., cubes): add runtime arc mover.
+                var runtimeArcProjectile = projectile.AddComponent<CleanserCrescentArcProjectile>();
+                runtimeArcProjectile.Initialize(
+                    dir,
+                    config.Damage,
+                    config.Speed,
+                    config.MaxDistance,
+                    config.DamageCategory,
+                    config.CanBeParried,
+                    config.CanBeGuarded,
+                    config.GuardDamageMultiplier);
             }
         }
 
@@ -3387,6 +3573,10 @@ namespace EnemyBehavior.Boss.Cleanser
             targetPos.y = 0f;
             
             agent.enabled = false;
+
+            float slamMoveDelay = Mathf.Max(0f, UltimateSettings.JumpArcResolutionMoveDelay);
+            if (slamMoveDelay > 0f)
+                yield return new WaitForSeconds(slamMoveDelay);
             
             float elapsed = 0f;
             while (elapsed < 0.3f)
@@ -3413,44 +3603,105 @@ namespace EnemyBehavior.Boss.Cleanser
         private void CheckMassiveStrikeHit()
         {
             if (player == null) return;
-            
-            float dist = Vector3.Distance(transform.position, player.position);
-            if (dist <= UltimateSettings.MassiveStrikeRadius)
+
+            float damage = GetMassiveStrikeDamage(UltimateSettings.MassiveStrikeDamage);
+            if (damage <= 0f)
+                return;
+
+            if (CombatManager.isGuarding)
             {
-                float damage = UltimateSettings.MassiveStrikeDamage;
-                
-                if (CombatManager.isGuarding)
-                {
-                    damage *= (1f - UltimateSettings.GuardMitigationCap);
-                }
-                
-                if (player.TryGetComponent<IHealthSystem>(out var health))
-                {
-                    health.LoseHP(damage);
-                }
+                damage *= (1f - UltimateSettings.GuardMitigationCap);
             }
+
+            if (player.TryGetComponent<IHealthSystem>(out var health))
+            {
+                health.LoseHP(damage);
+            }
+        }
+
+        private float GetMassiveStrikeDamage(float baseDamage)
+        {
+            if (player == null)
+                return 0f;
+
+            float radius = Mathf.Max(0.1f, UltimateSettings.MassiveStrikeRadius);
+            float distance = Vector3.Distance(transform.position, player.position);
+            if (distance > radius)
+                return 0f;
+
+            MassiveStrikeDamageConfig config = UltimateSettings.MassiveStrikeDamageConfig ?? new MassiveStrikeDamageConfig();
+            float innerRadius = radius * Mathf.Clamp01(config.FullDamageRadiusPercent);
+            float edgePercent = Mathf.Clamp01(config.EdgeDamagePercent);
+
+            float damagePercent = 1f;
+            if (distance > innerRadius && radius > innerRadius)
+            {
+                float t = Mathf.InverseLerp(innerRadius, radius, distance);
+                damagePercent = Mathf.Lerp(1f, edgePercent, t);
+            }
+
+            return baseDamage * Mathf.Clamp01(damagePercent);
+        }
+
+        private Collider EnsureFloatingAerialAssistCollider()
+        {
+            if (floatingAerialAssistCollider != null)
+                return floatingAerialAssistCollider;
+
+            if (runtimeFloatingAerialAssistCollider == null)
+            {
+                GameObject proxy = new GameObject("Cleanser_FloatingAerialAssistProxy");
+                proxy.transform.SetParent(transform, false);
+
+                int enemyLayer = LayerMask.NameToLayer("Enemy");
+                proxy.layer = enemyLayer >= 0 ? enemyLayer : gameObject.layer;
+
+                SphereCollider sphere = proxy.AddComponent<SphereCollider>();
+                sphere.isTrigger = true;
+                sphere.radius = Mathf.Max(0.1f, floatingAerialAssistRadius);
+                sphere.enabled = false;
+
+                runtimeFloatingAerialAssistCollider = sphere;
+            }
+
+            return runtimeFloatingAerialAssistCollider;
+        }
+
+        private void SetFloatingAerialAssistActive(bool active)
+        {
+            Collider assistCollider = EnsureFloatingAerialAssistCollider();
+            if (assistCollider == null)
+                return;
+
+            if (assistCollider.transform.parent != transform)
+                assistCollider.transform.SetParent(transform, false);
+
+            assistCollider.transform.localPosition = new Vector3(0f, floatingAerialAssistYOffset, 0f);
+
+            if (assistCollider is SphereCollider sphere)
+                sphere.radius = Mathf.Max(0.1f, floatingAerialAssistRadius);
+
+            assistCollider.enabled = active;
         }
 
         public void OnAerialHitReceived()
         {
             if (!isExecutingUltimate || !isInUltimateHoverPhase) return;
 
-            if (!WasHitByFullAerialComboPlungeFinisher())
+            bool fullComboHit = WasHitByFullAerialComboPlungeFinisher();
+            bool cancelAllowed = !UltimateSettings.FullAerialComboRequired || fullComboHit;
+            if (!cancelAllowed)
             {
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Aerial hit during ultimate ignored (requires full aerial combo + plunge finisher).");
 #endif
                 return;
             }
-            
-            aerialHitsReceived++;
-            if (aerialHitsReceived >= UltimateSettings.RequiredAerialHits)
-            {
-                ultimateCanceledByAerial = true;
-            }
+
+            ultimateCanceledByAerial = true;
             
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Aerial hit received during ultimate! ({aerialHitsReceived}/{UltimateSettings.RequiredAerialHits})");
+            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Aerial hit received during ultimate! Cancel condition met.");
 #endif
         }
 
@@ -3646,12 +3897,17 @@ namespace EnemyBehavior.Boss.Cleanser
             transform.rotation = targetRot;
         }
 
-        private IEnumerator JumpToPosition(Vector3 targetPos, float duration)
+        private IEnumerator JumpToPosition(
+            Vector3 targetPos,
+            float duration,
+            bool snapToNavMeshAtEnd = true,
+            float arcApexHeight = 5f)
         {
             Vector3 startPos = transform.position;
-            Vector3 peakPos = (startPos + targetPos) * 0.5f + Vector3.up * 5f;
-            
-            agent.enabled = false;
+            Vector3 peakPos = (startPos + targetPos) * 0.5f + Vector3.up * Mathf.Max(0f, arcApexHeight);
+
+            if (agent != null)
+                agent.enabled = false;
             
             float elapsed = 0f;
             while (elapsed < duration)
@@ -3664,8 +3920,11 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             transform.position = targetPos;
-            agent.enabled = true;
-            agent.Warp(targetPos);
+            if (agent != null && snapToNavMeshAtEnd)
+            {
+                agent.enabled = true;
+                agent.Warp(targetPos);
+            }
         }
 
         private float GetSpinDashSegmentDuration(float distance)
