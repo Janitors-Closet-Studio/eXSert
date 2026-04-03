@@ -335,6 +335,14 @@ public class PlayerMovement : MonoBehaviour
     [Range(0.5f, 20f)] private float plungeImpactRayDistance = 8f;
     [SerializeField, Tooltip("Layer mask used for finding enemies near plunge impact.")]
     private LayerMask plungeEnemyPushMask = ~0;
+    [SerializeField, Tooltip("Continuous outward enemy push speed applied every fixed step while plunge is active.")]
+    [Range(0f, 20f)] private float plungeSustainEnemyPushSpeed = 2.5f;
+    [SerializeField, Tooltip("Additional horizontal slide speed to force the player off overlapping enemies while plunging.")]
+    [Range(0f, 20f)] private float plungeSustainPlayerSlideSpeed = 7f;
+
+    [Header("Plunge Recovery Safeguards")]
+    [SerializeField, Tooltip("Failsafe timeout after plunge landing before forcing attack unlock if input remains busy.")]
+    [Range(0.1f, 2f)] private float plungeRecoveryFailsafeSeconds = 0.9f;
 
     [Header("Camera Settings")]
     [SerializeField] bool invertYAxis = false;
@@ -418,6 +426,8 @@ public class PlayerMovement : MonoBehaviour
     private bool warnedMissingSoundSource;
     private Vector3 dashCarryVelocity = Vector3.zero;
     private bool attackFacingLockInitialized;
+    private bool waitingForPlungeRecoveryUnlock;
+    private float plungeRecoveryBusyTimer;
     private Vector3 attackFacingLockForward = Vector3.forward;
     private bool plungeJumpLocked;
     private Coroutine plungeJumpLockRoutine;
@@ -949,10 +959,7 @@ public class PlayerMovement : MonoBehaviour
         if (plungeLandingPushRadius <= 0f || plungeEnemyPushDistance <= 0f || characterController == null)
             return;
 
-        Vector3 impactPoint = transform.position;
-        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
-        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit groundHit, plungeImpactRayDistance, layerMask, QueryTriggerInteraction.Ignore))
-            impactPoint = groundHit.point;
+        Vector3 impactPoint = ResolvePlungeImpactPoint();
 
         int enemyCount = Physics.OverlapSphereNonAlloc(
             impactPoint,
@@ -1023,7 +1030,97 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private static void ApplyEnemyPlungePush(Transform enemyTransform, Vector3 displacement)
+    private Vector3 ApplyPlungeSustainRepulsion(float dt)
+    {
+        if (!isPlunging || dt <= 0f || plungeLandingPushRadius <= 0f || plungeSustainEnemyPushSpeed <= 0f)
+            return Vector3.zero;
+
+        Vector3 impactPoint = ResolvePlungeImpactPoint();
+        int enemyCount = Physics.OverlapSphereNonAlloc(
+            impactPoint,
+            plungeLandingPushRadius,
+            plungeEnemyPushBuffer,
+            plungeEnemyPushMask,
+            QueryTriggerInteraction.Ignore);
+
+        if (enemyCount <= 0)
+            return Vector3.zero;
+
+        int processedCount = 0;
+        Vector3 playerSlideDirAccum = Vector3.zero;
+
+        for (int i = 0; i < enemyCount; i++)
+        {
+            Collider col = plungeEnemyPushBuffer[i];
+            if (col == null)
+                continue;
+
+            BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
+            if (enemy == null || !enemy.isAlive)
+                continue;
+
+            int enemyId = enemy.GetInstanceID();
+            bool alreadyProcessed = false;
+            for (int j = 0; j < processedCount; j++)
+            {
+                if (plungeProcessedEnemyIds[j] == enemyId)
+                {
+                    alreadyProcessed = true;
+                    break;
+                }
+            }
+            if (alreadyProcessed)
+                continue;
+
+            if (processedCount < plungeProcessedEnemyIds.Length)
+                plungeProcessedEnemyIds[processedCount++] = enemyId;
+
+            Transform enemyTransform = enemy.transform;
+            Vector3 away = enemyTransform.position - impactPoint;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f)
+                away = enemyTransform.position - transform.position;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f)
+                away = enemyTransform.forward;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f)
+                away = Vector3.forward;
+
+            Vector3 pushDir = away.normalized;
+
+            float pushSpeed = plungeSustainEnemyPushSpeed;
+            bool isCleanser = enemy.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
+            if (isCleanser)
+                pushSpeed *= Mathf.Clamp01(plungeCleanserPushbackMultiplier);
+
+            ApplyEnemyPlungePush(enemyTransform, pushDir * (pushSpeed * dt), allowWarp: false);
+            playerSlideDirAccum += -pushDir;
+        }
+
+        if (plungeSustainPlayerSlideSpeed <= 0f || playerSlideDirAccum.sqrMagnitude < 0.0001f)
+            return Vector3.zero;
+
+        playerSlideDirAccum.y = 0f;
+        return playerSlideDirAccum.normalized * plungeSustainPlayerSlideSpeed;
+    }
+
+    private Vector3 ResolvePlungeImpactPoint()
+    {
+        Vector3 impactPoint = transform.position;
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+        if (characterController != null)
+            rayOrigin = characterController.bounds.center;
+
+        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit groundHit, plungeImpactRayDistance, layerMask, QueryTriggerInteraction.Ignore))
+            impactPoint = groundHit.point;
+        else
+            impactPoint.y = rayOrigin.y;
+
+        return impactPoint;
+    }
+
+    private static void ApplyEnemyPlungePush(Transform enemyTransform, Vector3 displacement, bool allowWarp = true)
     {
         if (enemyTransform == null || displacement.sqrMagnitude < 0.000001f)
             return;
@@ -1032,7 +1129,7 @@ public class PlayerMovement : MonoBehaviour
         if (enemyAgent != null && enemyAgent.enabled && enemyAgent.isOnNavMesh)
         {
             Vector3 target = enemyTransform.position + displacement;
-            if (NavMesh.SamplePosition(target, out NavMeshHit navHit, 2f, NavMesh.AllAreas))
+            if (allowWarp && NavMesh.SamplePosition(target, out NavMeshHit navHit, 2f, NavMesh.AllAreas))
                 enemyAgent.Warp(navHit.position);
             else
                 enemyAgent.Move(displacement);
@@ -2085,6 +2182,34 @@ public class PlayerMovement : MonoBehaviour
             StopCoroutine(plungeJumpLockRoutine);
 
         plungeJumpLockRoutine = StartCoroutine(PlungeJumpLockRoutine());
+    }
+
+    private void EnsurePlungeRecoveryFailsafe()
+    {
+        if (!waitingForPlungeRecoveryUnlock)
+            return;
+
+        if (characterController == null || !characterController.isGrounded || isPlunging)
+        {
+            plungeRecoveryBusyTimer = 0f;
+            return;
+        }
+
+        if (!InputReader.inputBusy)
+        {
+            waitingForPlungeRecoveryUnlock = false;
+            plungeRecoveryBusyTimer = 0f;
+            return;
+        }
+
+        plungeRecoveryBusyTimer += Time.deltaTime;
+        if (plungeRecoveryBusyTimer < plungeRecoveryFailsafeSeconds)
+            return;
+
+        attackManager?.ForceCancelCurrentAttack(resetCombo: false);
+        animationController?.PlayIdle();
+        waitingForPlungeRecoveryUnlock = false;
+        plungeRecoveryBusyTimer = 0f;
     }
 
     private void StartPendingJumpTimeout()
