@@ -3199,8 +3199,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             transform.position = targetPos;
 
-            agent.enabled = true;
-            agent.Warp(transform.position);
+            TryRestoreAgentToNavMesh(transform.position, 3f);
             isExecutingGapCloseDash = false;
 
 #if UNITY_EDITOR
@@ -3370,8 +3369,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (agent != null && !agent.enabled)
             {
-                agent.enabled = true;
-                agent.Warp(transform.position);
+                TryRestoreAgentToNavMesh(transform.position, 6f);
             }
             
             // Reset spare stockpile/lodged state after ultimate.
@@ -4025,9 +4023,30 @@ namespace EnemyBehavior.Boss.Cleanser
             transform.position = targetPos;
             if (agent != null && snapToNavMeshAtEnd)
             {
-                agent.enabled = true;
-                agent.Warp(targetPos);
+                TryRestoreAgentToNavMesh(targetPos, 6f);
             }
+        }
+
+        private bool TryRestoreAgentToNavMesh(Vector3 preferredPosition, float sampleDistance = 3f)
+        {
+            if (agent == null)
+                return false;
+
+            if (!agent.enabled)
+                agent.enabled = true;
+
+            if (agent.isOnNavMesh)
+                return agent.Warp(preferredPosition);
+
+            if (NavMesh.SamplePosition(preferredPosition, out NavMeshHit hit, Mathf.Max(0.5f, sampleDistance), NavMesh.AllAreas))
+            {
+                transform.position = hit.position;
+                return agent.Warp(hit.position);
+            }
+
+            // Keep agent disabled when no nearby navmesh can be found to avoid editor/navmesh debug request issues.
+            agent.enabled = false;
+            return false;
         }
 
         private float GetSpinDashSegmentDuration(float distance)
