@@ -43,6 +43,9 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("Height platforms rise to (world Y coordinate).")]
         public float RiseHeight = 8f;
+
+        [Tooltip("Optional transform used as baseline for RiseHeight. When assigned, final platform Y = HeightReference.y + RiseHeight.")]
+        public Transform HeightReference;
         
         [Tooltip("Time for platforms to rise (seconds).")]
         public float RiseTime = 1.5f;
@@ -167,9 +170,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
                 float angle = platform.StartAngle * Mathf.Deg2Rad;
                 Vector3 orbitPos = OrbitCenter != null ? OrbitCenter.position : transform.position;
+                float baseHeight = HeightReference != null ? HeightReference.position.y : orbitPos.y;
                 Vector3 targetPos = new Vector3(
                     orbitPos.x + Mathf.Cos(angle) * OrbitRadius,
-                    RiseHeight,
+                    baseHeight + RiseHeight,
                     orbitPos.z + Mathf.Sin(angle) * OrbitRadius
                 );
                 targetPositions.Add(targetPos);

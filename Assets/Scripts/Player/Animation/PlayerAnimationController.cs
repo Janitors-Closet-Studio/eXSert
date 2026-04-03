@@ -142,6 +142,25 @@ public class PlayerAnimationController : MonoBehaviour
                 ?? GetComponentInParent<PlayerMovement>()
                 ?? GetComponentInChildren<PlayerMovement>();
         }
+
+        if (animator != null)
+            animator.speed = 1f;
+    }
+
+    public void SetAnimatorSpeed(float speedMultiplier)
+    {
+        if (animator == null)
+            return;
+
+        animator.speed = Mathf.Max(0.01f, speedMultiplier);
+    }
+
+    public void ResetAnimatorSpeed()
+    {
+        if (animator == null)
+            return;
+
+        animator.speed = 1f;
     }
 
     public void PlayIdle() => CrossFade(PlayerAnim.SingleTarget.Breathing);
@@ -157,7 +176,7 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayWalk() => CrossFade(PlayerAnim.Locomotion.Walk);
     public void PlayJog() => CrossFade(PlayerAnim.Locomotion.Jog);
     public void PlaySprint() => CrossFade(PlayerAnim.Locomotion.Sprint);
-    public void PlayDash() => CrossFade(PlayerAnim.Locomotion.Dash, 0.02f, true);
+    public void PlayDash(float transition = 0.08f) => CrossFade(PlayerAnim.Locomotion.Dash, transition, true);
 
     public void PlayLocomotion(float moveAmount01)
     {
@@ -219,7 +238,7 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayFallingHigh() => CrossFade(PlayerAnim.Air.FallingHigh, fallingTransition);
     public void PlayLand() => CrossFade(PlayerAnim.Air.Land, 0.04f, true);
     public void PlayAirJumpStart() => CrossFade(PlayerAnim.Air.AirJump, 0.03f, true);
-    public void PlayAirDash() => CrossFade(PlayerAnim.Air.AirDash, 0.02f, true);
+    public void PlayAirDash(float transition = 0.08f) => CrossFade(PlayerAnim.Air.AirDash, transition, true);
 
     public void PlayHit() => CrossFade(PlayerAnim.Reactions.Flinch, 0.02f, true);
     public void PlayHeavyHit() => CrossFade(PlayerAnim.Reactions.Knockback, 0.05f, true);

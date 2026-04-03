@@ -87,6 +87,7 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class StrongAttacks
             {
                 internal const string AnimeDash = "AnimeDash";
+                internal const string Whirlwind = "Whirlwind";
                 internal const string SpinAttackWindUp = "JumpSpinAttackHPWindup";
                 internal const string SpinWindUp = "JumpSpinAttackWindup";
                 internal const string SpinHold = "JumpSpinAttackHPHoldPose";
@@ -120,6 +121,9 @@ namespace EnemyBehavior.Boss.Cleanser
             { "BlockAndLunge", CleanserAnim.BasicAttacks.BlockAndLunge },
             { "AdvancingCleave", CleanserAnim.BasicAttacks.AdvancingCleave },
             { "SlashtoSlap", CleanserAnim.BasicAttacks.SlashToSlap },
+            { "SlashSlap", CleanserAnim.BasicAttacks.SlashToSlap },
+            { "SlashIntoSlap", CleanserAnim.BasicAttacks.SlashToSlap },
+            { "RakeSpin", CleanserAnim.BasicAttacks.RakeIntoSpinSlash },
             { "JumpSpinAttack_Windup", CleanserAnim.StrongAttacks.SpinWindUp },
             { "JumpSpinAttack_HoldPose", CleanserAnim.StrongAttacks.SpinHold },
             { "JumpSpinAttack_WindDown", CleanserAnim.StrongAttacks.SpinAttackWindDown },
@@ -127,6 +131,8 @@ namespace EnemyBehavior.Boss.Cleanser
             { "JumpArc_Resolution", CleanserAnim.Ultimate.JumpArcResolution },
             { "JumpArc_Cancellation", CleanserAnim.Ultimate.JumpArcCancel },
             { "JumpArcCancellation", CleanserAnim.Ultimate.JumpArcCancel },
+            { "GapClose", "GapCloseDash" },
+            { "Attack_GapCloseDash", "GapCloseDash" },
         };
 
         [Header("Animator Setup")]
@@ -145,8 +151,16 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Optional: log animation event invocations for debugging.")]
         [SerializeField] private bool logAnimationEvents = false;
 
+        [Header("Debug")]
+        [Tooltip("If true, logs detailed Whirlwind state/transition info for diagnosis.")]
+        [SerializeField] private bool logWhirlwindDiagnostics = false;
+        [Tooltip("Minimum time between repeated Whirlwind diagnostic logs.")]
+        [SerializeField, Range(0.02f, 0.5f)] private float whirlwindDiagnosticLogInterval = 0.08f;
+
         private Animator animator;
         private string currentState;
+
+        private float lastWhirlwindDiagnosticLogTime = -999f;
 
         private Coroutine hardLockCoroutine;
         private string hardLockedState;
@@ -276,6 +290,36 @@ namespace EnemyBehavior.Boss.Cleanser
             CrossFade(stateName, transition, restart);
         }
 
+        /// <summary>
+        /// Immediately plays a state at the requested normalized time (no transition blend).
+        /// Useful for seamless loop restarts where crossfade can introduce visible hitches.
+        /// </summary>
+        public void PlayFromNormalizedTime(string stateName, float normalizedTime, bool forceRestart = true)
+        {
+            if (string.IsNullOrWhiteSpace(stateName) || animator == null)
+                return;
+
+            stateName = NormalizeStateName(stateName);
+
+            if (!string.IsNullOrEmpty(hardLockedState) && stateName != hardLockedState)
+                return;
+
+            if (!forceRestart && currentState == stateName)
+                return;
+
+            if (!StateExists(stateName))
+            {
+                Debug.LogWarning($"[CleanserAnimController] State '{stateName}' not found via HasState on layer {layerIndex}. Attempting Play anyway.", this);
+            }
+
+            float startTime = Mathf.Clamp01(normalizedTime);
+            animator.Play(stateName, layerIndex, startTime);
+            currentState = stateName;
+
+            if (string.Equals(stateName, CleanserAnim.StrongAttacks.Whirlwind, System.StringComparison.Ordinal))
+                LogWhirlwindDiagnostics($"PlayImmediate:start={startTime:F3}", startTime, true);
+        }
+
         #endregion
 
         #region State Queries
@@ -290,13 +334,36 @@ namespace EnemyBehavior.Boss.Cleanser
                 return false;
 
             stateName = NormalizeStateName(stateName);
+            bool isWhirlwindQuery = string.Equals(stateName, CleanserAnim.StrongAttacks.Whirlwind, System.StringComparison.Ordinal);
 
             AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(layerIndex);
             bool isPlaying = info.IsName(stateName);
             if (isPlaying)
+            {
                 normalizedTime = info.normalizedTime;
+                if (isWhirlwindQuery)
+                    LogWhirlwindDiagnostics("IsPlaying:Current", normalizedTime);
+                return true;
+            }
 
-            return isPlaying;
+            // Treat an in-progress transition into the requested state as "playing"
+            // so callers don't repeatedly restart the same attack animation each frame.
+            if (animator.IsInTransition(layerIndex))
+            {
+                AnimatorStateInfo nextInfo = animator.GetNextAnimatorStateInfo(layerIndex);
+                if (nextInfo.IsName(stateName))
+                {
+                    normalizedTime = nextInfo.normalizedTime;
+                    if (isWhirlwindQuery)
+                        LogWhirlwindDiagnostics("IsPlaying:NextTransition", normalizedTime);
+                    return true;
+                }
+            }
+
+            if (isWhirlwindQuery)
+                LogWhirlwindDiagnostics("IsPlaying:False", 0f, true);
+
+            return false;
         }
 
         /// <summary>
@@ -350,6 +417,50 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
+        /// Animation Event: Enables the halberd hitbox window.
+        /// </summary>
+        public void HalberdHitboxStart()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] HalberdHitboxStart invoked");
+
+            cleanserBrain?.OnHalberdHitboxStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Disables the halberd hitbox window.
+        /// </summary>
+        public void HalberdHitboxEnd()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] HalberdHitboxEnd invoked");
+
+            cleanserBrain?.OnHalberdHitboxEnd();
+        }
+
+        /// <summary>
+        /// Animation Event: Enables the wing hitbox window.
+        /// </summary>
+        public void WingHitboxStart()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] WingHitboxStart invoked");
+
+            cleanserBrain?.OnWingHitboxStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Disables the wing hitbox window.
+        /// </summary>
+        public void WingHitboxEnd()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] WingHitboxEnd invoked");
+
+            cleanserBrain?.OnWingHitboxEnd();
+        }
+
+        /// <summary>
         /// Animation Event: Switch to wing attack category (for multi-part attacks).
         /// </summary>
         public void SwitchToWing()
@@ -380,6 +491,61 @@ namespace EnemyBehavior.Boss.Cleanser
                 Debug.Log("[CleanserAnimController] AttackMoveStart invoked");
 
             cleanserBrain?.OnAttackMovementStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Signals JumpArcBase movement should begin.
+        /// </summary>
+        public void JumpArcMoveStart()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] JumpArcMoveStart invoked");
+
+            cleanserBrain?.OnJumpArcMovementStart();
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns DiagUpwardSlash projectile(s).
+        /// </summary>
+        public void SpawnDiagUpwardSlashProjectile()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpawnDiagUpwardSlashProjectile invoked");
+
+            cleanserBrain?.OnDiagUpwardSlashProjectile();
+        }
+
+        /// <summary>
+        /// Animation Event: Releases SpareToss volley at the exact throw frame.
+        /// </summary>
+        public void SpareTossRelease()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpareTossRelease invoked");
+
+            cleanserBrain?.OnSpareTossRelease();
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns ultimate low sweep projectile(s).
+        /// </summary>
+        public void SpawnUltimateLowSweepProjectile()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpawnUltimateLowSweepProjectile invoked");
+
+            cleanserBrain?.OnUltimateLowSweepProjectile();
+        }
+
+        /// <summary>
+        /// Animation Event: Spawns ultimate mid sweep projectile(s).
+        /// </summary>
+        public void SpawnUltimateMidSweepProjectile()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] SpawnUltimateMidSweepProjectile invoked");
+
+            cleanserBrain?.OnUltimateMidSweepProjectile();
         }
 
         /// <summary>
@@ -436,6 +602,10 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
 
             stateName = NormalizeStateName(stateName);
+            bool isWhirlwindState = string.Equals(stateName, CleanserAnim.StrongAttacks.Whirlwind, System.StringComparison.Ordinal);
+
+            if (isWhirlwindState)
+                LogWhirlwindDiagnostics($"CrossFade:Request forceRestart={forceRestart} transition={transition:F3}", 0f, true);
 
             // Honor hard locks (non-cancelable animations) unless it's death
             if (!string.IsNullOrEmpty(hardLockedState))
@@ -448,24 +618,51 @@ namespace EnemyBehavior.Boss.Cleanser
                 // else 
                 if (stateName != hardLockedState)
                 {
+                    if (isWhirlwindState)
+                        LogWhirlwindDiagnostics($"CrossFade:BlockedByHardLock({hardLockedState})", 0f, true);
                     return;
                 }
             }
 
             // Don't restart same animation unless forced
             if (!forceRestart && currentState == stateName)
-                return;
-
-            // Verify state exists in animator
-            if (!StateExists(stateName))
             {
-                Debug.LogWarning($"[CleanserAnimController] State '{stateName}' not found on Animator layer {layerIndex}.", this);
+                if (isWhirlwindState)
+                    LogWhirlwindDiagnostics("CrossFade:SkippedSameState", 0f, true);
                 return;
             }
 
             float crossFade = transition >= 0f ? transition : defaultTransition;
+            if (!StateExists(stateName))
+            {
+                Debug.LogWarning($"[CleanserAnimController] State '{stateName}' not found via HasState on layer {layerIndex}. Attempting CrossFade anyway.", this);
+            }
+
             animator.CrossFadeInFixedTime(stateName, crossFade, layerIndex, 0f);
             currentState = stateName;
+
+            if (isWhirlwindState)
+                LogWhirlwindDiagnostics($"CrossFade:Applied({crossFade:F3})", 0f, true);
+        }
+
+        private void LogWhirlwindDiagnostics(string reason, float queriedNormalizedTime, bool force = false)
+        {
+            if (!logWhirlwindDiagnostics || animator == null)
+                return;
+
+            if (!force && (Time.time - lastWhirlwindDiagnosticLogTime) < Mathf.Max(0.02f, whirlwindDiagnosticLogInterval))
+                return;
+
+            AnimatorStateInfo current = animator.GetCurrentAnimatorStateInfo(layerIndex);
+            bool inTransition = animator.IsInTransition(layerIndex);
+            AnimatorStateInfo next = inTransition ? animator.GetNextAnimatorStateInfo(layerIndex) : default;
+
+            Debug.Log(
+                $"[CleanserAnimController][WhirlwindDiag] {reason} | currentHash={current.shortNameHash} currentNorm={current.normalizedTime:F3} " +
+                $"nextHash={(inTransition ? next.shortNameHash : 0)} nextNorm={(inTransition ? next.normalizedTime : 0f):F3} " +
+                $"inTransition={inTransition} queriedNorm={queriedNormalizedTime:F3} currentStateField={currentState}", this);
+
+            lastWhirlwindDiagnosticLogTime = Time.time;
         }
 
         private void StartHardLock(string stateName)
@@ -537,17 +734,22 @@ namespace EnemyBehavior.Boss.Cleanser
             if (string.IsNullOrWhiteSpace(stateName))
                 return stateName;
 
+            stateName = stateName.Trim();
+
             if (LegacyStateAliases.TryGetValue(stateName, out string normalizedState))
                 return normalizedState;
 
             if (stateName.StartsWith("C_", System.StringComparison.OrdinalIgnoreCase))
-                return stateName.Substring(2);
+                stateName = stateName.Substring(2);
 
             if (stateName.StartsWith("Attack_", System.StringComparison.OrdinalIgnoreCase))
-                return stateName.Substring("Attack_".Length);
+                stateName = stateName.Substring("Attack_".Length);
 
             if (stateName.StartsWith("Dash_", System.StringComparison.OrdinalIgnoreCase))
-                return stateName.Substring("Dash_".Length);
+                stateName = stateName.Substring("Dash_".Length);
+
+            if (LegacyStateAliases.TryGetValue(stateName, out normalizedState))
+                return normalizedState;
 
             return stateName;
         }

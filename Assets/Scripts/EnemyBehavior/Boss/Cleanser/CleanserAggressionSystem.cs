@@ -250,6 +250,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Debug")]
         [Tooltip("Show aggression range gizmo in editor.")]
         [SerializeField] private bool showAggressionRangeGizmo = true;
+        [Tooltip("If false, suppresses CleanserAggressionSystem debug logs.")]
+        [SerializeField] private bool enableDebugLogs = true;
 
         // Events
         public event Action<AggressionLevel> OnAggressionLevelChanged;
@@ -267,6 +269,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isCountering;
         private bool forcedMaxAggression;
         private bool isAggressionLocked;
+        private bool isAggressionProcessingPaused;
         private SphereCollider aggressionRangeCollider;
         private float guardCheckTimer;
 
@@ -276,6 +279,8 @@ namespace EnemyBehavior.Boss.Cleanser
         public bool IsCountering => isCountering;
         public AggressionModifierConfig Modifiers => modifiers;
         public AggressionLevelMultiplierConfig LevelMultipliers => levelMultipliers;
+        public SphereCollider AggressionRangeCollider => aggressionRangeCollider;
+        public bool IsAggressionProcessingPaused => isAggressionProcessingPaused;
 
         private void Awake()
         {
@@ -296,6 +301,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void Update()
         {
+            if (isAggressionProcessingPaused) return;
+
             UpdateGuardDetection();
             UpdateIdleTracking();
             UpdateAggressionDecay();
@@ -379,6 +386,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void OnTriggerEnter(Collider other)
         {
+            if (isAggressionProcessingPaused) return;
+
             if (((1 << other.gameObject.layer) & playerLayerMask) != 0)
             {
                 playerInAggressionRange = true;
@@ -390,13 +399,16 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void OnTriggerExit(Collider other)
         {
+            if (isAggressionProcessingPaused) return;
+
             if (((1 << other.gameObject.layer) & playerLayerMask) != 0)
             {
                 playerInAggressionRange = false;
                 // Player retreated - add aggression
                 AddAggression(modifiers.PlayerRetreats);
 #if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser Aggression] Player exited aggression range. Adding retreat aggression.");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser Aggression] Player exited aggression range. Adding retreat aggression.");
 #endif
             }
         }
@@ -410,7 +422,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void AddAggression(float amount)
         {
-            if (isAggressionLocked) return;
+            if (isAggressionLocked || isAggressionProcessingPaused) return;
 
             float multiplier = levelMultipliers.GetMultiplier(currentLevel);
             float finalAmount = amount * multiplier;
@@ -420,7 +432,8 @@ namespace EnemyBehavior.Boss.Cleanser
             idleTime = 0f;
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Aggression] Added {0:F2} (base: {1}, mult: {2}). Total: {3:F2}", finalAmount, amount, multiplier, aggressionValue));
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Aggression] Added {0:F2} (base: {1}, mult: {2}). Total: {3:F2}", finalAmount, amount, multiplier, aggressionValue));
 #endif
         }
 
@@ -429,13 +442,19 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void RemoveAggression(float amount)
         {
-            if (isAggressionLocked) return;
+            if (isAggressionLocked || isAggressionProcessingPaused) return;
 
             aggressionValue = Mathf.Clamp(aggressionValue - amount, minAggressionValue, maxAggressionValue);
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Aggression] Removed {0:F2}. Total: {1:F2}", amount, aggressionValue));
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Aggression] Removed {0:F2}. Total: {1:F2}", amount, aggressionValue));
 #endif
+        }
+
+        public void SetAggressionProcessingPaused(bool paused)
+        {
+            isAggressionProcessingPaused = paused;
         }
 
         /// <summary>
@@ -457,10 +476,11 @@ namespace EnemyBehavior.Boss.Cleanser
             UpdateAggressionLevel();
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), 
-                permanentForceMaxAggression 
-                    ? "[Cleanser Aggression] FORCED to max aggression (PERMANENT)!" 
-                    : "[Cleanser Aggression] FORCED to max aggression (can decay).");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), 
+                    permanentForceMaxAggression 
+                        ? "[Cleanser Aggression] FORCED to max aggression (PERMANENT)!" 
+                        : "[Cleanser Aggression] FORCED to max aggression (can decay).");
 #endif
         }
 
@@ -473,7 +493,8 @@ namespace EnemyBehavior.Boss.Cleanser
             isAggressionLocked = false;
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser Aggression] Forced aggression reset.");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser Aggression] Forced aggression reset.");
 #endif
         }
 
@@ -525,7 +546,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 OnAggressionLevelChanged?.Invoke(newLevel);
 
 #if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Aggression] Level changed: {0} -> {1}", oldLevel, newLevel));
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Aggression] Level changed: {0} -> {1}", oldLevel, newLevel));
 #endif
             }
         }
@@ -569,7 +591,8 @@ namespace EnemyBehavior.Boss.Cleanser
             if (detectPlayerGuarding)
             {
 #if UNITY_EDITOR
-                Debug.LogWarning("[CleanserAggressionSystem] OnPlayerGuarding() called externally while detectPlayerGuarding is enabled. External call ignored.");
+                if (enableDebugLogs)
+                    Debug.LogWarning("[CleanserAggressionSystem] OnPlayerGuarding() called externally while detectPlayerGuarding is enabled. External call ignored.");
 #endif
                 return;
             }
@@ -650,7 +673,8 @@ namespace EnemyBehavior.Boss.Cleanser
             float roll = UnityEngine.Random.value;
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Counter] Chance: {0:P2}, Roll: {1:F3}", counterChance, roll));
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Counter] Chance: {0:P2}, Roll: {1:F3}", counterChance, roll));
 #endif
 
             if (roll <= counterChance)
@@ -714,7 +738,8 @@ namespace EnemyBehavior.Boss.Cleanser
             OnCleanserCounterInitiated?.Invoke();
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Executing counter attack!");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Executing counter attack!");
 #endif
 
             // Trigger counter animation
@@ -735,7 +760,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 OnCounterResolved?.Invoke(false);
 
 #if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Counter was parried by player!");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Counter was parried by player!");
 #endif
             }
             else
@@ -751,7 +777,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 OnCounterResolved?.Invoke(true);
 
 #if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Counter landed!");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Counter landed!");
 #endif
             }
         }

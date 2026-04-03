@@ -151,6 +151,18 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     [Tooltip("Seconds the drone is staggered (no firing) after being hit.")]
     [SerializeField] private float hitStaggerDuration = 0.1f;
 
+    [Header("Death Physics Collapse")]
+    [SerializeField, Tooltip("When enabled, drones that die from any source are put into simple rigidbody collapse instead of hovering before despawn.")]
+    private bool applyPhysicsCollapseOnAnyDeath = true;
+    [SerializeField, Tooltip("Downward velocity used for non-plunge death collapse.")]
+    private float deathCollapseDownwardVelocity = 10f;
+    [SerializeField, Tooltip("Horizontal push away from impact origin for non-plunge death collapse.")]
+    private float deathCollapseRadialForce = 5f;
+    [SerializeField, Range(0f, 1f), Tooltip("How long movement/AI updates are briefly paused after an aerial hit displacement.")]
+    private float aerialHitDisplacementLockDuration = 0.15f;
+    [SerializeField, Range(0.02f, 0.6f), Tooltip("Duration of the smooth aerial hit nudge movement.")]
+    private float aerialHitDisplacementDuration = 0.12f;
+
     private Queue<GameObject> projectilePool;
 
     public float HoverHeight => hoverHeight;
@@ -242,6 +254,10 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     private float lastFireTime = 0f;
     private float staggerUntilTime = 0f;
     private Transform player;
+    private bool plungePhysicsCollapsed;
+    private bool deathPhysicsCollapseApplied;
+    private float aerialHitDisplacementLockUntil = -1f;
+    private Coroutine aerialHitDisplacementRoutine;
 
     private IEnemyStateBehavior<DroneState, DroneTrigger> idleBehavior, relocateBehavior, swarmBehavior, fireBehavior, deathBehavior;
 
@@ -314,6 +330,15 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     {
         // Handle component-level toggling (for memory leak diagnosis)
         HandleComponentToggling();
+
+        if (plungePhysicsCollapsed)
+            return;
+
+        if (Time.time < aerialHitDisplacementLockUntil)
+        {
+            RefreshPlayerReference();
+            return;
+        }
         
         base.Update();
         RefreshPlayerReference();
@@ -326,6 +351,205 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
         }
         PlayLocomotionAnim(speed01);
         UpdateFacing();
+    }
+
+    public override void Spawn()
+    {
+        RestoreFromPlungePhysicsCollapse();
+        base.Spawn();
+    }
+
+    public override void ResetEnemy()
+    {
+        RestoreFromPlungePhysicsCollapse();
+        base.ResetEnemy();
+    }
+
+    public override void CheckHealthThreshold()
+    {
+        if (applyPhysicsCollapseOnAnyDeath
+            && !deathPhysicsCollapseApplied
+            && !plungePhysicsCollapsed
+            && currentHealth <= 0f)
+        {
+            Vector3 impactOrigin = player != null
+                ? player.position
+                : (transform.position - transform.forward);
+
+            deathPhysicsCollapseApplied = true;
+            ApplyPlungePhysicsCollapse(
+                impactOrigin,
+                deathCollapseDownwardVelocity,
+                deathCollapseRadialForce);
+        }
+
+        base.CheckHealthThreshold();
+    }
+
+    public void ApplyPlungePhysicsCollapse(Vector3 impactOrigin, float downwardVelocity, float radialForce)
+    {
+        if (plungePhysicsCollapsed)
+            return;
+
+        plungePhysicsCollapsed = true;
+        deathPhysicsCollapseApplied = true;
+        StopFireTick();
+        ForceStopMovementSFX();
+
+        if (agent != null && agent.enabled)
+        {
+            if (agent.isOnNavMesh)
+                agent.ResetPath();
+            agent.enabled = false;
+        }
+
+        if (animator != null)
+            animator.enabled = false;
+
+        EnsureRuntimePhysicsCollider();
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb == null)
+            rb = gameObject.AddComponent<Rigidbody>();
+
+        rb.isKinematic = false;
+        rb.useGravity = true;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.constraints = RigidbodyConstraints.None;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        Vector3 away = transform.position - impactOrigin;
+        away.y = 0f;
+        if (away.sqrMagnitude < 0.0001f)
+            away = transform.forward;
+
+        Vector3 launchVelocity = away.normalized * Mathf.Max(0f, radialForce)
+            + Vector3.down * Mathf.Max(0f, downwardVelocity);
+        rb.linearVelocity = launchVelocity;
+    }
+
+    public void ApplyAerialHitDisplacement(Vector3 planarDisplacement, float verticalOffset)
+    {
+        if (plungePhysicsCollapsed || !isAlive)
+            return;
+
+        Vector3 displacement = new Vector3(planarDisplacement.x, 0f, planarDisplacement.z);
+        Vector3 targetPosition = transform.position + displacement + Vector3.up * verticalOffset;
+
+        if (aerialHitDisplacementRoutine != null)
+        {
+            StopCoroutine(aerialHitDisplacementRoutine);
+            aerialHitDisplacementRoutine = null;
+        }
+
+        aerialHitDisplacementRoutine = StartCoroutine(AerialHitDisplacementRoutine(targetPosition));
+
+        float lockDuration = Mathf.Max(0f, aerialHitDisplacementLockDuration);
+        if (lockDuration > 0f)
+            aerialHitDisplacementLockUntil = Mathf.Max(aerialHitDisplacementLockUntil, Time.time + lockDuration);
+    }
+
+    private IEnumerator AerialHitDisplacementRoutine(Vector3 targetPosition)
+    {
+        bool restoreAgentAfterNudge = false;
+        if (agent != null && agent.enabled)
+        {
+            if (agent.isOnNavMesh)
+                agent.ResetPath();
+
+            agent.enabled = false;
+            restoreAgentAfterNudge = true;
+        }
+
+        Vector3 startPosition = transform.position;
+        float duration = Mathf.Max(0.02f, aerialHitDisplacementDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            if (plungePhysicsCollapsed)
+                break;
+
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = t * t * (3f - 2f * t);
+            transform.position = Vector3.Lerp(startPosition, targetPosition, eased);
+            yield return null;
+        }
+
+        if (!plungePhysicsCollapsed)
+            transform.position = targetPosition;
+
+        if (!plungePhysicsCollapsed && restoreAgentAfterNudge && agent != null && !agent.enabled)
+        {
+            agent.enabled = true;
+            if (agent.isOnNavMesh)
+            {
+                agent.Warp(transform.position);
+                agent.ResetPath();
+            }
+        }
+
+        aerialHitDisplacementRoutine = null;
+    }
+
+    private void RestoreFromPlungePhysicsCollapse()
+    {
+        plungePhysicsCollapsed = false;
+        deathPhysicsCollapseApplied = false;
+        aerialHitDisplacementLockUntil = -1f;
+
+        if (aerialHitDisplacementRoutine != null)
+        {
+            StopCoroutine(aerialHitDisplacementRoutine);
+            aerialHitDisplacementRoutine = null;
+        }
+
+        if (animator != null)
+            animator.enabled = true;
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.useGravity = false;
+            rb.isKinematic = true;
+        }
+
+        if (agent != null && !agent.enabled)
+            agent.enabled = true;
+    }
+
+    private void EnsureRuntimePhysicsCollider()
+    {
+        Collider[] cols = GetComponents<Collider>();
+        for (int i = 0; i < cols.Length; i++)
+        {
+            if (cols[i] != null && !cols[i].isTrigger)
+                return;
+        }
+
+        SphereCollider runtimeBodyCollider = GetComponent<SphereCollider>();
+        if (runtimeBodyCollider == null || runtimeBodyCollider.isTrigger)
+            runtimeBodyCollider = gameObject.AddComponent<SphereCollider>();
+
+        runtimeBodyCollider.isTrigger = false;
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        if (renderers != null && renderers.Length > 0)
+        {
+            Bounds bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+                bounds.Encapsulate(renderers[i].bounds);
+
+            Vector3 localCenter = transform.InverseTransformPoint(bounds.center);
+            float radius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+
+            runtimeBodyCollider.center = localCenter;
+            runtimeBodyCollider.radius = Mathf.Max(0.2f, radius);
+        }
     }
     
     /// <summary>
@@ -761,6 +985,12 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
         StopFireTick();
         StopTickCoroutine();
         StopIdleTimer();
+
+        if (aerialHitDisplacementRoutine != null)
+        {
+            StopCoroutine(aerialHitDisplacementRoutine);
+            aerialHitDisplacementRoutine = null;
+        }
     }
 
     private Transform bulletPoolParent;

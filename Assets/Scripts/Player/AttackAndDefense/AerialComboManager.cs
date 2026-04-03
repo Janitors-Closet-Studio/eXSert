@@ -20,14 +20,10 @@ public class AerialComboManager : MonoBehaviour
     [Header("Aerial Combo Settings")]
     [SerializeField, Range(0.5f, 2f)] private float comboResetTime = 1.0f;
     [SerializeField] private bool debugMode = false;
-
-    [Header("Plunge Damage Scaling")]
-    [SerializeField, Tooltip("Damage multiplier applied per completed aerial light combo chain (AX1+AX2). Final multiplier = multiplier^count.")]
-    [Range(1f, 5f)] private float plungeDamageMultiplierPerCombo = 1.25f;
-    [SerializeField, Tooltip("When enabled, uses per-aerial-attack counting (AX1 and AX2 each count). Useful if designers want scaling even for partial chains.")]
-    private bool useAttackBasedPlungeScaling = false;
-    [SerializeField, Tooltip("Damage multiplier applied per aerial light attack used (AX1/AX2). Only used when 'Use Attack Based Plunge Scaling' is enabled. Final multiplier = multiplier^count.")]
-    [Range(1f, 5f)] private float plungeDamageMultiplierPerAerialAttack = 1.12f;
+    [SerializeField, Tooltip("Plunge damage multiplier used when both aerial light attacks (AC_X1 and AC_X2) were completed before plunging.")]
+    [Range(0.1f, 5f)] private float plungeDamageMultiplierFullLightChain = 1.5f;
+    [SerializeField, Tooltip("Plunge damage multiplier used when plunging without completing both aerial light attacks first.")]
+    [Range(0.1f, 5f)] private float plungeDamageMultiplierWithoutFullLightChain = 1f;
 
     [Header("References")]
     [SerializeField] private CharacterController characterController;
@@ -56,9 +52,6 @@ public class AerialComboManager : MonoBehaviour
     private float lastAerialAttackTime = -999f;
     private bool pendingAutoFall = false;
 
-    // Plunge scaling counters (reset on landing or plunge execution)
-    private int plungeScalingComboCount;
-    private int plungeScalingAttackCount;
     private float pendingPlungeDamageMultiplier = 1f;
 
     private const int MAX_AERIAL_FAST_ATTACKS = 2;
@@ -127,7 +120,6 @@ public class AerialComboManager : MonoBehaviour
         }
 
         aerialFastCount++;
-        plungeScalingAttackCount++;
         lastAerialAttackTime = Time.time;
         isInAerialCombo = true;
 
@@ -135,14 +127,10 @@ public class AerialComboManager : MonoBehaviour
         if (attackData == null)
         {
             aerialFastCount = Mathf.Max(0, aerialFastCount - 1);
-            plungeScalingAttackCount = Mathf.Max(0, plungeScalingAttackCount - 1);
             if (debugMode)
                 Debug.LogWarning("Aerial light attack data missing. Ensure PlayerAttack is assigned or exists in AttackDatabase.");
             return null;
         }
-
-        if (aerialFastCount >= MAX_AERIAL_FAST_ATTACKS)
-            plungeScalingComboCount++;
 
         if (aerialFastCount >= MAX_AERIAL_FAST_ATTACKS && !hasUsedAirDash)
             pendingAutoFall = true;
@@ -177,14 +165,10 @@ public class AerialComboManager : MonoBehaviour
         isInAerialCombo = true;
         pendingAutoFall = false;
 
-        // Compute a one-shot multiplier for the plunge attack based on aerial attacks performed earlier this airtime.
-        int count = useAttackBasedPlungeScaling ? plungeScalingAttackCount : plungeScalingComboCount;
-        float stepMultiplier = useAttackBasedPlungeScaling ? plungeDamageMultiplierPerAerialAttack : plungeDamageMultiplierPerCombo;
-        pendingPlungeDamageMultiplier = Mathf.Pow(Mathf.Max(1f, stepMultiplier), Mathf.Max(0, count));
-
-        // Reset counters after plunge is executed (per design).
-        plungeScalingComboCount = 0;
-        plungeScalingAttackCount = 0;
+        bool completedFullLightChain = aerialFastCount >= MAX_AERIAL_FAST_ATTACKS;
+        pendingPlungeDamageMultiplier = completedFullLightChain
+            ? Mathf.Max(0.1f, plungeDamageMultiplierFullLightChain)
+            : Mathf.Max(0.1f, plungeDamageMultiplierWithoutFullLightChain);
 
         PlayerAttack heavyAttack = ResolveHeavyAttack();
         if (heavyAttack == null)
@@ -291,8 +275,6 @@ public class AerialComboManager : MonoBehaviour
         isInAerialCombo = false;
         pendingAutoFall = false;
 
-        plungeScalingComboCount = 0;
-        plungeScalingAttackCount = 0;
         pendingPlungeDamageMultiplier = 1f;
 
         if (debugMode)

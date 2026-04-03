@@ -57,7 +57,7 @@ public class LogUI : MonoBehaviour
         logDescription.GetComponent<TMP_Text>().text = log.info.logDescription;
         logLocation.text = log.info.locationFound;
         logId_Date.text = log.info.logID;
-        log.info.isRead = true; // Mark log as read when selected
+        log.info.MarkAsFound(); // Mark log as read when selected
 
         if(LogManager.Instance.unreadLogs.Contains(log.info))
         {

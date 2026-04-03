@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)https://exercism.org/tracks/cpp/exercises/hello-world/edit -->
+<html lang="en-US" class="js-focus-visible" data-js-focus-visible=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>.ͼ1.cm-focused {outline: 1px dotted #212121;}
+.ͼ1 {position: relative !important; box-sizing: border-box; display: flex !important; flex-direction: column;}
+.ͼ1 .cm-scroller {display: flex !important; align-items: flex-start !important; font-family: monospace; line-height: 1.4; height: 100%; overflow-x: auto; position: relative; z-index: 0; overflow-anchor: none;}
+.ͼ1 .cm-content[contenteditable=true] {-webkit-user-modify: read-write-plaintext-only;}
+.ͼ1 .cm-content {margin: 0; flex-grow: 2; flex-shrink: 0; display: block; white-space: pre; word-wrap: normal; box-sizing: border-box; min-height: 100%; padding: 4px 0; outline: none;}
+.ͼ1 .cm-lineWrapping {white-space: pre-wrap; white-space: break-spaces; word-break: break-word; overflow-wrap: anywhere; flex-shrink: 1;}
+.ͼ2 .cm-content {caret-color: black;}
+.ͼ3 .cm-content {caret-color: white;}
+.ͼ1 .cm-line {display: block; padding: 0 2px 0 6px;}
+.ͼ1 .cm-layer > * {position: absolute;}
+.ͼ1 .cm-layer {position: absolute; left: 0; top: 0; contain: size style;}
+.ͼ2 .cm-selectionBackground {background: #d9d9d9;}
+.ͼ3 .cm-selectionBackground {background: #222;}
+.ͼ2.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {background: #d7d4f0;}
+.ͼ3.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {background: #233;}
+.ͼ1 .cm-cursorLayer {pointer-events: none;}
+.ͼ1.cm-focused > .cm-scroller > .cm-cursorLayer {animation: steps(1) cm-blink 1.2s infinite;}
+@keyframes cm-blink {50% {opacity: 0;}}
+@keyframes cm-blink2 {50% {opacity: 0;}}
+.ͼ1 .cm-cursor, .ͼ1 .cm-dropCursor {border-left: 1.2px solid black; margin-left: -0.6px; pointer-events: none;}
+.ͼ1 .cm-cursor {display: none;}
+.ͼ3 .cm-cursor {border-left-color: #ddd;}
+.ͼ1 .cm-dropCursor {position: absolute;}
+.ͼ1.cm-focused > .cm-scroller > .cm-cursorLayer .cm-cursor {display: block;}
+.ͼ1 .cm-iso {unicode-bidi: isolate;}
+.ͼ1 .cm-announced {position: fixed; top: -10000px;}
+@media print {.ͼ1 .cm-announced {display: none;}}
+.ͼ2 .cm-activeLine {background-color: #cceeff44;}
+.ͼ3 .cm-activeLine {background-color: #99eeff33;}
+.ͼ2 .cm-specialChar {color: red;}
+.ͼ3 .cm-specialChar {color: #f78;}
+.ͼ1 .cm-gutters {flex-shrink: 0; display: flex; height: 100%; box-sizing: border-box; inset-inline-start: 0; z-index: 200;}
+.ͼ2 .cm-gutters {background-color: #f5f5f5; color: #6c6c6c; border-right: 1px solid #ddd;}
+.ͼ3 .cm-gutters {background-color: #333338; color: #ccc;}
+.ͼ1 .cm-gutter {display: flex !important; flex-direction: column; flex-shrink: 0; box-sizing: border-box; min-height: 100%; overflow: hidden;}
+.ͼ1 .cm-gutterElement {box-sizing: border-box;}
+.ͼ1 .cm-lineNumbers .cm-gutterElement {padding: 0 3px 0 5px; min-width: 20px; text-align: right; white-space: nowrap;}
+.ͼ2 .cm-activeLineGutter {background-color: #e2f2ff;}
+.ͼ3 .cm-activeLineGutter {background-color: #222227;}
+.ͼ1 .cm-panels {box-sizing: border-box; position: sticky; left: 0; right: 0; z-index: 300;}
+.ͼ2 .cm-panels {background-color: #f5f5f5; color: black;}
+.ͼ2 .cm-panels-top {border-bottom: 1px solid #ddd;}
+.ͼ2 .cm-panels-bottom {border-top: 1px solid #ddd;}
+.ͼ3 .cm-panels {background-color: #333338; color: white;}
+.ͼ1 .cm-tab {display: inline-block; overflow: hidden; vertical-align: bottom;}
+.ͼ1 .cm-widgetBuffer {vertical-align: text-top; height: 1em; width: 0; display: inline;}
+.ͼ1 .cm-placeholder {color: #888; display: inline-block; vertical-align: top;}
+.ͼ1 .cm-highlightSpace {background-image: radial-gradient(circle at 50% 55%, #aaa 20%, transparent 5%); background-position: center;}
+.ͼ1 .cm-highlightTab {background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><path stroke="%23888" stroke-width="1" fill="none" d="M1 10H196L190 5M190 15L196 10M197 4L197 16"/></svg>'); background-size: auto 100%; background-position: right 90%; background-repeat: no-repeat;}
+.ͼ1 .cm-trailingSpace {background-color: #ff332255;}
+.ͼ1 .cm-button {vertical-align: middle; color: inherit; font-size: 70%; padding: .2em 1em; border-radius: 1px;}
+.ͼ2 .cm-button:active {background-image: linear-gradient(#b4b4b4, #d0d3d6);}
+.ͼ2 .cm-button {background-image: linear-gradient(#eff1f5, #d9d9df); border: 1px solid #888;}
+.ͼ3 .cm-button:active {background-image: linear-gradient(#111, #333);}
+.ͼ3 .cm-button {background-image: linear-gradient(#393939, #111); border: 1px solid #888;}
+.ͼ1 .cm-textfield {vertical-align: middle; color: inherit; font-size: 70%; border: 1px solid silver; padding: .2em .5em;}
+.ͼ2 .cm-textfield {background-color: white;}
+.ͼ3 .cm-textfield {border: 1px solid #555; background-color: inherit;}
+.ͼ1 .cm-a11y-panel {position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;}
+.ͼ1 .cm-selectionMatch {background-color: #99ff7780;}
+.ͼ1 .cm-searchMatch .cm-selectionMatch {background-color: transparent;}
+.ͼ1 .cm-tooltip.cm-tooltip-autocomplete > ul > li, .ͼ1 .cm-tooltip.cm-tooltip-autocomplete > ul > completion-section {padding: 1px 3px; line-height: 1.2;}
+.ͼ1 .cm-tooltip.cm-tooltip-autocomplete > ul > li {overflow-x: hidden; text-overflow: ellipsis; cursor: pointer;}
+.ͼ1 .cm-tooltip.cm-tooltip-autocomplete > ul > completion-section {display: list-item; border-bottom: 1px solid silver; padding-left: 0.5em; opacity: 0.7;}
+.ͼ1 .cm-tooltip.cm-tooltip-autocomplete > ul {font-family: monospace; white-space: nowrap; overflow: hidden auto; max-width: 700px; max-width: min(700px, 95vw); min-width: 250px; max-height: 10em; height: 100%; list-style: none; margin: 0; padding: 0;}
+.ͼ2 .cm-tooltip-autocomplete ul li[aria-selected] {background: #17c; color: white;}
+.ͼ2 .cm-tooltip-autocomplete-disabled ul li[aria-selected] {background: #777;}
+.ͼ3 .cm-tooltip-autocomplete ul li[aria-selected] {background: #347; color: white;}
+.ͼ3 .cm-tooltip-autocomplete-disabled ul li[aria-selected] {background: #444;}
+.ͼ1 .cm-completionListIncompleteTop:before, .ͼ1 .cm-completionListIncompleteBottom:after {content: "···"; opacity: 0.5; display: block; text-align: center;}
+.ͼ1 .cm-tooltip.cm-completionInfo {position: absolute; padding: 3px 9px; width: max-content; max-width: 400px; box-sizing: border-box; white-space: pre-line;}
+.ͼ1 .cm-completionInfo.cm-completionInfo-left {right: 100%;}
+.ͼ1 .cm-completionInfo.cm-completionInfo-right {left: 100%;}
+.ͼ1 .cm-completionInfo.cm-completionInfo-left-narrow {right: 30px;}
+.ͼ1 .cm-completionInfo.cm-completionInfo-right-narrow {left: 30px;}
+.ͼ2 .cm-snippetField {background-color: #00000022;}
+.ͼ3 .cm-snippetField {background-color: #ffffff22;}
+.ͼ1 .cm-snippetFieldPosition {vertical-align: text-top; width: 0; height: 1.15em; display: inline-block; margin: 0 -0.7px -.7em; border-left: 1.4px dotted #888;}
+.ͼ1 .cm-completionMatchedText {text-decoration: underline;}
+.ͼ1 .cm-completionDetail {margin-left: 0.5em; font-style: italic;}
+.ͼ1 .cm-completionIcon {font-size: 90%; width: .8em; display: inline-block; text-align: center; padding-right: .6em; opacity: 0.6; box-sizing: content-box;}
+.ͼ1 .cm-completionIcon-function:after, .ͼ1 .cm-completionIcon-method:after {content: 'ƒ';}
+.ͼ1 .cm-completionIcon-class:after {content: '○';}
+.ͼ1 .cm-completionIcon-interface:after {content: '◌';}
+.ͼ1 .cm-completionIcon-variable:after {content: '𝑥';}
+.ͼ1 .cm-completionIcon-constant:after {content: '𝐶';}
+.ͼ1 .cm-completionIcon-type:after {content: '𝑡';}
+.ͼ1 .cm-completionIcon-enum:after {content: '∪';}
+.ͼ1 .cm-completionIcon-property:after {content: '□';}
+.ͼ1 .cm-completionIcon-keyword:after {content: '🔑︎';}
+.ͼ1 .cm-completionIcon-namespace:after {content: '▢';}
+.ͼ1 .cm-completionIcon-text:after {content: 'abc'; font-size: 50%; vertical-align: middle;}
+.ͼ1 .cm-tooltip {z-index: 500; box-sizing: border-box;}
+.ͼ2 .cm-tooltip {border: 1px solid #bbb; background-color: #f5f5f5;}
+.ͼ2 .cm-tooltip-section:not(:first-child) {border-top: 1px solid #bbb;}
+.ͼ3 .cm-tooltip {background-color: #333338; color: white;}
+.ͼ1 .cm-tooltip-arrow:before, .ͼ1 .cm-tooltip-arrow:after {content: ''; position: absolute; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;}
+.ͼ1 .cm-tooltip-above .cm-tooltip-arrow:before {border-top: 7px solid #bbb;}
+.ͼ1 .cm-tooltip-above .cm-tooltip-arrow:after {border-top: 7px solid #f5f5f5; bottom: 1px;}
+.ͼ1 .cm-tooltip-above .cm-tooltip-arrow {bottom: -7px;}
+.ͼ1 .cm-tooltip-below .cm-tooltip-arrow:before {border-bottom: 7px solid #bbb;}
+.ͼ1 .cm-tooltip-below .cm-tooltip-arrow:after {border-bottom: 7px solid #f5f5f5; top: 1px;}
+.ͼ1 .cm-tooltip-below .cm-tooltip-arrow {top: -7px;}
+.ͼ1 .cm-tooltip-arrow {height: 7px; width: 14px; position: absolute; z-index: -1; overflow: hidden;}
+.ͼ3 .cm-tooltip .cm-tooltip-arrow:before {border-top-color: #333338; border-bottom-color: #333338;}
+.ͼ3 .cm-tooltip .cm-tooltip-arrow:after {border-top-color: transparent; border-bottom-color: transparent;}
+.ͼ1.cm-focused .cm-matchingBracket {background-color: #328c8252;}
+.ͼ1.cm-focused .cm-nonmatchingBracket {background-color: #bb555544;}
+.ͼ1 .cm-foldPlaceholder {background-color: #eee; border: 1px solid #ddd; color: #888; border-radius: .2em; margin: 0 1px; padding: 0 1px; cursor: pointer;}
+.ͼ1 .cm-foldGutter span {padding: 0 1px; cursor: pointer;}
+.ͼ5 {color: #404740;}
+.ͼ6 {text-decoration: underline;}
+.ͼ7 {text-decoration: underline; font-weight: bold;}
+.ͼ8 {font-style: italic;}
+.ͼ9 {font-weight: bold;}
+.ͼa {text-decoration: line-through;}
+.ͼb {color: #708;}
+.ͼc {color: #219;}
+.ͼd {color: #164;}
+.ͼe {color: #a11;}
+.ͼf {color: #e40;}
+.ͼg {color: #00f;}
+.ͼh {color: #30a;}
+.ͼi {color: #085;}
+.ͼj {color: #167;}
+.ͼk {color: #256;}
+.ͼl {color: #00c;}
+.ͼm {color: #940;}
+.ͼn {color: #f00;}
+.ͼ4 .cm-line ::selection, .ͼ4 .cm-line::selection {background-color: transparent !important;}
+.ͼ4 .cm-line {caret-color: transparent !important;}
+.ͼ4 .cm-content :focus::selection, .ͼ4 .cm-content :focus ::selection {background-color: Highlight !important;}
+.ͼ4 .cm-content :focus {caret-color: initial !important;}
+.ͼ4 .cm-content {caret-color: transparent !important;}
+</style><style type="text/css">.turbo-progress-bar {
+  position: fixed;
+  display: block;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: #0076ff;
+  z-index: 2147483647;
+  transition:
+    width 300ms ease-out,
+    opacity 150ms 150ms ease-in;
+  transform: translate3d(0, 0, 0);
+}
+</style>
+
+<link as="font" crossorigin="anonymous" href="https://assets.exercism.org/assets/poppins-v20-latin-regular-ac6d71b4d5fdd2b3dabc9a06ff6c001e4251da0b.woff2" rel="preload" type="font/woff2">
+<link as="font" crossorigin="anonymous" href="https://assets.exercism.org/assets/poppins-v20-latin-600-179f97ec0275f09603a8db94d4380eb584d81cd5.woff2" rel="preload" type="font/woff2">
+<link rel="stylesheet" href="./Exercism_files/website-09c031b560c8c217fdb8295fb0679b2f61871483.css" data-turbo-track="reload">
+<link rel="stylesheet" href="./Exercism_files/editor-af4673c60cb98dc6831f296590c8e3ca97df9374.css" data-turbo-track="reload"><link rel="stylesheet" href="./Exercism_files/track-dfa5fb37753e7e5241df5193b09eaba3e82d3edc.css" data-turbo-track="reload">
+<link as="font" crossorigin="anonymous" href="https://assets.exercism.org/assets/poppins-v20-latin-500-0da2d17e738f46d2a09e6fb7969da451719a9820.woff2" rel="preload" type="font/woff2">
+<link as="font" crossorigin="anonymous" href="https://assets.exercism.org/assets/poppins-v20-latin-700-cb726212d5d525021752a1d8470a0fb593e0c49e.woff2" rel="preload" type="font/woff2">
+<link as="font" crossorigin="anonymous" href="https://assets.exercism.org/assets/source-code-pro-v22-latin_latin-ext-regular-ac7e13e27e17f830518f9899f1928cb5bfde3c3b.woff2" rel="preload" type="font/woff2">
+<style>
+  @font-face {
+    font-display: fallback;
+    font-family: PoppinsInitial;
+    font-weight: 400;
+    src: url(https://assets.exercism.org/assets/poppins-v20-latin-regular-ac6d71b4d5fdd2b3dabc9a06ff6c001e4251da0b.woff2) format('woff2');
+  }
+</style>
+<style>
+  @font-face {
+    font-display: fallback;
+    font-family: PoppinsInitial;
+    font-weight: 500;
+    src: url(https://assets.exercism.org/assets/poppins-v20-latin-600-179f97ec0275f09603a8db94d4380eb584d81cd5.woff2) format('woff2');
+  }
+</style>
+<style>
+  @font-face {
+    font-display: fallback;
+    font-family: PoppinsInitial;
+    font-weight: 600;
+    src: url(https://assets.exercism.org/assets/poppins-v20-latin-600-179f97ec0275f09603a8db94d4380eb584d81cd5.woff2) format('woff2');
+  }
+</style>
+<style>
+  @font-face {
+    font-display: fallback;
+    font-family: PoppinsInitial;
+    font-weight: 700;
+    src: url(https://assets.exercism.org/assets/poppins-v20-latin-600-179f97ec0275f09603a8db94d4380eb584d81cd5.woff2) format('woff2');
+  }
+</style>
+<style>
+  body {
+    --body-font: Poppins, PoppinsInitial, sans-serif;
+    font-family: var(--body-font);
+    -webkit-font-smoothing: antialiased;
+  }
+</style>
+<link rel="stylesheet" href="./Exercism_files/application-5b27aecdf3e773a9bb35dbaaea8adc4463a96d9a.css" data-turbo-track="reload">
+<script src="./Exercism_files/core-ab165ebae0862c5c81f7a6240d6ec23c2c1083f5.js.download" crossorigin="anonymous" type="module" data-turbo-track="reload" data-turbo-eval="false"></script>
+<script src="./Exercism_files/application-bac310445c7c226a991982c872d58f3beb82c643.js.download" crossorigin="anonymous" type="module" data-turbo-track="reload" data-turbo-eval="false" defer="defer"></script>
+<script src="./Exercism_files/internal-a98bc04eaeab2b44913e3e4806f2b62885029c8a.js.download" crossorigin="anonymous" type="module" data-turbo-track="reload" data-turbo-eval="false" defer="defer"></script>
+<link rel="stylesheet" href="./Exercism_files/internal-4a3bc01a41201b3bfb014245ed2030b57c89b3bf.css" data-turbo-track="reload">
+<link rel="stylesheet" href="./Exercism_files/signed-in-97def69e61a821ac3586af2fa49915cfe420701f.css" data-turbo-track="reload">
+<script defer="" src="./Exercism_files/beacon.min.js.download" data-cf-beacon="{&quot;token&quot;: &quot;1d3f833954d44d6e8d93219676a70d34&quot;}"></script>
+
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<meta name="csrf-param" content="authenticity_token">
+<meta name="csrf-token" content="dOcFqMm9Av1Ih0p7YM9IDsT7hkCH4Etg4-zN8fKRYYwZeBaJ5w-GzSd1KFCbGs9vKCexe6h08FKFstwBNQTPHA">
+
+<meta name="action-cable-url" content="wss://exercism.org/cable">
+<meta content="no-cache" name="turbo-cache-control">
+<meta content="language-servers-925786784.eu-west-2.elb.amazonaws.com" name="language-server-url">
+<meta content="https://exercism.org/api/v2/bug_reports" name="bug-reports-url">
+<meta content="https://exercism.org/api/v2/markdown/parse" name="parse-markdown-url">
+<meta content="2716408" name="user-id">
+<meta content="pk_live_51IDGMXEoOT0Jqx0UGsyx7fUW7iojTCPobNQDDoVdVY64qsyeNyFDqQRAgXSdj2HF8mYzPGxsBWIEFPnenq0lEhLH00x7KfG52T" name="stripe-publishable-key">
+<title>Exercism</title>
+<meta content="Learn, practice and get world-class mentoring in over 50 languages. 100% free." name="description">
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<meta content="summary_large_image" name="twitter:card">
+<meta content="@exercism_io" name="twitter:site">
+<meta content="@exercism_io" name="twitter:creator">
+<meta content="https://exercism.org/tracks/cpp/exercises/hello-world/edit" name="twitter:url">
+<meta content="Exercism" name="twitter:title">
+<meta content="Learn, practice and get world-class mentoring in over 50 languages. 100% free." name="twitter:description">
+<meta content="https://assets.exercism.org/meta/og.png" name="twitter:image">
+<meta content="Exercism" property="og:title">
+<meta content="website" property="og:type">
+<meta content="https://exercism.org/tracks/cpp/exercises/hello-world/edit" property="og:url">
+<meta content="https://assets.exercism.org/meta/og.png" property="og:image">
+<meta content="Learn, practice and get world-class mentoring in over 50 languages. 100% free." property="og:description">
+<meta content="Exercism" property="og:site_name">
+<meta content="744760440" property="fb:admins">
+<link href="https://assets.exercism.org/meta/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180">
+<link href="https://assets.exercism.org/meta/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png">
+<link href="https://assets.exercism.org/meta/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png">
+<link href="https://exercism.org/site.webmanifest" rel="manifest">
+<link href="https://exercism.org/blog.rss" rel="alternate" title="Exercism&#39;s Blog" type="application/rss+xml">
+<meta content="ca-pub-1298009554972786" name="google-adsense-account">
+
+
+<style id="_goober"> @keyframes go2264125279{from{transform:scale(0) rotate(45deg);opacity:0;}to{transform:scale(1) rotate(45deg);opacity:1;}}@keyframes go3020080000{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}@keyframes go463499852{from{transform:scale(0) rotate(90deg);opacity:0;}to{transform:scale(1) rotate(90deg);opacity:1;}}@keyframes go1268368563{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}@keyframes go1310225428{from{transform:scale(0) rotate(45deg);opacity:0;}to{transform:scale(1) rotate(45deg);opacity:1;}}@keyframes go651618207{0%{height:0;width:0;opacity:0;}40%{height:0;width:6px;opacity:1;}100%{opacity:1;height:10px;}}@keyframes go901347462{from{transform:scale(0.6);opacity:0.4;}to{transform:scale(1);opacity:1;}}.go4109123758{z-index:9999;}.go4109123758 > *{pointer-events:auto;}</style><style>.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #0000ff;
+  --rdp-background-color: #e7edff;
+  --rdp-accent-color-dark: #3003e1;
+  --rdp-background-color-dark: #180270;
+  --rdp-outline: 2px solid var(--rdp-accent-color); /* Outline border for focused elements */
+  --rdp-outline-selected: 2px solid rgba(0, 0, 0, 0.75); /* Outline border for focused _and_ selected elements */
+
+  margin: 1em;
+}
+
+/* Hide elements for devices that are not screen readers */
+.rdp-vhidden {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute !important;
+  top: 0;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  border: 0 !important;
+}
+
+/* Buttons */
+.rdp-button_reset {
+  appearance: none;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  cursor: default;
+  color: inherit;
+  outline: none;
+  background: none;
+  font: inherit;
+
+  -moz-appearance: none;
+  -webkit-appearance: none;
+}
+
+.rdp-button {
+  border: 2px solid transparent;
+}
+
+.rdp-button[disabled] {
+  opacity: 0.25;
+}
+
+.rdp-button:not([disabled]) {
+  cursor: pointer;
+}
+
+.rdp-button:focus:not([disabled]),
+.rdp-button:active:not([disabled]) {
+  color: inherit;
+  border: var(--rdp-outline);
+  background-color: var(--rdp-background-color);
+}
+
+.rdp-button:hover:not([disabled]) {
+  background-color: var(--rdp-background-color);
+}
+
+.rdp-months {
+  display: flex;
+}
+
+.rdp-month {
+  margin: 0 1em;
+}
+
+.rdp-month:first-child {
+  margin-left: 0;
+}
+
+.rdp-month:last-child {
+  margin-right: 0;
+}
+
+.rdp-table {
+  margin: 0;
+  max-width: calc(var(--rdp-cell-size) * 7);
+  border-collapse: collapse;
+}
+
+.rdp-with_weeknumber .rdp-table {
+  max-width: calc(var(--rdp-cell-size) * 8);
+  border-collapse: collapse;
+}
+
+.rdp-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  text-align: left;
+}
+
+.rdp-multiple_months .rdp-caption {
+  position: relative;
+  display: block;
+  text-align: center;
+}
+
+.rdp-caption_dropdowns {
+  position: relative;
+  display: inline-flex;
+}
+
+.rdp-caption_label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 0.25em;
+  white-space: nowrap;
+  color: currentColor;
+  border: 0;
+  border: 2px solid transparent;
+  font-family: inherit;
+  font-size: 140%;
+  font-weight: bold;
+}
+
+.rdp-nav {
+  white-space: nowrap;
+}
+
+.rdp-multiple_months .rdp-caption_start .rdp-nav {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.rdp-multiple_months .rdp-caption_end .rdp-nav {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+.rdp-nav_button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  padding: 0.25em;
+  border-radius: 100%;
+}
+
+/* ---------- */
+/* Dropdowns  */
+/* ---------- */
+
+.rdp-dropdown_year,
+.rdp-dropdown_month {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.rdp-dropdown {
+  appearance: none;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: inherit;
+  opacity: 0;
+  border: none;
+  background-color: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.rdp-dropdown[disabled] {
+  opacity: unset;
+  color: unset;
+}
+
+.rdp-dropdown:focus:not([disabled]) + .rdp-caption_label,
+.rdp-dropdown:active:not([disabled]) + .rdp-caption_label {
+  border: var(--rdp-outline);
+  border-radius: 6px;
+  background-color: var(--rdp-background-color);
+}
+
+.rdp-dropdown_icon {
+  margin: 0 0 0 5px;
+}
+
+.rdp-head {
+  border: 0;
+}
+
+.rdp-head_row,
+.rdp-row {
+  height: 100%;
+}
+
+.rdp-head_cell {
+  vertical-align: middle;
+  text-transform: uppercase;
+  font-size: 0.75em;
+  font-weight: 700;
+  text-align: center;
+  height: 100%;
+  height: var(--rdp-cell-size);
+  padding: 0;
+}
+
+.rdp-tbody {
+  border: 0;
+}
+
+.rdp-tfoot {
+  margin: 0.5em;
+}
+
+.rdp-cell {
+  width: var(--rdp-cell-size);
+  height: 100%;
+  height: var(--rdp-cell-size);
+  padding: 0;
+  text-align: center;
+}
+
+.rdp-weeknumber {
+  font-size: 0.75em;
+}
+
+.rdp-weeknumber,
+.rdp-day {
+  display: flex;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--rdp-cell-size);
+  max-width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  margin: 0;
+  border: 2px solid transparent;
+  border-radius: 100%;
+}
+
+.rdp-day_today:not(.rdp-day_outside) {
+  font-weight: bold;
+}
+
+.rdp-day_selected:not([disabled]),
+.rdp-day_selected:focus:not([disabled]),
+.rdp-day_selected:active:not([disabled]),
+.rdp-day_selected:hover:not([disabled]) {
+  color: white;
+  background-color: var(--rdp-accent-color);
+}
+
+.rdp-day_selected:focus:not([disabled]) {
+  border: var(--rdp-outline-selected);
+}
+
+.rdp:not([dir='rtl']) .rdp-day_range_start:not(.rdp-day_range_end) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.rdp:not([dir='rtl']) .rdp-day_range_end:not(.rdp-day_range_start) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.rdp[dir='rtl'] .rdp-day_range_start:not(.rdp-day_range_end) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.rdp[dir='rtl'] .rdp-day_range_end:not(.rdp-day_range_start) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.rdp-day_range_end.rdp-day_range_start {
+  border-radius: 100%;
+}
+
+.rdp-day_range_middle {
+  border-radius: 0;
+}
+</style></head>
+<body class="namespace-tracks controller-exercises action-edit theme-light user-signed_in">
+<header id="site-header"><a class="announcement-bar md:block hidden" href="https://exercism.org/insiders"><div class="lg-container"><span class="emoji mr-6">👋</span><span>Enjoying Exercism? We need your help to survive…</span><strong>Please donate if you can!</strong></div></a><div class="lg-container container"><a class="exercism-link xl:block" data-turbo-frame="tf-main" href="https://exercism.org/"><img alt="Exercism" class="c-icon" src="./Exercism_files/exercism-with-logo-black-12752bd7fcf6862ba8ad7a2b75e21a9b2409d7fd.svg"></a><div class="docs-search"><div class="c-search-bar"><input class="--search" placeholder="Search Exercism&#39;s docs..."></div></div><nav class="signed-in" role="navigation"><ul><li class="nav-element "><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/tracks"><span tabindex="-1" role="none" class="nav-element-label ">Learn</span></a><div class="nav-element-dropdown has-view" style="--dropdown-offset: -0px;" role="menu"><ul><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/tracks"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/nav-tracks-9fea2eca1d8eb6bcb7da69ce8e4fd34631b366e3.svg"><div class="overflow-hidden pr-40"><h6>Language Tracks</h6><p>Upskill in 65+ languages</p></div></div></a><div class="nav-dropdown-view"><div class="nav-dropdown-view-content"><div class="flex flex-row border-b-2 border-backgroundColorNavDropdown py-12 px-20">
+<div class="text-h5">Your recent tracks</div>
+<a class="ml-auto flex btn-link" href="https://exercism.org/tracks"><div>See all</div>
+<img alt="" class="c-icon" src="./Exercism_files/arrow-right-0f5e363467e0c55fe280b4864639a9c677afa0d2.svg">
+</a></div>
+<div class="nav-dropdown-track-list flex flex-col">
+<a class="hover:bg-backgroundColorHoverMenuTrack pt-10 pb-16 px-20 bg-backgroundColorA border-b-2 border-backgroundColorNavDropdown" href="https://exercism.org/tracks/cpp"><div class="flex flex-row items-start">
+<img class="w-[48px] h-[48px] mr-16" src="./Exercism_files/cpp.svg">
+<div class="flex flex-col w-fill">
+<div class="text-h6 mb-8">C++</div>
+<div class="flex flex-row bg-backgroundColorI rounded-8 mb-12 w-fill h-[6px]">
+<div class="rounded-8 h-fill min-w-[6px]" style="background:var(--fillColorProgress);width:0%"></div>
+</div>
+<div class="text-13 leading-150 text-textColor6">Last touched seconds</div>
+</div>
+</div>
+</a></div>
+</div></div></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/jiki"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/nav-coding-fundamentals-5a04ade8f48cdf1c24c58f4bbff0ec9dcfbf3765.svg"><div class="overflow-hidden pr-40"><h6>Jiki (Coding Fundamentals)</h6><p>The ultimate way to learn to code</p></div></div></a><div class="nav-dropdown-view"><div class="nav-dropdown-view-content"><div class="flex flex-col items-center items-stretch pt-20 px-24">
+<h2 class="text-h2 mb-4 flex items-center gap-8">
+Jiki
+<div class="leading-100 font-semibold uppercase px-10 py-6 bg-darkSuccessGreen text-white inline-block rounded-12 text-[11px]">Launching Jan 2026</div>
+</h2>
+<p class="text-p-base font-semibold mb-12">
+Video lessons. Fun projects. 40+ Languages.
+</p>
+<p class="text-p-base mb-8">
+A brand new platform designed to give you rock-solid programming fundamentals. If you've been <strong>coding for under a year</strong>, this course is designed for you.
+</p>
+<p class="text-p-base mb-4">
+In a few weeks you'll go from zero to making...
+</p>
+<div class="grid grid-cols-4 gap-10 my-16">
+<img class="w-full border-2 border-bootcamp-purple rounded-[5px]" src="./Exercism_files/space-invaders-46f78dc9034803f93947767e78aa7405e13fadc4.gif">
+<img class="w-full border-2 border-bootcamp-purple rounded-[5px]" src="./Exercism_files/tic-tac-toe-784fbde2e02a805645059146f21d0c0b841be94a.gif">
+<img class="w-full border-2 border-bootcamp-purple rounded-[5px]" src="./Exercism_files/breakout-3ed6770d7eb9107355d070ac53648c281d9a4500.gif">
+<img class="w-full border-2 border-bootcamp-purple rounded-[5px]" src="./Exercism_files/maze-351ecbc29b9eca274ce1954431c0240c61e32975.gif">
+</div>
+<a class="btn-primary btn-s" href="https://exercism.org/bootcamp">Join the Waiting List</a>
+</div>
+</div></div></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/journey"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/nav-journey-08d0785bc7b3d22d165f2865db17ed403851890a.svg"><div class="overflow-hidden pr-40"><h6>Your Journey</h6><p>Explore your Exercism journey</p></div></div></a><div class="nav-dropdown-view"><div class="nav-dropdown-view-content"><div id="journey-view">
+<div class="journey-contents">
+<div class="content">
+<img alt="" class="c-icon" src="./Exercism_files/reputation-5b5938e36519908ac61075db3b9826307a0f907a.svg">
+<span>Reputation</span>
+</div>
+<div class="content">
+<img alt="" class="c-icon" src="./Exercism_files/badges-72101413cc294464bcbce9d5b1a87a8876fd7cab.svg">
+<span>Badges</span>
+</div>
+<div class="content">
+<img alt="" class="c-icon" src="./Exercism_files/code-history-f2bb78481f54c3df3b45e294bdc554bbdff4d2b1.svg">
+<span>History</span>
+</div>
+<div class="content">
+<span>And more…</span>
+</div>
+</div>
+</div>
+</div></div></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/favorites"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/nav-favorites-94337452e7a69ccfe6225f33837a8c4a370834da.svg"><div class="overflow-hidden pr-40"><h6>Your Favorites<span class="new">New</span></h6><p>Revisit your favorite solutions</p></div></div></a><div class="nav-dropdown-view"><div class="nav-dropdown-view-content"><div class="flex flex-col items-center items-stretch pt-20 px-24">
+<h2 class="text-h3 mb-4">Your Favourites</h2>
+<p class="text-p-base font-medium mb-12">
+Store your favorite solutions from around Exercism and learn from them later.
+</p>
+<hr class="border-borderColor6 mb-12">
+<p class="text-p-base mb-12">You haven't added any favorites yet. Start exploring community solutions and add some interesting ones to your favorites!</p>
+<a class="btn-primary btn-s mb-6" href="https://exercism.org/favorites">Get started</a>
+</div>
+</div></div></li></ul></div><div class="arrow"></div></li><li class="nav-element "><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/community"><span tabindex="-1" role="none" class="nav-element-label ">Discover</span></a><div class="nav-element-dropdown has-no-view" style="--dropdown-offset: -20px;" role="menu"><ul><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/perks"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/perks-gradient-0e53b8b88c052e0ccfe01e285368fc9f9af379d7.svg"><div class="overflow-hidden pr-40"><h6>Exercism Perks</h6><p>Offers &amp; discounts from our partners</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/community/videos"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/external-site-youtube-576ec3c908a28230467d08470876b23c722f30da.svg"><div class="overflow-hidden pr-40"><h6>Community Videos</h6><p>Streaming, walkthroughs &amp; more</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/community/brief_introductions"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/brief-introductions-gradient-3439520e35035eed80d2dd3007a6cd169002a506.svg"><div class="overflow-hidden pr-40"><h6>Brief Introduction Series</h6><p>Short language overviews</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/community/interviews"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/interview-gradient-af38864f2f7811ce5ed451df999f845ff7ea615b.svg"><div class="overflow-hidden pr-40"><h6>Interviews &amp; Stories</h6><p>Get inspired by people's stories</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" target="_blank" rel="noreferrer" href="https://exercism.org/r/discord"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/external-site-discord-blue-601d4e0f105167ec2923cc05ff798066cef6018c.svg"><div class="overflow-hidden pr-40"><h6>Discord</h6><p>Chat &amp; hang with the community</p></div><img alt="The link opens in a new window or tab" class="c-icon external-icon filter-textColor6" src="./Exercism_files/external-link-49b422d65245eaf4cb29a072e85d73b5c6b8aa04.svg"></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" target="_blank" rel="noreferrer" href="https://exercism.org/r/forum"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/discourser-a9f3a217ecdcdf6ad48cc87060162217030d2eb8.svg"><div class="overflow-hidden pr-40"><h6>Forum</h6><p>Dig deeper into topics</p></div><img alt="The link opens in a new window or tab" class="c-icon external-icon filter-textColor6" src="./Exercism_files/external-link-49b422d65245eaf4cb29a072e85d73b5c6b8aa04.svg"></div></a></li></ul></div><div class="arrow"></div></li><li class="nav-element "><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/contributing"><span tabindex="-1" role="none" class="nav-element-label ">Contribute</span></a><div class="nav-element-dropdown has-no-view" style="--dropdown-offset: -20px;" role="menu"><ul><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/contributing"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/overview-9e9a39e9f2e81d2a28adf4254c588f9864d7e3a3.svg"><div class="overflow-hidden pr-40"><h6>Getting started</h6><p>How you can help Exercism</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/mentoring"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/mentoring-4d1e266458e8e3293b94679b92ccea4aa2cdb58b.svg"><div class="overflow-hidden pr-40"><h6>Mentoring</h6><p>Support others as they learn</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/docs"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/docs-95801430359f8daa2166eda2663cf925b26e7ac6.svg"><div class="overflow-hidden pr-40"><h6>Docs</h6><p>Everything you need to help</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/contributing/contributors"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/contributors-8873894d89a89d8a22512b9253d17a57b91df2d7.svg"><div class="overflow-hidden pr-40"><h6>Contributors</h6><p>Meet the people behind Exercism</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/localization/translator/new"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/world-4ba05a7284d474778d3f04189a4b1cd4b9072abc.svg"><div class="overflow-hidden pr-40"><h6>Translators<span class="new">New</span></h6><p>Support our Localization project</p></div></div></a></li></ul></div><div class="arrow"></div></li><li class="nav-element "><span tabindex="0" role="none" class="nav-element-label nav-element-focusable">More</span><div class="nav-element-dropdown has-no-view" style="--dropdown-offset: -0px;" role="menu"><ul><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/donate"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/donate-f0162e3dfad842a240d30ef6d422c5f4a969d857.svg"><div class="overflow-hidden pr-40"><h6>Donate</h6><p>Help support our mission</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/about"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/exercism-face-0c7e5dc39e944a18810e6e770430b3f1e06a81cb.svg"><div class="overflow-hidden pr-40"><h6>About Exercism</h6><p>Learn about our organisation</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/about/impact"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/report-23dfcc2b358696fb11fa6c7797edfc0d41ae0803.svg"><div class="overflow-hidden pr-40"><h6>Our Impact</h6><p>Explore what we've achieved</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/settings/github_syncer"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-textColor6" src="./Exercism_files/feature-github-sync-dcc832dc0153eaefd504c7ec66753b9577fbe1b4.svg"><div class="overflow-hidden pr-40"><h6>GitHub Syncer<span class="new">New</span></h6><p>Backup your solutions to GitHub</p></div></div></a></li><li><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/insiders"><div class="nav-dropdown-element" role="menuitem"><img alt="" class="c-icon filter-none" src="./Exercism_files/insiders-d0418ec8b59d21a8852f7326404fa20b2d21785d.svg"><div class="overflow-hidden pr-40"><h6>Insiders</h6><p>Our way of saying thank you</p></div></div></a></li></ul></div><div class="arrow"></div></li><li class="nav-element insiders"><a tabindex="0" role="none" class="nav-element-link nav-element-focusable" href="https://exercism.org/insiders"><span tabindex="-1" role="none" class="nav-element-label ">Insiders</span></a><div class="nav-element-dropdown only-view" style="--dropdown-offset: -150px;"><div class="nav-dropdown-view"><div class="nav-dropdown-view-content"><a href="https://exercism.org/insiders"><div class="bg-darkBlueViolet flex flex-col px-24 pt-20 pb-24 theme-dark">
+<img alt="" class="c-icon w-[48px] h-[48px] mb-16" src="./Exercism_files/insiders-d0418ec8b59d21a8852f7326404fa20b2d21785d.svg">
+<h2 class="text-h3 mb-2 !text-white">Exercism Insiders</h2>
+<p class="text-h6 mb-8 !text-white">Exercism needs your help to survive &amp; thrive!</p>
+<div class="text-p-base mb-12 color-[#cbc9d9] max-w-[370px]">
+Donate to Exercism and get behind-the-scenes access and bonus features like Dark Mode, ChatGPT integration, extra mentoring slots, exclusive badges and more.
+</div>
+<div class="btn-s btn-primary">Learn More</div>
+<div class="text-p-small border-t-1 border-borderColor5 mt-16 pt-16 color-[#cbc9d9] max-w-[370px]">
+Exercism is a registered not-for-profit. All donations are spent on running and improving the platform.
+</div>
+</div>
+</a></div></div></div><div class="arrow"></div></li><div class="c-react-component c-react-wrapper-common-theme-toggle-button" data-react-id="common-theme-toggle-button" data-react-data="{&quot;links&quot;:{&quot;update&quot;:&quot;https://exercism.org/api/v2/settings/user_preferences&quot;,&quot;insiders&quot;:&quot;/insiders&quot;},&quot;disabled&quot;:true,&quot;default_theme&quot;:null}" data-react-hydrate="false" data-persistent="true" data-rendered="true"><div class="ml-24" aria-expanded="false"><button disabled="" class="toggle-button"><label class="switch"><input type="checkbox" readonly=""><span class="slider round"></span></label></button></div></div></ul></nav><div class="user-section"><a class="new-badge" href="https://exercism.org/journey/badges#journey-content"></a><div class="c-react-component c-react-wrapper-dropdowns-notifications" data-react-id="dropdowns-notifications" data-react-data="{&quot;endpoint&quot;:&quot;https://exercism.org/api/v2/notifications?for_header=true&quot;}" data-react-hydrate="false" data-persistent="true" data-rendered="true"><button class="c-notification --none" aria-label="Open notifications" aria-controls="aa1e942f-3dfb-42d0-9f06-e33c1b6b3845" aria-haspopup="true"><img src="./Exercism_files/notifications-2e6c2d672e24a543905250aefc304f77e88718ff.svg" alt="You have 0 notifications" class="c-icon"><div class="--count">0</div></button></div><div class="c-react-component c-react-wrapper-dropdowns-reputation" data-react-id="dropdowns-reputation" data-react-data="{&quot;reputation&quot;:&quot;0&quot;,&quot;is_seen&quot;:true,&quot;endpoint&quot;:&quot;https://exercism.org/api/v2/reputation?for_header=true&quot;}" data-react-hydrate="false" data-persistent="true" data-rendered="true"><div class="flex gap-8"><button class="c-primary-reputation" aria-label="0 reputation" aria-controls="1b8bc919-aa99-413f-afba-de9c5e9ff821" aria-haspopup="true"><img src="./Exercism_files/reputation-5b5938e36519908ac61075db3b9826307a0f907a.svg" alt="Reputation" class="c-icon"><span>0</span><div class="--notification "></div></button></div></div><div class="c-react-component c-react-wrapper-dropdowns-dropdown" data-react-id="dropdowns-dropdown" data-react-data="{&quot;menu_button&quot;:{&quot;label&quot;:&quot;Button to open the profile menu&quot;,&quot;className&quot;:&quot;user-menu&quot;,&quot;html&quot;:&quot;\u003cdiv class=\&quot;c-avatar\&quot; style=\&quot;background-image:url(\u0026quot;https://assets.exercism.org/avatars/2716408/0\u0026quot;)\&quot;\u003e\u003cimg alt=\&quot;Uploaded avatar of BranBuddy\&quot; class=\&quot;sr-only\&quot; src=\&quot;https://assets.exercism.org/avatars/2716408/0\&quot; /\u003e\u003c/div\u003e\u003cimg alt=\&quot;Profile Menu\&quot; class=\&quot;c-icon\&quot; src=\&quot;https://assets.exercism.org/assets/icons/more-vertical-371ef6f2314bb5dbe5d3892a7ee098c6ebc3cf30.svg\&quot; /\u003e&quot;},&quot;menu_items&quot;:[{&quot;html&quot;:&quot;\u003ca href=\&quot;/profiles/intro\&quot;\u003e\u003cdiv class=\&quot;c-avatar\&quot; style=\&quot;background-image:url(\u0026quot;https://assets.exercism.org/avatars/2716408/0\u0026quot;)\&quot;\u003e\u003cimg alt=\&quot;Your uploaded avatar\&quot; class=\&quot;sr-only\&quot; src=\&quot;https://assets.exercism.org/avatars/2716408/0\&quot; /\u003e\u003c/div\u003e\u003cdiv class=\&quot;info\&quot;\u003e\u003cdiv class=\&quot;name\&quot;\u003eBrandon S Wahl\u003c/div\u003e\u003cdiv class=\&quot;handle flex\&quot;\u003e\u003cspan\u003e@\u003c/span\u003e\u003cspan class=\&quot;inline-flex items-center leading-150\&quot;\u003eBranBuddy\u003c/span\u003e\u003c/div\u003e\u003c/div\u003e\u003cimg alt=\&quot;Open public profile\&quot; class=\&quot;c-icon\&quot; src=\&quot;https://assets.exercism.org/assets/icons/external-link-49b422d65245eaf4cb29a072e85d73b5c6b8aa04.svg\&quot; /\u003e\u003c/a\u003e&quot;,&quot;className&quot;:&quot;profile&quot;},{&quot;html&quot;:&quot;\u003cdiv class=\&quot;c-primary-reputation\&quot; aria-label=\&quot;0 reputation\&quot;\u003e\u003cimg alt=\&quot;Reputation\&quot; class=\&quot;c-icon\&quot; src=\&quot;https://assets.exercism.org/assets/icons/reputation-5b5938e36519908ac61075db3b9826307a0f907a.svg\&quot; /\u003e\u003cspan\u003e0\u003c/span\u003e\u003c/div\u003e&quot;,&quot;className&quot;:&quot;reputation&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/dashboard\&quot;\u003eDashboard\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt site-link&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/tracks\&quot;\u003eTracks\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt site-link&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/mentoring/inbox\&quot;\u003eMentoring\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt site-link&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/community\&quot;\u003eCommunity\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt site-link&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/insiders\&quot;\u003eInsiders 💜\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt site-link&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/donate\&quot;\u003eDonate\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt site-link donate&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/profiles/intro\&quot;\u003ePublic Profile\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/journey\&quot;\u003eYour Journey\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt&quot;},{&quot;html&quot;:&quot;\u003ca href=\&quot;/settings\&quot;\u003eSettings\u003c/a\u003e&quot;,&quot;className&quot;:&quot;opt&quot;},{&quot;html&quot;:&quot;\u003cform id=\&quot;sign-out-form\&quot; class=\&quot;button_to\&quot; method=\&quot;post\&quot; action=\&quot;/users/sign_out\&quot;\u003e\u003cinput type=\&quot;hidden\&quot; name=\&quot;_method\&quot; value=\&quot;delete\&quot; autocomplete=\&quot;off\&quot; /\u003e\u003cbutton type=\&quot;submit\&quot;\u003eSign out\u003c/button\u003e\u003cinput type=\&quot;hidden\&quot; name=\&quot;authenticity_token\&quot; value=\&quot;i_N4YJRsc3nL8yPQ7ShY5fZ6HJs30k6DzfcDOxu-lDxnOJVgJN1lEEbwzzu1NzvR0EXCia_EE5DZOA2YoVQIBQ\&quot; autocomplete=\&quot;off\&quot; /\u003e\u003c/form\u003e&quot;,&quot;className&quot;:&quot;opt&quot;}]}" data-react-hydrate="false" data-persistent="true" data-rendered="true"><button class="user-menu " aria-label="Button to open the profile menu" aria-controls="c5081720-6ad8-4a2f-af86-e6e6e1138eb5" aria-haspopup="true"><div class="c-avatar" style="background-image:url(&quot;https://assets.exercism.org/avatars/2716408/0&quot;)"><img alt="Uploaded avatar of BranBuddy" class="sr-only" src="./Exercism_files/0"></div><img alt="Profile Menu" class="c-icon" src="./Exercism_files/more-vertical-371ef6f2314bb5dbe5d3892a7ee098c6ebc3cf30.svg"></button></div></div></div></header>
+<turbo-frame data-turbo-action="advance" id="tf-main"><link rel="stylesheet" href="./Exercism_files/editor-af4673c60cb98dc6831f296590c8e3ca97df9374.css" data-turbo-track="reload"><link rel="stylesheet" href="./Exercism_files/track-dfa5fb37753e7e5241df5193b09eaba3e82d3edc.css" data-turbo-track="reload">
+<div class="c-react-component c-react-wrapper-editor" data-react-id="editor" data-react-data="{&quot;default_submissions&quot;:[],&quot;default_files&quot;:[{&quot;filename&quot;:&quot;hello_world.cpp&quot;,&quot;type&quot;:&quot;exercise&quot;,&quot;content&quot;:&quot;#include \&quot;hello_world.h\&quot;\n\nusing namespace std;\n\nnamespace hello_world {\n\nstring hello() { return \&quot;Goodbye, Mars!\&quot;; }\n\n}  // namespace hello_world\n&quot;},{&quot;filename&quot;:&quot;hello_world.h&quot;,&quot;type&quot;:&quot;exercise&quot;,&quot;content&quot;:&quot;// This is an include guard.\n// You could alternatively use &#39;#pragma once&#39;\n// See https://en.wikipedia.org/wiki/Include_guard\n#if !defined(HELLO_WORLD_H)\n#define HELLO_WORLD_H\n\n// Include the string header so that we have access to &#39;std::string&#39;\n#include \u003cstring\u003e\n\n// Declare a namespace for the function(s) we are exporting.\n// https://en.cppreference.com/w/cpp/language/namespace\nnamespace hello_world {\n\n// Declare the &#39;hello()&#39; function, which takes no arguments and returns a\n// &#39;std::string&#39;. The function itself is defined in the hello_world.cpp source\n// file. Because it is inside of the &#39;hello_world&#39; namespace, it&#39;s full name is\n// &#39;hello_world::hello()&#39;.\nstd::string hello();\n\n}  // namespace hello_world\n\n#endif\n&quot;}],&quot;insider&quot;:false,&quot;chatgpt_usage&quot;:{&quot;3.5&quot;:0,&quot;4.0&quot;:0},&quot;default_settings&quot;:{&quot;tab_size&quot;:4,&quot;use_soft_tabs&quot;:true},&quot;autosave&quot;:{&quot;key&quot;:&quot;0d0e81423c3c43a49015f1260448680e&quot;,&quot;save_interval&quot;:500},&quot;help&quot;:{&quot;html&quot;:&quot;\u003cp\u003eTo get help if you&#39;re having trouble, you can use one of the following resources:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ca href=\&quot;https://stackoverflow.com/tags/c%2b%2b-faq/info\&quot; target=\&quot;_blank\&quot; rel=\&quot;noreferrer\&quot;\u003e\u003ccode\u003ec++-faq\u003c/code\u003e tag on StackOverflow\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\&quot;https://isocpp.org/faq\&quot; target=\&quot;_blank\&quot; rel=\&quot;noreferrer\&quot;\u003eC++ FAQ from isocpp.com\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\n\u003ca href=\&quot;http://en.cppreference.com/\&quot; target=\&quot;_blank\&quot; rel=\&quot;noreferrer\&quot;\u003eCppReference\u003c/a\u003e is a wiki reference to the C++ language and standard library\u003c/li\u003e\n\u003cli\u003e\n\u003ca href=\&quot;http://www.slideshare.net/LegalizeAdulthood/c-traps-and-pitfalls-for-c-programmers\&quot; target=\&quot;_blank\&quot; rel=\&quot;noreferrer\&quot;\u003eC traps and pitfalls\u003c/a\u003e is useful if you are new to C++, but have programmed in C\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003eShould those resources not suffice, check the following pages:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eThe \u003ca href=\&quot;https://exercism.org/docs/tracks/cpp\&quot;\u003eC++ track&#39;s documentation\u003c/a\u003e\n\u003c/li\u003e\n\u003cli\u003eThe \u003ca href=\&quot;https://forum.exercism.org/c/programming/cpp\&quot; target=\&quot;_blank\&quot; rel=\&quot;noreferrer\&quot;\u003eC++ track&#39;s programming category on the forum\u003c/a\u003e\n\u003c/li\u003e\n\u003cli\u003e\u003ca href=\&quot;https://forum.exercism.org/c/programming/5\&quot; target=\&quot;_blank\&quot; rel=\&quot;noreferrer\&quot;\u003eExercism&#39;s programming category on the forum\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eThe \u003ca href=\&quot;https://exercism.org/docs/using/faqs\&quot;\u003eFrequently Asked Questions\u003c/a\u003e\n\u003c/li\u003e\n\u003c/ul\u003e\n&quot;},&quot;panels&quot;:{&quot;instructions&quot;:{&quot;introduction&quot;:&quot;&quot;,&quot;assignment&quot;:{&quot;overview&quot;:&quot;\u003cp\u003eThe classical introductory exercise.\nJust say \&quot;Hello, World!\&quot;.\u003c/p\u003e\n\u003cp\u003e\u003ca href=\&quot;https://en.wikipedia.org/wiki/%22Hello,_world!%22_program\&quot; target=\&quot;_blank\&quot; rel=\&quot;noreferrer\&quot;\u003e\&quot;Hello, World!\&quot;\u003c/a\u003e is the traditional first program for beginning programming in a new language or environment.\u003c/p\u003e\n\u003cp\u003eThe objectives are simple:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eModify the provided code so that it produces the string \&quot;Hello, World!\&quot;.\u003c/li\u003e\n\u003cli\u003eRun the test suite and make sure that it succeeds.\u003c/li\u003e\n\u003cli\u003eSubmit your solution and check it at the website.\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003eIf everything goes well, you will be ready to fetch your first real exercise.\u003c/p\u003e\n&quot;,&quot;general_hints&quot;:[],&quot;tasks&quot;:[]},&quot;debugging_instructions&quot;:null},&quot;tests&quot;:{&quot;test_files&quot;:[{&quot;filename&quot;:&quot;hello_world_test.cpp&quot;,&quot;content&quot;:&quot;// Include the header file with the definitions of the functions you create.\n#include \&quot;hello_world.h\&quot;\n\n// Include the test framework.\n#ifdef EXERCISM_TEST_SUITE\n#include \u003ccatch2/catch.hpp\u003e\n#else\n#include \&quot;test/catch.hpp\&quot;\n#endif\n\n// Declares a single test.\nTEST_CASE(\&quot;test_hello\&quot;) {\n    // Check if your function returns \&quot;Hello, World!\&quot;.\n    REQUIRE(hello_world::hello() == \&quot;Hello, World!\&quot;);\n}\n&quot;}],&quot;highlightjs_language&quot;:&quot;cpp&quot;},&quot;results&quot;:{&quot;test_runner&quot;:{&quot;average_test_duration&quot;:3}},&quot;ai_help&quot;:null,&quot;chatgpt_usage&quot;:{&quot;3.5&quot;:0,&quot;4.0&quot;:0}},&quot;exercise&quot;:{&quot;title&quot;:&quot;Hello World&quot;,&quot;slug&quot;:&quot;hello-world&quot;,&quot;deep_dive_youtube_id&quot;:null,&quot;deep_dive_blurb&quot;:null},&quot;solution&quot;:{&quot;uuid&quot;:&quot;0d0e81423c3c43a49015f1260448680e&quot;},&quot;request&quot;:{&quot;endpoint&quot;:&quot;/api/v2/solutions/0d0e81423c3c43a49015f1260448680e/iterations/latest?sideload%5B%5D=automated_feedback&quot;,&quot;options&quot;:{&quot;initial_data&quot;:{&quot;iteration&quot;:null}}},&quot;mentoring_status&quot;:&quot;none&quot;,&quot;track_objectives&quot;:&quot;&quot;,&quot;has_available_mentoring_slot&quot;:true,&quot;links&quot;:{&quot;run_tests&quot;:&quot;https://exercism.org/api/v2/solutions/0d0e81423c3c43a49015f1260448680e/submissions&quot;,&quot;back&quot;:&quot;/tracks/cpp/exercises/hello-world&quot;,&quot;automated_feedback_info&quot;:&quot;/docs/using/feedback/automated&quot;,&quot;mentor_discussions&quot;:&quot;/tracks/cpp/exercises/hello-world/mentor_discussions&quot;,&quot;mentoring_request&quot;:&quot;/tracks/cpp/exercises/hello-world/mentor_request&quot;,&quot;create_mentor_request&quot;:&quot;/api/v2/solutions/0d0e81423c3c43a49015f1260448680e/mentor_requests&quot;,&quot;discord_redirect_path&quot;:&quot;/r/discord&quot;,&quot;forum_redirect_path&quot;:&quot;/r/forum&quot;,&quot;mark_video_as_seen_endpoint&quot;:&quot;/api/watched_videos?context=editor\u0026video_provider=youtube&quot;},&quot;iteration&quot;:null,&quot;discussion&quot;:null,&quot;track&quot;:{&quot;title&quot;:&quot;C++&quot;,&quot;slug&quot;:&quot;cpp&quot;,&quot;icon_url&quot;:&quot;https://assets.exercism.org/tracks/cpp.svg&quot;,&quot;median_wait_time&quot;:14258},&quot;show_deep_dive_video&quot;:false,&quot;local_test_runner&quot;:null}" data-react-hydrate="false"><div id="page-editor"><div class="header"><a href="https://exercism.org/tracks/cpp/exercises/hello-world" class="close-btn"><img src="./Exercism_files/arrow-left-4fedf4dce89347e9605602fd3ae9d14be590e735.svg" alt="" class="c-icon">Back to Exercise</a><div class="title"><div class="track">C++</div><div class="divider">/</div><div class="exercise">Hello World</div></div><div class="options"><button class="settings-btn" aria-controls="ad5a513e-7be2-4b54-a4e4-66fc16f45e10" aria-haspopup="true"><img src="./Exercism_files/settings-f325518f0f05f6549f9585e2e89d694ba1686050.svg" alt="Settings" class="c-icon"></button><button aria-controls="dc1819e2-2dd4-4b4c-b963-73186c13fd63" aria-haspopup="true" class="more-btn"><img src="./Exercism_files/more-horizontal-3d03736796a8555be89dea121bbb1721f6703001.svg" alt="Open more options" class="c-icon"></button></div></div><div class="c-split-pane"><div class="--split-lhs" style="min-width: 100px;"><div class="c-iteration-pane"><div class="tabs"><button class="c-tab  selected" role="tab" aria-selected="true" aria-controls="panel-hello_world.cpp" id="tab-hello_world.cpp" tabindex="0">hello_world.cpp</button><button class="c-tab " role="tab" aria-selected="false" aria-controls="panel-hello_world.h" id="tab-hello_world.h" tabindex="-1">hello_world.h</button></div><div id="panel-hello_world.cpp" role="tabpanel" aria-labelledby="tab-hello_world.cpp" tabindex="0" class="--tab-panel"><div class="editor"><div class="cm-editor ͼ1 ͼ2 ͼ4"><div class="cm-panels cm-panels-top" style="top: 0px;"><div class="cm-a11y-panel cm-panel" aria-live="assertive" aria-atomic="true"></div></div><div class="cm-announced" aria-live="polite"></div><div tabindex="-1" class="cm-scroller"><div class="cm-gutters" aria-hidden="true" style="min-height: 292px; position: sticky;"><div class="cm-gutter cm-lineNumbers"><div class="cm-gutterElement" style="height: 0px; visibility: hidden; pointer-events: none;">99</div><div class="cm-gutterElement" style="height: 24px;">1</div><div class="cm-gutterElement" style="height: 24px;">2</div><div class="cm-gutterElement" style="height: 24px;">3</div><div class="cm-gutterElement" style="height: 24px;">4</div><div class="cm-gutterElement" style="height: 24px;">5</div><div class="cm-gutterElement" style="height: 24px;">6</div><div class="cm-gutterElement" style="height: 24px;">7</div><div class="cm-gutterElement" style="height: 24px;">8</div><div class="cm-gutterElement" style="height: 24px;">9</div><div class="cm-gutterElement" style="height: 24px;">10</div><div class="cm-gutterElement" style="height: 24px;">11</div><div class="cm-gutterElement cm-activeLineGutter" style="height: 24px;">12</div></div><div class="cm-gutter cm-foldGutter"><div class="cm-gutterElement" style="height: 0px; visibility: hidden; pointer-events: none;"><span title="Unfold line">›</span></div><div class="cm-gutterElement" style="height: 24px; margin-top: 96px;"><span title="Fold line">⌄</span></div><div class="cm-gutterElement cm-activeLineGutter" style="height: 24px; margin-top: 144px;"></div></div></div><div spellcheck="false" autocorrect="off" autocapitalize="off" writingsuggestions="false" translate="no" contenteditable="false" style="tab-size: 4;" class="cm-content cm-lineWrapping" role="textbox" aria-multiline="true" data-language="cpp"><div class="cm-line"><span class="ͼ5">#include</span> <span class="ͼe">"hello_world.h"</span></div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼb">using</span> <span class="ͼb">namespace</span> std;</div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼb">namespace</span> hello_world {</div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼi">string</span> <span class="ͼg">hello</span>() { <span class="ͼb">return</span> <span class="ͼe">"Goodbye, Mars!"</span>; }</div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼi">std</span>::cout &lt;&lt; hello()</div><div class="cm-line"><br></div><div class="cm-line">}  <span class="ͼm">// namespace hello_world</span></div><div class="cm-activeLine cm-line"><br></div></div><div class="cm-layer cm-layer-above cm-cursorLayer" aria-hidden="true" style="z-index: 150; animation-duration: 1200ms; animation-name: cm-blink;"><div class="cm-cursor cm-cursor-primary" style="left: 72px; top: 266px; height: 19px;"></div></div><div class="cm-layer cm-selectionLayer" aria-hidden="true" style="z-index: -2;"></div></div></div></div></div><div id="panel-hello_world.h" role="tabpanel" aria-labelledby="tab-hello_world.h" tabindex="0" class="--tab-panel" style="display: none;"><div class="editor"><div class="cm-editor ͼ1 ͼ2 ͼ4"><div class="cm-panels cm-panels-top" style="top: 0px;"><div class="cm-a11y-panel cm-panel" aria-live="assertive" aria-atomic="true"></div></div><div class="cm-announced" aria-live="polite"></div><div tabindex="-1" class="cm-scroller"><div class="cm-gutters" aria-hidden="true" style="min-height: 504px; position: sticky;"><div class="cm-gutter cm-lineNumbers"><div class="cm-gutterElement" style="height: 0px; visibility: hidden; pointer-events: none;">99</div><div class="cm-gutterElement cm-activeLineGutter" style="height: 21.2696px;">1</div><div class="cm-gutterElement" style="height: 25.6833px;">2</div><div class="cm-gutterElement" style="height: 26.9815px;">3</div><div class="cm-gutterElement" style="height: 21.01px;">4</div><div class="cm-gutterElement" style="height: 19.4522px;">5</div><div class="cm-gutterElement" style="height: 14px;">6</div><div class="cm-gutterElement" style="height: 31.6548px;">7</div><div class="cm-gutterElement" style="height: 18.4137px;">8</div><div class="cm-gutterElement" style="height: 14px;">9</div><div class="cm-gutterElement" style="height: 29.5777px;">10</div><div class="cm-gutterElement" style="height: 28.2796px;">11</div><div class="cm-gutterElement" style="height: 19.9715px;">12</div><div class="cm-gutterElement" style="height: 14px;">13</div><div class="cm-gutterElement" style="height: 32.9529px;">14</div><div class="cm-gutterElement" style="height: 34.2511px;">15</div><div class="cm-gutterElement" style="height: 34.5107px;">16</div><div class="cm-gutterElement" style="height: 20.7504px;">17</div><div class="cm-gutterElement" style="height: 19.1926px;">18</div><div class="cm-gutterElement" style="height: 14px;">19</div><div class="cm-gutterElement" style="height: 21.01px;">20</div><div class="cm-gutterElement" style="height: 14px;">21</div><div class="cm-gutterElement" style="height: 15.5578px;">22</div></div><div class="cm-gutter cm-foldGutter"><div class="cm-gutterElement" style="height: 0px; visibility: hidden; pointer-events: none;"><span title="Unfold line">›</span></div><div class="cm-gutterElement cm-activeLineGutter" style="height: 21.2696px;"></div><div class="cm-gutterElement" style="height: 19.9715px; margin-top: 229.053px;"><span title="Fold line">⌄</span></div></div></div><div spellcheck="false" autocorrect="off" autocapitalize="off" writingsuggestions="false" translate="no" contenteditable="false" class="cm-content cm-lineWrapping" role="textbox" aria-multiline="true" style="tab-size: 4;" data-language="cpp"><div class="cm-activeLine cm-line"><span class="ͼm">// This is an include guard.</span></div><div class="cm-line"><span class="ͼm">// You could alternatively use '#pragma once'</span></div><div class="cm-line"><span class="ͼm">// See https://en.wikipedia.org/wiki/Include_guard</span></div><div class="cm-line"><span class="ͼ5">#if</span> !defined(HELLO_WORLD_H)</div><div class="cm-line"><span class="ͼ5">#define</span> HELLO_WORLD_H</div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼm">// Include the string header so that we have access to 'std::string'</span></div><div class="cm-line"><span class="ͼ5">#include</span> <span class="ͼf">&lt;string&gt;</span></div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼm">// Declare a namespace for the function(s) we are exporting.</span></div><div class="cm-line"><span class="ͼm">// https://en.cppreference.com/w/cpp/language/namespace</span></div><div class="cm-line"><span class="ͼb">namespace</span> hello_world {</div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼm">// Declare the 'hello()' function, which takes no arguments and returns a</span></div><div class="cm-line"><span class="ͼm">// 'std::string'. The function itself is defined in the hello_world.cpp source</span></div><div class="cm-line"><span class="ͼm">// file. Because it is inside of the 'hello_world' namespace, it's full name is</span></div><div class="cm-line"><span class="ͼm">// 'hello_world::hello()'.</span></div><div class="cm-line"><span class="ͼi">std</span>::<span class="ͼi">string</span> <span class="ͼg">hello</span>();</div><div class="cm-line"><br></div><div class="cm-line">}  <span class="ͼm">// namespace hello_world</span></div><div class="cm-line"><br></div><div class="cm-line"><span class="ͼ5">#endif</span></div><div class="cm-line"><br></div></div><div class="cm-layer cm-layer-above cm-cursorLayer" aria-hidden="true" style="z-index: 150; animation-duration: 1200ms;"></div><div class="cm-layer cm-selectionLayer" aria-hidden="true" style="z-index: -2;"></div></div></div></div></div></div><footer class="lhs-footer"><button type="button" class="btn-enhanced btn-s !ml-0 mr-auto ask-chatgpt-btn"><img src="./Exercism_files/automation-74edbd94c88caa49e17e429d7ff594f98e84db88.svg" alt="" width="16" height="16" class="c-icon"><span>Stuck? Get help</span></button><div class="run-tests-btn"><button type="button" class="btn-enhanced btn-s" disabled=""><img src="./Exercism_files/run-tests-7259457020c0ad37ed70454416e07956cb5d40cf.svg" alt="" class="c-icon"><span>Run Tests</span></button></div><div class="submit-btn"><button type="button" disabled="" class="btn-primary btn-s"><span>Submit</span></button></div></footer></div><div class="--split-divider"></div><div class="--split-rhs" style="min-width: 100px;"><div class="tabs"><button class="c-tab " role="tab" aria-selected="false" aria-controls="panel-instructions" id="tab-instructions" tabindex="-1"><img src="./Exercism_files/instructions-9600acff7c3b15930263c8cdd8c35d46960bd924.svg" alt="" class="c-icon"><span data-text="Instructions">Instructions</span></button><button class="c-tab " role="tab" aria-selected="false" aria-controls="panel-tests" id="tab-tests" tabindex="-1"><img src="./Exercism_files/tests-84e3e0b58782f3ca74b749ee371ec8a05b8d9c9b.svg" alt="" class="c-icon"><span data-text="Tests">Tests</span></button><button class="c-tab  selected" role="tab" aria-selected="true" aria-controls="panel-results" id="tab-results" tabindex="0"><img src="./Exercism_files/test-results-5545e191cc6045b988e47e2fdfed00d72faebf4e.svg" alt="" class="c-icon"><span data-text="Results">Results</span></button><button class="c-tab " role="tab" aria-selected="false" aria-controls="panel-chat-gpt" id="tab-chat-gpt" tabindex="-1"><img src="./Exercism_files/automation-74edbd94c88caa49e17e429d7ff594f98e84db88.svg" alt="" class="c-icon"><span data-text="ChatGPT">ChatGPT</span></button><button class="c-tab " role="tab" aria-selected="false" aria-controls="panel-get-help" id="tab-get-help" tabindex="-1"><img src="./Exercism_files/help-c457520410f634c7ecee6c9aa99a2e306c605ec1.svg" alt="" class="c-icon"><span data-text="Get Help">Get help</span></button></div><div id="panel-instructions" role="tabpanel" aria-labelledby="tab-instructions" tabindex="0" class="--tab-panel" style="display: none;"><section class="instructions-pane"><div class="c-textual-content --base"><h2>Introduction</h2><p class="mb-20">Watch our "Introduction to Hello, World" video to get started 👇</p><div class="c-vimeo-container rounded-5"><iframe width="560" height="315" src="./Exercism_files/853440496.html" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe><script src="./Exercism_files/player.js.download"></script></div><div class="instructions"><h2>Instructions</h2><div class="content"><p>The classical introductory exercise.
+Just say "Hello, World!".</p>
+<p><a href="https://en.wikipedia.org/wiki/%22Hello,_world!%22_program" target="_blank" rel="noreferrer">"Hello, World!"</a> is the traditional first program for beginning programming in a new language or environment.</p>
+<p>The objectives are simple:</p>
+<ul>
+<li>Modify the provided code so that it produces the string "Hello, World!".</li>
+<li>Run the test suite and make sure that it succeeds.</li>
+<li>Submit your solution and check it at the website.</li>
+</ul>
+<p>If everything goes well, you will be ready to fetch your first real exercise.</p>
+</div></div></div></section></div><div id="panel-results" role="tabpanel" aria-labelledby="tab-results" tabindex="0" class="--tab-panel"><section class="results"><div class="c-test-run"><div role="status" class="running"><img src="https://assets.exercism.org/assets/icons/spinner-0813469c6c8f037b2e3d8aa5e987173eec009c02.svg" alt="" class="c-icon animate-spin-slow filter-textColor6"><div class="c-loading-bar"><div class="bar" style="animation-duration: 3s;"></div></div><p><strong>Running tests…</strong>&nbsp;<span>Estimated running time ~ 3s</span></p><button type="button" class="btn-default btn-xs">Cancel</button></div></div></section></div></div></div></div></div>
+
+</turbo-frame>
+<div id="portal-container"></div>
+<div class="c-loading-overlay"></div>
+<footer id="site-footer" style="display: block;"><div class="lg-container">
+<div class="nfp mb-40 md:mb-58">
+<img alt="" class="c-icon" src="./Exercism_files/exercism-face-gradient-31ce1b1261c54ead735cf687a2dc8549b3d00bb1.svg">
+<h2 class="text-h2 mb-32">Help us keep Exercism free for everyone, everywhere.</h2>
+<div class="c-react-component c-react-wrapper-donations-footer-form" data-react-id="donations-footer-form" data-react-data="{&quot;request&quot;:{&quot;endpoint&quot;:&quot;https://exercism.org/api/v2/payments/subscriptions/current&quot;,&quot;options&quot;:{&quot;initial_data&quot;:{&quot;subscription&quot;:null}}},&quot;user_signed_in&quot;:true,&quot;captcha_required&quot;:false,&quot;recaptcha_site_key&quot;:&quot;6LdNREYjAAAAACOk4_z0QdYbnw7dzf7hgcy4NxRv&quot;,&quot;links&quot;:{&quot;settings&quot;:&quot;https://exercism.org/settings/donations&quot;,&quot;success&quot;:&quot;https://exercism.org/donated&quot;}}" data-react-hydrate="false"><form class="donations-form flex flex-col md:flex-row items-stretch"><div class="amounts mb-16 md:mb-0"><button class="btn-m selected" type="button">$16</button><button class="btn-m" type="button">$32</button><button class="btn-m" type="button">$64</button><button class="btn-m" type="button">$128</button><label class="c-faux-input"><div class="icon">$</div><input type="number" min="0" max="999999.99" step="0.01" placeholder="Custom amount" value=""></label></div><button class="btn-m continue-btn w-100 md:w-auto md:h-auto md:ml-32"><span>Continue</span><img src="./Exercism_files/arrow-right-0f5e363467e0c55fe280b4864639a9c677afa0d2.svg" alt="" class="c-icon"></button></form></div>
+<h3 class="text-h4 mt-32 mb-8">Exercism is open source and 100% free.</h3>
+<p class="text-p-large">Help us provide opportunity for people of all backgrounds by helping them develop their programming skills through code practice and mentorship.</p>
+</div>
+<hr>
+<div class="site-links mt-24 md:mt-56">
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-x-40">
+<div class="col">
+<h3>Editions</h3>
+<hr class="c-divider --small">
+<ul>
+<li><a href="https://exercism.org/">Exercism</a></li>
+<li><a href="https://exercism.org/jiki">Learn to Code</a></li>
+<li><a href="https://exercism.org/jiki">Coding Fundamentals</a></li>
+<li><a href="https://exercism.org/docs/using/editions/teams">Exercism for Teams</a></li>
+<li><a href="https://exercism.org/docs/using/editions/research">Exercism Research</a></li>
+</ul>
+</div>
+<div class="col">
+<h3>About</h3>
+<hr class="c-divider --small">
+<ul>
+<li><a href="https://exercism.org/about">About Exercism</a></li>
+<li><a href="https://exercism.org/about/team">Our team</a></li>
+<li><a href="https://exercism.org/contributing/contributors">Contributors</a></li>
+<li><a href="https://exercism.org/about/supporters/organisations">Partners</a></li>
+<li><a href="https://exercism.org/about/supporters/individuals">Individual supporters</a></li>
+</ul>
+</div>
+<div class="col">
+<h3>Get involved</h3>
+<hr class="c-divider --small">
+<ul>
+<li><a href="https://exercism.org/insiders">Exercism Insiders</a></li>
+<li><a href="https://exercism.org/contributing">Contribute</a></li>
+<li><a href="https://exercism.org/mentoring">Mentor</a></li>
+<li><a href="https://exercism.org/donate">Donate</a></li>
+</ul>
+</div>
+<div class="col">
+<h3>Legal &amp; policies</h3>
+<hr class="c-divider --small">
+<ul>
+<li><a href="https://exercism.org/docs/using/legal/terms-of-service">Terms of usage</a></li>
+<li><a href="https://exercism.org/docs/using/legal/privacy-policy">Privacy policy</a></li>
+<li><a href="https://exercism.org/docs/using/legal/cookie-policy">Cookie policy</a></li>
+<li><a href="https://exercism.org/docs/using/legal/code-of-conduct">Code of conduct</a></li>
+<li><a href="https://exercism.org/docs/using/legal/accessibility">Accessibility statement</a></li>
+</ul>
+</div>
+<div class="col">
+<h3>Keep in touch</h3>
+<hr class="c-divider --small">
+<ul>
+<li><a href="https://exercism.org/blog">Exercism's blog</a></li>
+<li><a href="https://github.com/exercism/exercism">Discuss on GitHub</a></li>
+<li><a href="https://exercism.org/docs/using/contact">Contact us</a></li>
+<li><a href="https://exercism.org/docs/using/report-abuse">Report abuse</a></li>
+</ul>
+</div>
+<div class="col">
+<h3>Get help</h3>
+<hr class="c-divider --small">
+<ul>
+<li><a href="https://exercism.org/docs">Exercism's Docs</a></li>
+<li><a href="https://exercism.org/docs/using/getting-started">Getting started</a></li>
+<li><a href="https://exercism.org/docs/using/faqs">FAQs</a></li>
+<li><a href="https://exercism.org/docs/using/solving-exercises/working-locally">Installing the CLI</a></li>
+<li><a href="https://exercism.org/cli-walkthrough">Interactive CLI Walkthrough</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="socials mt-24 mb-40 md:mb-56">
+<a class="icon twitter" href="https://twitter.com/exercism_io"><img alt="" class="c-icon" src="./Exercism_files/external-site-twitter-6717f73e3402edb200e17233edc6d9aa756d084c.svg">
+</a><a class="icon facebook" href="https://facebook.com/exercism.io"><img alt="" class="c-icon" src="./Exercism_files/external-site-facebook-30d7c9862735514b98cc354bc12f460a4a40d26b.svg">
+</a><a class="icon github" href="https://github.com/exercism"><img alt="" class="c-icon" src="./Exercism_files/external-site-github-10a8a76f55f4e6955417df6aa374dd48fab4392b.svg">
+</a></div>
+<hr>
+<div class="tracks mt-32 md:mt-48 mb-32 md:mb-48 md:items-center">
+<div class="hidden md:block">
+<h2 class="text-h3">Our programming language tracks</h2>
+<hr class="c-divider mt-28 mb-36">
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-x-32">
+<div class="col">
+<ul>
+<li><a href="https://exercism.org/tracks/8th">8th</a></li>
+<li><a href="https://exercism.org/tracks/abap">ABAP</a></li>
+<li><a href="https://exercism.org/tracks/arm64-assembly">ARM64 Assembly</a></li>
+<li><a href="https://exercism.org/tracks/arturo">Arturo</a></li>
+<li><a href="https://exercism.org/tracks/awk">AWK</a></li>
+<li><a href="https://exercism.org/tracks/ballerina">Ballerina</a></li>
+<li><a href="https://exercism.org/tracks/bash">Bash</a></li>
+<li><a href="https://exercism.org/tracks/batch">Batch Script</a></li>
+<li><a href="https://exercism.org/tracks/c">C</a></li>
+<li><a href="https://exercism.org/tracks/csharp">C#</a></li>
+<li><a href="https://exercism.org/tracks/cpp">C++</a></li>
+<li><a href="https://exercism.org/tracks/cairo">Cairo</a></li>
+<li><a href="https://exercism.org/tracks/cfml">CFML</a></li>
+<li><a href="https://exercism.org/tracks/clojure">Clojure</a></li>
+<li><a href="https://exercism.org/tracks/cobol">COBOL</a></li>
+<li><a href="https://exercism.org/tracks/coffeescript">CoffeeScript</a></li>
+<li><a href="https://exercism.org/tracks/common-lisp">Common Lisp</a></li>
+</ul>
+</div>
+<div class="col">
+<ul>
+<li><a href="https://exercism.org/tracks/crystal">Crystal</a></li>
+<li><a href="https://exercism.org/tracks/d">D</a></li>
+<li><a href="https://exercism.org/tracks/dart">Dart</a></li>
+<li><a href="https://exercism.org/tracks/delphi">Delphi Pascal</a></li>
+<li><a href="https://exercism.org/tracks/elixir">Elixir</a></li>
+<li><a href="https://exercism.org/tracks/elm">Elm</a></li>
+<li><a href="https://exercism.org/tracks/emacs-lisp">Emacs Lisp</a></li>
+<li><a href="https://exercism.org/tracks/erlang">Erlang</a></li>
+<li><a href="https://exercism.org/tracks/euphoria">Euphoria</a></li>
+<li><a href="https://exercism.org/tracks/fsharp">F#</a></li>
+<li><a href="https://exercism.org/tracks/fortran">Fortran</a></li>
+<li><a href="https://exercism.org/tracks/futhark">Futhark</a></li>
+<li><a href="https://exercism.org/tracks/gleam">Gleam</a></li>
+<li><a href="https://exercism.org/tracks/go">Go</a></li>
+<li><a href="https://exercism.org/tracks/groovy">Groovy</a></li>
+<li><a href="https://exercism.org/tracks/haskell">Haskell</a></li>
+</ul>
+</div>
+<div class="col">
+<ul>
+<li><a href="https://exercism.org/tracks/idris">Idris</a></li>
+<li><a href="https://exercism.org/tracks/java">Java</a></li>
+<li><a href="https://exercism.org/tracks/javascript">JavaScript</a></li>
+<li><a href="https://exercism.org/tracks/jq">jq</a></li>
+<li><a href="https://exercism.org/tracks/julia">Julia</a></li>
+<li><a href="https://exercism.org/tracks/kotlin">Kotlin</a></li>
+<li><a href="https://exercism.org/tracks/lean">Lean</a></li>
+<li><a href="https://exercism.org/tracks/lfe">Lisp Flavoured Erlang</a></li>
+<li><a href="https://exercism.org/tracks/lua">Lua</a></li>
+<li><a href="https://exercism.org/tracks/mips">MIPS Assembly</a></li>
+<li><a href="https://exercism.org/tracks/moonscript">MoonScript</a></li>
+<li><a href="https://exercism.org/tracks/nim">Nim</a></li>
+<li><a href="https://exercism.org/tracks/objective-c">Objective-C</a></li>
+<li><a href="https://exercism.org/tracks/ocaml">OCaml</a></li>
+<li><a href="https://exercism.org/tracks/odin">Odin</a></li>
+<li><a href="https://exercism.org/tracks/perl5">Perl</a></li>
+</ul>
+</div>
+<div class="col">
+<ul>
+<li><a href="https://exercism.org/tracks/pharo-smalltalk">Pharo</a></li>
+<li><a href="https://exercism.org/tracks/php">PHP</a></li>
+<li><a href="https://exercism.org/tracks/powershell">PowerShell</a></li>
+<li><a href="https://exercism.org/tracks/prolog">Prolog</a></li>
+<li><a href="https://exercism.org/tracks/purescript">PureScript</a></li>
+<li><a href="https://exercism.org/tracks/pyret">Pyret</a></li>
+<li><a href="https://exercism.org/tracks/python">Python</a></li>
+<li><a href="https://exercism.org/tracks/r">R</a></li>
+<li><a href="https://exercism.org/tracks/racket">Racket</a></li>
+<li><a href="https://exercism.org/tracks/raku">Raku</a></li>
+<li><a href="https://exercism.org/tracks/reasonml">ReasonML</a></li>
+<li><a href="https://exercism.org/tracks/red">Red</a></li>
+<li><a href="https://exercism.org/tracks/roc">Roc</a></li>
+<li><a href="https://exercism.org/tracks/ruby">Ruby</a></li>
+<li><a href="https://exercism.org/tracks/rust">Rust</a></li>
+<li><a href="https://exercism.org/tracks/scala">Scala</a></li>
+</ul>
+</div>
+<div class="col">
+<ul>
+<li><a href="https://exercism.org/tracks/scheme">Scheme</a></li>
+<li><a href="https://exercism.org/tracks/sqlite">SQLite</a></li>
+<li><a href="https://exercism.org/tracks/sml">Standard ML</a></li>
+<li><a href="https://exercism.org/tracks/swift">Swift</a></li>
+<li><a href="https://exercism.org/tracks/tcl">Tcl</a></li>
+<li><a href="https://exercism.org/tracks/typescript">TypeScript</a></li>
+<li><a href="https://exercism.org/tracks/uiua">Uiua</a></li>
+<li><a href="https://exercism.org/tracks/unison">Unison</a></li>
+<li><a href="https://exercism.org/tracks/vlang">V</a></li>
+<li><a href="https://exercism.org/tracks/vimscript">Vim script</a></li>
+<li><a href="https://exercism.org/tracks/vbnet">Visual Basic</a></li>
+<li><a href="https://exercism.org/tracks/wasm">WebAssembly</a></li>
+<li><a href="https://exercism.org/tracks/wren">Wren</a></li>
+<li><a href="https://exercism.org/tracks/x86-64-assembly">x86-64 Assembly</a></li>
+<li><a href="https://exercism.org/tracks/yamlscript">YAMLScript</a></li>
+<li><a href="https://exercism.org/tracks/zig">Zig</a></li>
+</ul>
+</div>
+<div class="col hidden md:block mt-32 xl:mt-0">
+<h3 class="text-h6">Want to add a language track to Exercism?</h3>
+<p class="text-p-base">Start a new topic in the <a href="https://forum.exercism.org/c/exercism/4">forum</a> and let's discuss it.
+</p>
+</div>
+</div>
+</div>
+<hr>
+<div class="legals mt-24 md:mt-32 mb-32 md:mb-40 flex md:items-center flex-col md:flex-row">
+<div class="company mb-16 md:mb-0 md:mr-32">Exercism is a not-for-profit organisation <a href="https://find-and-update.company-information.service.gov.uk/company/11733062" rel="noopener" target="_blank">registered in the UK</a>. Its trustees are <a href="https://exercism.github.io/kytrinyx/">Katrina Owen</a>, <a href="https://ihid.info/">Jeremy Walker</a> and <a href="https://erikschierboom.com/">Erik Schierboom</a>.</div>
+<div class="copyright md:ml-auto">
+© 2026 Exercism
+</div>
+</div>
+</div>
+</footer>
+
+
+
+<div id="give-freely-root-ejkiikneibegknkgimmihdpcbcedgmpo" class="give-freely-root" data-extension-id="ejkiikneibegknkgimmihdpcbcedgmpo" data-extension-name="Volume Booster" style="display: block;"><template shadowrootmode="open"><style>
+  :host {
+    all: initial;
+  }
+
+  .gf-scroll-remove::-webkit-scrollbar {
+    border-radius-bottom-right: 15px;
+  }
+
+  button {
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
+  .give-freely-close-button:hover {
+    opacity: 0.7;
+  }
+
+  input[type="radio"] {
+    margin-right: 8px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e5e5e5;
+    margin: 1em 0;
+  }
+
+  @media (max-width: 600px), (max-height: 480px) {
+    #give-freely-checkout-popup {
+      display: none !important;
+    }
+  }
+</style><div><div class="gf-app"></div></div></template></div><div class="ReactModalPortal"></div><div class="ReactModalPortal"></div><div class="ReactModalPortal"></div></body></html>

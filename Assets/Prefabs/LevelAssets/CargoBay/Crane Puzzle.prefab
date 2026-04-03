@@ -50,6 +50,7 @@ MonoBehaviour:
   craneMoveAction: {fileID: -2673939145508822812, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   _escapePuzzleAction: {fileID: 5323596486697129987, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   _confirmPuzzleAction: {fileID: 5223692684942272053, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _pauseAction: {fileID: 0}
   puzzleCamera: {fileID: 7366376859877451224}
   craneParts:
   - partObject: {fileID: 2329915978731319351}
@@ -62,6 +63,7 @@ MonoBehaviour:
     maxY: 0
     minZ: 0
     maxZ: 0
+    useWorldPosition: 0
   - partObject: {fileID: 2675544496609837843}
     moveX: 0
     moveY: 0
@@ -72,11 +74,14 @@ MonoBehaviour:
     maxY: 0
     minZ: -3.69
     maxZ: 19.42
+    useWorldPosition: 0
   swapXZControls: 0
   craneMoveSpeed: 10
   craneUI:
   - {fileID: 2238629718993934319}
   invertHorizontal: 0
+  invertForwardBackward: 0
+  forwardBackwardMoveSpeed: 0
   magnetExtender: {fileID: 6928743870883200896}
   magnetExtendHeight: 0
   useExtendDistance: 1
@@ -946,9 +951,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.PuzzleEncounter
   startEnabled: 1
-  enableEncounterOnComplete: 0
+  SendDebugMessages: 0
+  enableZoneOnComplete: 0
   encounterToEnable: {fileID: 0}
-  enableNextEncounterDelaySeconds: 3
+  objectiveText: 
   overridePuzzlePart: {fileID: 1177427173962401517}
   overrideInteractPoints:
   - {fileID: 4965247282811737687}
@@ -967,6 +973,7 @@ GameObject:
   - component: {fileID: 8891002946728830516}
   - component: {fileID: 3473652998857998926}
   - component: {fileID: 8063572264369951502}
+  - component: {fileID: 2897774074897347221}
   m_Layer: 0
   m_Name: SecondConsole
   m_TagString: Untagged
@@ -1081,9 +1088,17 @@ MonoBehaviour:
   _showHitbox: 1
   _interactAnimation: {fileID: 0}
   _interactId: 
+  _interactionSFX: {fileID: 0}
+  _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   requiredItemID: 
+  lockedInteractionPrompt: LOCKED
+  errorSFXClip: {fileID: 0}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls: []
   consoleIndex: 1
+  verboseDebug: 1
 --- !u!65 &8063572264369951502
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1105,6 +1120,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.5008255, y: 1.4552631, z: 0.9084312}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!208 &2897774074897347221
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5943339581373061866}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.75000006, y: 0.72800004, z: 0.45400003}
+  m_MoveThreshold: 0.1
+  m_Carve: 0
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &6329536928485865287
 GameObject:
   m_ObjectHideFlags: 0
@@ -1133,8 +1164,8 @@ Transform:
   m_GameObject: {fileID: 6329536928485865287}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.000007189458, y: 0, z: 0.00000022888183}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: -2.91, z: -0}
+  m_LocalScale: {x: 1, y: 1.226, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2498101617929995195}
@@ -1455,8 +1486,8 @@ Transform:
   m_GameObject: {fileID: 6928743870883200896}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 2.6831835e-15, w: 1}
-  m_LocalPosition: {x: -0, y: 7.32, z: -0}
-  m_LocalScale: {x: 1, y: 0.72, z: 1}
+  m_LocalPosition: {x: -0.00000009491541, y: 7.130636, z: -0.0000009997084}
+  m_LocalScale: {x: 1, y: 0.5872756, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9190741872790588813}
@@ -1730,8 +1761,8 @@ Transform:
   m_GameObject: {fileID: 8643753405973876734}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 2.6831835e-15, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0, y: 1.16, z: -0}
+  m_LocalScale: {x: 1, y: 0.81566066, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 394310406625907254}
@@ -1784,6 +1815,7 @@ GameObject:
   - component: {fileID: 886157935839657242}
   - component: {fileID: 4965247282811737687}
   - component: {fileID: 3443580571081900998}
+  - component: {fileID: 8866400004900502311}
   m_Layer: 0
   m_Name: FirstConsole
   m_TagString: Untagged
@@ -1898,9 +1930,17 @@ MonoBehaviour:
   _showHitbox: 1
   _interactAnimation: {fileID: 0}
   _interactId: 
+  _interactionSFX: {fileID: 0}
+  _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   requiredItemID: 
+  lockedInteractionPrompt: LOCKED
+  errorSFXClip: {fileID: 0}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls: []
   consoleIndex: 0
+  verboseDebug: 1
 --- !u!65 &3443580571081900998
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1922,6 +1962,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.5008255, y: 1.4552631, z: 0.9084312}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!208 &8866400004900502311
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8774423963155775800}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.75000006, y: 0.72800004, z: 0.45400003}
+  m_MoveThreshold: 0.1
+  m_Carve: 0
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &9044827084096447418
 GameObject:
   m_ObjectHideFlags: 0

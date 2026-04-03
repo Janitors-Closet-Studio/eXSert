@@ -1,0 +1,33 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Fields.uss?fileID=7433441132597879392&amp;guid=358e4c0387adee748b33cc10dacb35b5&amp;type=3#Fields" />
+    <ui:GroupBox name="MeshSize" class="custom-foldout" style="display: flex;">
+        <ui:GroupBox name="Header" class="header">
+            <ui:Toggle name="FoldoutToggle" text="Mesh Size" view-data-key="foldoutMeshSize" tooltip="This is the base size of the mesh at a scale of 1. Meter is the default scale of Unity." class="unity-foldout__toggle foldout-toggle" />
+            <ui:GroupBox style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; justify-content: center;">
+                <ui:DropdownField index="0" name="MeshUnit" choices="Unit" class="toolbar-popup-field" style="margin-right: 0; margin-left: 0; margin-top: 0; margin-bottom: 0; height: 18px; -unity-font-style: normal; font-size: 11px; min-width: 70px; background-color: rgba(255, 255, 255, 0.08);" />
+            </ui:GroupBox>
+        </ui:GroupBox>
+        <ui:GroupBox name="Content" class="content" style="align-items: flex-start; flex-direction: row; flex-wrap: wrap;">
+            <ui:GroupBox name="LengthGroup" style="margin-left: 0; margin-right: 10px; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-direction: row;">
+                <ui:Label text="Length" display-tooltip-when-elided="true" style="flex-grow: 1; opacity: 0.8; width: 50px;" />
+                <ui:Label text=":" display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5;" />
+                <ui:Label text="0" display-tooltip-when-elided="true" name="Value" tooltip="Length" style="color: rgb(255, 255, 255);" />
+            </ui:GroupBox>
+            <ui:GroupBox name="HeightGroup" style="margin-left: 0; margin-right: 10px; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-direction: row;">
+                <ui:Label text="Height" display-tooltip-when-elided="true" style="flex-grow: 1; opacity: 0.8; width: 50px;" />
+                <ui:Label text=":" display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5;" />
+                <ui:Label text="0" display-tooltip-when-elided="true" name="Value" tooltip="Length" style="color: rgb(255, 255, 255);" />
+            </ui:GroupBox>
+            <ui:GroupBox name="DepthGroup" style="margin-left: 0; margin-right: 10px; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-direction: row;">
+                <ui:Label text="Depth" display-tooltip-when-elided="true" style="flex-grow: 1; opacity: 0.8; width: 50px;" />
+                <ui:Label text=":" display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5;" />
+                <ui:Label text="0" display-tooltip-when-elided="true" name="Value" tooltip="Length" style="color: rgb(255, 255, 255);" />
+            </ui:GroupBox>
+            <ui:GroupBox name="DepthGroup" style="margin-left: 0; margin-right: 10px; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-direction: row;">
+                <ui:Label text="Center" display-tooltip-when-elided="true" style="flex-grow: 1; opacity: 0.8; width: 50px;" />
+                <ui:Label text=":" display-tooltip-when-elided="true" name="Separator" style="width: 10px; opacity: 0.5;" />
+                <ui:Label text="0" display-tooltip-when-elided="true" name="Center" tooltip="Length" style="color: rgb(255, 255, 255);" />
+            </ui:GroupBox>
+        </ui:GroupBox>
+    </ui:GroupBox>
+</ui:UXML>

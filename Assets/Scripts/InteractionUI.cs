@@ -14,6 +14,7 @@ public class InteractionUI : Singleton<InteractionUI>
     public TMP_Text _hintNameText;
     public TMP_Text _hintDescriptionText;
     public GameObject hintUI;
+    public GameObject collectUI;
 
     public static InteractionUI TryGetExisting()
     {
@@ -28,6 +29,7 @@ public class InteractionUI : Singleton<InteractionUI>
     {
         base.Awake();
         HideInteractPrompt();
+        HideCollectUI();
     }
 
     private void OnEnable()
@@ -37,6 +39,7 @@ public class InteractionUI : Singleton<InteractionUI>
 
     private void OnDisable()
     {
+        Debug.Log("turning off interaction UI and unsubscribing from scene loaded event\n" + System.Environment.StackTrace);
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
 
@@ -45,12 +48,22 @@ public class InteractionUI : Singleton<InteractionUI>
         if (_interactText != null)
         {
             _interactText.gameObject.SetActive(false);
-            if (_interactText.transform.parent != null)
-                _interactText.transform.parent.gameObject.SetActive(false);
+            if (_interactText.transform != null)
+                _interactText.transform.gameObject.SetActive(false);
         }
 
         if (_interactIcon != null)
             _interactIcon.gameObject.SetActive(false);
+    }
+
+    public void HideCollectUI()
+    {
+        if (collectUI != null)
+            collectUI.SetActive(false);
+        if (_collectText != null)            
+            _collectText.gameObject.SetActive(false);
+        if (_collectBottomText != null)           
+             _collectBottomText.gameObject.SetActive(false);
     }
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)

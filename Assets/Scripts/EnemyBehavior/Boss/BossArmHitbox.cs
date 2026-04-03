@@ -27,6 +27,14 @@ namespace EnemyBehavior.Boss
         [SerializeField, Tooltip("Override knockback force (0 = use brain's default)")]
         private float knockbackForceOverride = 0f;
 
+        [Header("Player Stagger")]
+        [SerializeField, Tooltip("If enabled, this boss hitbox applies forced player stagger on hit.")]
+        private bool applyPlayerStagger = false;
+        [SerializeField, Range(0.05f, 2f), Tooltip("Forced stagger duration applied to player by this hitbox.")]
+        private float playerStaggerDuration = 0.45f;
+        [SerializeField, Tooltip("If enabled, player combo is reset when this stagger is applied.")]
+        private bool resetPlayerComboOnStagger = true;
+
         private Collider[] hitboxColliders;
         private bool isActive;
         private bool hasHitThisActivation;
@@ -146,6 +154,9 @@ namespace EnemyBehavior.Boss
 
                 healthSystem.LoseHP(finalDamage);
                 EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} HIT PLAYER for {finalDamage} damage!");
+
+                if (applyPlayerStagger && healthSystem is PlayerHealthBarManager playerHealth)
+                    playerHealth.ApplyForcedStagger(playerStaggerDuration, resetPlayerComboOnStagger);
                 
                 // Apply knockback if enabled (either via Inspector setting OR dash mode)
                 if ((applyKnockback || dashModeKnockback) && bossBrain != null)

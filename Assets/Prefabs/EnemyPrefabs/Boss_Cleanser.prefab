@@ -246,6 +246,38 @@ Transform:
   - {fileID: 3267627519169553042}
   m_Father: {fileID: 1593489560195014369}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &161094971920535762
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7149938424560621310}
+  m_Layer: 0
+  m_Name: HalberdSocket
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7149938424560621310
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 161094971920535762}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.9409976, y: -0.32693344, z: 0.036200948, w: 0.07954523}
+  m_LocalPosition: {x: 0.09, y: 0.092, z: 0.001}
+  m_LocalScale: {x: 0.0090000145, y: 0.0090000015, z: 0.008999999}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7013322031023464175}
+  m_Father: {fileID: 4268867301483941545}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &174982438086042529
 GameObject:
   m_ObjectHideFlags: 0
@@ -1329,6 +1361,61 @@ Transform:
   - {fileID: 7359731834552883050}
   m_Father: {fileID: 8090030814768250561}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &627137594121235484
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1065809949092103593}
+  - component: {fileID: 6771214594897935139}
+  m_Layer: 0
+  m_Name: SpinDashCollider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1065809949092103593
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 627137594121235484}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.0005030906, y: -0.025307294, z: 0.014478532, w: 0.9995747}
+  m_LocalPosition: {x: -0.0005787843, y: -0.010169524, z: 0.00056828733}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2108885165494050094}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &6771214594897935139
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 627137594121235484}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.7
+  m_Height: 3.2
+  m_Direction: 1
+  m_Center: {x: 0, y: 1.4, z: 0}
 --- !u!1 &636212286313848847
 GameObject:
   m_ObjectHideFlags: 0
@@ -3168,6 +3255,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1967278262175907569}
+  - component: {fileID: 4556099291330448411}
   m_Layer: 0
   m_Name: Wing_Shoulder_Jnt
   m_TagString: Untagged
@@ -3195,6 +3283,27 @@ Transform:
   - {fileID: 5701384218426981426}
   m_Father: {fileID: 5954236797393548982}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4556099291330448411
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1460010872853573708}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.37, y: 1.24, z: 0.54}
+  m_Center: {x: -1.29, y: 0.12, z: 0}
 --- !u!1 &1485040949597547165
 GameObject:
   m_ObjectHideFlags: 0
@@ -3603,7 +3712,6 @@ Transform:
   - {fileID: 3439708993080574878}
   - {fileID: 2305301482217641234}
   - {fileID: 6069593360214277365}
-  - {fileID: 7013322031023464175}
   m_Father: {fileID: 5619892136756566092}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1717064890579678596
@@ -8691,7 +8799,7 @@ MonoBehaviour:
 
     Halberd attacks can be parried but guard
     won''t help.'
-  betaDummyMode: 1
+  betaDummyMode: 0
   dummyModeStoppingDistance: 3
   profile: {fileID: 11400000, guid: de31b6f4202553541af11a7539cc903e, type: 2}
   maxHealth: 500
@@ -8707,11 +8815,32 @@ MonoBehaviour:
     RangeMin: 3
     RangeMax: 8
     AnimationTrigger: Attack_Lunge
+    AnimationSpeedMultiplier: 1
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
     WindupDamageReduction: 0.5
     IncludesMovement: 1
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  LungeBlockAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    AnimationSpeedMultiplier: 1
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
     MovementDistance: 3
     CanStunPlayer: 0
     AttackSFX: {fileID: 0}
@@ -8726,6 +8855,107 @@ MonoBehaviour:
     RangeMin: 0
     RangeMax: 5
     AnimationTrigger: Attack_OverheadCleave
+    AnimationSpeedMultiplier: 1
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  CleaveAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    AnimationSpeedMultiplier: 1
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  CleaveAdvanceAttack:
+    ID: 
+    Category: 2
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    AnimationSpeedMultiplier: 1
+    IsMultiPart: 1
+    PartCategories: 000000000000000001000000
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  PommelStrikeAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    AnimationSpeedMultiplier: 1
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  DiagUpwardSlashAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    AnimationSpeedMultiplier: 1
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  WingBashAttack:
+    ID: 
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: 
+    AnimationSpeedMultiplier: 1
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8745,6 +8975,7 @@ MonoBehaviour:
     RangeMin: 0
     RangeMax: 5
     AnimationTrigger: Attack_SlashSlap
+    AnimationSpeedMultiplier: 1
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8764,25 +8995,7 @@ MonoBehaviour:
     RangeMin: 0
     RangeMax: 5
     AnimationTrigger: Attack_RakeSpin
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  SpinSlashOnlyAttack:
-    ID: SpinSlashOnly
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: Attack_SpinSlash
+    AnimationSpeedMultiplier: 1
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8802,6 +9015,7 @@ MonoBehaviour:
     RangeMin: 0
     RangeMax: 5
     AnimationTrigger: Attack_LegSweep
+    AnimationSpeedMultiplier: 1
     IsMultiPart: 0
     PartCategories: 
     HasWindupDamageReduction: 0
@@ -8813,8 +9027,175 @@ MonoBehaviour:
     ImpactSFX: {fileID: 0}
     AttackVFX: {fileID: 0}
     ImpactVFX: {fileID: 0}
+  KnockbackSettings:
+    KnockbackForce: 15
+    VerticalForce: 5
+    KnockbackRadius: 4
+    Damage: 15
+    AnimationTrigger: Attack_Knockback
+    AnimationSpeedMultiplier: 1
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  HighDiveAttack:
+    ID: HighDive
+    Category: 0
+    BaseDamage: 10
+    Cooldown: 1
+    RangeMin: 0
+    RangeMax: 5
+    AnimationTrigger: Attack_HighDive
+    AnimationSpeedMultiplier: 1
+    IsMultiPart: 0
+    PartCategories: 
+    HasWindupDamageReduction: 0
+    WindupDamageReduction: 0.5
+    IncludesMovement: 0
+    MovementDistance: 3
+    CanStunPlayer: 0
+    AttackSFX: {fileID: 0}
+    ImpactSFX: {fileID: 0}
+    AttackVFX: {fileID: 0}
+    ImpactVFX: {fileID: 0}
+  AnimeDashSettings:
+    AnimationTrigger: Attack_AnimeDash
+    AnimationSpeedMultiplier: 1
+    PreDashDelay: 0.3
+    PostDashDelay: 0.5
+    DashTargetCount: 5
+    DashTargetRadius: 6
+    DashAngleStepDegrees: 144
+    UsePlayerPositionAsCenterAtStart: 1
+    DashTravelDuration: 0.15
+    PauseAtTargetDuration: 0.1
+    TurnSpeed: 14
+    DamagePerHit: 12
+    HitRange: 3
+    HitWindowStart: 0.4
+    HitWindowEnd: 0.6
+    AttackSFX: {fileID: 0}
+  SpinDashSettings:
+    WindupTrigger: JumpSpinAttackWindup
+    HPWindupTrigger: JumpSpinAttackHPWindup
+    HoldPoseTrigger: JumpSpinAttackHPHoldPose
+    WindDownTrigger: JumpSpinAttackWindDown
+    WindupAnimSpeedMultiplier: 1
+    HPWindupAnimSpeedMultiplier: 1
+    HoldPoseAnimSpeedMultiplier: 1
+    WindDownAnimSpeedMultiplier: 1
+    MoveSpeed: 12
+    MaxTravelDistance: 10
+    LongDistanceTravelDuration: 0.2
+    TrackPlayerDuringHold: 0
+    DamagePerHit: 8
+    HitRange: 2.5
+    HitInterval: 0.2
+    MaxHitCount: 6
+    WindupSFX: {fileID: 0}
+    HoldSFX: {fileID: 0}
+    WindDownSFX: {fileID: 0}
+    SpinVFX: {fileID: 0}
+  WhirlwindSettings:
+    AnimationTrigger: Attack_Whirlwind
+    AnimationSpeedMultiplier: 1
+    SuctionDuration: 4
+    SuctionStrength: 12
+    MaxSuctionStrength: 20
+    SuctionRadius: 15
+    DamageTickInterval: 0.5
+    DamagePerTick: 5
+    LeapDistance: 8
+    LeapDuration: 0.6
+    SlamAoERadius: 5
+    SlamDamage: 30
+    SpinSFX: {fileID: 0}
+    SlamSFX: {fileID: 0}
+    SpinVFX: {fileID: 0}
+    SlamVFX: {fileID: 0}
+  UltimateSettings:
+    UltimateTrigger: Ultimate
+    AnimationSpeedMultiplier: 1
+    JumpArcBaseTrigger: JumpArcBase
+    JumpArcCancelTrigger: JumpArcCancel
+    JumpArcResolutionTrigger: JumpArcResolution
+    WaveSpeed: 25
+    LowSweepHeight: 0.5
+    MidSweepHeight: 3
+    WaveWidth: 20
+    SweepDamage: 25
+    LowSweepProjectile:
+      ProjectilePrefab: {fileID: 0}
+      ProjectileCount: 1
+      Damage: 20
+      Speed: 25
+      MaxDistance: 25
+      SpawnHeight: 1.2
+      SpawnForwardOffset: 1.2
+      ScaleRange: {x: 1, y: 1}
+      TiltAngleRange: {x: 0, y: 0}
+      SpreadStep: 6
+      DamageCategory: 0
+      CanBeParried: 1
+      CanBeGuarded: 1
+      GuardDamageMultiplier: 0.35
+    MidSweepProjectile:
+      ProjectilePrefab: {fileID: 0}
+      ProjectileCount: 1
+      Damage: 20
+      Speed: 25
+      MaxDistance: 25
+      SpawnHeight: 1.2
+      SpawnForwardOffset: 1.2
+      ScaleRange: {x: 1, y: 1}
+      TiltAngleRange: {x: 0, y: 0}
+      SpreadStep: 6
+      DamageCategory: 0
+      CanBeParried: 1
+      CanBeGuarded: 1
+      GuardDamageMultiplier: 0.35
+    ChargeUpTime: 8
+    HoverTimerPauseOnDamage: 0.25
+    AerialHitDelay: 2
+    RequiredAerialHits: 2
+    PlatformRiseHeight: 6
+    PlatformOrbitRadius: 4
+    PlatformOrbitSpeed: 30
+    PlatformRiseTime: 1.5
+    MassiveStrikeDamage: 80
+    GuardMitigationCap: 0.3
+    MassiveStrikeRadius: 20
+    PlayCutsceneOnFirstUse: 1
+    CutsceneDuration: 4
+    InitiateSFX: {fileID: 0}
+    SweepSFX: {fileID: 0}
+    ChargeSFX: {fileID: 0}
+    MassiveStrikeSFX: {fileID: 0}
+    MassiveStrikeVFX: {fileID: 0}
+  DoubleSweepPositions: []
+  AerialFinisherStunDuration: 3
+  UltimateHealthThreshold: 0.5
+  MinAttacksBetweenUltimates: 999
+  UltimateTriggeredByHealth: 0
+  stateUltimateHover: JumpArcHold
+  CrescentWaveProjectileConfiguration:
+    ProjectilePrefab: {fileID: 0}
+    ProjectileCount: 1
+    Damage: 20
+    Speed: 25
+    MaxDistance: 25
+    SpawnHeight: 1.2
+    SpawnForwardOffset: 1.2
+    ScaleRange: {x: 1, y: 1}
+    TiltAngleRange: {x: 0, y: 0}
+    SpreadStep: 6
+    DamageCategory: 0
+    CanBeParried: 1
+    CanBeGuarded: 1
+    GuardDamageMultiplier: 0.35
+  CrescentWavePrefab: {fileID: 0}
   SpareTossSettings:
     AnimationTrigger: Attack_SpareToss
+    AnimationSpeedMultiplier: 1
     ThrowSequentially: 1
     ProjectileCount: 1
     AllowedPathTypes: -1
@@ -8835,142 +9216,38 @@ MonoBehaviour:
     HitSFX: {fileID: 0}
   ProjectilePrefab: {fileID: 0}
   ProjectileSpawnPoint: {fileID: 0}
-  SpinDashSettings:
-    AnimationTrigger: Attack_SpinDash
-    RandomDashCount: 1
-    AlwaysTripleDash: 0
-    DashSpeed: 20
-    DashDuration: 0.4
-    DelayBetweenDashes: 0.3
-    DashSFX: {fileID: 0}
-    DashVFX: {fileID: 0}
-  KnockbackSettings:
-    KnockbackForce: 15
-    VerticalForce: 5
-    KnockbackRadius: 4
-    Damage: 15
-    AnimationTrigger: Attack_Knockback
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  MiniCrescentSettings:
-    WaveSpeed: 20
-    Damage: 20
-    WaveWidth: 8
-    WaveHeight: 1.5
-    MaxDistance: 25
-    AnimationTrigger: Attack_MiniCrescent
-    SlashSFX: {fileID: 0}
-    WavePrefab: {fileID: 0}
   GapCloseDashSettings:
     DashSpeed: 25
     DashDuration: 0.3
     MinDistanceToUse: 8
     TargetStopDistance: 3
     MinAggressionLevel: 4
-    AnimationTrigger: Dash_GapClose
+    AnimationTrigger: GapCloseDash
+    AnimationSpeedMultiplier: 1
     DashSFX: {fileID: 0}
     DashVFX: {fileID: 0}
-  HighDiveAttack:
-    ID: HighDive
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: Attack_HighDive
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  AnimeDashSlashAttack:
-    ID: AnimeDashSlash
-    Category: 0
-    BaseDamage: 10
-    Cooldown: 1
-    RangeMin: 0
-    RangeMax: 5
-    AnimationTrigger: Attack_AnimeDash
-    IsMultiPart: 0
-    PartCategories: 
-    HasWindupDamageReduction: 0
-    WindupDamageReduction: 0.5
-    IncludesMovement: 0
-    MovementDistance: 3
-    CanStunPlayer: 0
-    AttackSFX: {fileID: 0}
-    ImpactSFX: {fileID: 0}
-    AttackVFX: {fileID: 0}
-    ImpactVFX: {fileID: 0}
-  WhirlwindSettings:
-    AnimationTrigger: Attack_Whirlwind
-    SuctionDuration: 4
-    SuctionStrength: 12
-    MaxSuctionStrength: 20
-    SuctionRadius: 15
-    DamageTickInterval: 0.5
-    DamagePerTick: 5
-    LeapDistance: 8
-    LeapDuration: 0.6
-    SlamAoERadius: 5
-    SlamDamage: 30
-    SpinSFX: {fileID: 0}
-    SlamSFX: {fileID: 0}
-    SpinVFX: {fileID: 0}
-    SlamVFX: {fileID: 0}
-  UltimateSettings:
-    WaveSpeed: 25
-    LowSweepHeight: 0.5
-    MidSweepHeight: 3
-    WaveWidth: 20
-    SweepDamage: 25
-    ChargeUpTime: 8
-    AerialHitDelay: 2
-    RequiredAerialHits: 2
-    PlatformRiseHeight: 6
-    PlatformOrbitRadius: 4
-    PlatformOrbitSpeed: 30
-    PlatformRiseTime: 1.5
-    MassiveStrikeDamage: 80
-    GuardMitigationCap: 0.3
-    MassiveStrikeRadius: 20
-    PlayCutsceneOnFirstUse: 1
-    CutsceneDuration: 4
-    InitiateSFX: {fileID: 0}
-    SweepSFX: {fileID: 0}
-    ChargeSFX: {fileID: 0}
-    MassiveStrikeSFX: {fileID: 0}
-    MassiveStrikeVFX: {fileID: 0}
-  CrescentWavePrefab: {fileID: 0}
-  WallJumpPositions: []
   FallbackSpeed: 8
   FallbackAngularSpeed: 120
   FallbackAcceleration: 8
   FallbackStoppingDistance: 2
-  SpareWeaponPickupChance: 0.3
-  AlwaysPickupForSpecialAttacks: 1
   UseDamageReductionEvents: 1
-  AerialFinisherStunDuration: 3
-  UltimateHealthThreshold: 0.5
-  MinAttacksBetweenUltimates: 999
-  UltimateTriggeredByHealth: 0
-  comboSystem: {fileID: 0}
-  dualWieldSystem: {fileID: 0}
-  platformController: {fileID: 0}
+  comboSystem: {fileID: 2043449410682325222}
+  dualWieldSystem: {fileID: 8538692178904831450}
+  platformController: {fileID: 4109895899566118951}
   aggressionSystem: {fileID: 6499608910825327414}
-  suctionEffect: {fileID: 0}
-  animController: {fileID: 0}
-  animator: {fileID: 0}
+  suctionEffect: {fileID: 3402071617396780965}
+  animController: {fileID: 6942533847747032520}
+  animator: {fileID: 7339073060746803466}
   sfxSource: {fileID: 0}
+  halberdHitboxColliders:
+  - {fileID: 4412961963119750697}
+  - {fileID: 7627187811119907345}
+  wingHitboxCollider: {fileID: 4556099291330448411}
+  spinDashHitboxCollider: {fileID: 6771214594897935139}
+  spinDashHitboxRearmDelay: 0.08
   paramMoveSpeed: MoveSpeed
   paramIsMoving: IsMoving
+  paramIsPlayerHere: IsPlayerHere
   triggerStunned: Stunned
   triggerDeath: Death
   attackIndicatorPrefab: {fileID: 1202894887257364118, guid: 274be723334c80a43952e41393843fc9, type: 3}
@@ -8992,7 +9269,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.Cleanser.CleanserComboSystem
   Combos:
-  - ComboName: TestCombo
+  - ComboName: Combo1
     SelectionWeight: 5
     MinRange: 0
     MaxRange: 15
@@ -9000,19 +9277,9 @@ MonoBehaviour:
     MinAggressionLevel: 1
     MaxAggressionLevel: 5
     Steps:
-    - BasicAttack: 1
-      IsFinisher: 0
-      StrongAttack: 0
-      PreDelay: 0
-      PickupSpareWeaponBefore: 0
     - BasicAttack: 2
       IsFinisher: 0
       StrongAttack: 0
-      PreDelay: 0
-      PickupSpareWeaponBefore: 0
-    - BasicAttack: 0
-      IsFinisher: 1
-      StrongAttack: 1
       PreDelay: 0
       PickupSpareWeaponBefore: 0
   PostFinisherRecovery: 3
@@ -9126,6 +9393,7 @@ MonoBehaviour:
   counterDamage: 25
   counterParryWindow: 0.4
   showAggressionRangeGizmo: 1
+  enableDebugLogs: 1
 --- !u!114 &8538692178904831450
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9181,6 +9449,10 @@ MonoBehaviour:
     IsHeld: 0
     IsReturning: 0
     IsAtRest: 0
+  HoverAnchorLocal: {x: 0.8, y: 1.8, z: -0.2}
+  HoverSpacing: 0.6
+  HoverVerticalStep: 0.12
+  HoverYawSpread: 30
   PickupAnimationDuration: 0.5
   PickupCurve:
     serializedVersion: 2
@@ -9208,6 +9480,15 @@ MonoBehaviour:
     m_RotationOrder: 4
   PickupVFXPrefab: {fileID: 0}
   PickupSFX: {fileID: 0}
+  TossArcDuration: 0.7
+  TossArcHeight: 4
+  MinLandingSpacing: 2
+  LandingRadiusMin: 3
+  LandingRadiusMax: 9
+  LodgedRotationEuler: {x: 180, y: 0, z: 0}
+  TossLaunchSFX: {fileID: 0}
+  TossImpactSFX: {fileID: 0}
+  TossImpactVFX: {fileID: 0}
   ReturnAnimationDuration: 1.5
   ReturnCurve:
     serializedVersion: 2
@@ -9240,6 +9521,7 @@ MonoBehaviour:
   ShatterVFXPrefab: {fileID: 0}
   ShatterSFX: {fileID: 0}
   SFXSource: {fileID: 0}
+  spareTossVolley: {fileID: 0}
 --- !u!114 &4109895899566118951
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9350,7 +9632,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4557741119611530341}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: ef19a7433ddcd35459f402ffb650951b, type: 3}
+  m_Avatar: {fileID: 9000000, guid: f22d293b78079d347ba405534d6bf7bd, type: 3}
   m_Controller: {fileID: 9100000, guid: 811858f7759bb104696c36e85e3595c3, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
@@ -11305,6 +11587,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1065809949092103593}
   - {fileID: 1316496480887957912}
   m_Father: {fileID: 2772349457762137510}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -16649,6 +16932,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 7149938424560621310}
   - {fileID: 5421561954232782935}
   m_Father: {fileID: 1530845652767825202}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -18249,47 +18533,47 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 9161943510287696900}
+    m_TransformParent: {fileID: 7149938424560621310}
     m_Modifications:
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.009000005
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.009
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.009
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.1713171
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.0493454
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.0753753
+      value: -140.8
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.87421477
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.21682097
+      value: 0.000000014901158
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.19275454
+      value: 0.000000011175868
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.38933668
+      value: -0.000000029802315
       objectReference: {fileID: 0}
     - target: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -18307,15 +18591,133 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 384134695818314418, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 829977426224957084, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 911663556722007331, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1010274431490218451, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1676821089907745853, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2768503280533481655, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2875029378719734061, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3077982503944882093, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3299931471724039088, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4528882806139545398, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5201626387028699588, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5365531167494271779, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5650740705986351404, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5951196315661236716, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6253176688456397416, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6310707696098034248, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
       propertyPath: m_Name
       value: Halberd_Main
       objectReference: {fileID: 0}
+    - target: {fileID: 6310707696098034248, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6652090647291346338, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6802305506713983874, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7281399996642823314, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7694364959827524976, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8741162741855739501, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6652090647291346338, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+      insertIndex: 3
+      addedObject: {fileID: 7627187811119907345}
   m_SourcePrefab: {fileID: 100100000, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+--- !u!136 &4412961963119750697 stripped
+CapsuleCollider:
+  m_CorrespondingSourceObject: {fileID: 6802305506713983874, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+  m_PrefabInstance: {fileID: 7159414263877924267}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &4542901001349318665 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6652090647291346338, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}
+  m_PrefabInstance: {fileID: 7159414263877924267}
+  m_PrefabAsset: {fileID: 0}
+--- !u!135 &7627187811119907345
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4542901001349318665}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 40.65
+  m_Center: {x: 8.9, y: 0.0919123, z: 199.22}
 --- !u!4 &7013322031023464175 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 148348778626018116, guid: 2cc1cc839a389e242961fda7a5f1c1a4, type: 3}

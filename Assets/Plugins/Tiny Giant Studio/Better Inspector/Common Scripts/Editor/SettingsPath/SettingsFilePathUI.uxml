@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Button.uss?fileID=7433441132597879392&amp;guid=08db9e3ca263ae74b9fd392cb95ab541&amp;type=3#Button" />
+    <ui:GroupBox style="flex-direction: row; margin-top: 5px; margin-right: 3px; margin-bottom: 5px; margin-left: 3px; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; align-items: center;">
+        <ui:Label text="Settings Save Location" style="flex-grow: 1;" />
+        <ui:Button text="User Settings" name="SaveToUserSettings" />
+        <ui:Button text="Project Settings" name="SaveToProjectSettings" />
+    </ui:GroupBox>
+    <ui:GroupBox style="align-items: flex-end; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+        <ui:Button text="How does it work?" name="SettingsPathExplanation" class="text-button" />
+    </ui:GroupBox>
+</ui:UXML>

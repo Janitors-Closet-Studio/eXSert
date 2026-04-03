@@ -26,6 +26,7 @@ public class DoorInteractions : UnlockableInteraction
     [SerializeField, Min(0f)] private float puzzleCameraDurationSeconds = 2f;
 
     private Coroutine puzzleCameraRoutine;
+    private Coroutine interactionPromptRoutine;
     private int cachedPuzzleCameraPriority;
     private bool hasInteracted;
 
@@ -61,17 +62,40 @@ public class DoorInteractions : UnlockableInteraction
 
     public void EnableInteraction()
     {
-        enabled = true;
+        SetInteractionEnabled(true);
     }
 
     public void DisableInteraction()
     {
-        enabled = false;
+        SetInteractionEnabled(false);
     }
 
     public override void SetInteractionEnabled(bool isEnabled)
     {
-        enabled = isEnabled;
+        base.SetInteractionEnabled(isEnabled);
+    }
+
+    protected override void Interact()
+    {
+        // Block repeat execution at the interaction entrypoint so base class events do not fire again.
+        if (onlyInteractableOnce && hasInteracted)
+        {
+            SetInteractionEnabled(false);
+            return;
+        }
+
+        // Only start cooldown/hide flow when this interaction can actually execute.
+        if (canExecuteInteraction)
+            BeginInteractionPromptCooldown();
+
+        base.Interact();
+
+        // Consume one-time interaction after the first successful base execution.
+        if (onlyInteractableOnce && canExecuteInteraction)
+        {
+            hasInteracted = true;
+            SetInteractionEnabled(false);
+        }
     }
 
     protected override bool IsUnlockedWithoutRequiredItem()
@@ -104,26 +128,46 @@ public class DoorInteractions : UnlockableInteraction
         if (usePuzzleCameraOnInteraction)
             BeginTemporaryPuzzleCamera();
 
-        bool executedInteraction = false;
-
-        foreach (DoorHandler doorHandler in doorHandlers)
+        if (doorHandlers != null)
         {
-            if (doorHandler != null)
+            foreach (DoorHandler doorHandler in doorHandlers)
             {
-                if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
-                    doorHandler.UnlockDoor();
-                
+                if (doorHandler != null)
+                {
+                    if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
+                        doorHandler.UnlockDoor();
 
-                doorHandler.Interact();
-                executedInteraction = true;
+                    doorHandler.Interact();
+                }
             }
         }
+    }
 
-        if (onlyInteractableOnce && executedInteraction)
+    private void BeginInteractionPromptCooldown()
+    {
+        if (interactionPromptRoutine != null)
+            StopCoroutine(interactionPromptRoutine);
+
+        interactionPromptRoutine = StartCoroutine(InteractionPromptCooldownRoutine());
+    }
+
+    private IEnumerator InteractionPromptCooldownRoutine()
+    {
+        GetInteractionUIIfAvailable()?.HideInteractPrompt();
+
+        yield return new WaitForSeconds(3f);
+
+        // Do not restore prompt if this interaction is one-time and already consumed.
+        if (onlyInteractableOnce && hasInteracted)
         {
-            hasInteracted = true;
-            enabled = false;
+            interactionPromptRoutine = null;
+            yield break;
         }
+
+        if (isPlayerNearby && interactable)
+            SwapBasedOnInputMethod();
+
+        interactionPromptRoutine = null;
     }
 
     private void BeginTemporaryPuzzleCamera()

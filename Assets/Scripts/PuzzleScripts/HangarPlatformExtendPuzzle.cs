@@ -65,6 +65,8 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
 
     public void Interact()
     {
+        Debug.Log($"Interact called | isCompleted={isCompleted} isExtending={isExtending}");
+
         if (isExtending)
             return;
 

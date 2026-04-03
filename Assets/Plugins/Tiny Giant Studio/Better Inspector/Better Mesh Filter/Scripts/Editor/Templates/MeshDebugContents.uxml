@@ -1,0 +1,65 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Fields.uss?fileID=7433441132597879392&amp;guid=358e4c0387adee748b33cc10dacb35b5&amp;type=3#Fields" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Labels.uss?fileID=7433441132597879392&amp;guid=8e783b06ea75cae42a70cbd434239c92&amp;type=3#Labels" />
+    <Style src="project://database/Assets/Plugins/Tiny%20Giant%20Studio/Better%20Inspector/Common%20Scripts/Editor/StyleSheets/Icons.uss?fileID=7433441132597879392&amp;guid=8485147538ab9684288c884484cd04b0&amp;type=3#Icons" />
+    <ui:GroupBox name="MeshDebugFoldout" class="custom-foldout" style="display: flex;">
+        <ui:GroupBox name="Header" class="header">
+            <ui:Toggle name="FoldoutToggle" text="Debug Tools" view-data-key="foldoutDebug" tooltip="Debug gizmos are a collection of helpful visualization tool to inspect your mesh in the scene view." class="unity-foldout__toggle foldout-toggle" />
+            <ui:Label text="Switch off gizmos when they&apos;re not required." tooltip="For high poly meshes, the debug gizmos can impact performance. It is a good practice to keep these off when you are not actively using them." name="GizmoIsOnWarningLabel" class="warning-text unimportant-information-label" style="text-overflow: ellipsis; overflow: hidden; flex-shrink: 1;" />
+        </ui:GroupBox>
+        <ui:GroupBox name="Content" class="content" style="overflow: visible; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px;">
+            <ui:Label text="Texture" class="unimportant-information-label" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 5px; padding-left: 0;" />
+            <ui:GroupBox name="CheckeredUV" class="title" style="margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 5px; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-top-left-radius: 2px; border-bottom-left-radius: 2px; border-top-right-radius: 2px; border-bottom-right-radius: 2px; flex-direction: row; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                <ui:GroupBox name="LeftSide" style="padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; align-items: center; justify-content: center;">
+                    <ui:Button text="Set Checkerd UV" display-tooltip-when-elided="true" name="setCheckeredUV" tooltip="Please note that overusing this may create large scene files." class="myButton" style="margin-top: 0; margin-left: 0; margin-right: 0; margin-bottom: 0; padding-left: 5px; padding-right: 5px; padding-top: 5px; padding-bottom: 5px; height: auto; min-height: 40px; flex-grow: 1;" />
+                </ui:GroupBox>
+                <ui:GroupBox name="RightSide" style="margin-left: 5px; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; flex-shrink: 1; justify-content: center; flex-grow: 1;">
+                    <ui:GroupBox style="flex-direction: row; min-height: auto; min-width: auto; flex-grow: 1; align-items: center; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0;">
+                        <ui:Label text="Texture Size" display-tooltip-when-elided="true" tooltip="Checkererd Texture width and height" />
+                        <uie:IntegerField value="128" name="UVWidth" view-data-key="UVWidthDataKey" style="flex-grow: 1; flex-shrink: 1;" />
+                        <uie:IntegerField value="128" name="UVHeight" view-data-key="UVHeightDataKey" style="flex-shrink: 1; flex-grow: 1;" />
+                    </ui:GroupBox>
+                    <ui:GroupBox style="flex-direction: row; min-height: auto; min-width: auto; flex-grow: 1; align-items: center; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0;">
+                        <ui:Label text="Cell Size" display-tooltip-when-elided="true" tooltip="Keep the size lower that the width and height. " />
+                        <uie:IntegerField value="16" name="UVCellSize" view-data-key="UVCellSizeDataKey" text="Memory Usage" tooltip="If drawing gizmo takes longer than this, it will be stopped." style="flex-shrink: 1; flex-grow: 1;" />
+                    </ui:GroupBox>
+                </ui:GroupBox>
+            </ui:GroupBox>
+            <ui:Label tabindex="-1" text="Gizmos" parse-escape-sequences="true" display-tooltip-when-elided="true" class="unimportant-information-label" style="margin-top: 10px; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 5px; padding-left: 0;" />
+            <ui:GroupBox style="margin-top: 2px; margin-right: 0; margin-bottom: 2px; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-direction: row; align-items: stretch;">
+                <ui:Toggle label="Normals" name="showNormals" view-data-key="showNormalsKey" class="my-field" style="margin-top: 1px; margin-bottom: 2px; flex-grow: 1;" />
+                <uie:FloatField label="Length" value="0" name="normalLength" view-data-key="normalLengthDataKey" class="my-field" style="margin-left: 5px; min-width: 75px;" />
+                <uie:FloatField label="Width" value="5" name="normalWidth" view-data-key="normalWidthDataKey" class="my-field" style="margin-left: 5px; min-width: 75px;" />
+                <uie:ColorField value="#00ABFFFF" name="normalColor" view-data-key="normalColorDataKey" class="my-field" style="max-width: 50px; margin-left: 5px; width: 50px;" />
+            </ui:GroupBox>
+            <ui:GroupBox style="margin-top: 2px; margin-right: 0; margin-bottom: 2px; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-direction: row;">
+                <ui:Toggle label="Tangents" name="showTangents" view-data-key="showTangentsKey" class="my-field" style="margin-top: 1px; flex-grow: 1; margin-bottom: 1px;" />
+                <uie:FloatField label="Length" value="0.1" name="tangentLength" view-data-key="tangentLengthDataKey" class="my-field" style="margin-left: 5px; min-width: 75px;" />
+                <uie:FloatField label="Width" value="5" name="tangentWidth" view-data-key="tangentWidthDataKey" class="my-field" style="margin-left: 5px; min-width: 75px;" />
+                <uie:ColorField value="#CF3A00FF" name="tangentColor" view-data-key="tangentColorDataKey" class="my-field" style="margin-left: 5px; max-width: 50px; width: 50px;" />
+            </ui:GroupBox>
+            <ui:GroupBox style="margin-top: 2px; margin-right: 0; margin-bottom: 2px; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-direction: row;">
+                <ui:Toggle label="UV Seam" name="showUV" view-data-key="showUVKey" tooltip="Ignores Anti Aliased gimzo setting if more than 30k handles is needed to be drawn." class="my-field" style="margin-top: 1px; margin-bottom: 2px; flex-grow: 1;" />
+                <uie:FloatField label="Width" value="0.1" name="uvWidth" view-data-key="uvWidthDataKey" tooltip="Ignored if mesh is too complicated." class="my-field" style="margin-left: 5px; min-width: 75px;" />
+                <uie:ColorField value="#27D600FF" name="uvColor" view-data-key="uvColorDataKey" class="my-field" style="margin-left: 5px; max-width: 50px; width: 50px;" />
+            </ui:GroupBox>
+            <ui:Label name="LastDrawnGizmosWith" style="-unity-font-style: bold-and-italic; -unity-text-align: middle-center; margin-top: 5px; margin-right: 5px; margin-bottom: 5px; margin-left: 5px; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;" />
+            <ui:GroupBox style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-shrink: 1; flex-grow: 1;">
+                <ui:Label tabindex="-1" text="Settings" parse-escape-sequences="true" display-tooltip-when-elided="true" class="unimportant-information-label" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 5px; padding-left: 0;" />
+                <uie:IntegerField label="Maximum Gizmo Draw Time " value="42" name="MaximumGizmoDrawTimeField" tooltip="If drawing gizmo takes longer than this, it will be stopped. This value can&apos;t be less than 10 and can&apos;t be more than 10000. A lower number will garuntee better performance at the cost of some missing gizmos. If any gimzo failed to draw because of this, it will be written on the status label above." class="my-field" />
+                <ui:Toggle label="Use Anti-Aliased Gizmos" name="UseAntiAliasedGizmosField" tooltip="Better looking gizmo lines at the cost of performance." class="my-field" style="padding-left: 7px;" />
+                <ui:GroupBox style="flex-direction: row; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 2px; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                    <uie:IntegerField label="Update Cache Every" value="42" name="CachedDataUpdateRate" class="my-field" style="margin-right: 5px;" />
+                    <ui:Label tabindex="-1" text="Seconds" parse-escape-sequences="true" display-tooltip-when-elided="true" style="-unity-text-align: middle-left;" />
+                </ui:GroupBox>
+                <ui:GroupBox name="GizmoTimeWarningBox" style="background-color: rgba(255, 255, 255, 0.04); margin-left: 5px; margin-right: 5px; margin-top: 20px; margin-bottom: 5px; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px; border-left-width: 1px; border-right-width: 1px; border-top-width: 1px; border-bottom-width: 1px; border-top-left-radius: 2px; border-bottom-left-radius: 2px; border-top-right-radius: 2px; border-bottom-right-radius: 2px; border-left-color: rgba(0, 0, 0, 0.4); border-right-color: rgba(0, 0, 0, 0.4); border-top-color: rgba(0, 0, 0, 0.4); border-bottom-color: rgba(0, 0, 0, 0.4); min-width: 100px; align-items: stretch; display: none;">
+                    <ui:GroupBox style="flex-direction: row; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; align-items: center;">
+                        <ui:VisualElement class="warning-icon" style="width: 15px; height: 15px; margin-right: 5px; flex-shrink: 0;" />
+                        <ui:Label text="Gizmo drawing stopped after reaching maximum draw time." display-tooltip-when-elided="true" style="-unity-font-style: bold; font-size: 12px; padding-left: 0; padding-right: 0; padding-top: 0; padding-bottom: 0; white-space: normal; flex-shrink: 1;" />
+                    </ui:GroupBox>
+                    <ui:Label display-tooltip-when-elided="true" name="GizmoWarningLabel" style="border-top-left-radius: 5px; border-bottom-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; -unity-text-align: middle-left; margin-top: 5px; -unity-font-style: italic; overflow: hidden; flex-grow: 1; white-space: normal;" />
+                </ui:GroupBox>
+            </ui:GroupBox>
+        </ui:GroupBox>
+    </ui:GroupBox>
+</ui:UXML>

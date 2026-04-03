@@ -63,9 +63,57 @@ public class AttackLockSystem : MonoBehaviour
     [Tooltip("Duration of the soft lock movement blend.")]
     private float softLockMoveDuration = 0.12f;
 
+    [SerializeField, Range(0.03f, 0.35f)]
+    [Tooltip("Duration used when soft lock only needs to rotate (no positional nudge).")]
+    private float softLockRotateOnlyDuration = 0.1f;
+
+    [SerializeField]
+    [Tooltip("When enabled, soft lock may snap position/rotation instantly via PlayerMovement.TrySnapToSoftLock. Disable for fully smooth soft-lock transitions.")]
+    private bool allowInstantSoftLockSnap = false;
+
     [SerializeField]
     [Tooltip("Only soft lock on single-target melee strikes.")]
     private bool onlySoftLockSingleTarget = true;
+
+    [SerializeField]
+    [Tooltip("When enabled, soft-lock selection prioritizes enemies closest to the camera center over purely nearest-distance targets.")]
+    private bool prioritizeCenterOfViewForSoftLock = true;
+
+    [SerializeField]
+    [Tooltip("When enabled, soft-lock target selection prefers enemies that align with both movement input direction and camera-center preference.")]
+    private bool prioritizeMovementAndViewAlignedSoftLockTarget = true;
+
+    [SerializeField, Range(0.05f, 0.95f)]
+    [Tooltip("Minimum move-input magnitude required before movement direction influences soft-lock target choice.")]
+    private float softLockMovementInputThreshold = 0.2f;
+
+    [SerializeField, Range(-1f, 1f)]
+    [Tooltip("Minimum dot alignment between movement direction and candidate direction to count as movement-aligned.")]
+    private float softLockMovementAlignmentThreshold = 0.35f;
+
+    [SerializeField, Range(0.02f, 0.5f)]
+    [Tooltip("Viewport radius from center used to consider a candidate camera-centered for movement+view alignment.")]
+    private float softLockCenteredViewportRadius = 0.22f;
+
+    [SerializeField]
+    [Tooltip("When enabled, non-aerial attacks ignore drones for soft-lock target selection.")]
+    private bool ignoreDronesForNonAerialSoftLock = true;
+
+    [SerializeField]
+    [Tooltip("When an attack already has forward movement, skip positional soft-lock nudge to avoid movement systems fighting and causing rubber-banding.")]
+    private bool skipSoftLockPositionNudgeForForwardMoveAttacks = true;
+
+    [SerializeField]
+    [Tooltip("When enabled, attacks prioritize facing the current soft-lock target even while movement input is held.")]
+    private bool prioritizeSoftLockTargetFacingWhileAttacking = true;
+
+    [SerializeField, Range(0f, 1f)]
+    [Tooltip("How long soft-lock target-facing persists after a soft-lock attack event.")]
+    private float softLockAttackFacingPersistDuration = 0.35f;
+
+    [SerializeField, Range(0.5f, 12f)]
+    [Tooltip("Maximum distance for soft-lock attack-facing target validity.")]
+    private float softLockAttackFacingMaxDistance = 4f;
 
     [Header("Camera Lock Settings")]
     [SerializeField]
@@ -140,8 +188,22 @@ public class AttackLockSystem : MonoBehaviour
     private float verticalLeanVelocity; // For smooth vertical lean return
     private float baseVerticalValue; // The vertical axis value when lock-on started
     private bool hasBaseVerticalValue;
+    private BaseEnemyCore currentTargetEnemyCore;
+    private ReticleController currentTargetReticle;
+    private Transform softLockAttackFacingTarget;
+    private float softLockAttackFacingExpireTime = -1f;
     public bool IsHardLockActive => hardLockActive && currentTarget != null;
     public Transform CurrentHardLockTarget => currentTarget;
+    public bool IsSoftLockMotionInProgress => moveCoroutine != null;
+
+    public bool ShouldIgnoreDroneHitsForGroundedAttackMovement(AttackType attackType)
+    {
+        if (!ignoreDronesForNonAerialSoftLock)
+            return false;
+
+        return attackType != AttackType.LightAerial
+            && attackType != AttackType.HeavyAerial;
+    }
 
     private void Awake()
     {
@@ -171,7 +233,7 @@ public class AttackLockSystem : MonoBehaviour
             SetCameraInputEnabled(true);
         }
         
-        ClearHardLock();
+        ClearHardLock(playReticleExit: false);
     }
 
     private void Update()
@@ -179,14 +241,23 @@ public class AttackLockSystem : MonoBehaviour
         if (!hardLockActive || currentTarget == null)
             return;
 
+        if (IsCurrentTargetDead())
+        {
+            currentTargetReticle?.PlayTargetLost();
+            ClearHardLock(playReticleExit: false);
+            return;
+        }
+
         if (!IsTargetValid(currentTarget, lockOnDistance))
         {
-            currentTarget = FindBestHardLockTarget();
-            if (currentTarget == null)
+            Transform replacementTarget = FindBestHardLockTarget();
+            if (replacementTarget == null)
             {
                 ClearHardLock();
                 return;
             }
+
+            SetHardLockTarget(replacementTarget, playEntryAnimation: true, playExitAnimation: true);
         }
 
         if (steerCamera)
@@ -206,7 +277,11 @@ public class AttackLockSystem : MonoBehaviour
         if (hardLockActive)
         {
             if (currentTarget == null)
-                currentTarget = FindBestHardLockTarget();
+            {
+                Transform fallbackTarget = FindBestHardLockTarget();
+                if (fallbackTarget != null)
+                    SetHardLockTarget(fallbackTarget, playEntryAnimation: true, playExitAnimation: false);
+            }
 
             if (currentTarget != null)
             {
@@ -229,7 +304,14 @@ public class AttackLockSystem : MonoBehaviour
         if (onlySoftLockSingleTarget && !IsSingleTargetAttack(executedAttack))
             return;
 
-        TryApplySoftLockNudge();
+        bool hasForwardMove = executedAttack.forwardMoveDistance > 0f;
+        bool allowPositionNudge = !(skipSoftLockPositionNudgeForForwardMoveAttacks && hasForwardMove);
+
+        bool isAerialAttack = executedAttack.attackType == AttackType.LightAerial
+            || executedAttack.attackType == AttackType.HeavyAerial;
+        bool includeDrones = !ignoreDronesForNonAerialSoftLock || isAerialAttack;
+
+        TryApplySoftLockNudge(allowPositionNudge, includeDrones);
     }
 
     private void HandleLockOnToggle()
@@ -256,7 +338,7 @@ public class AttackLockSystem : MonoBehaviour
         if (nextTarget == null || nextTarget == currentTarget)
             return;
 
-        currentTarget = nextTarget;
+        SetHardLockTarget(nextTarget, playEntryAnimation: true, playExitAnimation: true);
         ResetLeanState(); // Reset lean when switching targets for clean transition
         AlignPlayerAndCamera(nextTarget, instantCameraAlign: false); // Smooth transition to new target
     }
@@ -268,7 +350,7 @@ public class AttackLockSystem : MonoBehaviour
             return false;
 
         hardLockActive = true;
-        currentTarget = candidate;
+        SetHardLockTarget(candidate, playEntryAnimation: true, playExitAnimation: false);
         ResetLeanState(); // Start with no lean
         SetCameraInputEnabled(false); // Disable automatic input - we read it ourselves for lean effect
         AlignPlayerAndCamera(candidate, instantCameraAlign);
@@ -307,18 +389,26 @@ public class AttackLockSystem : MonoBehaviour
             FaceTargetImmediately(target);
     }
 
-    private void TryApplySoftLockNudge()
+    private void TryApplySoftLockNudge(bool allowPositionNudge, bool includeDrones)
     {
         // Only target enemies within the player's forward-facing cone
-        Transform target = FindNearestEnemyInPlayerCone(softLockRadius);
+        Transform target = FindNearestEnemyInPlayerCone(softLockRadius, includeDrones);
         if (target == null)
             return;
+
+        MarkSoftLockAttackFacingTarget(target);
 
         Vector3 direction = GetFlatDirection(target.position);
         if (direction.sqrMagnitude < 0.001f)
             return;
 
         Quaternion desiredRotation = Quaternion.LookRotation(direction);
+
+        if (!allowPositionNudge)
+        {
+            StartSoftLockRotate(desiredRotation);
+            return;
+        }
 
         float planarDistance = Vector3.Distance(
             new Vector3(target.position.x, playerTransform.position.y, target.position.z),
@@ -327,7 +417,7 @@ public class AttackLockSystem : MonoBehaviour
 
         if (planarDistance <= softLockNoMoveRadius)
         {
-            FaceTargetImmediately(target);
+            StartSoftLockRotate(desiredRotation);
             return;
         }
 
@@ -339,18 +429,73 @@ public class AttackLockSystem : MonoBehaviour
 
         if (moveDistance <= 0.01f)
         {
-            FaceTargetImmediately(target);
+            StartSoftLockRotate(desiredRotation);
             return;
         }
 
         Vector3 desiredPosition = playerTransform.position + direction * moveDistance;
-        if (TrySnapPlayerToSoftLock(desiredPosition, desiredRotation))
+        if (allowInstantSoftLockSnap && TrySnapPlayerToSoftLock(desiredPosition, desiredRotation))
             return;
 
         StopMoveRoutine();
         moveCoroutine = StartCoroutine(
             MoveAndFaceCoroutine(desiredPosition, desiredRotation, softLockMoveDuration)
         );
+    }
+
+    public bool TryGetSoftLockAttackFacingDirection(out Vector3 direction)
+    {
+        direction = Vector3.zero;
+
+        if (!prioritizeSoftLockTargetFacingWhileAttacking)
+            return false;
+
+        if (Time.time > softLockAttackFacingExpireTime)
+            return false;
+
+        if (!IsSoftLockAttackFacingTargetValid())
+            return false;
+
+        Vector3 flat = GetFlatDirection(softLockAttackFacingTarget.position);
+        if (flat.sqrMagnitude < 0.001f)
+            return false;
+
+        direction = flat;
+        return true;
+    }
+
+    private void MarkSoftLockAttackFacingTarget(Transform target)
+    {
+        if (!prioritizeSoftLockTargetFacingWhileAttacking || target == null)
+            return;
+
+        softLockAttackFacingTarget = target;
+        softLockAttackFacingExpireTime = Time.time + Mathf.Max(0f, softLockAttackFacingPersistDuration);
+    }
+
+    private bool IsSoftLockAttackFacingTargetValid()
+    {
+        if (softLockAttackFacingTarget == null)
+            return false;
+
+        if (!IsTargetValid(softLockAttackFacingTarget, Mathf.Max(0.5f, softLockAttackFacingMaxDistance)))
+            return false;
+
+        BaseEnemyCore enemy = softLockAttackFacingTarget.GetComponentInParent<BaseEnemyCore>();
+        if (enemy != null && !enemy.isAlive)
+            return false;
+
+        return true;
+    }
+
+    private void StartSoftLockRotate(Quaternion desiredRotation)
+    {
+        StopMoveRoutine();
+        moveCoroutine = StartCoroutine(
+            MoveAndFaceCoroutine(
+                playerTransform.position,
+                desiredRotation,
+                Mathf.Max(0.01f, softLockRotateOnlyDuration)));
     }
 
     private bool TrySnapPlayerToSoftLock(Vector3 worldPosition, Quaternion desiredRotation)
@@ -362,14 +507,100 @@ public class AttackLockSystem : MonoBehaviour
         return movement.TrySnapToSoftLock(worldPosition, desiredRotation);
     }
 
-    private void ClearHardLock()
+    private void ClearHardLock(bool playReticleExit = true)
     {
+        if (playReticleExit)
+            currentTargetReticle?.PlayUnlocked();
+
+        UnsubscribeFromCurrentTargetDeath();
+
         hardLockActive = false;
         currentTarget = null;
+        currentTargetReticle = null;
+        currentTargetEnemyCore = null;
         cameraYawVelocity = 0f;
         cameraPitchVelocity = 0f;
         ResetLeanState();
         SetCameraInputEnabled(true); // Re-enable full camera input
+    }
+
+    private void SetHardLockTarget(Transform target, bool playEntryAnimation, bool playExitAnimation)
+    {
+        if (currentTarget == target)
+        {
+            currentTargetReticle ??= ResolveReticleController(target);
+            if (playEntryAnimation)
+                currentTargetReticle?.PlayLockedOn();
+
+            return;
+        }
+
+        ReticleController previousReticle = currentTargetReticle;
+        UnsubscribeFromCurrentTargetDeath();
+        currentTarget = target;
+        currentTargetReticle = ResolveReticleController(target);
+        currentTargetEnemyCore = ResolveEnemyCore(target);
+        SubscribeToCurrentTargetDeath();
+
+        if (playExitAnimation)
+            previousReticle?.PlayUnlocked();
+
+        if (playEntryAnimation)
+            currentTargetReticle?.PlayLockedOn();
+    }
+
+    private static ReticleController ResolveReticleController(Transform target)
+    {
+        if (target == null)
+            return null;
+
+        return target.GetComponentInChildren<ReticleController>(true);
+    }
+
+    private static BaseEnemyCore ResolveEnemyCore(Transform target)
+    {
+        if (target == null)
+            return null;
+
+        return target.GetComponentInParent<BaseEnemyCore>();
+    }
+
+    private void SubscribeToCurrentTargetDeath()
+    {
+        if (currentTargetEnemyCore == null)
+            return;
+
+        currentTargetEnemyCore.OnDeath -= HandleCurrentTargetDeath;
+        currentTargetEnemyCore.OnDeath += HandleCurrentTargetDeath;
+    }
+
+    private void UnsubscribeFromCurrentTargetDeath()
+    {
+        if (currentTargetEnemyCore == null)
+            return;
+
+        currentTargetEnemyCore.OnDeath -= HandleCurrentTargetDeath;
+    }
+
+    private void HandleCurrentTargetDeath(BaseEnemyCore deadEnemy)
+    {
+        if (deadEnemy == null || deadEnemy != currentTargetEnemyCore)
+            return;
+
+        currentTargetReticle?.PlayTargetLost();
+        ClearHardLock(playReticleExit: false);
+    }
+
+    private bool IsCurrentTargetDead()
+    {
+        if (currentTargetEnemyCore != null)
+            return !currentTargetEnemyCore.isAlive;
+
+        if (currentTarget == null)
+            return false;
+
+        BaseEnemyCore enemy = currentTarget.GetComponentInParent<BaseEnemyCore>();
+        return enemy != null && !enemy.isAlive;
     }
 
     private void ResetLeanState()
@@ -500,11 +731,18 @@ public class AttackLockSystem : MonoBehaviour
     /// Finds the nearest enemy within the specified radius that is also within the player's
     /// forward-facing cone of vision (based on lockOnAngle).
     /// </summary>
-    private Transform FindNearestEnemyInPlayerCone(float radius)
+    private Transform FindNearestEnemyInPlayerCone(float radius, bool includeDrones)
     {
         Collider[] hits = GetEnemyHits(radius);
         Transform closest = null;
         float smallestDistance = float.MaxValue;
+        float bestViewportScore = float.MaxValue;
+        Camera screenCamera = null;
+        bool canScoreViewport = prioritizeCenterOfViewForSoftLock && TryGetScreenCamera(out screenCamera);
+        bool hasMovementPreference = TryGetSoftLockMovementDirection(out Vector3 movementPreferredDirection);
+        float centeredViewportScoreThreshold = softLockCenteredViewportRadius * softLockCenteredViewportRadius;
+        bool bestSatisfiedMovementAndView = false;
+        float bestMovementAlignmentDot = -1f;
 
         Vector3 playerForward = playerTransform.forward;
         playerForward.y = 0f;
@@ -516,6 +754,9 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             Transform candidate = GetEnemyRoot(hit.transform);
+
+            if (!includeDrones && candidate.GetComponentInParent<DroneEnemy>() != null)
+                continue;
 
             // Skip enemies that are dying
             BaseEnemyCore enemy = candidate.GetComponent<BaseEnemyCore>();
@@ -532,7 +773,50 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
-            if (sqrDistance < smallestDistance)
+            float viewportScore = float.MaxValue;
+            bool isCenteredInView = false;
+            if (canScoreViewport)
+            {
+                if (!TryGetViewportScore(screenCamera, candidate, out viewportScore))
+                    continue;
+
+                isCenteredInView = viewportScore <= centeredViewportScoreThreshold;
+            }
+
+            float movementDot = -1f;
+            bool movementAligned = false;
+            if (hasMovementPreference)
+            {
+                movementDot = Vector3.Dot(directionToCandidate.normalized, movementPreferredDirection);
+                movementAligned = movementDot >= softLockMovementAlignmentThreshold;
+            }
+
+            bool satisfiesMovementAndView = prioritizeMovementAndViewAlignedSoftLockTarget
+                && hasMovementPreference
+                && movementAligned
+                && (!canScoreViewport || isCenteredInView);
+
+            if (satisfiesMovementAndView)
+            {
+                if (!bestSatisfiedMovementAndView
+                    || (canScoreViewport && viewportScore < bestViewportScore)
+                    || (canScoreViewport && Mathf.Approximately(viewportScore, bestViewportScore) && movementDot > bestMovementAlignmentDot)
+                    || (canScoreViewport && Mathf.Approximately(viewportScore, bestViewportScore) && Mathf.Approximately(movementDot, bestMovementAlignmentDot) && sqrDistance < smallestDistance)
+                    || (!canScoreViewport && movementDot > bestMovementAlignmentDot)
+                    || (!canScoreViewport && Mathf.Approximately(movementDot, bestMovementAlignmentDot) && sqrDistance < smallestDistance))
+                {
+                    bestSatisfiedMovementAndView = true;
+                    bestViewportScore = viewportScore;
+                    bestMovementAlignmentDot = movementDot;
+                    smallestDistance = sqrDistance;
+                    closest = candidate;
+                }
+            }
+            else if (bestSatisfiedMovementAndView)
+            {
+                continue;
+            }
+            else if (sqrDistance < smallestDistance)
             {
                 smallestDistance = sqrDistance;
                 closest = candidate;
@@ -540,6 +824,26 @@ public class AttackLockSystem : MonoBehaviour
         }
 
         return closest;
+    }
+
+    private bool TryGetSoftLockMovementDirection(out Vector3 direction)
+    {
+        direction = Vector3.zero;
+
+        Vector2 moveInput = InputReader.MoveInput;
+        if (moveInput.sqrMagnitude < softLockMovementInputThreshold * softLockMovementInputThreshold)
+            return false;
+
+        if (!TryGetCameraBasis(out Vector3 camForward, out Vector3 camRight))
+            return false;
+
+        Vector3 desired = (camForward * moveInput.y) + (camRight * moveInput.x);
+        desired.y = 0f;
+        if (desired.sqrMagnitude < 0.0001f)
+            return false;
+
+        direction = desired.normalized;
+        return true;
     }
 
     private Transform FindScreenAlignedEnemy(float radius)

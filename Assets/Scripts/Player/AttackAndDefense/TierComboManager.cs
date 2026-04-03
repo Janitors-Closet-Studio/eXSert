@@ -30,7 +30,7 @@ public class TierComboManager : MonoBehaviour
     private int fastAttackIndex = 0;      // within tier: 0 or 1 for tier-1, 0 for tier-2/3
     // private AttackStance lastStance = AttackStance.Single; // Stance tracking disabled.
     
-    private float lastAttackTime = -999f;
+    private float comboExpireAt = -1f;
     private Coroutine resetCoroutine;
 
     public enum ComboResetReason
@@ -65,6 +65,8 @@ public class TierComboManager : MonoBehaviour
     /// </summary>
     public string RequestFastAttack(AttackStance currentStance)
     {
+        EnsureComboNotStale();
+
         // Light attacks always use the single-target chain now.
         string attackId = GetNextFastAttack(AttackStance.Single);
         PlayerAttack attackData = attackDatabase != null ? attackDatabase.GetAttack(attackId) : null;
@@ -85,6 +87,8 @@ public class TierComboManager : MonoBehaviour
     /// </summary>
     public string RequestHeavyAttack(AttackStance currentStance)
     {
+        EnsureComboNotStale();
+
         // Heavy attacks always use the AY chain now.
         string attackId = GetNextHeavyAttack(AttackStance.AOE, out int resolvedTier);
         PlayerAttack attackData = attackDatabase != null ? attackDatabase.GetAttack(attackId) : null;
@@ -206,8 +210,6 @@ public class TierComboManager : MonoBehaviour
     /// </summary>
     private void AdvanceCombo(bool isHeavy, AttackStance currentStance, string attackId, int executedStage, bool forceFinisher)
     {
-        lastAttackTime = Time.time;
-        
         // Update stance tracking
         // lastStance = currentStance;
         isHeavyChain = isHeavy;
@@ -277,6 +279,8 @@ public class TierComboManager : MonoBehaviour
         if (!gameObject.activeInHierarchy)
             return;
 
+        comboExpireAt = Time.time + Mathf.Max(0f, comboResetTime);
+
         if (resetCoroutine != null)
             StopCoroutine(resetCoroutine);
 
@@ -288,6 +292,8 @@ public class TierComboManager : MonoBehaviour
     /// </summary>
     public void CancelComboResetCountdown()
     {
+        comboExpireAt = -1f;
+
         if (resetCoroutine != null)
         {
             StopCoroutine(resetCoroutine);
@@ -298,6 +304,20 @@ public class TierComboManager : MonoBehaviour
     private int ResolveComboStageFromData(PlayerAttack attackData, int fallbackStage)
     {
         return attackData != null ? Mathf.Clamp(attackData.comboStage, 1, 3) : Mathf.Clamp(fallbackStage, 1, 3);
+    }
+
+    private void EnsureComboNotStale()
+    {
+        if (IsComboAtInitialState())
+            return;
+
+        if (comboExpireAt > 0f && Time.time >= comboExpireAt)
+            ResetCombo(ComboResetReason.Timeout);
+    }
+
+    private bool IsComboAtInitialState()
+    {
+        return currentTier == 1 && fastAttackIndex == 0 && !isHeavyChain;
     }
 
     /// <summary>

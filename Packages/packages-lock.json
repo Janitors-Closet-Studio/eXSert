@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.autodesk.fbx": {
+      "version": "5.1.1",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.cqf.urpvolumetricfog": {
       "version": "https://github.com/CristianQiu/Unity-URP-Volumetric-Light.git",
       "depth": 0,
@@ -111,6 +118,16 @@
       "dependencies": {
         "com.unity.timeline": "1.2.18",
         "com.unity.modules.uielements": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.formats.fbx": {
+      "version": "5.1.5",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.autodesk.fbx": "5.1.1",
+        "com.unity.timeline": "1.7.1"
       },
       "url": "https://packages.unity.com"
     },
@@ -267,8 +284,8 @@
       }
     },
     "com.unity.splines": {
-      "version": "2.8.2",
-      "depth": 1,
+      "version": "2.8.4",
+      "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.mathematics": "1.2.1",

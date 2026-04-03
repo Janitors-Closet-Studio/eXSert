@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Events;
 using System;
+using System.ComponentModel;
 
 public abstract class CollectableInteraction : InteractionManager
 {
@@ -11,6 +12,7 @@ public abstract class CollectableInteraction : InteractionManager
     [SerializeField] private float uiDisplayDuration = 4f;
     [SerializeField] private float uiFadeDuration = 2f;
     [SerializeField] private string bottomFlavorText = "Press Pause to View";
+    private bool fadeOutComplete = false;   
 
     protected override void Awake()
     {
@@ -21,6 +23,8 @@ public abstract class CollectableInteraction : InteractionManager
 
     protected override void Interact()
     {
+        // Keep collectID in sync in case subclasses assign interactId after Awake.
+        collectID = this.interactId;
 
         ExecuteInteraction();
         AfterExecuteInteraction();
@@ -63,11 +67,14 @@ public abstract class CollectableInteraction : InteractionManager
         foreach(GameObject child in interactionChildren)
             child.gameObject.SetActive(false);
         
-        yield return new WaitForSeconds(uiDisplayDuration + 2); // Wait for half a second before fully deactivating
+        yield return new WaitForSeconds(uiFadeDuration + uiDisplayDuration + uiFadeDuration); // Wait for fade-in + display + fade-out to complete
+
+        while (!fadeOutComplete)
+            yield return null; // Wait until fade-out is complete before deactivating the interactable
 
         DeactivateInteractable(interaction);
 
-        yield return null; // Placeholder for any additional logic if needed
+        yield return null; 
     }
 
     private IEnumerator FadeInUI(float fadeDuration, float displayDuration)
@@ -76,8 +83,24 @@ public abstract class CollectableInteraction : InteractionManager
         if (interactionUI == null)
             yield break;
 
+
+        var collectUI = interactionUI.collectUI;
+        CanvasGroup canvasGroup = collectUI.GetComponent<CanvasGroup>();
+
         var collectText = interactionUI._collectText;
         var collectBottomText = interactionUI._collectBottomText;
+
+        if (collectUI == null)
+        {
+            Debug.LogError("InteractionUIManager instance is null. Cannot show collect UI.");
+            yield break;
+        }
+
+        if (collectBottomText == null)
+        {
+            Debug.LogError("InteractionUIManager instance is null. Cannot show collect bottom text.");
+            yield break;
+        }
 
         if(collectText == null)
         {
@@ -85,7 +108,21 @@ public abstract class CollectableInteraction : InteractionManager
             yield break;
         }
 
-        collectText.text = "Collected: " + collectID.Trim();
+        string collectedLabel = string.IsNullOrWhiteSpace(collectID) ? "Unknown" : collectID.Trim();
+        collectText.text = "Collected: " + collectedLabel;
+
+        if (collectUI != null)
+        {
+
+            if (canvasGroup == null)
+                canvasGroup = collectUI.AddComponent<CanvasGroup>();
+
+            canvasGroup.alpha = 0f;
+            
+            collectUI.SetActive(true);
+        }
+
+        
 
         if(collectBottomText != null)
             collectBottomText.text = bottomFlavorText;
@@ -99,12 +136,29 @@ public abstract class CollectableInteraction : InteractionManager
             collectBottomText.gameObject.SetActive(true);
         }
 
+        // Fade in collectUI background first
         float elapsedTime = 0f;
+        while(elapsedTime < fadeDuration / 2)
+        {
+            elapsedTime += Time.deltaTime;
+            float alpha = Mathf.Clamp01(elapsedTime / fadeDuration);
 
+            if (collectUI != null)
+            {
+                canvasGroup = collectUI.GetComponent<CanvasGroup>();
+                if (canvasGroup != null)
+                    canvasGroup.alpha = alpha;
+            }
+            yield return null;
+        }
+
+        // Then fade in text
+        elapsedTime = 0f;
         while(elapsedTime < fadeDuration)
         {
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(elapsedTime / fadeDuration);
+
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
             if (collectBottomText != null)
                 collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
@@ -118,6 +172,9 @@ public abstract class CollectableInteraction : InteractionManager
         if (interactionUI == null)
             yield break;
 
+        var collectUI = interactionUI.collectUI;
+        CanvasGroup canvasGroup = collectUI.GetComponent<CanvasGroup>();
+
         var collectText = interactionUI._collectText;
         var collectBottomText = interactionUI._collectBottomText;
 
@@ -127,24 +184,46 @@ public abstract class CollectableInteraction : InteractionManager
             yield break;
         }
 
+        if (collectBottomText == null)
+        {
+            Debug.LogError("InteractionUIManager instance is null. Cannot fade out collect bottom text.");
+            yield break;
+        }
+
+        if (collectUI == null)
+        {
+            Debug.LogError("InteractionUIManager instance is null. Cannot fade out collect UI.");
+            yield break;
+        }
+
+        if (canvasGroup == null)
+            canvasGroup = collectUI.AddComponent<CanvasGroup>();
+
         float elapsedTime = 0f;
         while (elapsedTime < fadeDuration)
         {
+            Debug.Log("Fading out collect UI... Elapsed time: " + elapsedTime.ToString("F2") + "s");
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(1f - (elapsedTime / fadeDuration));
             collectText.color = new Color(collectText.color.r, collectText.color.g, collectText.color.b, alpha);
             if (collectBottomText != null)
                 collectBottomText.color = new Color(collectBottomText.color.r, collectBottomText.color.g, collectBottomText.color.b, alpha);
+            if (canvasGroup != null)
+                canvasGroup.alpha = alpha;
             yield return null;
         }
         collectText.gameObject.SetActive(false);
         if (collectBottomText != null)
             collectBottomText.gameObject.SetActive(false);
+        if (collectUI != null)
+            collectUI.SetActive(false);
+        fadeOutComplete = true;
     }
 
     private IEnumerator FadeInAndFadeOutUI(float fadeDuration, float displayDuration)
     {
         yield return StartCoroutine(FadeInUI(fadeDuration, displayDuration));
+        yield return new WaitForSeconds(displayDuration);
         yield return StartCoroutine(FadeOutUI(fadeDuration));
     }
 }

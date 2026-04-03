@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using UI.Loading;
 using UIandUXSystems.HUD;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Progression.Checkpoints
 {
@@ -70,19 +72,71 @@ namespace Progression.Checkpoints
 
             if (currentCheckpoint == null)
             {
+                if (PlayerMovement.IsTestingOrDebugMode)
+                {
+                    Debug.LogWarning("[Checkpoint] No checkpoint is set, but Testing/Debug mode is enabled on PlayerMovement. Skipping checkpoint respawn requirements for test scene play.");
+
+                    if (PlayerObject != null)
+                    {
+                        PlayerMovement move = PlayerObject.GetComponent<PlayerMovement>();
+                        if (move != null)
+                        {
+                            move.enabled = true;
+                            move.TrySnapToSoftLock(PlayerObject.transform.position, PlayerObject.transform.rotation);
+                        }
+
+                        PlayerObject.SetActive(true);
+                    }
+
+                    return;
+                }
+
                 Debug.LogError("No checkpoint has been triggered yet! Cannot respawn player.");
                 return;
             }
             
             if (ReloadSceneOnRespawn)
             {
-                LoadingScreenController.OnLoadingScreenContentShown += MovePlayerToCheckpoint;
-                // Reload the current scene to reset everything, then move the player once the loading content is visibly covering gameplay.
-                SceneLoader.Load(currentCheckpoint.CheckpointSceneAsset, forceReload: true);
+                CoroutineRunner.Run(RespawnWithLoadingTransition());
             }
             else
             {
                 // Just move the player to the checkpoint without reloading the scene
+                MovePlayerToCheckpoint();
+            }
+
+            static IEnumerator RespawnWithLoadingTransition()
+            {
+                // Ensure loading scene/controller exists so loading visuals fully cover scene reload.
+                if (!LoadingScreenController.HasInstance)
+                {
+                    Scene loadingScene = SceneManager.GetSceneByName("LoadingScene");
+                    if (!loadingScene.isLoaded)
+                    {
+                        AsyncOperation loadLoadingSceneOp = SceneManager.LoadSceneAsync("LoadingScene", LoadSceneMode.Additive);
+                        if (loadLoadingSceneOp != null)
+                            yield return loadLoadingSceneOp;
+                    }
+
+                    float timeoutAt = Time.unscaledTime + 5f;
+                    while (!LoadingScreenController.HasInstance && Time.unscaledTime < timeoutAt)
+                        yield return null;
+                }
+
+                IEnumerator reloadSteps = ReloadCheckpointSceneAndMovePlayer();
+                if (LoadingScreenController.HasInstance)
+                {
+                    LoadingScreenController.BeginLoading(reloadSteps, pauseGame: true);
+                    yield break;
+                }
+
+                // Fallback path if loading controller is unavailable.
+                yield return reloadSteps;
+            }
+
+            static IEnumerator ReloadCheckpointSceneAndMovePlayer()
+            {
+                yield return SceneLoader.LoadCoroutine(currentCheckpoint.CheckpointSceneAsset, forceReload: true, loadScreen: false);
                 MovePlayerToCheckpoint();
             }
 
@@ -97,8 +151,6 @@ namespace Progression.Checkpoints
                 Debug.Log($"[Checkpoint] Moving {PlayerObject.name} to checkpoint: {currentCheckpoint}");
 
                 Player.SpawnPlayerAtCheckpoint(); // This will internally use the currentCheckpoint reference to get the spawn position and rotation
-
-                LoadingScreenController.OnLoadingScreenContentShown -= MovePlayerToCheckpoint;
             }
         }
 

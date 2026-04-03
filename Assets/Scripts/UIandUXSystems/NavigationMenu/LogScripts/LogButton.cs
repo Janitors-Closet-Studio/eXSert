@@ -72,10 +72,7 @@ public class LogButton : MonoBehaviour, ISelectHandler
 
     public void OnSelect(BaseEventData eventData)
     {
-        if (onSelectAction != null)
-        {
-            onSelectAction();
-        }
+        onSelectAction?.Invoke();
     }
 
     public void FindAddMenusToList()

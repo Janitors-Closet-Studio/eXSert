@@ -264,9 +264,23 @@ public class SaveSlotsMenu : Menu
         // Delete save file for this slot
         DataPersistenceManager.DeleteProfile(profileId);
 
+        bool hasAnyLoadableProfile = false;
+        if (DataPersistenceManager.Instance != null)
+        {
+            Dictionary<string, GameData> profiles = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+            foreach (var kvp in profiles)
+            {
+                if (kvp.Value != null)
+                {
+                    hasAnyLoadableProfile = true;
+                    break;
+                }
+            }
+        }
+
         // Refresh displayed slots
         currentSaveSlotSelected = null;
-        ActivateMenu(isLoadingGame);
+        ActivateMenu(hasAnyLoadableProfile ? isLoadingGame : false);
     }
 
     //When the back button is click it activates the main menu again
@@ -292,11 +306,9 @@ public class SaveSlotsMenu : Menu
 
         GameObject firstSelected = backButton != null ? backButton.gameObject : null;
 
-        if (DataPersistenceManager.Instance == null)
-            return;
-        
-
-        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.Instance != null
+            ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
+            : new Dictionary<string, GameData>();
 
         // Validate slot profile ids (common merge issue: ids cleared)
         if (saveSlots == null || saveSlots.Length == 0)

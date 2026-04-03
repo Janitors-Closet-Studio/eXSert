@@ -5437,6 +5437,7 @@ MonoBehaviour:
   attackDatabase: {fileID: 11400000, guid: 5faf74d628b25214ca871b83ff4b455d, type: 2}
   characterController: {fileID: 2289477533837267770}
   playerMovement: {fileID: 6150044602222399215}
+  attackLockSystem: {fileID: 0}
   vfxAnchorRegistry: {fileID: 0}
   guardAttackOverride: {fileID: 11400000, guid: 5a480b1f839418f4f8f624bbd8b6cc3d, type: 2}
   guardAttackId: G_Attack
@@ -5450,10 +5451,62 @@ MonoBehaviour:
   guardAttackAutoGenerateHitbox: 0
   plungeRecoveryDelay: 0
   plungeIdleBlendTime: 0.757
+  enablePlungeDroneEffects: 1
+  enablePlungeDronePhysicsCollapse: 1
+  plungeDroneSharedSplashRadius: 2.5
+  plungeDroneSplashMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  plungeDroneCollapseDownwardVelocity: 16
+  plungeDroneCollapseRadialForce: 6
+  enableLightAerialDroneReposition: 1
+  lightAerialDroneRepositionDistance: 1.8
+  lightAerialDroneRepositionVerticalOffset: 0.35
+  lightAerialDroneRepositionMinPlayerBelow: 0.1
+  lightAerialDroneRepositionForwardBias: 0.45
+  staggerEnemiesOnAllAttacks: 0
+  staggerOnSingleTargetAttacks: 1
+  staggerOnAoeAttacks: 0
+  staggerOnAerialAttacks: 1
+  staggerOnSx1: 1
+  staggerOnSx2: 1
+  staggerOnSx3: 1
+  staggerOnSx4: 1
+  staggerOnSx5: 1
+  staggerOnAy1: 1
+  staggerOnAy2: 1
+  staggerOnAy3: 1
+  staggerOnAcX1: 1
+  staggerOnAcX2: 1
+  staggerOnPlunge: 1
+  enemyStaggerDuration: 0.35
+  blockAttackForwardMoveWhenEnemyNear: 1
+  blockAttackForwardMoveDuringSoftLockMotion: 1
+  attackForwardMoveBlockDistance: 1.25
+  attackForwardMoveBlockAngle: 80
   debugPlungeDamage: 1
   debugPlungeDamageInitialized: 1
   attackAudioSource: {fileID: 0}
   inputBufferWindow: 0.25
+  globalAttackSpeedMultiplier: 1
+  sx1SpeedMultiplier: 1
+  sx2SpeedMultiplier: 1
+  sx3SpeedMultiplier: 1
+  sx4SpeedMultiplier: 1
+  sx5SpeedMultiplier: 1
+  ay1SpeedMultiplier: 1
+  ay2SpeedMultiplier: 1
+  ay3SpeedMultiplier: 1
+  acX1SpeedMultiplier: 1
+  acX2SpeedMultiplier: 1
+  plungeSpeedMultiplier: 1
+  airDashAttackSpeedMultiplier: 1
+  launcherSpeedMultiplier: 1
+  guardAttackSpeedMultiplier: 1
+  ax1SpeedMultiplier: 1
+  ax2SpeedMultiplier: 1
+  ax3SpeedMultiplier: 1
+  ax4SpeedMultiplier: 1
 --- !u!114 &6348948781746406361
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5483,9 +5536,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AerialComboManager
   comboResetTime: 1
   debugMode: 0
-  plungeDamageMultiplierPerCombo: 1.25
-  useAttackBasedPlungeScaling: 0
-  plungeDamageMultiplierPerAerialAttack: 1.12
+  plungeDamageMultiplierFullLightChain: 1.5
+  plungeDamageMultiplierWithoutFullLightChain: 1
   characterController: {fileID: 2289477533837267770}
   animationController: {fileID: 5311890396266669227}
   attackDatabase: {fileID: 11400000, guid: 5faf74d628b25214ca871b83ff4b455d, type: 2}
@@ -5536,7 +5588,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34e70bb17c3ba73478a8f20712811ec1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry
-  parrySoundEffect: {fileID: 8300000, guid: f8b9c5f90c8644c488c915fcc5039b55, type: 3}
+  parrySoundEffect: {fileID: 8300000, guid: b738f8d9bc283704db401192c18a3f85, type: 3}
   parryEffect: {fileID: 8926484042661614526, guid: b0902efa133e21b44926742b93fc8e46, type: 3}
   parryEffectDuration: 1
   pauseTimeOnParry: 1
@@ -5568,7 +5620,19 @@ MonoBehaviour:
   softLockStopBuffer: 0.5
   softLockNoMoveRadius: 1.5
   softLockMoveDuration: 0.1
+  softLockRotateOnlyDuration: 0.1
+  allowInstantSoftLockSnap: 0
   onlySoftLockSingleTarget: 0
+  prioritizeCenterOfViewForSoftLock: 1
+  prioritizeMovementAndViewAlignedSoftLockTarget: 1
+  softLockMovementInputThreshold: 0.2
+  softLockMovementAlignmentThreshold: 0.35
+  softLockCenteredViewportRadius: 0.22
+  ignoreDronesForNonAerialSoftLock: 1
+  skipSoftLockPositionNudgeForForwardMoveAttacks: 1
+  prioritizeSoftLockTargetFacingWhileAttacking: 1
+  softLockAttackFacingPersistDuration: 0.35
+  softLockAttackFacingMaxDistance: 4
   steerCamera: 1
   rotatePlayerDuringHardLock: 1
   hardLockRotateSpeed: 360
@@ -7846,6 +7910,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c34e62e92a160484aa309c223b8a1e94, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
+  testingOrDebugMode: 0
+  verboseMovementDebugLogs: 0
   animationController: {fileID: 5311890396266669227}
   attackManager: {fileID: 2445762002116463598}
   _jumpAction: {fileID: 8978839087202845958, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
@@ -7855,9 +7921,23 @@ MonoBehaviour:
   jogSpeed: 3.06
   sprintSpeed: 5
   joystickWalkThreshold: 0.9
+  startInJog: 1
+  allowAnalogWalkWhileStartInJog: 0
   sprintDelaySeconds: 2
+  sprintSpeedRampRate: 10
   friction: 10
   inputReleaseGrace: 0.08
+  allowMovementWhileAttacking: 1
+  disableAttackMovementAfterLandedHit: 1
+  disableAttackMovementAfterSingleTargetHit: 1
+  disableAttackMovementAfterAerialHit: 0
+  keepAttackMovementForAoeAttacks: 1
+  attackMovementSpeedMultiplier: 1
+  maxAttackTurnAngleWhileAttacking: 50
+  reduceAttackTurningAfterLandingHit: 1
+  postHitMaxAttackTurnAngle: 10
+  postHitTurnReductionDuration: 0.22
+  freezeAttackFacingAnchorAfterHit: 1
   landingLockDuration: 0.35
   keyboardDoubleTapWindow: 0.25
   cameraTransform: {fileID: 2957161133258383196}
@@ -7871,9 +7951,37 @@ MonoBehaviour:
   jumpEventTimeout: 0.12
   canDoubleJump: 1
   aerialComboManager: {fileID: 5206229162919500938}
+  attackLockSystem: {fileID: 0}
   aerialLightAttackHangTime: 0.6
   plungeHoverTime: 0.13
   plungeDownSpeed: 16
+  plungeJumpLockDuration: 0.2
+  enableAerialTargetAssist: 1
+  enableLightAerialTargetAssist: 1
+  enablePlungeTargetAssist: 1
+  aerialTargetAssistRange: 10
+  aerialTargetAssistAngle: 120
+  aerialTargetAssistMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  prioritizeHardLockForAerialAssist: 1
+  prioritizeDronesForAerialAssist: 1
+  prioritizeHigherAerialTargets: 1
+  prioritizeCenterOfViewForAerialAssist: 1
+  allowAerialAssistRetarget: 1
+  aerialAssistRetargetInterval: 0.08
+  aerialLightAssistHorizontalSpeed: 10
+  plungeAssistHorizontalSpeed: 13
+  aerialAssistVerticalSpeed: 10
+  lightAerialAssistTargetYOffset: 0
+  plungeAssistTargetYOffset: 0.75
+  aerialAssistVelocityBlendRate: 30
+  aerialTargetAssistStopDistance: 0.8
+  aerialLightAssistDurationMultiplier: 1
+  plungeAssistExtraDuration: 0.12
+  plungeAssistMinDuration: 0.08
+  allowInputSteeringDuringAerialAssist: 0
+  suppressAttackForwardMoveDuringAerialAssist: 1
   aerialCombatMinHeightAboveGroundOverride: 0
   aerialCombatHeightAboveBasicJump: 0.3
   aerialCombatGroundProbeDistance: 12
@@ -7882,9 +7990,16 @@ MonoBehaviour:
   layerMask:
     serializedVersion: 2
     m_Bits: 8
-  dashDistance: 6
-  dashDuration: 0.5
+  dashDistance: 3
+  dashDuration: 0.2
+  dashAnimationTransition: 0.08
+  airDashAnimationTransition: 0.08
+  maxDashCharges: 2
+  dashChainDelay: 0.15
   dashCoolDown: 0.5
+  dashMomentumCarryPercent: 0.3
+  dashMomentumMaxBonusSpeed: 1.5
+  dashMomentumDecayRate: 14
   defaultExternalStunDuration: 0.35
   enableKnockbackWallCollision: 1
   knockbackWallMask:
@@ -7905,6 +8020,7 @@ MonoBehaviour:
   highFallGroundProbeDistance: 25
   dashSFX: {fileID: 8300000, guid: 4a80ad5659e0df34fa32064cd1c4ae09, type: 3}
   jumpSFX: {fileID: 8300000, guid: ea2d65beafcf27e4398ba2b45473e354, type: 3}
+  doubleJumpSFX: {fileID: 8300000, guid: 9539a2ae48c4aea4b84ff3d3a8e0a787, type: 3}
 --- !u!114 &8127531854480134888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7925,6 +8041,7 @@ MonoBehaviour:
   destroyPlayerOnDeath: 0
   deathFadeDelaySeconds: 3.5
   deathFadeNormalizedThreshold: 0.95
+  enableGenericDamageFlinch: 0
   flinchChance: 0.2
   flinchLockSeconds: 0.35
   enableDashInvincibility: 1
@@ -7939,6 +8056,10 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 2739185c4b81417438de87670df3ae68, type: 3}
   - {fileID: 8300000, guid: aa5598b7d93f1894fa3ee7e3c429a0d6, type: 3}
   - {fileID: 8300000, guid: 01fb6574262bbc94182186df8b8e2b2f, type: 3}
+  impactSFX:
+  - {fileID: 8300000, guid: 14ec7c5d68b4caa41bdfa27a9126a22b, type: 3}
+  - {fileID: 8300000, guid: c064e56110f694b46bfedd2fe21a3e2d, type: 3}
+  - {fileID: 8300000, guid: abee1b0c5dfc37c44971fbdd46487bff, type: 3}
   playerDeathSFX: {fileID: 8300000, guid: 430efd9a9dac85a4e985151c42538ddd, type: 3}
   debugDamageAmount: 100
 --- !u!114 &2026860560813373367
@@ -7953,7 +8074,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30407f1e0f298a84faa3f1c362d5725d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLifeBoxDetector
-  killPlayerWhenOutOfLifeBox: 1
+  killPlayerWhenOutOfLifeBox: 0
   checkInterval: 0.5
   lifeBoxes: []
 --- !u!1 &3685624653661851214
@@ -17160,8 +17281,9 @@ MonoBehaviour:
   airMoveVfxObjects:
   - {fileID: 0}
   airMoveDuration: 0.5
-  airMoveAudioClip: {fileID: 8300000, guid: 9539a2ae48c4aea4b84ff3d3a8e0a787, type: 3}
+  airMoveAudioClip: {fileID: 8300000, guid: f2bac5a0f7f4459449935b0d84f345cd, type: 3}
   fireShockWaveVfx: {fileID: 7703162255160455181}
+  fireShockWaveAudioClip: {fileID: 8300000, guid: 813f7b39e0cc2ee4fb5fe61999893058, type: 3}
   fireShockWaveDuration: 0.5
   keepFireShockWaveUpright: 1
 --- !u!114 &1928066033365348012
