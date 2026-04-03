@@ -5,6 +5,9 @@ using Singletons;
 using UnityEngine.SceneManagement;
 public class InteractionUI : Singleton<InteractionUI>
 {
+    // Tracks which interactable is currently responsible for the prompt
+    public MonoBehaviour currentInteractable;
+
 
     [Header("Global Interaction UI")]
     public TMP_Text _interactText;
@@ -54,6 +57,8 @@ public class InteractionUI : Singleton<InteractionUI>
 
         if (_interactIcon != null)
             _interactIcon.gameObject.SetActive(false);
+
+        currentInteractable = null;
     }
 
     public void HideCollectUI()
