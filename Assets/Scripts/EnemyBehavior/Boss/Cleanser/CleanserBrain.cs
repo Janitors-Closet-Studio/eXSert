@@ -175,6 +175,22 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Configuration for the gap-closing dash (movement only, no hitbox).")]
         public GapClosingDashConfig GapCloseDashSettings = new GapClosingDashConfig();
 
+        [Header("Gap-Close Dash Behavior")]
+        [Tooltip("Preferred aggression level at which gap-close dash becomes common. Levels below this only use heavily reduced dash chance.")]
+        [SerializeField, Range(1, 5)] private int preferredGapCloseDashAggressionLevel = 4;
+        [Tooltip("Multiplier applied to gap-close dash chance when current aggression is below preferred level.")]
+        [SerializeField, Range(0f, 1f)] private float lowAggressionGapCloseDashChanceMultiplier = 0.12f;
+        [Tooltip("Multiplier applied to gap-close dash chance when current aggression is at/above preferred level.")]
+        [SerializeField, Range(0f, 1f)] private float highAggressionGapCloseDashChanceMultiplier = 0.85f;
+        [Tooltip("Minimum time between consecutive gap-close dash uses.")]
+        [SerializeField, Min(0f)] private float gapCloseDashCooldown = 1.75f;
+
+        [Header("Player Spacing")]
+        [Tooltip("Minimum stand-off distance maintained while approaching the player outside of attack movement.")]
+        [SerializeField, Min(0f)] private float minimumApproachStopDistance = 2.6f;
+        [Tooltip("Extra cushion added to approach stop checks to avoid body-pushing the player.")]
+        [SerializeField, Min(0f)] private float approachStopBuffer = 0.35f;
+
         [Header("Combo Range Assist")]
         [Tooltip("Small tolerance added above step max range before a combo step is considered out of range.")]
         [SerializeField, Min(0f)] private float comboRangeMaxBuffer = 0.05f;
@@ -377,6 +393,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool waitingForJumpFullMovementEvent;
         private bool jumpFullMovementEventReceived;
         private Collider runtimeFloatingAerialAssistCollider;
+        private float nextGapCloseDashAllowedTime;
 
         #region IQueuedAttacker Implementation
         
@@ -1132,15 +1149,11 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (player == null) yield break;
 
-            // Check if we should use gap-closing dash at high aggression
-            if (aggressionSystem != null && aggressionSystem.CanUseDash())
+            float distToPlayer = Vector3.Distance(transform.position, player.position);
+            if (ShouldUseGapCloseDash(distToPlayer, isComboReposition: false))
             {
-                float dist = Vector3.Distance(transform.position, player.position);
-                if (dist >= GapCloseDashSettings.MinDistanceToUse)
-                {
-                    yield return ExecuteGapClosingDash();
-                    yield break;
-                }
+                yield return ExecuteGapClosingDash();
+                yield break;
             }
 
             // Get movement behavior from aggression system
@@ -1605,22 +1618,41 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private bool ShouldUseComboGapCloseDash(float distanceToPlayer)
         {
+            return ShouldUseGapCloseDash(distanceToPlayer, isComboReposition: true);
+        }
+
+        private bool ShouldUseGapCloseDash(float distanceToPlayer, bool isComboReposition)
+        {
             if (GapCloseDashSettings == null)
                 return false;
 
             if (distanceToPlayer < Mathf.Max(0f, GapCloseDashSettings.MinDistanceToUse))
                 return false;
 
+            if (Time.time < nextGapCloseDashAllowedTime)
+                return false;
+
             AggressionLevel level = aggressionSystem != null ? aggressionSystem.CurrentLevel : AggressionLevel.Level1;
-            float chance = Mathf.Clamp01(GapCloseDashSettings.GetComboDashChance(level));
+            float baseChance = Mathf.Clamp01(GapCloseDashSettings.GetComboDashChance(level));
+            int currentLevel = Mathf.Clamp((int)level, 1, 5);
+            int preferredLevel = Mathf.Clamp(preferredGapCloseDashAggressionLevel, 1, 5);
+
+            float levelMultiplier = currentLevel < preferredLevel
+                ? Mathf.Clamp01(lowAggressionGapCloseDashChanceMultiplier)
+                : Mathf.Clamp01(highAggressionGapCloseDashChanceMultiplier);
+
+            float chance = Mathf.Clamp01(baseChance * levelMultiplier);
             float roll = Random.value;
             bool shouldDash = roll <= chance;
+
+            if (shouldDash)
+                nextGapCloseDashAllowedTime = Time.time + Mathf.Max(0f, gapCloseDashCooldown);
 
 #if UNITY_EDITOR
             float aggressionValue = aggressionSystem != null ? aggressionSystem.AggressionValue : 0f;
             EnemyBehaviorDebugLogBools.Log(
                 nameof(CleanserBrain),
-                $"[Cleanser] ComboDash check: dist={distanceToPlayer:F2}, agg={aggressionValue:F2}, level={level}, chance={chance:P0}, roll={roll:F3}, dash={shouldDash}");
+                $"[Cleanser] {(isComboReposition ? "Combo" : "General")}Dash check: dist={distanceToPlayer:F2}, agg={aggressionValue:F2}, level={level}, baseChance={baseChance:P0}, mult={levelMultiplier:0.##}, finalChance={chance:P0}, roll={roll:F3}, dash={shouldDash}");
 #endif
 
             return shouldDash;
@@ -3871,14 +3903,35 @@ namespace EnemyBehavior.Boss.Cleanser
         private IEnumerator MoveTowardPlayer(float duration)
         {
             if (player == null) yield break;
+
+            float originalStoppingDistance = agent != null ? agent.stoppingDistance : 0f;
+            float desiredStopDistance = GetDesiredApproachStopDistance();
             
             float elapsed = 0f;
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                TrySetDestinationSafe(player.position);
+
+                float distance = GetPlayerDistanceXZ();
+                if (distance <= desiredStopDistance + Mathf.Max(0f, approachStopBuffer))
+                {
+                    if (agent != null && agent.hasPath)
+                        agent.ResetPath();
+
+                    yield return null;
+                    continue;
+                }
+
+                Vector3 desiredDestination = GetApproachDestination(desiredStopDistance);
+                if (agent != null)
+                    agent.stoppingDistance = desiredStopDistance;
+
+                TrySetDestinationSafe(desiredDestination);
                 yield return null;
             }
+
+            if (agent != null)
+                agent.stoppingDistance = originalStoppingDistance;
         }
 
         private IEnumerator MoveAwayFromPlayer(float duration)
@@ -3969,6 +4022,35 @@ namespace EnemyBehavior.Boss.Cleanser
 
             agent.SetDestination(destination);
             return true;
+        }
+
+        private float GetDesiredApproachStopDistance()
+        {
+            float preferredDistance = aggressionSystem != null
+                ? aggressionSystem.GetPreferredDistance()
+                : (agent != null ? agent.stoppingDistance : FallbackStoppingDistance);
+
+            float dynamicStop = preferredDistance - 0.75f;
+            return Mathf.Max(0.1f, Mathf.Max(minimumApproachStopDistance, dynamicStop));
+        }
+
+        private Vector3 GetApproachDestination(float desiredStopDistance)
+        {
+            Vector3 toPlayer = player.position - transform.position;
+            toPlayer.y = 0f;
+
+            if (toPlayer.sqrMagnitude < 0.0001f)
+                return transform.position;
+
+            Vector3 dirToPlayer = toPlayer.normalized;
+            Vector3 destination = player.position - dirToPlayer * Mathf.Max(0f, desiredStopDistance);
+            destination.y = transform.position.y;
+
+            if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+                destination = hit.position;
+
+            destination.y = transform.position.y;
+            return destination;
         }
 
         private IEnumerator FaceTarget(Transform target, float duration)

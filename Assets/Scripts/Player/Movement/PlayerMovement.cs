@@ -345,13 +345,27 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Tooltip("Failsafe timeout after plunge landing before forcing attack unlock if input remains busy.")]
     [Range(0.1f, 2f)] private float plungeRecoveryFailsafeSeconds = 0.9f;
 
+    [Header("Locomotion Animation Failsafes")]
+    [SerializeField, Tooltip("How often locomotion is force-refreshed while grounded movement input is held to prevent stuck/frozen movement clips.")]
+    [Range(0.05f, 1f)] private float locomotionFailsafeRefreshInterval = 0.2f;
+    [SerializeField, Tooltip("Minimum horizontal movement speed required before the locomotion refresh failsafe triggers.")]
+    [Range(0f, 1f)] private float locomotionFailsafeMinHorizontalSpeed = 0.05f;
+
+    [Header("Input Lock Failsafes")]
+    [SerializeField, Tooltip("Grounded timeout before forcing recovery if input remains busy but movement/combat state is stale.")]
+    [Range(0.1f, 3f)] private float groundedInputBusyFailsafeSeconds = 0.9f;
+
     [Header("Enemy Top-Surface Slide-Off")]
     [SerializeField, Tooltip("Horizontal slide speed applied when standing on top of enemies (except Roomba).")]
-    [Range(0f, 25f)] private float enemyTopSlideOffSpeed = 9f;
+    [Range(0f, 25f)] private float enemyTopSlideOffSpeed = 13f;
     [SerializeField, Tooltip("Extra multiplier applied while plunging to aggressively force player off enemy tops.")]
-    [Range(1f, 5f)] private float enemyTopSlideOffPlungeMultiplier = 2f;
+    [Range(1f, 5f)] private float enemyTopSlideOffPlungeMultiplier = 3f;
     [SerializeField, Tooltip("Downward probe distance used to detect enemy directly beneath the player.")]
-    [Range(0.1f, 3f)] private float enemyTopSlideProbeDistance = 1.2f;
+    [Range(0.1f, 3f)] private float enemyTopSlideProbeDistance = 2f;
+    [SerializeField, Tooltip("Scales the CharacterController XZ footprint used to detect enemies under the player (1 = exact player width).")]
+    [Range(0.5f, 2f)] private float enemyTopSlideFootprintScale = 1.15f;
+    [SerializeField, Tooltip("Vertical thickness of the footprint overlap used for enemy-top detection.")]
+    [Range(0.05f, 1f)] private float enemyTopSlideFootprintThickness = 0.35f;
 
     [Header("Camera Settings")]
     [SerializeField] bool invertYAxis = false;
@@ -431,12 +445,15 @@ public class PlayerMovement : MonoBehaviour
     private float noInputGroundedTimer;
     private bool idleRecoveryAppliedThisWindow;
     private readonly Collider[] plungeEnemyPushBuffer = new Collider[32];
+    private readonly Collider[] enemyTopSlideHits = new Collider[32];
     private readonly int[] plungeProcessedEnemyIds = new int[32];
     private bool warnedMissingSoundSource;
     private Vector3 dashCarryVelocity = Vector3.zero;
     private bool attackFacingLockInitialized;
     private bool waitingForPlungeRecoveryUnlock;
     private float plungeRecoveryBusyTimer;
+    private float nextLocomotionFailsafeRefreshTime;
+    private float groundedInputBusyTimer;
     private const float EnemyTopSlideMinDistanceSq = 0.0001f;
     private Vector3 attackFacingLockForward = Vector3.forward;
     private bool plungeJumpLocked;
@@ -729,6 +746,10 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         DebugStateTransitions();
+
+        EnsurePlungeRecoveryFailsafe();
+        EnsureGroundedInputBusyFailsafe();
+        EnsureLocomotionAnimationFailsafe();
 
         if (attackTurnReductionTimer > 0f)
         {
@@ -1138,23 +1159,86 @@ public class PlayerMovement : MonoBehaviour
         if (!characterController.isGrounded && !IsGroundedNow())
             return Vector3.zero;
 
-        Vector3 origin = characterController.bounds.center;
+        Bounds bounds = characterController.bounds;
         float probeDistance = Mathf.Max(0.05f, enemyTopSlideProbeDistance);
+        float footprintScale = Mathf.Max(0.5f, enemyTopSlideFootprintScale);
+        float footprintThickness = Mathf.Max(0.05f, enemyTopSlideFootprintThickness);
 
-        if (!Physics.Raycast(origin, Vector3.down, out RaycastHit hit, probeDistance, ~0, QueryTriggerInteraction.Ignore))
-            return Vector3.zero;
+        Vector3 footprintCenter = new Vector3(bounds.center.x, bounds.min.y + footprintThickness * 0.5f, bounds.center.z);
+        Vector3 footprintHalfExtents = new Vector3(
+            Mathf.Max(0.05f, bounds.extents.x * footprintScale),
+            footprintThickness * 0.5f,
+            Mathf.Max(0.05f, bounds.extents.z * footprintScale));
 
-        BaseEnemyCore enemy = hit.collider != null ? hit.collider.GetComponentInParent<BaseEnemyCore>() : null;
-        if (enemy == null)
-            return Vector3.zero;
+        BaseEnemyCore bestEnemy = null;
+        Collider bestCollider = null;
+        float bestSqrDistance = float.MaxValue;
 
-        if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
-            return Vector3.zero;
+        int hitCount = Physics.OverlapBoxNonAlloc(
+            footprintCenter,
+            footprintHalfExtents,
+            enemyTopSlideHits,
+            Quaternion.identity,
+            ~0,
+            QueryTriggerInteraction.Ignore);
 
-        Vector3 pushDir = transform.position - enemy.transform.position;
-        pushDir.y = 0f;
-        if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
-            pushDir = hit.normal;
+        Vector3 playerFeetPoint = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = enemyTopSlideHits[i];
+            if (col == null)
+                continue;
+
+            BaseEnemyCore enemyCandidate = col.GetComponentInParent<BaseEnemyCore>();
+            if (enemyCandidate == null || !enemyCandidate.isAlive)
+                continue;
+
+            if (enemyCandidate.GetComponentInParent<BossRoombaBrain>() != null)
+                continue;
+
+            Vector3 closest = col.ClosestPoint(playerFeetPoint);
+            Vector3 planar = playerFeetPoint - closest;
+            planar.y = 0f;
+            float sqrDistance = planar.sqrMagnitude;
+            if (sqrDistance < bestSqrDistance)
+            {
+                bestSqrDistance = sqrDistance;
+                bestEnemy = enemyCandidate;
+                bestCollider = col;
+            }
+        }
+
+        Vector3 pushDir = Vector3.zero;
+
+        if (bestEnemy != null)
+        {
+            Vector3 closest = bestCollider != null ? bestCollider.ClosestPoint(playerFeetPoint) : bestEnemy.transform.position;
+            pushDir = playerFeetPoint - closest;
+            pushDir.y = 0f;
+            if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
+                pushDir = transform.position - bestEnemy.transform.position;
+        }
+        else
+        {
+            // Fallback for thin/irregular colliders: keep center raycast as backup.
+            Vector3 rayOrigin = bounds.center;
+            if (!Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, probeDistance, ~0, QueryTriggerInteraction.Ignore))
+                return Vector3.zero;
+
+            BaseEnemyCore enemy = hit.collider != null ? hit.collider.GetComponentInParent<BaseEnemyCore>() : null;
+            if (enemy == null || !enemy.isAlive)
+                return Vector3.zero;
+
+            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+                return Vector3.zero;
+
+            pushDir = transform.position - enemy.transform.position;
+            pushDir.y = 0f;
+            if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
+                pushDir = hit.normal;
+        }
+
         pushDir.y = 0f;
         if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
             pushDir = transform.forward;
@@ -2074,7 +2158,14 @@ public class PlayerMovement : MonoBehaviour
         }
         currentMovement.y = Mathf.Clamp(currentMovement.y, -terminalVelocity, terminalVelocity);
 
+        float movementDeltaTime = Time.inFixedTimeStep ? Time.fixedDeltaTime : Time.deltaTime;
         Vector3 horizontalMovement = isDashing ? dashVelocity : new Vector3(currentMovement.x, 0, currentMovement.z);
+
+        if (!isDashing)
+            horizontalMovement += GetEnemyTopSlideVelocity();
+
+        if (isPlunging)
+            horizontalMovement += ApplyPlungeSustainRepulsion(movementDeltaTime);
 
         if (!isDashing && dashCarryVelocity.sqrMagnitude > 0.0001f)
         {
@@ -2112,7 +2203,6 @@ public class PlayerMovement : MonoBehaviour
             finalVelocity += aerialAssistVelocity;
 
         // Apply movement using the simulation timestep (FixedUpdate-safe) to avoid dash jitter.
-        float movementDeltaTime = Time.inFixedTimeStep ? Time.fixedDeltaTime : Time.deltaTime;
         characterController.Move(finalVelocity * movementDeltaTime);
 
         // reset vertical movement when grounded
@@ -2139,8 +2229,15 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        if (!wasGrounded && grounded)
+        bool recoverMissedPlungeLanding = wasGrounded && grounded && (plungeLandingPending || isPlunging);
+
+        if (!wasGrounded && grounded || recoverMissedPlungeLanding)
         {
+            if (recoverMissedPlungeLanding)
+            {
+                DebugMovementLog($"Plunge landing recovery triggered while already grounded | wasGrounded={wasGrounded} groundedNow={grounded} plungeLandingPending={plungeLandingPending} isPlunging={isPlunging}");
+            }
+
             DebugMovementLog($"Landing transition detected | wasGrounded={wasGrounded} groundedNow={grounded} ccGrounded={(characterController != null && characterController.isGrounded)} currentY={currentMovement.y:F2} pendingJump={pendingJump}");
             bool landedFromPlunge = plungeLandingPending || isPlunging;
             plungeLandingPending = false;
@@ -2150,6 +2247,10 @@ public class PlayerMovement : MonoBehaviour
 
             if (landedFromPlunge)
                 ApplyPlungeLandingSeparation();
+
+            waitingForPlungeRecoveryUnlock = landedFromPlunge && InputReader.inputBusy;
+            if (!waitingForPlungeRecoveryUnlock)
+                plungeRecoveryBusyTimer = 0f;
 
             if (landedFromPlunge)
             {
@@ -2256,6 +2357,135 @@ public class PlayerMovement : MonoBehaviour
         animationController?.PlayIdle();
         waitingForPlungeRecoveryUnlock = false;
         plungeRecoveryBusyTimer = 0f;
+    }
+
+    private void EnsureGroundedInputBusyFailsafe()
+    {
+        if (!InputReader.inputBusy)
+        {
+            groundedInputBusyTimer = 0f;
+            return;
+        }
+
+        bool grounded = IsGroundedNow();
+        bool shouldDefer = !grounded
+            || CombatManager.isGuarding
+            || CombatManager.isParrying
+            || isDashing
+            || isPlunging
+            || plungeLandingPending
+            || pendingJump != PendingJumpType.None;
+
+        if (shouldDefer)
+        {
+            groundedInputBusyTimer = 0f;
+            return;
+        }
+
+        groundedInputBusyTimer += Time.deltaTime;
+        float timeout = Mathf.Max(0.1f, groundedInputBusyFailsafeSeconds);
+        if (groundedInputBusyTimer < timeout)
+            return;
+
+        Debug.LogWarning("[PlayerMovement] Grounded input-busy failsafe triggered. Forcing attack/input unlock recovery.");
+
+        if (attackManager != null)
+            attackManager.ForceCancelCurrentAttack(resetCombo: false);
+        else
+            InputReader.inputBusy = false;
+
+        CancelPlungeState();
+        animationController?.EnsureAnimatorRuntimeHealthy();
+        animationController?.PlayIdle();
+        SuppressLocomotionAnimations(false);
+        ForceLocomotionRefresh();
+
+        groundedInputBusyTimer = 0f;
+    }
+
+    private void EnsureLocomotionAnimationFailsafe()
+    {
+        if (animationController == null || characterController == null)
+            return;
+
+        animationController.EnsureAnimatorRuntimeHealthy();
+
+        bool grounded = IsGroundedNow();
+        bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
+
+        if (!grounded || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackActive || InputReader.inputBusy)
+        {
+            nextLocomotionFailsafeRefreshTime = 0f;
+            return;
+        }
+
+        if (airborneAnimationLocked)
+            airborneAnimationLocked = false;
+
+        if (fallingAnimationPlaying)
+            fallingAnimationPlaying = false;
+
+        if (locomotionAnimationSuppressed)
+            SuppressLocomotionAnimations(false);
+
+        if (!HasEffectiveMovementInput)
+        {
+            nextLocomotionFailsafeRefreshTime = 0f;
+            return;
+        }
+
+        float horizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+        if (horizontalSpeed < locomotionFailsafeMinHorizontalSpeed)
+            return;
+
+        string expectedLocomotionState = GetExpectedLocomotionStateName();
+        if (!string.IsNullOrEmpty(expectedLocomotionState)
+            && animationController.IsPlaying(expectedLocomotionState, out _))
+        {
+            nextLocomotionFailsafeRefreshTime = 0f;
+            return;
+        }
+
+        if (Time.time < nextLocomotionFailsafeRefreshTime)
+            return;
+
+        wasMoving = false;
+        ForceReplayLocomotionAnimation();
+        nextLocomotionFailsafeRefreshTime = Time.time + Mathf.Max(0.05f, locomotionFailsafeRefreshInterval);
+    }
+
+    private string GetExpectedLocomotionStateName()
+    {
+        switch (moveState)
+        {
+            case GroundMoveState.Walk:
+                return "Walk";
+            case GroundMoveState.Jog:
+                return "Jog";
+            case GroundMoveState.Sprint:
+                return "Sprint";
+            default:
+                return string.Empty;
+        }
+    }
+
+    private void ForceReplayLocomotionAnimation()
+    {
+        if (animationController == null)
+            return;
+
+        switch (moveState)
+        {
+            case GroundMoveState.Walk:
+                animationController.PlayWalk(true);
+                break;
+            case GroundMoveState.Jog:
+                animationController.PlayJog(true);
+                break;
+            case GroundMoveState.Sprint:
+                animationController.PlaySprint(true);
+                break;
+        }
     }
 
     private void StartPendingJumpTimeout()
