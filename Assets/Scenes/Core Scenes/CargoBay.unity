@@ -14924,6 +14924,11 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &903426846 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7006565367186408323, guid: 6b3cb745ca066644ab3633f7d209e55f, type: 3}
+  m_PrefabInstance: {fileID: 2114424049}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &906416089
 GameObject:
   m_ObjectHideFlags: 0
@@ -28210,7 +28215,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 9a06d494c6a2fbc42b6065992c915a68, type: 2}
     - target: {fileID: 1357911731733883350, guid: 24dfe058bf31c0f419fe6e1dbef78c54, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.05
+      value: 2.07
       objectReference: {fileID: 0}
     - target: {fileID: 1357911731733883350, guid: 24dfe058bf31c0f419fe6e1dbef78c54, type: 3}
       propertyPath: m_LocalPosition.y
@@ -28218,7 +28223,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1357911731733883350, guid: 24dfe058bf31c0f419fe6e1dbef78c54, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 23.38
+      value: 22.98
       objectReference: {fileID: 0}
     - target: {fileID: 1357911731733883350, guid: 24dfe058bf31c0f419fe6e1dbef78c54, type: 3}
       propertyPath: m_LocalRotation.w
@@ -34849,6 +34854,14 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8102382540906724614, guid: 6b3cb745ca066644ab3633f7d209e55f, type: 3}
+      propertyPath: m_Type
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8102382540906724614, guid: 6b3cb745ca066644ab3633f7d209e55f, type: 3}
+      propertyPath: m_Intensity
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 8856650562925286292, guid: 6b3cb745ca066644ab3633f7d209e55f, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 0
@@ -36065,6 +36078,14 @@ PrefabInstance:
       value: -3.25
       objectReference: {fileID: 0}
     - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: doorLight
+      value: 
+      objectReference: {fileID: 685986735}
+    - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: lightBulb
+      value: 
+      objectReference: {fileID: 903426846}
+    - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: magnetBase
       value: 
       objectReference: {fileID: 982185511}
@@ -36122,7 +36143,7 @@ PrefabInstance:
       objectReference: {fileID: 682107842}
     - target: {fileID: 3276642748270603368, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_VersionIndex
-      value: 11870
+      value: 11873
       objectReference: {fileID: 0}
     - target: {fileID: 5766130364728449265, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_LocalRotation.w
