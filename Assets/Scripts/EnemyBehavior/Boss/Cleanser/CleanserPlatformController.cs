@@ -121,9 +121,15 @@ namespace EnemyBehavior.Boss.Cleanser
         private Transform mountedPlayer;
         private FloatingPlatform mountedPlatform;
         private Transform originalPlayerParent;
+        private Vector3 mountedPlayerLocalPosition;
+        private Quaternion mountedPlayerLocalRotation;
+        private Vector3 mountedPlatformLastWorldPos;
+        private bool hasMountedPlatformMotionSample;
+        private bool appliedMountedPlatformExternalVelocity;
         private float mountedLastInsideTime;
         private Coroutine orbitCoroutine;
         private Coroutine riseCoroutine;
+        private static readonly WaitForFixedUpdate fixedUpdateYield = new WaitForFixedUpdate();
         private static readonly Collider[] mountCheckBuffer = new Collider[16];
         private bool useConfiguredScenePlatforms;
         private GameObject configuredScenePrimaryPlatform;
@@ -604,6 +610,7 @@ namespace EnemyBehavior.Boss.Cleanser
             while (platformsActive)
             {
                 Vector3 centerPos = OrbitCenter != null ? OrbitCenter.position : transform.position;
+                float dt = Time.fixedDeltaTime;
 
                 foreach (var platform in Platforms)
                 {
@@ -611,7 +618,7 @@ namespace EnemyBehavior.Boss.Cleanser
                         continue;
 
                     // Update angle
-                    platform.CurrentAngle += OrbitSpeed * Time.deltaTime;
+                    platform.CurrentAngle += OrbitSpeed * dt;
                     if (platform.CurrentAngle >= 360f)
                         platform.CurrentAngle -= 360f;
 
@@ -629,23 +636,91 @@ namespace EnemyBehavior.Boss.Cleanser
                         newPos.y += bobOffset;
                     }
 
-                    // Move platform
-                    platform.PlatformObject.transform.position = newPos;
+                    // Move platform through kinematic Rigidbody when present for stable CharacterController contacts
+                    Rigidbody rb = platform.PlatformObject.GetComponent<Rigidbody>();
                     
                     // Face center (optional)
                     Vector3 lookDir = (centerPos - newPos).normalized;
                     lookDir.y = 0;
                     if (lookDir.sqrMagnitude > 0.001f)
                     {
-                        platform.PlatformObject.transform.forward = lookDir;
+                        Quaternion targetRot = Quaternion.LookRotation(lookDir, Vector3.up);
+                        if (rb != null && rb.isKinematic)
+                        {
+                            rb.MovePosition(newPos);
+                            rb.MoveRotation(targetRot);
+                        }
+                        else
+                        {
+                            platform.PlatformObject.transform.SetPositionAndRotation(newPos, targetRot);
+                        }
+                    }
+                    else
+                    {
+                        if (rb != null && rb.isKinematic)
+                            rb.MovePosition(newPos);
+                        else
+                            platform.PlatformObject.transform.position = newPos;
                     }
                 }
+
+                MaintainMountedPlayerAnchor();
 
                 // Check for player mounting
                 CheckPlayerMounting();
 
-                yield return null;
+                yield return fixedUpdateYield;
             }
+        }
+
+        private void MaintainMountedPlayerAnchor()
+        {
+            if (mountedPlayer == null || mountedPlatform?.PlatformObject == null)
+                return;
+
+            Transform platformTransform = mountedPlatform.PlatformObject.transform;
+            float dt = Mathf.Max(0.0001f, Time.fixedDeltaTime);
+            Vector3 platformVelocity = Vector3.zero;
+            if (hasMountedPlatformMotionSample)
+            {
+                platformVelocity = (platformTransform.position - mountedPlatformLastWorldPos) / dt;
+            }
+
+            mountedPlatformLastWorldPos = platformTransform.position;
+            hasMountedPlatformMotionSample = true;
+
+            CharacterController controller = mountedPlayer.GetComponent<CharacterController>();
+            if (controller != null && !controller.isGrounded)
+            {
+                TryClearMountedPlatformExternalVelocity();
+                return;
+            }
+
+            PlayerMovement movement = mountedPlayer.GetComponent<PlayerMovement>()
+                ?? mountedPlayer.GetComponentInChildren<PlayerMovement>()
+                ?? mountedPlayer.GetComponentInParent<PlayerMovement>();
+
+            bool isActivelyMoving = movement != null && (movement.HasEffectiveMovementInput || movement.IsDashing);
+
+            if (movement != null && isActivelyMoving)
+            {
+                movement.SetExternalVelocity(new Vector3(platformVelocity.x, 0f, platformVelocity.z));
+                appliedMountedPlatformExternalVelocity = true;
+            }
+            else
+            {
+                TryClearMountedPlatformExternalVelocity(movement);
+            }
+
+            if (isActivelyMoving)
+            {
+                mountedPlayerLocalPosition = mountedPlayer.localPosition;
+                mountedPlayerLocalRotation = mountedPlayer.localRotation;
+                return;
+            }
+
+            mountedPlayer.localPosition = mountedPlayerLocalPosition;
+            mountedPlayer.localRotation = mountedPlayerLocalRotation;
         }
 
         private void CheckPlayerMounting()
@@ -742,9 +817,14 @@ namespace EnemyBehavior.Boss.Cleanser
             mountedPlatform = platform;
             originalPlayerParent = player.parent;
             mountedLastInsideTime = Time.time;
+            mountedPlatformLastWorldPos = platform.PlatformObject.transform.position;
+            hasMountedPlatformMotionSample = true;
+            appliedMountedPlatformExternalVelocity = false;
             
             // Parent player to platform
             player.SetParent(platform.PlatformObject.transform, true);
+            mountedPlayerLocalPosition = player.localPosition;
+            mountedPlayerLocalRotation = player.localRotation;
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserPlatformController), $"[CleanserPlatforms] Player mounted on platform.");
@@ -756,12 +836,19 @@ namespace EnemyBehavior.Boss.Cleanser
             if (mountedPlayer == null)
                 return;
 
+            TryClearMountedPlatformExternalVelocity();
+
             // Restore original parent
             mountedPlayer.SetParent(originalPlayerParent);
             
             mountedPlayer = null;
             mountedPlatform = null;
             originalPlayerParent = null;
+            mountedPlayerLocalPosition = Vector3.zero;
+            mountedPlayerLocalRotation = Quaternion.identity;
+            mountedPlatformLastWorldPos = Vector3.zero;
+            hasMountedPlatformMotionSample = false;
+            appliedMountedPlatformExternalVelocity = false;
             mountedLastInsideTime = 0f;
             
 #if UNITY_EDITOR
@@ -850,6 +937,25 @@ namespace EnemyBehavior.Boss.Cleanser
                     Gizmos.matrix = Matrix4x4.identity;
                 }
             }
+        }
+
+        private void TryClearMountedPlatformExternalVelocity(PlayerMovement cachedMovement = null)
+        {
+            if (!appliedMountedPlatformExternalVelocity)
+                return;
+
+            PlayerMovement movement = cachedMovement;
+            if (movement == null && mountedPlayer != null)
+            {
+                movement = mountedPlayer.GetComponent<PlayerMovement>()
+                    ?? mountedPlayer.GetComponentInChildren<PlayerMovement>()
+                    ?? mountedPlayer.GetComponentInParent<PlayerMovement>();
+            }
+
+            if (movement != null)
+                movement.ClearExternalVelocity();
+
+            appliedMountedPlatformExternalVelocity = false;
         }
 
         private void DrawGizmoCircle(Vector3 center, float radius, int segments)
