@@ -139,7 +139,7 @@ public class AudioSettings : MonoBehaviour
 
     private void UpdateMusicBoxVolumes()
     {
-        MusicBox[] musicBoxes = FindObjectsOfType<MusicBox>();
+        MusicBox[] musicBoxes = FindObjectsByType<MusicBox>(FindObjectsSortMode.None);
         foreach (MusicBox box in musicBoxes)
         {
             box.UpdateCachedVolumes();

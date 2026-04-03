@@ -36,7 +36,7 @@ public class BoxerEnemy : BaseEnemy<EnemyState, EnemyTrigger>
         }
     }
 
-    protected virtual void Start()
+    protected new virtual void Start()
     {
         InitializeStateMachine(EnemyState.Idle);
         ConfigureStateMachine();

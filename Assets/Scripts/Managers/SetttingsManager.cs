@@ -8,6 +8,7 @@ using UnityEngine;
 using Singletons;
 using System.Collections.Generic;
 using Unity.Cinemachine;
+using UnityEngine.SceneManagement;
 
 public class SettingsManager : Singleton<SettingsManager>
 {
@@ -22,6 +23,21 @@ public class SettingsManager : Singleton<SettingsManager>
 
     [SerializeField] private float defaultSens = 1.5f;
     [SerializeField] private float defaultRumble = 0.5f;
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += ReapplyFPSLimit;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= ReapplyFPSLimit;
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+    }
 
     private void Start()
     {
@@ -50,6 +66,11 @@ public class SettingsManager : Singleton<SettingsManager>
         UpdatePlayerCameraSens(sensitivity);
         UpdatePlayerInvertY(invertY);
         pendingCameraInputApply = false;
+    }
+
+    public void ReapplyFPSLimit(Scene scene, LoadSceneMode mode)
+    {
+        Application.targetFrameRate = PlayerPrefs.GetInt("masterFPS", 60);
     }
 
     internal void UpdatePlayerCameraSens(float newSensitivity)

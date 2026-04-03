@@ -26,6 +26,9 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
     [Header("References")]
     [SerializeField] private CharacterController playerController;
 
+    [Header("SFX")]
+    [SerializeField] private AudioClip rotationSFX;
+    [SerializeField] private AudioClip rotationCompleteSFX;
     private Quaternion originLocalRotation;
     private Quaternion rotatedLocalRotation;
     private Quaternion targetLocalRotation;
@@ -138,6 +141,12 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
     private IEnumerator RotateOverTime(Quaternion startRotation, Quaternion endRotation, float duration)
     {
         float elapsed = 0f;
+        // Play the rotation SFX once at the start
+        if (rotationSFX != null)
+        {
+            SoundManager.Instance.sfxSource.clip = rotationSFX;
+            SoundManager.Instance.sfxSource.Play();
+        }
         while (elapsed < duration)
         {
             transform.localRotation = Quaternion.Slerp(startRotation, endRotation, elapsed / duration);
@@ -150,8 +159,11 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
         }
         transform.localRotation = endRotation;
         isRotating = false;
+        SoundManager.Instance.sfxSource.Stop();
+        SoundManager.Instance.sfxSource.PlayOneShot(rotationCompleteSFX);
         ParentPlayerToPlatform(false);
     }
+
 
     private void RotatePlayerWithPlatform()
     {

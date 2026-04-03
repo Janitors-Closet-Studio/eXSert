@@ -262,6 +262,8 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Update()
     {
+        EnsureAttackStateConsistency();
+
         if (ShouldIgnoreAttackInput())
         {
             ClearBufferedAttack();
@@ -282,6 +284,37 @@ public class PlayerAttackManager : MonoBehaviour
         // Stance swapping removed.
         // if (InputReader.ChangeStanceTriggered)
         //     TryChangeStance();
+    }
+
+    private void EnsureAttackStateConsistency()
+    {
+        if (currentAttack == null)
+        {
+            if (InputReader.inputBusy && !CombatManager.isGuarding && !CombatManager.isParrying)
+            {
+                Debug.LogWarning("[PlayerAttackManager] Recovered orphaned inputBusy state with no active attack.");
+                InputReader.inputBusy = false;
+                animationController?.ResetAnimatorSpeed();
+                playerMovement?.SuppressLocomotionAnimations(false);
+                playerMovement?.ForceLocomotionRefresh();
+            }
+
+            return;
+        }
+
+        if (InputReader.inputBusy)
+            return;
+
+        if (plungeRecoveryRoutine != null)
+            return;
+
+        Debug.LogWarning("[PlayerAttackManager] Recovered stale attack state while input was unlocked.");
+        currentAttack = null;
+        currentAttackDamageMultiplier = 1f;
+        currentAttackSpeedMultiplier = 1f;
+        animationController?.ResetAnimatorSpeed();
+        playerMovement?.SuppressLocomotionAnimations(false);
+        playerMovement?.ForceLocomotionRefresh();
     }
 
     private void HandleGuardStateAttacks()

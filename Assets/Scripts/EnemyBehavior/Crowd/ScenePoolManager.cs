@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 using UnityEngine.AI;
 
 namespace EnemyBehavior.Crowd
@@ -22,6 +23,7 @@ namespace EnemyBehavior.Crowd
             [Tooltip("How many instances to pre-instantiate at scene load (8–16 typical). Prewarm reduces runtime hitches by avoiding instantiation during combat.")]
             public int Prewarm = 8;
         }
+#pragma warning restore CS0414
 
         [Tooltip("Pools for boss adds (drones and basic crawlers). Use only in the boss scene. Prewarm 8–16 recommended.")]
         public List<Pool> Pools = new List<Pool>();

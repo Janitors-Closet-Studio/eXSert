@@ -1,4 +1,5 @@
 using UnityEngine;
+#pragma warning disable CS0414
 
 namespace EnemyBehavior
 {
@@ -24,10 +25,11 @@ namespace EnemyBehavior
         void Start()
         {
 #if UNITY_EDITOR
-            if (RequirePathRequestManager && FindObjectOfType<EnemyBehavior.Pathfinding.PathRequestManager>() == null)
+            if (RequirePathRequestManager && FindFirstObjectByType<EnemyBehavior.Pathfinding.PathRequestManager>() == null)
             {
                 EnemyBehaviorDebugLogBools.LogWarning(nameof(SceneBootstrap), "[Bootstrap] PathRequestManager not found in scene.");
             }
+#pragma warning restore CS0414
             if (RequireDensityGrid && EnemyBehavior.Density.DensityGrid.Instance == null)
             {
                 EnemyBehaviorDebugLogBools.LogWarning(nameof(SceneBootstrap), "[Bootstrap] DensityGrid not found or not initialized in scene.");

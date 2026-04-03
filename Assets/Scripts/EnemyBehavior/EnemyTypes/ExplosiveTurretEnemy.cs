@@ -4,6 +4,7 @@
 
 using System.Collections;
 using UnityEngine;
+#pragma warning disable CS0414
 
 // [RequireComponent(typeof(MeshRenderer))]
 public class ExplosiveTurretEnemy : BaseTurretEnemy
@@ -29,6 +30,7 @@ public class ExplosiveTurretEnemy : BaseTurretEnemy
 		{
 			return false;
 		}
+#pragma warning restore CS0414
 
 		return base.TryFireTriggerByName(triggerName);
 	}

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 
 namespace EnemyBehavior.Crowd
 {
@@ -27,6 +28,7 @@ namespace EnemyBehavior.Crowd
                 Destroy(gameObject);
                 return;
             }
+#pragma warning restore CS0414
             Instance = this;
         }
 
