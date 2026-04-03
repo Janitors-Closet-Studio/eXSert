@@ -112,6 +112,8 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private PlayerAttackManager attackManager;
     [Tooltip("Player movement that receives jump event callbacks.")]
     [SerializeField] private PlayerMovement playerMovement;
+    [Tooltip("Player health manager that receives dash i-frame animation window callbacks.")]
+    [SerializeField] private PlayerHealthBarManager playerHealth;
     [Tooltip("Optional: log animation event invocations for debugging.")]
     [SerializeField] private bool logAnimationEvents = false;
 
@@ -141,6 +143,13 @@ public class PlayerAnimationController : MonoBehaviour
             playerMovement = GetComponent<PlayerMovement>()
                 ?? GetComponentInParent<PlayerMovement>()
                 ?? GetComponentInChildren<PlayerMovement>();
+        }
+
+        if (playerHealth == null)
+        {
+            playerHealth = GetComponent<PlayerHealthBarManager>()
+                ?? GetComponentInParent<PlayerHealthBarManager>()
+                ?? GetComponentInChildren<PlayerHealthBarManager>();
         }
 
         if (animator != null)
@@ -441,6 +450,22 @@ public class PlayerAnimationController : MonoBehaviour
             Debug.Log("[PlayerAnimationController] Jump invoked");
 
         playerMovement?.HandleAnimationJumpEvent();
+    }
+
+    public void StartDashInvincibility()
+    {
+        if (logAnimationEvents)
+            Debug.Log("[PlayerAnimationController] StartDashInvincibility invoked");
+
+        playerHealth?.BeginDashInvincibilityWindow();
+    }
+
+    public void EndDashInvincibility()
+    {
+        if (logAnimationEvents)
+            Debug.Log("[PlayerAnimationController] EndDashInvincibility invoked");
+
+        playerHealth?.EndDashInvincibilityWindow();
     }
 
     // Legacy event names kept to avoid missing-method errors on existing clips

@@ -67,8 +67,6 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [Header("Defense")]
     [SerializeField, Tooltip("When enabled, dashing grants brief invincibility (i-frames).")]
     private bool enableDashInvincibility = true;
-    [SerializeField, Range(0f, 1f), Tooltip("Real-time seconds of invincibility granted as soon as a dash starts.")]
-    private float dashInvincibilitySeconds = 0.35f;
 
     [Header("References")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -104,7 +102,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool deathInputLockOwned;
     private bool waitingForRespawnHeal;
     private bool suppressNextFlinch;
-    private float invincibleUntilUnscaledTime;
+    private bool dashInvincibilityActive;
     private float defaultMaxHealth;
     private float defaultCurrentHealth;
 
@@ -148,10 +146,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Player.RespawnPlayer += HandleRespawnRequested;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
-        if (playerMovement != null)
-        {
-            playerMovement.DashPerformed += HandleDashPerformed;
-        }
+        dashInvincibilityActive = false;
     }
     private void OnDisable() 
     { 
@@ -161,10 +156,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         LoadingScreenController.OnLoadingScreenShown -= HandleLoadingScreenShown;
         waitingForRespawnHeal = false;
 
-        if (playerMovement != null)
-        {
-            playerMovement.DashPerformed -= HandleDashPerformed;
-        }
+        dashInvincibilityActive = false;
     }
     #endregion
 
@@ -325,24 +317,22 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         suppressNextFlinch = true;
     }
 
-    private void HandleDashPerformed()
+    public void BeginDashInvincibilityWindow()
     {
         if (!enableDashInvincibility)
             return;
 
-        if (dashInvincibilitySeconds <= 0f)
-            return;
+        dashInvincibilityActive = true;
+    }
 
-        float until = Time.unscaledTime + dashInvincibilitySeconds;
-        if (until > invincibleUntilUnscaledTime)
-        {
-            invincibleUntilUnscaledTime = until;
-        }
+    public void EndDashInvincibilityWindow()
+    {
+        dashInvincibilityActive = false;
     }
 
     private bool IsTemporarilyInvincible()
     {
-        return Time.unscaledTime < invincibleUntilUnscaledTime;
+        return dashInvincibilityActive;
     }
 
     public void LoadData(GameData data)
