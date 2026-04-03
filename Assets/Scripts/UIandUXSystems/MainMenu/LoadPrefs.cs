@@ -52,6 +52,7 @@ public class LoadPrefs : MonoBehaviour
         graphics = settingsManager.GetComponent<GraphicsSettings>();
         general = settingsManager.GetComponent<GeneralSettings>();
     }
+#pragma warning restore CS0414
 
     private void Start()
     {

@@ -7935,6 +7935,9 @@ MonoBehaviour:
   attackMovementSpeedMultiplier: 0.5
   maxAttackTurnAngleWhileAttacking: 50
   reduceAttackTurningAfterLandingHit: 1
+  enableIdleRecoverySafeguard: 1
+  idleRecoveryDelay: 0.2
+  idleRecoveryHorizontalSpeedThreshold: 0.08
   postHitMaxAttackTurnAngle: 10
   postHitTurnReductionDuration: 0.22
   freezeAttackFacingAnchorAfterHit: 1
@@ -8015,6 +8018,14 @@ MonoBehaviour:
   wallDamageMax: 5
   launcherJumpVelocity: 6
   launcherForwardVelocity: 2.5
+  plungeLandingPushRadius: 2.25
+  plungeEnemyPushDistance: 1.1
+  plungeCleanserPushbackMultiplier: 0.45
+  plungePlayerSlideDistance: 0.8
+  plungeImpactRayDistance: 8
+  plungeEnemyPushMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   invertYAxis: 0
   highFallHeightThreshold: 6
   highFallGroundProbeDistance: 25

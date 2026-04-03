@@ -80,7 +80,7 @@ public class DiaryManager : Singleton<DiaryManager>
         return diaries;
     }
 
-    private void OnApplicationQuit()
+    private new void OnApplicationQuit()
     {
         foreach (Diaries diaries in diaryMap.Values)
         {
@@ -121,7 +121,7 @@ public class DiaryManager : Singleton<DiaryManager>
                 diary.info.isFound = false; // Always start as not found if no saved data
             }
         }
-        catch (System.Exception e)
+        catch (System.Exception)
         {
             diary = new Diaries(diaryInfo);
             diary.info.isFound = false;

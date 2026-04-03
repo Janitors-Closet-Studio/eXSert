@@ -82,6 +82,19 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Per-platform bob frequency range (cycles per second).")]
         public Vector2 PlatformBobFrequencyRange = new Vector2(0.6f, 1.4f);
 
+        [Header("Exit Motion")]
+        [Tooltip("Orbit speed multiplier applied while platforms are exiting after a completed ultimate.")]
+        [Min(1f)] public float ExitOrbitSpeedMultiplier = 2.5f;
+
+        [Tooltip("How far outward platforms move (as a multiplier of OrbitRadius) while exiting after a completed ultimate.")]
+        [Min(1f)] public float ExitOutwardRadiusMultiplier = 1.7f;
+
+        [Tooltip("Orbit speed multiplier applied while platforms are exiting after an aerial-canceled ultimate.")]
+        [Min(1f)] public float CanceledExitOrbitSpeedMultiplier = 3.5f;
+
+        [Tooltip("How far outward platforms move (as a multiplier of OrbitRadius) while exiting after an aerial-canceled ultimate.")]
+        [Min(1f)] public float CanceledExitOutwardRadiusMultiplier = 2.3f;
+
         [Header("Player Mounting")]
         [Tooltip("Layer mask for detecting the player.")]
         public LayerMask PlayerLayerMask;
@@ -382,7 +395,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <summary>
         /// Lowers all platforms back to rest position.
         /// </summary>
-        public void LowerPlatforms()
+        public void LowerPlatforms(bool canceledByAerial = false)
         {
             if (!platformsActive)
                 return;
@@ -399,7 +412,7 @@ namespace EnemyBehavior.Boss.Cleanser
             if (riseCoroutine != null)
                 StopCoroutine(riseCoroutine);
                 
-            riseCoroutine = StartCoroutine(LowerPlatformsCoroutine());
+            riseCoroutine = StartCoroutine(LowerPlatformsCoroutine(canceledByAerial));
         }
 
         private IEnumerator RisePlatformsCoroutine()
@@ -483,7 +496,7 @@ namespace EnemyBehavior.Boss.Cleanser
 #endif
         }
 
-        private IEnumerator LowerPlatformsCoroutine()
+        private IEnumerator LowerPlatformsCoroutine(bool canceledByAerial)
         {
             // Spawn VFX
             if (LowerVFXPrefab != null && OrbitCenter != null)
@@ -501,10 +514,18 @@ namespace EnemyBehavior.Boss.Cleanser
                     : Vector3.zero);
             }
 
+            float speedMultiplier = canceledByAerial
+                ? Mathf.Max(1f, CanceledExitOrbitSpeedMultiplier)
+                : Mathf.Max(1f, ExitOrbitSpeedMultiplier);
+            float outwardMultiplier = canceledByAerial
+                ? Mathf.Max(1f, CanceledExitOutwardRadiusMultiplier)
+                : Mathf.Max(1f, ExitOutwardRadiusMultiplier);
+
             while (elapsed < RiseTime)
             {
                 elapsed += Time.deltaTime;
                 float t = RiseCurve.Evaluate(elapsed / RiseTime);
+                Vector3 centerPos = OrbitCenter != null ? OrbitCenter.position : transform.position;
 
                 for (int i = 0; i < Platforms.Count; i++)
                 {
@@ -512,11 +533,32 @@ namespace EnemyBehavior.Boss.Cleanser
                     if (platform?.PlatformObject == null)
                         continue;
 
-                    platform.PlatformObject.transform.position = Vector3.Lerp(
-                        startPositions[i],
-                        platform.RestPosition,
-                        t
-                    );
+                    float dt = Time.deltaTime;
+                    platform.CurrentAngle += OrbitSpeed * speedMultiplier * dt;
+                    if (platform.CurrentAngle >= 360f)
+                        platform.CurrentAngle -= 360f;
+
+                    float radius = Mathf.Lerp(OrbitRadius, OrbitRadius * outwardMultiplier, t);
+                    float rad = platform.CurrentAngle * Mathf.Deg2Rad;
+                    Vector3 outwardPos = new Vector3(
+                        centerPos.x + Mathf.Cos(rad) * radius,
+                        Mathf.Lerp(startPositions[i].y, platform.RestPosition.y, t),
+                        centerPos.z + Mathf.Sin(rad) * radius);
+
+                    if (useConfiguredScenePlatforms)
+                    {
+                        float returnBlend = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((t - 0.45f) / 0.55f));
+                        platform.PlatformObject.transform.position = Vector3.Lerp(outwardPos, platform.RestPosition, returnBlend);
+                    }
+                    else
+                    {
+                        platform.PlatformObject.transform.position = outwardPos;
+                    }
+
+                    Vector3 lookDir = (centerPos - platform.PlatformObject.transform.position).normalized;
+                    lookDir.y = 0f;
+                    if (lookDir.sqrMagnitude > 0.001f)
+                        platform.PlatformObject.transform.forward = lookDir;
                 }
 
                 yield return null;
@@ -528,10 +570,13 @@ namespace EnemyBehavior.Boss.Cleanser
                 var platform = Platforms[i];
                 if (platform?.PlatformObject == null)
                     continue;
-                    
-                platform.PlatformObject.transform.position = platform.RestPosition;
-                platform.PlatformObject.transform.rotation = platform.RestRotation;
-                platform.IsRisen = false;
+
+                if (useConfiguredScenePlatforms)
+                {
+                    platform.PlatformObject.transform.position = platform.RestPosition;
+                    platform.PlatformObject.transform.rotation = platform.RestRotation;
+                    platform.IsRisen = false;
+                }
 
                 if (!useConfiguredScenePlatforms && platform.IsRuntimeInstantiated)
                 {
@@ -540,6 +585,10 @@ namespace EnemyBehavior.Boss.Cleanser
                     platform.PlatformCollider = null;
                     platform.MountCheckCollider = null;
                     platform.IsRuntimeInstantiated = false;
+                }
+                else
+                {
+                    platform.IsRisen = false;
                 }
             }
 

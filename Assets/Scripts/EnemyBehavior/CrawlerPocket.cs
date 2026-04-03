@@ -77,6 +77,7 @@ public class CrawlerPocket : MonoBehaviour
                 else
                     prefabCounts[prefab] = 1;
             }
+#pragma warning restore CS0414
 
             inactiveCrawlers.Clear();
             foreach (var kvp in prefabCounts)

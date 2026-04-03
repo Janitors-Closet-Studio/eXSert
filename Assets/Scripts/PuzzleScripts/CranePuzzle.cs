@@ -409,7 +409,7 @@ public class CranePuzzle : PuzzlePart
         if (pm != null)
             return pm;
 
-        return FindObjectOfType<PlayerMovement>();
+        return FindFirstObjectByType<PlayerMovement>();
     }
 
     private PlayerAnimationController FindPlayerAnimationController(GameObject player)
@@ -429,7 +429,7 @@ public class CranePuzzle : PuzzlePart
         if (animationController != null)
             return animationController;
 
-        return FindObjectOfType<PlayerAnimationController>();
+        return FindFirstObjectByType<PlayerAnimationController>();
     }
 
     protected void SetPuzzleCamera(CinemachineCamera camera)
@@ -975,7 +975,7 @@ public class CranePuzzle : PuzzlePart
 
     private void DisableInteractUIDuringPuzzle()
     {
-        var ui = FindObjectOfType<InteractionUI>(true);
+        var ui = FindFirstObjectByType<InteractionUI>(FindObjectsInactive.Include);
         if (ui == null)
             return;
 
@@ -988,7 +988,7 @@ public class CranePuzzle : PuzzlePart
 
     private void EnableInteractUIAfterPuzzle()
     {
-        var ui = FindObjectOfType<InteractionUI>(true);
+        var ui = FindFirstObjectByType<InteractionUI>(FindObjectsInactive.Include);
         if (ui == null)
             return;
 

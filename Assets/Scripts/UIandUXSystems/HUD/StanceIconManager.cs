@@ -198,6 +198,6 @@ public class StanceIconManager : MonoBehaviour
         if (combatIdleController != null)
             return;
 
-        combatIdleController = FindObjectOfType<PlayerCombatIdleController>(true);
+        combatIdleController = FindFirstObjectByType<PlayerCombatIdleController>(FindObjectsInactive.Include);
     }
 }
