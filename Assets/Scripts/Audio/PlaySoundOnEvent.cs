@@ -1,4 +1,5 @@
 using UnityEngine;
+#pragma warning disable CS0414
 
 /// <summary>
 /// Simple helper component to play a sound when an event is triggered.
@@ -25,6 +26,7 @@ public class PlaySoundOnEvent : MonoBehaviour
     {
         audioSource = GetComponent<AudioSource>();
     }
+#pragma warning restore CS0414
     
     /// <summary>
     /// Call this from UnityEvents to play the assigned sound clip.

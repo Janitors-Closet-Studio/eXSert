@@ -3,6 +3,7 @@
 // Works with: BaseEnemy, CrowdAgent, NavMeshAgent settings, planners for hinting.
 
 using UnityEngine;
+#pragma warning disable CS0414
 
 [CreateAssetMenu(menuName = "AI/EnemyBehaviorProfile")]
 public sealed class EnemyBehaviorProfile : ScriptableObject
@@ -55,4 +56,5 @@ public sealed class EnemyBehaviorProfile : ScriptableObject
         if (AvoidCrowds) h |= PlannerHints.AvoidCrowds;
         return h;
     }
+#pragma warning restore CS0414
 }

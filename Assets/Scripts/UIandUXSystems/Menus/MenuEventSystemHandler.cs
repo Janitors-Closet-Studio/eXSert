@@ -97,7 +97,7 @@ public class MenuEventSystemHandler : MonoBehaviour
         // Ensure there's an EventSystem to use. When scenes load, EventSystem.current can be null for a frame.
         if (EventSystem.current == null)
         {
-            EventSystem found = FindObjectOfType<EventSystem>();
+            EventSystem found = FindFirstObjectByType<EventSystem>();
             if (found != null)
                 EventSystem.current = found;
         }

@@ -1,4 +1,5 @@
 using UnityEngine;
+#pragma warning disable CS0414
 using System.Collections.Generic;
 using System.Collections;
 
@@ -37,6 +38,7 @@ public class SwarmManager : MonoBehaviour
             Destroy(this.gameObject);
             return;
         }
+#pragma warning restore CS0414
         Instance = this;
 
         // Use PlayerPresenceManager if available

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 using UnityEngine.AI;
 
 namespace EnemyBehavior.Crowd
@@ -56,6 +57,7 @@ namespace EnemyBehavior.Crowd
             breadcrumbs.Clear();
             breadcrumbs.Add(lastCrumb);
         }
+#pragma warning restore CS0414
 
         void OnEnable()
         {

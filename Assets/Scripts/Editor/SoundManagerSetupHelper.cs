@@ -11,7 +11,7 @@ public class SoundManagerSetupHelper : MonoBehaviour
     static void SetupSoundManager()
     {
         // Check if SoundManager already exists
-        SoundManager existing = FindObjectOfType<SoundManager>();
+        SoundManager existing = FindFirstObjectByType<SoundManager>();
         if (existing != null)
         {
             Debug.LogWarning("SoundManager already exists in scene! Select it to configure manually.");

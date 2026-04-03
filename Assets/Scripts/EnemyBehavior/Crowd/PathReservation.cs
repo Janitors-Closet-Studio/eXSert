@@ -30,6 +30,7 @@ namespace EnemyBehavior.Crowd
         {
             agent = GetComponent<NavMeshAgent>();
         }
+#pragma warning restore CS0414
 
         void Update()
         {

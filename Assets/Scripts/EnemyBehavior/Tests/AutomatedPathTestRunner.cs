@@ -133,7 +133,6 @@ public class AutomatedPathTestRunner : MonoBehaviour
  return false;
  }
  Vector3 sampleGround = leg.transform.position + new Vector3(-6f,0f,0f);
- Vector3 start;
  if (!NavMesh.SamplePosition(sampleGround, out NavMeshHit hs,2f, NavMesh.AllAreas))
  {
  log = "Elevated: could not sample ground start";

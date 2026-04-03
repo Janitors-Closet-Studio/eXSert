@@ -1,4 +1,5 @@
 using UnityEngine;
+#pragma warning disable CS0414
 using System.Collections;
 using System.Collections.Generic; 
 using UnityEngine.Serialization;
@@ -20,6 +21,7 @@ public class OneWayDoor : DoorHandler
                 sceneA = a;
                 sceneB = b;
             }
+#pragma warning restore CS0414
             else
             {
                 sceneA = b;

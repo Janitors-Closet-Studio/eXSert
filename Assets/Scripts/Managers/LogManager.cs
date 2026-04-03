@@ -34,6 +34,7 @@ public class LogManager : Singleton<LogManager>
         {
             PlayerPrefs.DeleteKey(logInfo.logID);
         }
+#pragma warning restore CS0414
     }
 
 
@@ -107,7 +108,7 @@ public class LogManager : Singleton<LogManager>
         return logs;
     }
 
-    private void OnApplicationQuit()
+    private new void OnApplicationQuit()
     {
         foreach (Logs log in logMap.Values)
         {
@@ -159,7 +160,7 @@ public class LogManager : Singleton<LogManager>
                 log = new Logs(logInfo);
             }
         }
-        catch (System.Exception e)
+        catch (System.Exception)
         {
             log = new Logs(logInfo);
         }

@@ -10,6 +10,7 @@ using UnityEngine.AI;
 using UnityEngine.Serialization;
 using Utilities.Combat;
 using Managers.TimeLord; // For pause event handling
+#pragma warning disable CS0414
 
 namespace EnemyBehavior.Boss.Cleanser
 {
@@ -55,6 +56,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 float max = Mathf.Max(min, range.y);
                 return Random.Range(min, max);
             }
+#pragma warning restore CS0414
         }
 
         [Header("Component Help")]
@@ -458,7 +460,19 @@ namespace EnemyBehavior.Boss.Cleanser
             // During dedicated ultimate hover phase, player damage pauses the resolution timer briefly.
             if (isInUltimateHoverPhase && finalDamage > 0f)
             {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(
+                    nameof(CleanserBrain),
+                    $"[Cleanser] LoseHP during ultimate hover. damage={damage:F2}, finalDamage={finalDamage:F2}, pauseTimerBefore={ultimateHoverPauseTimer:F2}, fullComboRequired={UltimateSettings.FullAerialComboRequired}, canceledByAerial={ultimateCanceledByAerial}");
+#endif
+                OnAerialHitReceived();
                 ultimateHoverPauseTimer = Mathf.Max(ultimateHoverPauseTimer, UltimateSettings.HoverTimerPauseOnDamage);
+
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(
+                    nameof(CleanserBrain),
+                    $"[Cleanser] Hover pause timer updated to {ultimateHoverPauseTimer:F2}s (HoverTimerPauseOnDamage={UltimateSettings.HoverTimerPauseOnDamage:F2}, AerialHitDelay={UltimateSettings.AerialHitDelay:F2}).");
+#endif
             }
 
             // Notify aggression system that player hit the boss
@@ -3326,7 +3340,7 @@ namespace EnemyBehavior.Boss.Cleanser
             
             if (platformController != null)
             {
-                platformController.LowerPlatforms();
+                platformController.LowerPlatforms(canceled);
             }
             
             if (!canceled)
@@ -3348,6 +3362,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 {
                     aggressionSystem.OnUltimateCanceled();
                 }
+
+                yield return ExecuteCanceledUltimateCrashDown();
                 
                 yield return ApplyStun(AerialFinisherStunDuration);
             }
@@ -3600,6 +3616,42 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return new WaitForSeconds(1f);
         }
 
+        private IEnumerator ExecuteCanceledUltimateCrashDown()
+        {
+            Vector3 startPos = transform.position;
+            Vector3 targetPos = startPos;
+
+            if (agent != null && NavMesh.SamplePosition(startPos, out NavMeshHit navHit, 8f, NavMesh.AllAreas))
+            {
+                targetPos.y = navHit.position.y;
+            }
+            else if (ultimateArenaCenterPoint != null)
+            {
+                targetPos.y = ultimateArenaCenterPoint.position.y;
+            }
+
+            if (agent != null)
+                agent.enabled = false;
+
+            const float crashDuration = 0.25f;
+            float elapsed = 0f;
+            while (elapsed < crashDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / crashDuration;
+                transform.position = Vector3.Lerp(startPos, targetPos, t * t);
+                yield return null;
+            }
+
+            transform.position = targetPos;
+
+            if (agent != null)
+            {
+                agent.enabled = true;
+                agent.Warp(targetPos);
+            }
+        }
+
         private void CheckMassiveStrikeHit()
         {
             if (player == null) return;
@@ -3686,10 +3738,32 @@ namespace EnemyBehavior.Boss.Cleanser
 
         public void OnAerialHitReceived()
         {
-            if (!isExecutingUltimate || !isInUltimateHoverPhase) return;
+            if (!isExecutingUltimate || !isInUltimateHoverPhase)
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(
+                    nameof(CleanserBrain),
+                    $"[Cleanser] OnAerialHitReceived ignored. isExecutingUltimate={isExecutingUltimate}, isInUltimateHoverPhase={isInUltimateHoverPhase}");
+#endif
+                return;
+            }
 
             bool fullComboHit = WasHitByFullAerialComboPlungeFinisher();
             bool cancelAllowed = !UltimateSettings.FullAerialComboRequired || fullComboHit;
+
+#if UNITY_EDITOR
+            AerialComboManager aerialCombo = player != null
+                ? (player.GetComponent<AerialComboManager>()
+                   ?? player.GetComponentInParent<AerialComboManager>()
+                   ?? player.GetComponentInChildren<AerialComboManager>())
+                : null;
+            int fastCount = aerialCombo != null ? aerialCombo.AerialFastCount : -1;
+            bool usedHeavy = aerialCombo != null && aerialCombo.HasUsedAerialHeavy;
+            EnemyBehaviorDebugLogBools.Log(
+                nameof(CleanserBrain),
+                $"[Cleanser] OnAerialHitReceived evaluation: fullComboRequired={UltimateSettings.FullAerialComboRequired}, fullComboHit={fullComboHit}, cancelAllowed={cancelAllowed}, AerialFastCount={fastCount}, HasUsedAerialHeavy={usedHeavy}, canceledByAerialBefore={ultimateCanceledByAerial}");
+#endif
+
             if (!cancelAllowed)
             {
 #if UNITY_EDITOR
@@ -3708,17 +3782,37 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool WasHitByFullAerialComboPlungeFinisher()
         {
             if (player == null)
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Full-combo check failed: player transform is null.");
+#endif
                 return false;
+
+            }
 
             AerialComboManager aerialCombo = player.GetComponent<AerialComboManager>()
                 ?? player.GetComponentInParent<AerialComboManager>()
                 ?? player.GetComponentInChildren<AerialComboManager>();
 
             if (aerialCombo == null)
+            {
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Full-combo check failed: AerialComboManager not found on player hierarchy.");
+#endif
                 return false;
 
+            }
+
             // Full aerial combo requirement: player used heavy (plunge) and had built at least 2 aerial fast hits.
-            return aerialCombo.HasUsedAerialHeavy && aerialCombo.AerialFastCount >= 2;
+            bool fullCombo = aerialCombo.HasUsedAerialHeavy && aerialCombo.AerialFastCount >= 2;
+
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(
+                nameof(CleanserBrain),
+                $"[Cleanser] Full-combo check: HasUsedAerialHeavy={aerialCombo.HasUsedAerialHeavy}, AerialFastCount={aerialCombo.AerialFastCount}, result={fullCombo}");
+#endif
+
+            return fullCombo;
         }
 
         #endregion
@@ -3784,7 +3878,7 @@ namespace EnemyBehavior.Boss.Cleanser
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                agent.SetDestination(player.position);
+                TrySetDestinationSafe(player.position);
                 yield return null;
             }
         }
@@ -3802,7 +3896,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 Vector3 awayDir = (transform.position - player.position).normalized;
                 Vector3 targetPos = transform.position + awayDir * 3f;
                 
-                agent.SetDestination(targetPos);
+                TrySetDestinationSafe(targetPos);
                 yield return null;
             }
         }
@@ -3828,7 +3922,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 // Face player while strafing
                 transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
                 
-                agent.SetDestination(targetPos);
+                TrySetDestinationSafe(targetPos);
                 yield return null;
             }
 
@@ -3868,6 +3962,15 @@ namespace EnemyBehavior.Boss.Cleanser
             // Change direction only when player's motion clearly indicates circling direction.
             if (Mathf.Abs(lateralSign) >= 0.15f)
                 currentStrafeDirection = Mathf.Sign(lateralSign);
+        }
+
+        private bool TrySetDestinationSafe(Vector3 destination)
+        {
+            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+                return false;
+
+            agent.SetDestination(destination);
+            return true;
         }
 
         private IEnumerator FaceTarget(Transform target, float duration)
