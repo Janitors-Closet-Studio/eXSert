@@ -106,6 +106,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool suppressNextFlinch;
     private bool dashInvincibilityActive;
     private float dashInvincibilityFailsafeUntilUnscaledTime;
+    private bool attackManagerDisabledByDeath;
     private float defaultMaxHealth;
     private float defaultCurrentHealth;
 
@@ -493,16 +494,35 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     private IEnumerator DeathSequenceRoutine(bool playDeathAnimation)
     {
+        if (attackManager != null && attackManager.enabled)
+        {
+            attackManager.enabled = false;
+            attackManagerDisabledByDeath = true;
+        }
+
         playerMovement?.EnterDeathState();
         AcquireDeathInputLock();
         if(playDeathAnimation) animationController?.PlayDeath();
 
         yield return WaitForDeathFadeTiming(playDeathAnimation);
 
-        if (restartFromCheckpointOnDeath) Player.TriggerRespawn();
+        bool canRespawnAtCheckpoint = CheckpointBehavior.currentCheckpoint != null || PlayerMovement.IsTestingOrDebugMode;
 
+        if (restartFromCheckpointOnDeath && canRespawnAtCheckpoint)
+        {
+            Player.TriggerRespawn();
+        }
         else if (destroyPlayerOnDeath)
+        {
             Destroy(gameObject);
+        }
+        else if (restartFromCheckpointOnDeath && !canRespawnAtCheckpoint)
+        {
+            animationController?.FreezeCurrentPose();
+            Debug.LogWarning("[PlayerHealthBarManager] Player is dead with no active checkpoint. Holding final death pose.");
+            deathSequenceRoutine = null;
+            yield break;
+        }
 
         ReleaseDeathSequenceLocks();
         deathSequenceRoutine = null;
@@ -539,6 +559,13 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         }
 
         ReleaseDeathSequenceLocks();
+
+        if (attackManagerDisabledByDeath && attackManager != null)
+        {
+            attackManager.enabled = true;
+            attackManagerDisabledByDeath = false;
+        }
+
         playerMovement?.ExitDeathState();
     }
 

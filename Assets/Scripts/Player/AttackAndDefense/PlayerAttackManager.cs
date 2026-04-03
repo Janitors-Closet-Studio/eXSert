@@ -14,6 +14,7 @@ public class PlayerAttackManager : MonoBehaviour
     [SerializeField] private AttackDatabase attackDatabase;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private PlayerHealthBarManager playerHealth;
     [SerializeField] private AttackLockSystem attackLockSystem;
     [SerializeField, Tooltip("Registry of VFX anchor points on the player rig.")]
     private PlayerVfxAnchorRegistry vfxAnchorRegistry;
@@ -192,6 +193,7 @@ public class PlayerAttackManager : MonoBehaviour
         aerialComboManager ??= GetComponent<AerialComboManager>() ?? GetComponentInChildren<AerialComboManager>() ?? GetComponentInParent<AerialComboManager>();
         characterController ??= GetComponent<CharacterController>();
         playerMovement ??= GetComponent<PlayerMovement>() ?? GetComponentInChildren<PlayerMovement>() ?? GetComponentInParent<PlayerMovement>();
+        playerHealth ??= GetComponent<PlayerHealthBarManager>() ?? GetComponentInChildren<PlayerHealthBarManager>() ?? GetComponentInParent<PlayerHealthBarManager>();
         attackLockSystem ??= GetComponent<AttackLockSystem>() ?? GetComponentInChildren<AttackLockSystem>() ?? GetComponentInParent<AttackLockSystem>();
         vfxAnchorRegistry ??= GetComponent<PlayerVfxAnchorRegistry>() ?? GetComponentInChildren<PlayerVfxAnchorRegistry>() ?? GetComponentInParent<PlayerVfxAnchorRegistry>();
 
@@ -1175,6 +1177,9 @@ public class PlayerAttackManager : MonoBehaviour
 
     private bool ShouldIgnoreAttackInput()
     {
+        if (playerHealth != null && playerHealth.IsDead)
+            return true;
+
         if (InputReader.IsGameplayInputBlocked)
             return true;
 

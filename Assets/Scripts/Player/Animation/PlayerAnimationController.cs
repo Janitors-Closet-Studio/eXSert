@@ -172,6 +172,14 @@ public class PlayerAnimationController : MonoBehaviour
         animator.speed = 1f;
     }
 
+    public void FreezeCurrentPose()
+    {
+        if (animator == null)
+            return;
+
+        animator.speed = 0f;
+    }
+
     public void PlayIdle() => CrossFade(PlayerAnim.SingleTarget.Breathing);
 
     public void PlaySingleTargetBreathing(float transition = -1f) => CrossFade(PlayerAnim.SingleTarget.Breathing, transition);
