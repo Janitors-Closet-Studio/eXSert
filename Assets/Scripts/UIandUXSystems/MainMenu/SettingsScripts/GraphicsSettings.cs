@@ -80,6 +80,7 @@ public class GraphicsSettings : MonoBehaviour
         isResolution1920x1080 = PlayerPrefs.GetInt("masterResolution", 0) == 0;
         SetResolution(isResolution1920x1080 ? "1920x1080" : "2560x1440");
     }
+#pragma warning restore CS0414
 
     private void OnEnable()
     {

@@ -269,7 +269,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         if (playerMovement != null)
             return playerMovement;
 
-        return FindObjectOfType<PlayerMovement>();
+        return FindFirstObjectByType<PlayerMovement>();
     }
 
     private PlayerAnimationController FindPlayerAnimationController(GameObject player)
@@ -289,7 +289,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         if (animationController != null)
             return animationController;
 
-        return FindObjectOfType<PlayerAnimationController>();
+        return FindFirstObjectByType<PlayerAnimationController>();
     }
 
     private void DisablePlayerMovement()
@@ -327,7 +327,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
     private void DisableInteractUIDuringMenu()
     {
-        var ui = FindObjectOfType<InteractionUI>(true);
+        var ui = FindFirstObjectByType<InteractionUI>(FindObjectsInactive.Include);
         if (ui == null)
             return;
 

@@ -54,7 +54,7 @@ public class KeybindIconSwapper : MonoBehaviour
     /// </summary>
     public static void RefreshAllIcons()
     {
-        var swappers = FindObjectsOfType<KeybindIconSwapper>(true);
+        var swappers = FindObjectsByType<KeybindIconSwapper>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var swapper in swappers)
         {
             swapper.RefreshIcon();

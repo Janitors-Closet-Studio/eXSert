@@ -3688,7 +3688,7 @@ Transform:
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
   m_LocalRotation: {x: -0.074003056, y: -0.0019012393, z: 0.00014108462, w: -0.9972562}
-  m_LocalPosition: {x: 0.02042398, y: 1.9387524, z: -3.4486911}
+  m_LocalPosition: {x: 0.020424338, y: 1.9387524, z: -3.4486911}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5483,22 +5483,22 @@ MonoBehaviour:
   blockAttackForwardMoveWhenEnemyNear: 1
   blockAttackForwardMoveDuringSoftLockMotion: 1
   attackForwardMoveBlockDistance: 1.25
-  attackForwardMoveBlockAngle: 80
+  attackForwardMoveBlockAngle: 150
   debugPlungeDamage: 1
   debugPlungeDamageInitialized: 1
   attackAudioSource: {fileID: 0}
   inputBufferWindow: 0.25
-  globalAttackSpeedMultiplier: 1
+  globalAttackSpeedMultiplier: 1.5
   sx1SpeedMultiplier: 1
   sx2SpeedMultiplier: 1
   sx3SpeedMultiplier: 1
   sx4SpeedMultiplier: 1
   sx5SpeedMultiplier: 1
-  ay1SpeedMultiplier: 1
-  ay2SpeedMultiplier: 1
+  ay1SpeedMultiplier: 1.2
+  ay2SpeedMultiplier: 1.2
   ay3SpeedMultiplier: 1
-  acX1SpeedMultiplier: 1
-  acX2SpeedMultiplier: 1
+  acX1SpeedMultiplier: 0.6
+  acX2SpeedMultiplier: 0.6
   plungeSpeedMultiplier: 1
   airDashAttackSpeedMultiplier: 1
   launcherSpeedMultiplier: 1
@@ -5519,7 +5519,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae0fdc9f4ec4d7340a63fc7aaa26a9e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TierComboManager
-  comboResetTime: 1.5
+  comboResetTime: 0.5
   debugMode: 0
   attackDatabase: {fileID: 11400000, guid: 5faf74d628b25214ca871b83ff4b455d, type: 2}
 --- !u!114 &5206229162919500938
@@ -5607,7 +5607,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b19dc608cef71d4da470f1474716616, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AttackLockSystem
-  lockOnAngle: 30
+  lockOnAngle: 120
   lockOnDistance: 10
   player: {fileID: 3646038222488559394}
   playerMovement: {fileID: 6150044602222399215}
@@ -5641,7 +5641,7 @@ MonoBehaviour:
   cameraManager: {fileID: 5480205498155007657}
   rotatePlayerIfCameraDisabled: 0
   maxHorizontalLeanAngle: 10
-  maxVerticalLeanAngle: 15
+  maxVerticalLeanAngle: 5
   invertVerticalLean: 0
   leanResponseSpeed: 2
   leanReturnTime: 0.15
@@ -7922,9 +7922,9 @@ MonoBehaviour:
   sprintSpeed: 5
   joystickWalkThreshold: 0.9
   startInJog: 1
-  allowAnalogWalkWhileStartInJog: 0
-  sprintDelaySeconds: 2
-  sprintSpeedRampRate: 10
+  allowAnalogWalkWhileStartInJog: 1
+  sprintDelaySeconds: 0.2
+  sprintSpeedRampRate: 6
   friction: 10
   inputReleaseGrace: 0.08
   allowMovementWhileAttacking: 1
@@ -7932,9 +7932,12 @@ MonoBehaviour:
   disableAttackMovementAfterSingleTargetHit: 1
   disableAttackMovementAfterAerialHit: 0
   keepAttackMovementForAoeAttacks: 1
-  attackMovementSpeedMultiplier: 1
+  attackMovementSpeedMultiplier: 0.5
   maxAttackTurnAngleWhileAttacking: 50
   reduceAttackTurningAfterLandingHit: 1
+  enableIdleRecoverySafeguard: 1
+  idleRecoveryDelay: 0.2
+  idleRecoveryHorizontalSpeedThreshold: 0.08
   postHitMaxAttackTurnAngle: 10
   postHitTurnReductionDuration: 0.22
   freezeAttackFacingAnchorAfterHit: 1
@@ -7974,7 +7977,7 @@ MonoBehaviour:
   plungeAssistHorizontalSpeed: 13
   aerialAssistVerticalSpeed: 10
   lightAerialAssistTargetYOffset: 0
-  plungeAssistTargetYOffset: 0.75
+  plungeAssistTargetYOffset: 3
   aerialAssistVelocityBlendRate: 30
   aerialTargetAssistStopDistance: 0.8
   aerialLightAssistDurationMultiplier: 1
@@ -7991,14 +7994,14 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   dashDistance: 3
-  dashDuration: 0.2
+  dashDuration: 0.25
   dashAnimationTransition: 0.08
   airDashAnimationTransition: 0.08
-  maxDashCharges: 2
+  maxDashCharges: 3
   dashChainDelay: 0.15
-  dashCoolDown: 0.5
-  dashMomentumCarryPercent: 0.3
-  dashMomentumMaxBonusSpeed: 1.5
+  dashCoolDown: 0.7
+  dashMomentumCarryPercent: 0.5
+  dashMomentumMaxBonusSpeed: 4
   dashMomentumDecayRate: 14
   defaultExternalStunDuration: 0.35
   enableKnockbackWallCollision: 1
@@ -8015,6 +8018,14 @@ MonoBehaviour:
   wallDamageMax: 5
   launcherJumpVelocity: 6
   launcherForwardVelocity: 2.5
+  plungeLandingPushRadius: 2.25
+  plungeEnemyPushDistance: 1.1
+  plungeCleanserPushbackMultiplier: 0.45
+  plungePlayerSlideDistance: 0.8
+  plungeImpactRayDistance: 8
+  plungeEnemyPushMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   invertYAxis: 0
   highFallHeightThreshold: 6
   highFallGroundProbeDistance: 25

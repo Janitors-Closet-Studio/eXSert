@@ -1,4 +1,5 @@
 using UnityEngine;
+#pragma warning disable CS0414
 
 namespace EnemyBehavior.Boss
 {
@@ -41,6 +42,7 @@ namespace EnemyBehavior.Boss
             var col = GetComponent<Collider>();
             col.isTrigger = true;
         }
+#pragma warning restore CS0414
 
         private void OnValidate()
         {

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 
 public class DroneSwarmManager : MonoBehaviour
 {
@@ -32,6 +33,7 @@ public class DroneSwarmManager : MonoBehaviour
 
         SpawnClusters();
     }
+#pragma warning restore CS0414
 
     public void SpawnClusters()
     {

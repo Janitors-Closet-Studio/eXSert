@@ -21,10 +21,12 @@ Handles player movement and saves/loads player position
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 using Unity.Cinemachine;
 using UnityEngine.InputSystem;
 using Utilities.Combat;
 using Utilities.Combat.Attacks;
+#pragma warning disable CS0414
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -41,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
         {
             return s_instance != null && s_instance.IsGroundedNow();
         }
+#pragma warning restore CS0414
     }
 
     public static bool isDashingFlag {get; private set; }
@@ -117,6 +120,14 @@ public class PlayerMovement : MonoBehaviour
     private float maxAttackTurnAngleWhileAttacking = 50f;
     [SerializeField, Tooltip("When enabled, landing an attack temporarily reduces how much the player can turn while attacking.")]
     private bool reduceAttackTurningAfterLandingHit = true;
+
+    [Header("Animation Safeguards")]
+    [SerializeField, Tooltip("If enabled, forcibly recovers to idle when locomotion animation gets stuck while player is grounded and not moving.")]
+    private bool enableIdleRecoverySafeguard = true;
+    [SerializeField, Range(0.05f, 1f), Tooltip("How long the player must be grounded with no effective movement before idle recovery is forced.")]
+    private float idleRecoveryDelay = 0.2f;
+    [SerializeField, Range(0.01f, 0.3f), Tooltip("Maximum horizontal velocity magnitude considered as standing still for idle recovery.")]
+    private float idleRecoveryHorizontalSpeedThreshold = 0.08f;
     [SerializeField, Range(0f, 180f), Tooltip("Max turn angle allowed while the post-hit turn-reduction window is active.")]
     private float postHitMaxAttackTurnAngle = 10f;
     [SerializeField, Range(0f, 1f), Tooltip("How long post-hit turn reduction remains active.")]
@@ -311,6 +322,20 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Range(0f, 10f)]
     private float launcherForwardVelocity = 2.5f;
 
+    [Header("Plunge Landing Separation")]
+    [SerializeField, Tooltip("Radius around plunge impact point used to find enemies to push outward.")]
+    [Range(0f, 8f)] private float plungeLandingPushRadius = 2.25f;
+    [SerializeField, Tooltip("Horizontal distance normal enemies are displaced away from the plunge impact point.")]
+    [Range(0f, 4f)] private float plungeEnemyPushDistance = 1.1f;
+    [SerializeField, Tooltip("Multiplier applied to Cleanser pushback distance relative to normal plunge enemy push distance.")]
+    [Range(0f, 1f)] private float plungeCleanserPushbackMultiplier = 0.45f;
+    [SerializeField, Tooltip("How far the player is slid away from nearby enemies on plunge landing to avoid ending up on top of them.")]
+    [Range(0f, 3f)] private float plungePlayerSlideDistance = 0.8f;
+    [SerializeField, Tooltip("Maximum downward raycast distance when resolving plunge impact point.")]
+    [Range(0.5f, 20f)] private float plungeImpactRayDistance = 8f;
+    [SerializeField, Tooltip("Layer mask used for finding enemies near plunge impact.")]
+    private LayerMask plungeEnemyPushMask = ~0;
+
     [Header("Camera Settings")]
     [SerializeField] bool invertYAxis = false;
 
@@ -386,6 +411,10 @@ public class PlayerMovement : MonoBehaviour
     private bool debugLastLocomotionSuppressed;
     private bool debugLastDashing;
     private PendingJumpType debugLastPendingJump = PendingJumpType.None;
+    private float noInputGroundedTimer;
+    private bool idleRecoveryAppliedThisWindow;
+    private readonly Collider[] plungeEnemyPushBuffer = new Collider[32];
+    private readonly int[] plungeProcessedEnemyIds = new int[32];
     private bool warnedMissingSoundSource;
     private Vector3 dashCarryVelocity = Vector3.zero;
     private bool attackFacingLockInitialized;
@@ -808,6 +837,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (hasMovementInput)
         {
+            noInputGroundedTimer = 0f;
+            idleRecoveryAppliedThisWindow = false;
+
             bool stateChanged = UpdateMoveState(usingAnalogThresholds, inputMagnitude);
 
             Vector3 moveDirection = (forward * inputMove.y + right * inputMove.x).normalized;
@@ -867,7 +899,155 @@ public class PlayerMovement : MonoBehaviour
                 if (!hasCombatIdleController)
                     animationController?.PlayIdle();
             }
+
+            TryApplyIdleRecoverySafeguard(attackMovementActive);
         }
+    }
+
+    private void TryApplyIdleRecoverySafeguard(bool attackMovementActive)
+    {
+        if (!enableIdleRecoverySafeguard)
+            return;
+
+        if (animationController == null)
+            return;
+
+        bool grounded = IsGroundedNow();
+        if (!grounded || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackMovementActive)
+        {
+            noInputGroundedTimer = 0f;
+            idleRecoveryAppliedThisWindow = false;
+            return;
+        }
+
+        if (InputReader.inputBusy)
+            return;
+
+        float horizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+        if (horizontalSpeed > idleRecoveryHorizontalSpeedThreshold)
+        {
+            noInputGroundedTimer = 0f;
+            idleRecoveryAppliedThisWindow = false;
+            return;
+        }
+
+        noInputGroundedTimer += Time.deltaTime;
+        if (idleRecoveryAppliedThisWindow || noInputGroundedTimer < idleRecoveryDelay)
+            return;
+
+        if (locomotionAnimationSuppressed)
+            SuppressLocomotionAnimations(false);
+
+        animationController.PlayIdle();
+        idleRecoveryAppliedThisWindow = true;
+
+        DebugMovementLog($"Idle recovery safeguard applied. grounded={grounded}, horizontalSpeed={horizontalSpeed:F3}, noInputGroundedTimer={noInputGroundedTimer:F2}");
+    }
+
+    private void ApplyPlungeLandingSeparation()
+    {
+        if (plungeLandingPushRadius <= 0f || plungeEnemyPushDistance <= 0f || characterController == null)
+            return;
+
+        Vector3 impactPoint = transform.position;
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+        if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit groundHit, plungeImpactRayDistance, layerMask, QueryTriggerInteraction.Ignore))
+            impactPoint = groundHit.point;
+
+        int enemyCount = Physics.OverlapSphereNonAlloc(
+            impactPoint,
+            plungeLandingPushRadius,
+            plungeEnemyPushBuffer,
+            plungeEnemyPushMask,
+            QueryTriggerInteraction.Ignore);
+
+        if (enemyCount <= 0)
+            return;
+
+        int processedCount = 0;
+        Vector3 playerSlideDirectionAccum = Vector3.zero;
+
+        for (int i = 0; i < enemyCount; i++)
+        {
+            Collider col = plungeEnemyPushBuffer[i];
+            if (col == null)
+                continue;
+
+            BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
+            if (enemy == null || !enemy.isAlive)
+                continue;
+
+            int enemyId = enemy.GetInstanceID();
+            bool alreadyProcessed = false;
+            for (int j = 0; j < processedCount; j++)
+            {
+                if (plungeProcessedEnemyIds[j] == enemyId)
+                {
+                    alreadyProcessed = true;
+                    break;
+                }
+            }
+            if (alreadyProcessed)
+                continue;
+
+            if (processedCount < plungeProcessedEnemyIds.Length)
+                plungeProcessedEnemyIds[processedCount++] = enemyId;
+
+            Transform enemyTransform = enemy.transform;
+            Vector3 away = enemyTransform.position - impactPoint;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f)
+                away = enemyTransform.forward;
+            if (away.sqrMagnitude < 0.0001f)
+                away = (enemyTransform.position - transform.position);
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.0001f)
+                away = Vector3.forward;
+
+            Vector3 pushDir = away.normalized;
+
+            float pushDistance = plungeEnemyPushDistance;
+            bool isCleanser = enemy.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
+            if (isCleanser)
+                pushDistance *= Mathf.Clamp01(plungeCleanserPushbackMultiplier);
+
+            ApplyEnemyPlungePush(enemyTransform, pushDir * pushDistance);
+            playerSlideDirectionAccum += -pushDir;
+        }
+
+        if (playerSlideDirectionAccum.sqrMagnitude > 0.0001f && plungePlayerSlideDistance > 0f)
+        {
+            Vector3 slide = playerSlideDirectionAccum.normalized * plungePlayerSlideDistance;
+            slide.y = 0f;
+            characterController.Move(slide);
+        }
+    }
+
+    private static void ApplyEnemyPlungePush(Transform enemyTransform, Vector3 displacement)
+    {
+        if (enemyTransform == null || displacement.sqrMagnitude < 0.000001f)
+            return;
+
+        NavMeshAgent enemyAgent = enemyTransform.GetComponentInParent<NavMeshAgent>();
+        if (enemyAgent != null && enemyAgent.enabled && enemyAgent.isOnNavMesh)
+        {
+            Vector3 target = enemyTransform.position + displacement;
+            if (NavMesh.SamplePosition(target, out NavMeshHit navHit, 2f, NavMesh.AllAreas))
+                enemyAgent.Warp(navHit.position);
+            else
+                enemyAgent.Move(displacement);
+
+            return;
+        }
+
+        Rigidbody rb = enemyTransform.GetComponentInParent<Rigidbody>();
+        if (rb != null && !rb.isKinematic)
+        {
+            rb.AddForce(displacement, ForceMode.VelocityChange);
+            return;
+        }
+
+        enemyTransform.position += displacement;
     }
 
     private void EnsureCombatIdleControllerReference()
@@ -1639,7 +1819,8 @@ public class PlayerMovement : MonoBehaviour
             if (enemy == null || !enemy.isAlive)
                 continue;
 
-            Vector3 toEnemy = enemy.transform.position - transform.position;
+            Transform candidateTarget = col.transform != null ? col.transform : enemy.transform;
+            Vector3 toEnemy = candidateTarget.position - transform.position;
             Vector3 toEnemyFlat = new Vector3(toEnemy.x, 0f, toEnemy.z);
             if (toEnemyFlat.sqrMagnitude <= 0.0001f)
                 continue;
@@ -1680,7 +1861,7 @@ public class PlayerMovement : MonoBehaviour
                     takeCandidate = true;
                 else if (Mathf.Approximately(viewportScore, bestViewportScore) && prioritizeHigherAerialTargets)
                 {
-                    float heightDelta = enemy.transform.position.y - transform.position.y;
+                    float heightDelta = candidateTarget.position.y - transform.position.y;
                     if (heightDelta > bestHeightDelta + 0.02f)
                         takeCandidate = true;
                     else if (Mathf.Abs(heightDelta - bestHeightDelta) <= 0.02f && sqrDistance < bestSqrDistance)
@@ -1693,7 +1874,7 @@ public class PlayerMovement : MonoBehaviour
             }
             else if (prioritizeHigherAerialTargets)
             {
-                float heightDelta = enemy.transform.position.y - transform.position.y;
+                float heightDelta = candidateTarget.position.y - transform.position.y;
                 if (heightDelta > bestHeightDelta + 0.02f)
                     takeCandidate = true;
                 else if (Mathf.Abs(heightDelta - bestHeightDelta) <= 0.02f && sqrDistance < bestSqrDistance)
@@ -1707,10 +1888,10 @@ public class PlayerMovement : MonoBehaviour
             if (takeCandidate)
             {
                 bestSqrDistance = sqrDistance;
-                bestHeightDelta = enemy.transform.position.y - transform.position.y;
+                bestHeightDelta = candidateTarget.position.y - transform.position.y;
                 bestIsDrone = isDrone;
                 bestViewportScore = viewportScore;
-                target = enemy.transform;
+                target = candidateTarget;
             }
         }
 
@@ -1823,6 +2004,9 @@ public class PlayerMovement : MonoBehaviour
 
             if (landedFromPlunge)
                 StartPlungeJumpLock();
+
+            if (landedFromPlunge)
+                ApplyPlungeLandingSeparation();
 
             if (landedFromPlunge)
             {

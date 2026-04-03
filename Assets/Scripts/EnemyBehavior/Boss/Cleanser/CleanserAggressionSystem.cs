@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 using Utilities.Combat;
 
 namespace EnemyBehavior.Boss.Cleanser
@@ -23,6 +24,7 @@ namespace EnemyBehavior.Boss.Cleanser
         Level4 = 4,  // 61-80: Aggressive pursuit
         Level5 = 5   // 81-100: Relentless assault
     }
+#pragma warning restore CS0414
 
     /// <summary>
     /// Configuration for counter chance at different aggression levels and stack states.

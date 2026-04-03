@@ -70,7 +70,7 @@ public class ComboProgressionUIController : MonoBehaviour
 
         PlayerAttackManager.OnAttack += HandleAttack;
         if (tierComboManager == null)
-            tierComboManager = FindObjectOfType<TierComboManager>(true);
+            tierComboManager = FindFirstObjectByType<TierComboManager>(FindObjectsInactive.Include);
 
         if (tierComboManager != null)
         {
