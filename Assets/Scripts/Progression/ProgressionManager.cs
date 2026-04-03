@@ -11,6 +11,7 @@ using Singletons;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 using UIandUXSystems.HUD;
 
 namespace Progression
@@ -86,6 +87,7 @@ namespace Progression
 
             if (usePrewarmer) PrewarmEnemies();
         }
+#pragma warning restore CS0414
 
         private void Start()
         {

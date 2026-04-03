@@ -222,6 +222,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             InteractionUI interactionUI = GetInteractionUIIfAvailable();
             if (interactionUI == null)
                 return;
+            // Set this as the current interactable
+            interactionUI.currentInteractable = this;
             if (interactionUI._interactText != null && interactable)
             {
                 interactionUI._interactText.gameObject.SetActive(true);
@@ -238,7 +240,12 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (other.transform.root.CompareTag("Player"))
         {
             isPlayerNearby = false;
-            GetInteractionUIIfAvailable()?.HideInteractPrompt();
+            var interactionUI = GetInteractionUIIfAvailable();
+            // Only hide the prompt if this is the current interactable
+            if (interactionUI != null && interactionUI.currentInteractable == this)
+            {
+                interactionUI.HideInteractPrompt();
+            }
         }
     }
 

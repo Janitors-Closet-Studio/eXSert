@@ -173,9 +173,9 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayAoeIdleWorld(float transition = -1f) => CrossFade(PlayerAnim.AreaOfEffect.IdleWorld, transition);
     public void PlayAoeIdleCombat(float transition = -1f) => CrossFade(PlayerAnim.AreaOfEffect.IdleCombat, transition);
 
-    public void PlayWalk() => CrossFade(PlayerAnim.Locomotion.Walk);
-    public void PlayJog() => CrossFade(PlayerAnim.Locomotion.Jog);
-    public void PlaySprint() => CrossFade(PlayerAnim.Locomotion.Sprint);
+    public void PlayWalk(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Walk, -1f, forceRestart);
+    public void PlayJog(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Jog, -1f, forceRestart);
+    public void PlaySprint(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Sprint, -1f, forceRestart);
     public void PlayDash(float transition = 0.08f) => CrossFade(PlayerAnim.Locomotion.Dash, transition, true);
 
     public void PlayLocomotion(float moveAmount01)
@@ -387,6 +387,18 @@ public class PlayerAnimationController : MonoBehaviour
             normalizedTime = info.normalizedTime;
 
         return isPlaying;
+    }
+
+    public void EnsureAnimatorRuntimeHealthy()
+    {
+        if (animator == null)
+            return;
+
+        if (!animator.enabled)
+            animator.enabled = true;
+
+        if (animator.speed < 0.95f)
+            animator.speed = 1f;
     }
 
     #region Animation Event Hooks

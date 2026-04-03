@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 using UnityEngine.VFX;
 using Utilities.Combat.Attacks;
 
@@ -154,6 +155,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
         SetLeftLightsActive(false);
         SetRightLightsActive(false);
     }
+#pragma warning restore CS0414
 
     private void OnValidate()
     {

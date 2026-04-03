@@ -19,6 +19,7 @@ using System.Reflection;
 using DG.Tweening;
 using Unity.Cinemachine;
 using UnityEngine;
+#pragma warning disable CS0414
 using UnityEngine.UI;
 
 public class ReticleController : MonoBehaviour
@@ -34,6 +35,7 @@ public class ReticleController : MonoBehaviour
         Locked,
         Releasing
     }
+#pragma warning restore CS0414
 
     private struct ImageState
     {

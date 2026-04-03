@@ -54,6 +54,7 @@ namespace EnemyBehavior.Boss
         [Tooltip("Volume multiplier for this attack's SFX (0-1).")]
         [Range(0f, 1f)] public float SFXVolume = 1.0f;
     }
+#pragma warning restore CS0414
 
     [System.Serializable]
     public sealed class SidePanel

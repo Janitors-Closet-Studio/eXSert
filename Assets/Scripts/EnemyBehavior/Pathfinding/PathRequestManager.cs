@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 
 namespace EnemyBehavior.Pathfinding
 {
@@ -52,6 +53,7 @@ namespace EnemyBehavior.Pathfinding
  Destroy(gameObject);
  return;
  }
+#pragma warning restore CS0414
  Instance = this;
  // Register planners (simple defaults)
  _astar = new NavMeshAStarPlanner();
