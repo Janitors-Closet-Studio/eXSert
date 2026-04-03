@@ -14,6 +14,7 @@
 
 using UnityEngine;
 using Utilities.Combat.Attacks;
+#pragma warning disable CS0414
 
 public class AerialComboManager : MonoBehaviour
 {
@@ -65,6 +66,7 @@ public class AerialComboManager : MonoBehaviour
         pendingPlungeDamageMultiplier = 1f;
         return multiplier;
     }
+#pragma warning restore CS0414
 
     private void Awake()
     {

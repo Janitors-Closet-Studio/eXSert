@@ -7,6 +7,7 @@
 */
 using System.Collections;
 using UnityEngine;
+#pragma warning disable CS0414
 
 public class RetractableLatticeExtendPuzzle : PuzzlePart
 {
@@ -68,6 +69,7 @@ public class RetractableLatticeExtendPuzzle : PuzzlePart
             EnsureMagnetIndicator(magnetOne != null ? magnetOne.transform : null, ref magnetOneIndicator, "MagnetIndicatorOne");
             EnsureMagnetIndicator(magnetTwo != null ? magnetTwo.transform : null, ref magnetTwoIndicator, "MagnetIndicatorTwo");
         }
+#pragma warning restore CS0414
     }
 
     private void Update()

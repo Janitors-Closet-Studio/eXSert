@@ -153,7 +153,7 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
         }
     }
 
-    protected virtual void Start()
+    protected new virtual void Start()
     {
         InitializeStateMachine(AlarmCarrierState.Idle);
         ConfigureStateMachine();

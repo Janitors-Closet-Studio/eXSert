@@ -74,7 +74,7 @@ public class ShowIfYAttribute : PropertyAttribute { }
 public class ShowIfZAttribute : PropertyAttribute { }
 
 public class CranePuzzle : PuzzlePart 
-    // For mesh color logic (DoorHandler style)
+        
     
 {
     
@@ -127,6 +127,57 @@ public class CranePuzzle : PuzzlePart
     [SerializeField] private float forwardBackwardMoveSpeed = 0f;
     #endregion
 
+    #region Light Settings
+    private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+    private static readonly int LegacyColorProperty = Shader.PropertyToID("_Color");
+    private static readonly int EmissionColorProperty = Shader.PropertyToID("_EmissionColor");
+
+    private MaterialPropertyBlock lightBulbPropertyBlock;
+
+    [Header("Door Light Settings")]
+    [Tooltip("Light bulb GameObject to change color")]
+    public GameObject lightBulb;
+
+    [Tooltip("Base color of the bulb material when the door is locked.")]
+    [ColorUsage(false, true)]
+    public Color lockedLightBulbColor = DefaultLockedBulbBaseColor;
+
+    [Tooltip("Emission color of the bulb material when the door is locked.")]
+    [ColorUsage(true, true)]
+    public Color lockedLightBulbEmissionColor = DefaultLockedBulbEmissionColor;
+
+    [Tooltip("Base color of the bulb material when the door is unlocked.")]
+    [ColorUsage(false, true)]
+    public Color unlockedLightBulbColor = DefaultUnlockedBulbBaseColor;
+
+    [Tooltip("Emission color of the bulb material when the door is unlocked.")]
+    [ColorUsage(true, true)]
+    public Color unlockedLightBulbEmissionColor = DefaultUnlockedBulbEmissionColor;
+
+    [Tooltip("Light component on the door to change color")]
+    public Light doorLight;
+    [Tooltip("Color of the light when the door is locked")]
+    public Color lockedLightColor = DefaultLockedPointLightColor;
+    [Tooltip("Color of the light when the door is unlocked")]
+    public Color unlockedLightColor = DefaultUnlockedPointLightColor;
+
+    [Tooltip("Speed of the light color transition")]
+    public float lightFadeSpeed = 2f;
+
+    // Coroutine handle for light fading
+    private Coroutine lightFadeCoroutine;
+
+    // Track last light state
+    private bool isLightLocked = false;
+    
+
+    private static Color DefaultLockedBulbBaseColor => ColorFromHex("A10000");
+    private static Color DefaultLockedBulbEmissionColor => ColorFromHsv(0f, 100f, 38f);
+    private static Color DefaultLockedPointLightColor => ColorFromHex("FF1E1E");
+    private static Color DefaultUnlockedBulbBaseColor => ColorFromHex("1DC814");
+    private static Color DefaultUnlockedBulbEmissionColor => ColorFromHsv(145f, 100f, 13f);
+    private static Color DefaultUnlockedPointLightColor => ColorFromHex("44A659");
+    #endregion
 
     internal bool isMoving = false;
     private bool puzzleActive = false;
@@ -409,7 +460,7 @@ public class CranePuzzle : PuzzlePart
         if (pm != null)
             return pm;
 
-        return FindObjectOfType<PlayerMovement>();
+        return FindFirstObjectByType<PlayerMovement>();
     }
 
     private PlayerAnimationController FindPlayerAnimationController(GameObject player)
@@ -429,7 +480,7 @@ public class CranePuzzle : PuzzlePart
         if (animationController != null)
             return animationController;
 
-        return FindObjectOfType<PlayerAnimationController>();
+        return FindFirstObjectByType<PlayerAnimationController>();
     }
 
     protected void SetPuzzleCamera(CinemachineCamera camera)
@@ -644,7 +695,11 @@ public class CranePuzzle : PuzzlePart
     }
 
     public IEnumerator MoveCraneCoroutine()
+                           
+                
     {
+            
+
         while (puzzleActive && !isAutomatedMovement && !isExtending)
         {
             ReadMoveAction();
@@ -669,22 +724,54 @@ public class CranePuzzle : PuzzlePart
             }
 
 
-            // Use magnetBase for collision checks instead of craneParts[0]
+            // Get processed input for each axis (after swap/invert)
+            GetProcessedMoveInput(out float xInput, out float yInput, out float zInput);
+            bool hasInput = Mathf.Abs(xInput) > 0.01f || Mathf.Abs(yInput) > 0.01f || Mathf.Abs(zInput) > 0.01f;
+
+           
+            // Check for blocking on each axis using the processed axes
+            bool blockX = false, blockY = false, blockZ = false;
             if (magnetBase != null)
             {
-                RaycastHit forwardHit;
-                Ray forwardRay = new Ray(magnetBase.transform.position, magnetBase.transform.forward);
-                bool hasForwardHit = Physics.Raycast(forwardRay, out forwardHit, 1f, LayerMask.GetMask("Default"), QueryTriggerInteraction.Ignore);
-
-                RaycastHit backwardHit;
-                Ray backwardRay = new Ray(magnetBase.transform.position, -magnetBase.transform.forward);
-                bool hasBackwardHit = Physics.Raycast(backwardRay, out backwardHit, 1f, LayerMask.GetMask("Default"), QueryTriggerInteraction.Ignore);
-
-                if ((cachedMoveInput.y > 0.1f && hasForwardHit) || (cachedMoveInput.y < -0.1f && hasBackwardHit))
+                
+                 // Debug: print processed input and block status
+                if (hasInput)
                 {
-                    isMoving = false;
-                    yield return null;
-                    continue;
+                    Debug.Log($"[CranePuzzle] xInput: {xInput}, yInput: {yInput}, zInput: {zInput} | blockX: {blockX}, blockY: {blockY}, blockZ: {blockZ} | swapXZControls: {swapXZControls}");
+                }
+
+                Collider magnetCol = magnetBase.GetComponent<Collider>();
+                Vector3 origin = magnetBase.transform.position;
+                Quaternion orientation = magnetBase.transform.rotation;
+                Vector3 halfExtents = magnetCol != null ? magnetCol.bounds.extents : Vector3.one * 0.5f;
+                // Use both Default and Obstacle layers for blocking
+                int layerMask = LayerMask.GetMask("Default", "Obstacle");
+
+                // X axis (processed)
+                if (Mathf.Abs(xInput) > 0.01f)
+                {
+                    float tryMove = xInput * craneMoveSpeed * Time.deltaTime;
+                    Vector3 dir = magnetBase.transform.right * Mathf.Sign(xInput);
+                    float dist = Mathf.Abs(tryMove);
+                    blockX = Physics.BoxCast(origin, halfExtents, dir, out _, orientation, dist, layerMask, QueryTriggerInteraction.Ignore);
+                }
+                // Y axis (processed)
+                if (Mathf.Abs(yInput) > 0.01f)
+                {
+                    float tryMove = yInput * craneMoveSpeed * Time.deltaTime;
+                    Vector3 dir = magnetBase.transform.up * Mathf.Sign(yInput);
+                    float dist = Mathf.Abs(tryMove);
+                    blockY = Physics.BoxCast(origin, halfExtents, dir, out _, orientation, dist, layerMask, QueryTriggerInteraction.Ignore);
+                }
+                // Z axis (processed)
+                if (Mathf.Abs(zInput) > 0.01f)
+                {
+                    float tryMove = zInput * GetForwardBackwardMoveSpeed() * Time.deltaTime;
+                    Vector3 dir = magnetBase.transform.forward * Mathf.Sign(zInput);
+                    float dist = Mathf.Abs(tryMove);
+                    RaycastHit hitInfo;
+                    blockZ = Physics.BoxCast(origin, halfExtents, dir, out hitInfo, orientation, dist, layerMask, QueryTriggerInteraction.Ignore);
+                    Debug.Log($"[CranePuzzle][Z BoxCast] origin: {origin}, dir: {dir}, dist: {dist}, halfExtents: {halfExtents}, blockZ: {blockZ}, hit: {(blockZ ? hitInfo.collider?.name : "none")}");
                 }
             }
             else
@@ -693,8 +780,72 @@ public class CranePuzzle : PuzzlePart
             }
 
 
-            CraneMovement();
+            // Light logic: locked if all pressed axes are blocked, unlocked if any pressed axis is unblocked
+            // Ignore Y axis for lock logic; only X and Z
+            bool anyPressed = false;
+            bool allPressedBlocked = true;
+            if (Mathf.Abs(xInput) > 0.01f) { anyPressed = true; if (!blockX) allPressedBlocked = false; }
+            if (Mathf.Abs(zInput) > 0.01f) { anyPressed = true; if (!blockZ) allPressedBlocked = false; }
+             Debug.Log($"[CranePuzzle] anyPressed: {anyPressed}, allPressedBlocked: {allPressedBlocked}, xInput: {xInput}, yInput: {yInput}, zInput: {zInput}, blockX: {blockX}, blockY: {blockY}, blockZ: {blockZ}");
+            if (anyPressed && allPressedBlocked)
+            {
+                
+                if (!isLightLocked)
+                {
+                    Debug.Log("[CranePuzzle] Fading light to LOCKED");
+                    if (lightFadeCoroutine != null) StopCoroutine(lightFadeCoroutine);
+                    lightFadeCoroutine = StartCoroutine(FadeLightBulbColor(
+                        unlockedLightBulbColor, lockedLightBulbColor,
+                        unlockedLightBulbEmissionColor, lockedLightBulbEmissionColor,
+                        0.25f // fade quickly
+                    ));
+                    if (doorLight != null)
+                        StartCoroutine(FadeColorIntoEachother(unlockedLightColor, lockedLightColor, 0.25f));
+                    isLightLocked = true;
+                }
+            }
+            else if (anyPressed && !allPressedBlocked)
+            {
+                if (isLightLocked)
+                {
+                    Debug.Log("[CranePuzzle] Fading light to UNLOCKED");
+                    if (lightFadeCoroutine != null) StopCoroutine(lightFadeCoroutine);
+                    lightFadeCoroutine = StartCoroutine(FadeLightBulbColor(
+                        lockedLightBulbColor, unlockedLightBulbColor,
+                        lockedLightBulbEmissionColor, unlockedLightBulbEmissionColor,
+                        0.25f
+                    ));
+                    if (doorLight != null)
+                        StartCoroutine(FadeColorIntoEachother(lockedLightColor, unlockedLightColor, 0.25f));
+                    isLightLocked = false;
+                }
+            }
 
+            // Only block movement for blocked axes
+            float moveAmountX = (blockX ? 0f : xInput * craneMoveSpeed * Time.deltaTime);
+            float moveAmountY = (blockY ? 0f : yInput * craneMoveSpeed * Time.deltaTime);
+            float moveAmountZ = (blockZ ? 0f : zInput * GetForwardBackwardMoveSpeed() * Time.deltaTime);
+
+            // Move crane parts after collision/movement logic
+            for (int i = 0; i < craneParts.Count; i++)
+            {
+                CranePart part = craneParts[i];
+                if (part == null || part.partObject == null) continue;
+                Vector3 basePos = part.useWorldPosition ? part.partObject.transform.position : part.partObject.transform.localPosition;
+                Vector3 next = basePos;
+                if (part.moveX) next.x += moveAmountX;
+                if (part.moveY) next.y += moveAmountY;
+                if (part.moveZ) next.z += moveAmountZ;
+                if (part.moveX) next.x = Mathf.Clamp(next.x, part.minX, part.maxX);
+                if (part.moveY) next.y = Mathf.Clamp(next.y, part.minY, part.maxY);
+                if (part.moveZ) next.z = Mathf.Clamp(next.z, part.minZ, part.maxZ);
+                if (part.useWorldPosition)
+                    part.partObject.transform.position = next;
+                else
+                    part.partObject.transform.localPosition = next;
+            }
+
+            isMoving = hasInput && (!blockX || !blockY || !blockZ);
             yield return null;
         }
 
@@ -975,7 +1126,7 @@ public class CranePuzzle : PuzzlePart
 
     private void DisableInteractUIDuringPuzzle()
     {
-        var ui = FindObjectOfType<InteractionUI>(true);
+        var ui = FindFirstObjectByType<InteractionUI>(FindObjectsInactive.Include);
         if (ui == null)
             return;
 
@@ -988,7 +1139,7 @@ public class CranePuzzle : PuzzlePart
 
     private void EnableInteractUIAfterPuzzle()
     {
-        var ui = FindObjectOfType<InteractionUI>(true);
+        var ui = FindFirstObjectByType<InteractionUI>(FindObjectsInactive.Include);
         if (ui == null)
             return;
 
@@ -1086,6 +1237,143 @@ public class CranePuzzle : PuzzlePart
     protected virtual void CheckForConfirm(){}
 
     #endregion
+    private void StartingLightColor()
+    {
+        ApplyDoorLightState(lockedLightBulbColor, unlockedLightBulbEmissionColor, unlockedLightColor);
+    }
+
+    
+
+    internal MeshRenderer GetLightMeshRenderer()
+    {
+        if (lightBulb != null)
+        {
+            MeshRenderer meshRenderer = lightBulb.GetComponent<MeshRenderer>();
+            if (meshRenderer != null)
+            {
+                return meshRenderer;
+            }
+            else
+            {
+                Debug.LogWarning("Door light object does not have a MeshRenderer component.");
+                return null;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Door light object is not assigned.");
+            return null;
+        }
+    }
+    private IEnumerator FadeLightBulbColor(
+        Color fromBaseColor,
+        Color toBaseColor,
+        Color fromEmissionColor,
+        Color toEmissionColor,
+        float duration
+    )
+    {
+        MeshRenderer meshRenderer = GetLightMeshRenderer();
+        if (meshRenderer == null)
+            yield break;
+
+        Debug.Log($"[CranePuzzle] Starting FadeLightBulbColor: from {fromBaseColor} to {toBaseColor}, fromEmission {fromEmissionColor} toEmission {toEmissionColor}, duration {duration}");
+
+        if (duration <= 0f)
+        {
+            ApplyBulbMaterialState(meshRenderer, toBaseColor, toEmissionColor);
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            Color currentBaseColor = Color.Lerp(fromBaseColor, toBaseColor, t);
+            Color currentEmissionColor = Color.Lerp(fromEmissionColor, toEmissionColor, t);
+            Debug.Log($"[CranePuzzle] Fade step: t={t}, base={currentBaseColor}, emission={currentEmissionColor}");
+            ApplyBulbMaterialState(meshRenderer, currentBaseColor, currentEmissionColor);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        ApplyBulbMaterialState(meshRenderer, toBaseColor, toEmissionColor);
+    }
+
+    // Fade Color into eachother over time, used for light color transitions when opening/closing and locking/unlocking the door
+    private IEnumerator FadeColorIntoEachother(Color fromColor, Color toColor, float duration)
+    {
+        if (doorLight == null)
+            yield break;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            doorLight.color = Color.Lerp(fromColor, toColor, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        doorLight.color = toColor;
+    }
+
+    private void ApplyDoorLightState(Color bulbBaseColor, Color bulbEmissionColor, Color pointLightColor)
+    {
+        MeshRenderer meshRenderer = GetLightMeshRenderer();
+        if (meshRenderer != null)
+            ApplyBulbMaterialState(meshRenderer, bulbBaseColor, bulbEmissionColor);
+
+        if (doorLight != null)
+            doorLight.color = pointLightColor;
+    }
+
+    private void ApplyBulbMaterialState(MeshRenderer meshRenderer, Color baseColor, Color emissionColor)
+    {
+        if (meshRenderer == null)
+            return;
+
+        lightBulbPropertyBlock ??= new MaterialPropertyBlock();
+
+        Material[] materials = meshRenderer.sharedMaterials;
+        for (int i = 0; i < materials.Length; i++)
+        {
+            Material material = materials[i];
+            if (material == null)
+                continue;
+
+            meshRenderer.GetPropertyBlock(lightBulbPropertyBlock, i);
+
+            if (material.HasProperty(BaseColorProperty))
+                lightBulbPropertyBlock.SetColor(BaseColorProperty, baseColor);
+
+            if (material.HasProperty(LegacyColorProperty))
+                lightBulbPropertyBlock.SetColor(LegacyColorProperty, baseColor);
+
+            if (material.HasProperty(EmissionColorProperty))
+            {
+                lightBulbPropertyBlock.SetColor(EmissionColorProperty, emissionColor);
+            }
+
+            meshRenderer.SetPropertyBlock(lightBulbPropertyBlock, i);
+        }
+    }
+
+    private static Color ColorFromHex(string hex)
+    {
+        if (UnityEngine.ColorUtility.TryParseHtmlString($"#{hex}", out Color parsedColor))
+            return parsedColor;
+
+        return Color.white;
+    }
+
+    private static Color ColorFromHsv(float hueDegrees, float saturationPercent, float valuePercent, float intensity = 0f)
+    {
+        Color color = Color.HSVToRGB(hueDegrees / 360f, saturationPercent / 100f, valuePercent / 100f);
+        if (!Mathf.Approximately(intensity, 0f))
+            color *= Mathf.Pow(2f, intensity);
+
+        return color;
+    }
 
 }
 

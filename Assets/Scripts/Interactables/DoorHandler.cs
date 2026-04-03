@@ -8,6 +8,7 @@
 
 
 using UnityEngine;
+#pragma warning disable CS0414
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -36,6 +37,7 @@ public class DoorPartMovement
     public float distToOpenParts = 2.0f;
     [HideInInspector] public Vector3 closedLocalPosition;
 }
+#pragma warning restore CS0414
 public class DoorHandler : MonoBehaviour
 {
     private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");

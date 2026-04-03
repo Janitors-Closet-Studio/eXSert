@@ -13,6 +13,7 @@ namespace Utilities.Combat.Attacks
         HeavyAOE,
         HeavyAerial
     }
+#pragma warning restore CS0414
 
     [Serializable]
     [CreateAssetMenu(fileName = "Player Attack", menuName = "Attacks/Player Attack")]
