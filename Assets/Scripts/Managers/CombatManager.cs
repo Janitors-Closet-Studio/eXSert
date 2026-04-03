@@ -11,6 +11,7 @@ using Singletons;
 using System;
 using System.Collections;
 using System.ComponentModel;
+using Progression.Encounters;
 
 namespace Utilities.Combat
 {
@@ -43,6 +44,7 @@ namespace Utilities.Combat
         public static Stance currentCombatStance => singleTargetMode ? Stance.SingleTarget : Stance.AreaOfEffect;
 
         public static bool isGuarding { get; private set; } = false;
+        public static bool isInCombat { get; private set; }
 
         [SerializeField, Range(0f, 1f)] private float _parryWindow = 0.3f;
         public static bool isParrying { get; private set; } = false;
@@ -52,6 +54,25 @@ namespace Utilities.Combat
 
         // Unity Action event for successful parry for other scripts to subscribe to
         public static event Action<BaseEnemy<EnemyState, EnemyTrigger>> OnSuccessfulParry;
+        public static event Action<bool> OnInCombatChanged;
+
+        [Header("Player Combat State Tracking")]
+        [SerializeField, Range(0f, 15f)] private float combatMemoryAfterTakingDamage = 4f;
+        [SerializeField, Range(0f, 15f)] private float combatMemoryAfterDealingDamage = 4f;
+        [SerializeField, Range(0f, 40f)] private float enemyProximityRange = 8f;
+        [SerializeField, Range(0.02f, 1f)] private float enemyProximityCheckInterval = 0.15f;
+        [SerializeField, Tooltip("Layers used to detect nearby enemies for combat-state tracking.")]
+        private LayerMask enemyProximityMask = ~0;
+        [SerializeField] private bool logCombatStateDebug;
+
+        private readonly Collider[] enemyProximityHits = new Collider[32];
+        private Transform cachedPlayerTransform;
+        private float nextEnemyProximityCheckTime;
+        private bool playerNearEnemy;
+        private bool playerInActiveCombatEncounter;
+        private float lastPlayerDamagedTime = float.NegativeInfinity;
+        private float lastEnemyHitTime = float.NegativeInfinity;
+        private float nextCombatDebugLogTime;
 
         override protected void Awake()
         {
@@ -59,6 +80,45 @@ namespace Utilities.Combat
 
             // Initialize to single target mode (stance 0)
             singleTargetMode = true;
+            isInCombat = false;
+        }
+
+        private void OnEnable()
+        {
+            PlayerHealthBarManager.OnPlayerDamaged += HandlePlayerDamaged;
+            HitboxDamageManager.AttackHitConfirmed += HandleEnemyHitByPlayer;
+            CombatEncounter.EncounterCombatStateChanged += HandleEncounterCombatStateChanged;
+        }
+
+        private void OnDisable()
+        {
+            PlayerHealthBarManager.OnPlayerDamaged -= HandlePlayerDamaged;
+            HitboxDamageManager.AttackHitConfirmed -= HandleEnemyHitByPlayer;
+            CombatEncounter.EncounterCombatStateChanged -= HandleEncounterCombatStateChanged;
+            playerNearEnemy = false;
+            playerInActiveCombatEncounter = false;
+            SetInCombatState(false);
+        }
+
+        private void Update()
+        {
+            if (Time.time >= nextEnemyProximityCheckTime)
+            {
+                nextEnemyProximityCheckTime = Time.time + Mathf.Max(0.02f, enemyProximityCheckInterval);
+                playerNearEnemy = IsPlayerNearAnyLivingEnemy();
+            }
+
+            bool tookDamageRecently = Time.time - lastPlayerDamagedTime <= Mathf.Max(0f, combatMemoryAfterTakingDamage);
+            bool dealtDamageRecently = Time.time - lastEnemyHitTime <= Mathf.Max(0f, combatMemoryAfterDealingDamage);
+            bool shouldBeInCombat = tookDamageRecently || dealtDamageRecently || playerNearEnemy || playerInActiveCombatEncounter;
+
+            if (logCombatStateDebug && Time.time >= nextCombatDebugLogTime)
+            {
+                nextCombatDebugLogTime = Time.time + 0.5f;
+                Debug.Log($"[CombatManager] shouldBeInCombat={shouldBeInCombat} | tookDamageRecently={tookDamageRecently} dealtDamageRecently={dealtDamageRecently} nearEnemy={playerNearEnemy} encounterActive={playerInActiveCombatEncounter}");
+            }
+
+            SetInCombatState(shouldBeInCombat);
         }
 
         private static Coroutine parryWindowRoutine;
@@ -155,6 +215,71 @@ namespace Utilities.Combat
             {
 
             }
+        }
+
+        private void HandlePlayerDamaged(float _)
+        {
+            lastPlayerDamagedTime = Time.time;
+        }
+
+        private void HandleEnemyHitByPlayer(Utilities.Combat.Attacks.AttackType _, bool __)
+        {
+            lastEnemyHitTime = Time.time;
+        }
+
+        private void HandleEncounterCombatStateChanged(CombatEncounter _, bool isActive)
+        {
+            playerInActiveCombatEncounter = isActive;
+        }
+
+        private bool IsPlayerNearAnyLivingEnemy()
+        {
+            Transform player = ResolvePlayerTransform();
+            if (player == null)
+                return false;
+
+            float range = Mathf.Max(0f, enemyProximityRange);
+            if (range <= 0f)
+                return false;
+
+            int hitCount = Physics.OverlapSphereNonAlloc(
+                player.position,
+                range,
+                enemyProximityHits,
+                enemyProximityMask,
+                QueryTriggerInteraction.Ignore);
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider col = enemyProximityHits[i];
+                if (col == null)
+                    continue;
+
+                BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
+                if (enemy != null && enemy.isAlive)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private Transform ResolvePlayerTransform()
+        {
+            if (cachedPlayerTransform != null && cachedPlayerTransform.gameObject.activeInHierarchy)
+                return cachedPlayerTransform;
+
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+            cachedPlayerTransform = playerObj != null ? playerObj.transform : null;
+            return cachedPlayerTransform;
+        }
+
+        private static void SetInCombatState(bool value)
+        {
+            if (isInCombat == value)
+                return;
+
+            isInCombat = value;
+            OnInCombatChanged?.Invoke(isInCombat);
         }
     }
 }

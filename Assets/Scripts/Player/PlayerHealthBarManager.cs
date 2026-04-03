@@ -67,6 +67,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [Header("Defense")]
     [SerializeField, Tooltip("When enabled, dashing grants brief invincibility (i-frames).")]
     private bool enableDashInvincibility = true;
+    [SerializeField, Range(0.05f, 2f), Tooltip("Failsafe duration in case dash i-frame end animation event is missed. Set to a small value to avoid accidental permanent invulnerability.")]
+    private float dashInvincibilityFailsafeSeconds = 0.5f;
 
     [Header("References")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -103,6 +105,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool waitingForRespawnHeal;
     private bool suppressNextFlinch;
     private bool dashInvincibilityActive;
+    private float dashInvincibilityFailsafeUntilUnscaledTime;
     private float defaultMaxHealth;
     private float defaultCurrentHealth;
 
@@ -147,6 +150,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
         dashInvincibilityActive = false;
+        dashInvincibilityFailsafeUntilUnscaledTime = 0f;
     }
     private void OnDisable() 
     { 
@@ -157,6 +161,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         waitingForRespawnHeal = false;
 
         dashInvincibilityActive = false;
+        dashInvincibilityFailsafeUntilUnscaledTime = 0f;
     }
     #endregion
 
@@ -323,15 +328,23 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             return;
 
         dashInvincibilityActive = true;
+        dashInvincibilityFailsafeUntilUnscaledTime = Time.unscaledTime + Mathf.Max(0.05f, dashInvincibilityFailsafeSeconds);
     }
 
     public void EndDashInvincibilityWindow()
     {
         dashInvincibilityActive = false;
+        dashInvincibilityFailsafeUntilUnscaledTime = 0f;
     }
 
     private bool IsTemporarilyInvincible()
     {
+        if (dashInvincibilityActive && Time.unscaledTime > dashInvincibilityFailsafeUntilUnscaledTime)
+        {
+            dashInvincibilityActive = false;
+            dashInvincibilityFailsafeUntilUnscaledTime = 0f;
+        }
+
         return dashInvincibilityActive;
     }
 
@@ -379,8 +392,15 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         deathSequenceRoutine = StartCoroutine(DeathSequenceRoutine(playDeathAnimation));
 
-        if (!CutsceneManager.IsCutscenePlaying && Time.timeScale > 0f)
-            SoundManager.Instance.voiceSource.PlayOneShot(playerDeathSFX);
+        if (!CutsceneManager.IsCutscenePlaying && Time.timeScale > 0f && playerDeathSFX != null)
+        {
+            SoundManager soundManager = SoundManager.Instance;
+            AudioSource source = soundManager != null ? soundManager.voiceSource : null;
+            if (source != null)
+                source.PlayOneShot(playerDeathSFX);
+            else if (!PlayerMovement.IsTestingOrDebugMode)
+                Debug.LogError("[PlayerHealthBarManager] Cannot play death SFX because SoundManager.voiceSource is missing.");
+        }
     }
 
     private void NotifyHealthChanged()
