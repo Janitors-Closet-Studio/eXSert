@@ -38,6 +38,11 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     [SerializeField] private InputActionReference firstFloorAction;
     [SerializeField] private InputActionReference secondFloorAction;
     [SerializeField] private InputActionReference thirdFloorAction;
+
+    [Header("SFX")]
+    [SerializeField] private AudioClip elevatorSFX;
+    [SerializeField] private AudioClip elevatorStopSFX;
+
     private GameObject playerReference;
     private PlayerMovement cachedPlayerMovement;
     private PlayerAnimationController cachedPlayerAnimationController;
@@ -533,6 +538,11 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     private IEnumerator MoveLift(int targetFloor, bool carryPlayerWithLift)
     {
         TurnOffAllButtons();
+
+        SoundManager.Instance.sfxSource.clip = elevatorSFX;
+        SoundManager.Instance.sfxSource.Play();
+
+
         isMoving = true;
         Vector3 targetPosition = desiredLiftPosition[targetFloor];
         float moveSpeed = liftSpeed; // units per second
@@ -562,6 +572,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             playerReference.transform.position += finalWorldDelta;
 
         isMoving = false;
+        SoundManager.Instance.sfxSource.Stop();
+        SoundManager.Instance.sfxSource.PlayOneShot(elevatorStopSFX);
         currentFloor = targetFloor;
         if (playerCC != null)
             playerCC.enabled = true; // Re-enable CharacterController after movement
