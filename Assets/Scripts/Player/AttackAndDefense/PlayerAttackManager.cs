@@ -124,6 +124,7 @@ public class PlayerAttackManager : MonoBehaviour
     [SerializeField, Tooltip("Primary AudioSource for attack and stance SFX. Defaults to SoundManager's SFX source when unset.")]
     private AudioSource attackAudioSource;
     private AudioSource fallbackSfxSource;
+    private bool hasLoggedMissingAttackAudioSource;
     // private Coroutine stanceCooldownRoutine;
     private GameObject activeHitbox;
     private PlayerAttack currentAttack;
@@ -221,11 +222,13 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Start()
     {
-        fallbackSfxSource = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
+        fallbackSfxSource = SoundManager.Instance != null
+            ? (SoundManager.Instance.sfxSource != null ? SoundManager.Instance.sfxSource : SoundManager.Instance.voiceSource)
+            : null;
 
         if (attackAudioSource == null)
         {
-            attackAudioSource = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
+            attackAudioSource = fallbackSfxSource;
         }
 
     }
@@ -766,12 +769,40 @@ public class PlayerAttackManager : MonoBehaviour
         }
 
         var source = attackAudioSource != null ? attackAudioSource : fallbackSfxSource;
+
         if (source == null)
         {
-            if (!PlayerMovement.IsTestingOrDebugMode)
-                Debug.LogError("[PlayerAttackManager] No AudioSource available! attackAudioSource and fallbackSfxSource are both null. Check SoundManager.Instance.");
+            SoundManager soundManager = SoundManager.Instance;
+            if (soundManager != null)
+            {
+                source = soundManager.sfxSource != null ? soundManager.sfxSource : soundManager.voiceSource;
+                if (source != null)
+                {
+                    attackAudioSource = source;
+                    fallbackSfxSource = source;
+                }
+            }
+        }
+
+        if (source == null)
+        {
+            source = GetComponent<AudioSource>();
+            if (source == null)
+                source = GetComponentInChildren<AudioSource>();
+        }
+
+        if (source == null)
+        {
+            if (!hasLoggedMissingAttackAudioSource)
+            {
+                hasLoggedMissingAttackAudioSource = true;
+                if (!PlayerMovement.IsTestingOrDebugMode)
+                    Debug.LogWarning("[PlayerAttackManager] No AudioSource available for attack SFX. Assign attackAudioSource or configure SoundManager.sfxSource.");
+            }
             return;
         }
+
+        hasLoggedMissingAttackAudioSource = false;
 
         source.PlayOneShot(clip);
         Debug.Log($"[PlayerAttackManager] Playing SFX: {clip.name} on {source.gameObject.name}");

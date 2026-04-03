@@ -15,6 +15,7 @@ public class PlayerMovementEditor : Editor
     }
 
     private const string DefaultSectionName = "General";
+    private const string FoldoutPrefsPrefix = "PlayerMovementEditor.Foldout.";
     private static readonly Dictionary<string, bool> FoldoutStates = new();
     private readonly List<Section> sections = new();
 
@@ -35,11 +36,11 @@ public class PlayerMovementEditor : Editor
         for (int i = 0; i < sections.Count; i++)
         {
             Section section = sections[i];
-            if (!FoldoutStates.TryGetValue(section.Name, out bool expanded))
+            if (!TryGetFoldoutState(section.Name, out bool expanded))
                 expanded = true;
 
             expanded = EditorGUILayout.Foldout(expanded, section.Name, true, EditorStyles.foldoutHeader);
-            FoldoutStates[section.Name] = expanded;
+            SetFoldoutState(section.Name, expanded);
 
             if (!expanded)
                 continue;
@@ -107,6 +108,35 @@ public class PlayerMovementEditor : Editor
         bool isPublicSerializable = field.IsPublic && !field.IsDefined(typeof(NonSerializedAttribute), true);
 
         return hasSerializeField || isPublicSerializable;
+    }
+
+    private bool TryGetFoldoutState(string sectionName, out bool expanded)
+    {
+        if (FoldoutStates.TryGetValue(sectionName, out expanded))
+            return true;
+
+        string key = GetFoldoutPrefKey(sectionName);
+        if (!EditorPrefs.HasKey(key))
+            return false;
+
+        expanded = EditorPrefs.GetBool(key, true);
+        FoldoutStates[sectionName] = expanded;
+        return true;
+    }
+
+    private void SetFoldoutState(string sectionName, bool expanded)
+    {
+        FoldoutStates[sectionName] = expanded;
+        EditorPrefs.SetBool(GetFoldoutPrefKey(sectionName), expanded);
+    }
+
+    private string GetFoldoutPrefKey(string sectionName)
+    {
+        string cleanSection = string.IsNullOrWhiteSpace(sectionName)
+            ? DefaultSectionName
+            : sectionName.Trim();
+
+        return $"{FoldoutPrefsPrefix}{target.GetType().FullName}.{cleanSection}";
     }
 }
 #endif
