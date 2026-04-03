@@ -120,7 +120,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
         }
     }
 
-    protected virtual void OnEnable()
+    protected new virtual void OnEnable()
     {
         // Restart the coroutine if the object is re-enabled
         if (bombAvoidanceBurstCoroutine != null)
@@ -137,7 +137,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
         TryAutoRegisterWithSwarmManager();
     }
 
-    protected virtual void OnDisable()
+    protected new virtual void OnDisable()
     {
         // Optionally stop the coroutine when disabled
         if (bombAvoidanceBurstCoroutine != null)

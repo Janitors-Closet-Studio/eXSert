@@ -33,6 +33,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private float guardDamageMultiplier;
         private Vector3 startPos;
         private bool initialized;
+        private bool playerHitConsumed;
 
         private static readonly Collider[] hitBuffer = new Collider[8];
 
@@ -56,7 +57,16 @@ namespace EnemyBehavior.Boss.Cleanser
             guardDamageMultiplier = Mathf.Clamp01(guardMitigationMultiplier);
 
             startPos = transform.position;
-            transform.forward = moveDirection;
+            // Align motion direction while preserving any roll/tilt already present on the spawned rotation.
+            Vector3 currentForward = transform.forward;
+            if (currentForward.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.FromToRotation(currentForward, moveDirection) * transform.rotation;
+            }
+            else
+            {
+                transform.forward = moveDirection;
+            }
             initialized = true;
 
             if (maxLifetime > 0f)
@@ -78,11 +88,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
             }
 
-            if (TryHitPlayer())
-            {
-                Destroy(gameObject);
-                return;
-            }
+            TryHitPlayer();
 
             if (Vector3.Distance(startPos, transform.position) >= maxDistance)
             {
@@ -100,6 +106,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private bool TryHitPlayer()
         {
+            if (playerHitConsumed)
+                return false;
+
             int hitCount = Physics.OverlapSphereNonAlloc(transform.position, hitRadius, hitBuffer, playerMask, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < hitCount; i++)
             {
@@ -118,8 +127,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 {
                     if (CombatManager.isParrying)
                     {
+                        playerHitConsumed = true;
                         CombatManager.ParrySuccessful();
-                        return true;
+                        return false;
                     }
                 }
 
@@ -142,7 +152,8 @@ namespace EnemyBehavior.Boss.Cleanser
                         parentPlayerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
                 }
 
-                return true;
+                playerHitConsumed = true;
+                return false;
             }
 
             return false;

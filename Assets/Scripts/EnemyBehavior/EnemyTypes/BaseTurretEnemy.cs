@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Behaviors;
 using UnityEngine;
+#pragma warning disable CS0414
 using UnityEngine.AI;
 
 public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IProjectileShooter
@@ -125,6 +126,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             Destroy(agent);
             agent = null;
         }
+#pragma warning restore CS0414
 
         // Turn off melee attack collider for turrets
         if (attackCollider != null) attackCollider.enabled = false;
@@ -638,7 +640,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         telegraphLine.endWidth = Mathf.Max(0.001f, telegraphWidth);
     }
 
-    private void OnDisable()
+    private new void OnDisable()
     {
         if (detectLoop != null)
         {

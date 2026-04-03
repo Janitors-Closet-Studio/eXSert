@@ -6,12 +6,17 @@
 */
 
 using UnityEngine;
+using System.Collections;
 
 public class HangarPlatformExtendPuzzle : PuzzlePart
 {
     [SerializeField] private float lerpSpeed = 10f;
     [SerializeField] private Vector3 moveDirection = Vector3.right;
     [SerializeField] private float moveDistance = 1.5f;
+
+    [Header("SFX")]
+    [SerializeField] private AudioClip extendSFX;
+    [SerializeField] private AudioClip extendStopSFX;
 
     private bool isExtending = false;
     private Vector3 startPos;
@@ -48,6 +53,7 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
             targetPos = startPos + GetMoveOffset();
             isExtending = true;
             isCompleted = true;
+            StartMoveCoroutine();
         }
     }
 
@@ -60,6 +66,7 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
             targetPos = origin;
             isExtending = true;
             isCompleted = false;
+            StartMoveCoroutine();
         }
     }
 
@@ -82,10 +89,17 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
         return direction * moveDistance;
     }
 
-    // to reduce performance impact, change this to be a coroutine
-    private void Update()
+    private Coroutine moveCoroutine;
+
+    private IEnumerator MovePlatformCoroutine()
     {
-        if (isExtending)
+        if (extendSFX != null)
+        {
+            SoundManager.Instance.sfxSource.clip = extendSFX;
+            SoundManager.Instance.sfxSource.Play();
+        }
+
+        while (isExtending)
         {
             transform.localPosition = Vector3.MoveTowards(
                 transform.localPosition,
@@ -97,7 +111,29 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
             {
                 transform.localPosition = targetPos;
                 isExtending = false;
+                StopMoveCoroutine();
+                SoundManager.Instance.sfxSource.Stop();
+                SoundManager.Instance.sfxSource.PlayOneShot(extendStopSFX);
             }
+
+            yield return null;
         }
-    }   
+    }
+
+    private void StartMoveCoroutine()
+    {
+        if (moveCoroutine != null)
+            StopCoroutine(moveCoroutine);
+        moveCoroutine = StartCoroutine(MovePlatformCoroutine());
+    }
+
+    private void StopMoveCoroutine()
+    {
+        if (moveCoroutine != null)
+        {
+            StopCoroutine(moveCoroutine);
+
+            moveCoroutine = null;
+        }
+    }
 }

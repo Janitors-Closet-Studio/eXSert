@@ -21,12 +21,12 @@ public class RebindSaveLoad : MonoBehaviour
                 //Loads the rebinds if player prefs isnt null
                 actions.LoadBindingOverridesFromJson(rebinds);
             // Refresh keybind icons and UI after loading
-            UnityEngine.InputSystem.Samples.RebindUI.RebindActionUI[] rebindUIs = FindObjectsOfType<UnityEngine.InputSystem.Samples.RebindUI.RebindActionUI>(true);
+            UnityEngine.InputSystem.Samples.RebindUI.RebindActionUI[] rebindUIs = FindObjectsByType<UnityEngine.InputSystem.Samples.RebindUI.RebindActionUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var ui in rebindUIs)
             {
                 ui.UpdateBindingDisplay();
             }
-            var iconSwappers = FindObjectsOfType<KeybindIconSwapper>(true);
+            var iconSwappers = FindObjectsByType<KeybindIconSwapper>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var swapper in iconSwappers)
             {
                 swapper.RefreshIcon();

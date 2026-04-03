@@ -16,6 +16,7 @@ public enum DroneState
     Fire,
     Death
 }
+#pragma warning restore CS0414
 
 public enum DroneTrigger
 {
@@ -42,7 +43,7 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     private Renderer[] _cachedRenderers;
     private bool _lastRendererDisableState;
     
-    private void OnValidate()
+    private new void OnValidate()
     {
         // Sync renderer disable flag at runtime
         if (Application.isPlaying)
@@ -297,7 +298,7 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     }
 
 
-    private void Start()
+    private new void Start()
     {
         InitializeStateMachine(DroneState.Idle);
         ConfigureStateMachine();
@@ -975,12 +976,12 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
         projectilePool.Enqueue(proj);
     }
 
-    private void OnEnable()
+    private new void OnEnable()
     {
         InitializeProjectilePool();
     }
 
-    private void OnDisable()
+    private new void OnDisable()
     {
         StopFireTick();
         StopTickCoroutine();

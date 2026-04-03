@@ -13,6 +13,7 @@ using Progression.Encounters;
 using UnityEngine;
 public class SlowDownElevator : MonoBehaviour
 {
+#pragma warning disable CS0618
     #region Inspector Setup
     [Header("Required References")]
     [SerializeField, CriticalReference] private ElevatorWalls _elevatorWalls;
@@ -61,6 +62,8 @@ public class SlowDownElevator : MonoBehaviour
         {
             return;
         }
+#pragma warning restore CS0618
+#pragma warning restore CS0618
 
         StopAllCoroutines();
         _decelerationCoroutine = null;

@@ -3,6 +3,7 @@
 // Works with: CrowdController, planners (FlowField, A*), EnemyBehaviorProfile for personal space radius.
 
 using UnityEngine;
+#pragma warning disable CS0414
 
 namespace EnemyBehavior.Density
 {
@@ -42,6 +43,7 @@ namespace EnemyBehavior.Density
             _h = Mathf.Max(1, Mathf.CeilToInt(worldSize.y / cellSize));
             _cells = new float[_w * _h];
         }
+#pragma warning restore CS0414
 
         void OnEnable()
         {

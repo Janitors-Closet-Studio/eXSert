@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#pragma warning disable CS0414
 using Utilities.Combat;
 
 namespace EnemyBehavior.Boss.Cleanser
@@ -23,6 +24,7 @@ namespace EnemyBehavior.Boss.Cleanser
         Level4 = 4,  // 61-80: Aggressive pursuit
         Level5 = 5   // 81-100: Relentless assault
     }
+#pragma warning restore CS0414
 
     /// <summary>
     /// Configuration for counter chance at different aggression levels and stack states.
@@ -208,6 +210,14 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Value Modifiers")]
         [Tooltip("Configuration for aggression value changes based on player actions.")]
         [SerializeField] private AggressionModifierConfig modifiers = new AggressionModifierConfig();
+
+        [Header("Decay Scaling")]
+        [Tooltip("If true, idle aggression decay slows linearly as aggression rises. If false, uses normal constant decay.")]
+        [SerializeField] private bool useAggressionScaledDecay = true;
+
+        [Tooltip("Decay multiplier applied at maximum aggression when scaled decay is enabled. 0.333 means one-third normal decay at max aggression.")]
+        [Range(0.01f, 1f)]
+        [SerializeField] private float decayMultiplierAtMaxAggression = 0.3333f;
 
         [Header("Level Multipliers")]
         [Tooltip("Multipliers applied to aggression changes based on current level.")]
@@ -517,8 +527,21 @@ namespace EnemyBehavior.Boss.Cleanser
             // Constant decay over time (RemoveAggression already checks isAggressionLocked)
             if (idleTime > 0.5f)
             {
-                RemoveAggression(modifiers.IdleDecayPerSecond * Time.deltaTime);
+                float decayMultiplier = GetIdleDecayMultiplier();
+                RemoveAggression(modifiers.IdleDecayPerSecond * decayMultiplier * Time.deltaTime);
             }
+        }
+
+        private float GetIdleDecayMultiplier()
+        {
+            if (!useAggressionScaledDecay)
+                return 1f;
+
+            float minValue = minAggressionValue;
+            float maxValue = Mathf.Max(minValue + 0.0001f, maxAggressionValue);
+            float t = Mathf.InverseLerp(minValue, maxValue, aggressionValue);
+            float minMultiplier = Mathf.Clamp(decayMultiplierAtMaxAggression, 0.01f, 1f);
+            return Mathf.Lerp(1f, minMultiplier, t);
         }
 
         private void CheckForcedMaxAggression()
