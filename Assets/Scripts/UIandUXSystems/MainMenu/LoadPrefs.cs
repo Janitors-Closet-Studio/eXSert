@@ -32,14 +32,6 @@ public class LoadPrefs : MonoBehaviour
     [SerializeField] private TMP_Text comboTextValue = null;
     [SerializeField] private Slider vibrationSlider= null;
 
-    [Space(20), Header("Static Sliders")]
-    [SerializeField] private Slider staticBrightnessSlider = null;
-    [SerializeField] private Slider staticSensSlider = null;
-    [SerializeField] private Slider staticVibrationSlider = null;
-    [SerializeField] private Slider staticMasterVolumeSlider = null;
-    [SerializeField] private Slider staticMusicVolumeSlider = null;
-    [SerializeField] private Slider staticSFXVolumeSlider = null;
-    [SerializeField] private Slider staticVoiceVolumeSlider = null;
 
 
 
@@ -81,7 +73,6 @@ public class LoadPrefs : MonoBehaviour
             float masterVolume = PlayerPrefs.GetFloat("masterVolume");
             Debug.Log($"[LoadPrefs] Loading masterVolume: {masterVolume}");
             if (masterVolumeSlider) masterVolumeSlider.value = masterVolume;
-            if (staticMasterVolumeSlider) staticMasterVolumeSlider.value = masterVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.masterSource)
                 SoundManager.Instance.masterSource.volume = masterVolume;
         }
@@ -95,7 +86,6 @@ public class LoadPrefs : MonoBehaviour
             float sfxVolume = PlayerPrefs.GetFloat("sfxVolume");
             Debug.Log($"[LoadPrefs] Loading sfxVolume: {sfxVolume}");
             if (sfxVolumeSlider) sfxVolumeSlider.value = sfxVolume;
-            if (staticSFXVolumeSlider) staticSFXVolumeSlider.value = sfxVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.sfxSource)
                 SoundManager.Instance.sfxSource.volume = sfxVolume;
         }
@@ -109,7 +99,6 @@ public class LoadPrefs : MonoBehaviour
             float voiceVolume = PlayerPrefs.GetFloat("voiceVolume");
             Debug.Log($"[LoadPrefs] Loading voiceVolume: {voiceVolume}");
             if (voiceVolumeSlider) voiceVolumeSlider.value = voiceVolume;
-            if (staticVoiceVolumeSlider) staticVoiceVolumeSlider.value = voiceVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.voiceSource)
                 SoundManager.Instance.voiceSource.volume = voiceVolume;
         }
@@ -123,7 +112,6 @@ public class LoadPrefs : MonoBehaviour
             float musicVolume = PlayerPrefs.GetFloat("musicVolume");
             Debug.Log($"[LoadPrefs] Loading musicVolume: {musicVolume}");
             if (musicVolumeSlider) musicVolumeSlider.value = musicVolume;
-            if (staticMusicVolumeSlider) staticMusicVolumeSlider.value = musicVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.musicSource)
                 SoundManager.Instance.musicSource.volume = musicVolume;
         }
@@ -140,7 +128,6 @@ public class LoadPrefs : MonoBehaviour
             float localVibration = PlayerPrefs.GetFloat("masterVibrateStrength");
             Debug.Log($"[LoadPrefs] Loading masterVibrateStrength: {localVibration}");
             if (vibrationSlider) vibrationSlider.value = localVibration;
-            if (staticVibrationSlider) staticVibrationSlider.value = localVibration;
         }
         else
         {
@@ -172,7 +159,6 @@ public class LoadPrefs : MonoBehaviour
             float localSens = PlayerPrefs.GetFloat("masterSens");
             Debug.Log($"[LoadPrefs] Loading masterSens: {localSens}");
             if (sensSlider) sensSlider.value = localSens;
-            if (staticSensSlider) staticSensSlider.value = localSens;
         }
         else
         {
@@ -303,7 +289,6 @@ public class LoadPrefs : MonoBehaviour
             float localBrightness = PlayerPrefs.GetFloat("masterBrightness");
             Debug.Log($"[LoadPrefs] Loading masterBrightness: {localBrightness}");
             if (brightnessSlider) brightnessSlider.value = localBrightness;
-            if (staticBrightnessSlider) staticBrightnessSlider.value = localBrightness;
 
             float defaultBrightness = fallbackDefaultBrightness;
             if (graphics != null)

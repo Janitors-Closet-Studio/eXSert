@@ -8,6 +8,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem;
+using System.Collections;
+using Unity.VisualScripting;
 
 public class GeneralSettings : MonoBehaviour
 {
@@ -20,7 +22,11 @@ public class GeneralSettings : MonoBehaviour
 
     [Header("Sensitivity Settings")]
     [SerializeField] private Slider sensSlider = null;
-    [SerializeField] private float defaultSens = 1.5f;
+    [SerializeField] private float defaultSens;
+    [SerializeField] private float controllerSensMin = 0.1f;
+    [SerializeField] private float controllerSensMax = 3f;
+    [SerializeField] private float kbSensMin = 0.5f;
+    [SerializeField] private float kbSensMax = 5f;
 
     [Header("Vibration Settings")]
     [SerializeField] private Slider vibrationSlider = null;
@@ -42,6 +48,7 @@ public class GeneralSettings : MonoBehaviour
     {
         // Load PlayerPrefs for toggles and settings
         float savedSens = PlayerPrefs.GetFloat("masterSens", defaultSens);
+        Debug.Log($"[GeneralSettings] OnEnable: Loaded masterSens from PlayerPrefs: {savedSens}");
         if (sensSlider != null)
             sensSlider.value = savedSens;
         SettingsManager.Instance.UpdatePlayerCameraSens(savedSens);
@@ -59,21 +66,110 @@ public class GeneralSettings : MonoBehaviour
 
         if (_applyAction != null && _applyAction.action != null)
             _applyAction.action.performed += ctx => GeneralApply();
+
+    }
+
+    private void Start()
+    {
+        StartCoroutine(WaitForPlayerInput());
+        StartCoroutine(PollForSchemeChange());
+    }
+
+    private IEnumerator WaitForPlayerInput()
+    {
+        while (InputReader.PlayerInput == null)
+        {
+            Debug.Log("[GeneralSettings] Waiting for PlayerInput to be initialized...");
+            yield return null;
+        }
+        // Subscribe to control scheme changes once PlayerInput is ready
+        InputReader.PlayerInput.onControlsChanged += ChangeSensivityThresholds; 
+        ChangeSensivityThresholds(InputReader.PlayerInput); // Set initial slider range based on current control scheme
+        defaultSens = (sensSlider.minValue + sensSlider.maxValue) / 2f;
     }
 
     private void OnDisable()
     {
         if (_applyAction != null && _applyAction.action != null)
             _applyAction.action.performed -= ctx => GeneralApply();
+
+        if (InputReader.PlayerInput != null)
+            InputReader.PlayerInput.onControlsChanged -= ChangeSensivityThresholds; 
+        _stopPolling = true;
     }
 
+    private bool _stopPolling = false;
 
+    private IEnumerator PollForSchemeChange()
+    {
+        string lastScheme = null;
+        while (!_stopPolling)
+        {
+            if (InputReader.PlayerInput != null)
+            {
+                string currentScheme = InputReader.PlayerInput.currentControlScheme;
+                if (currentScheme != lastScheme)
+                {
+                    lastScheme = currentScheme;
+                    ChangeSensivityThresholds(InputReader.PlayerInput);
+                }
+            }
+            yield return new WaitForSeconds(0.1f); // Poll every 0.1s for efficiency
+        }
+    }
+
+    private void ChangeSensivityThresholds(PlayerInput input)
+    {
+        string schemeName = (input != null && input.currentControlScheme != null) ? input.currentControlScheme.Trim().ToLower() : string.Empty;
+
+        if (sensSlider == null)
+        {
+            Debug.LogError("[GeneralSettings] sensSlider is null!");
+            return;
+        }
+
+        float newMin = sensSlider.minValue;
+        float newMax = sensSlider.maxValue;
+        float newDefault = sensSlider.value;
+        if (schemeName.Contains("gamepad"))
+        {
+            newMin = controllerSensMin;
+            newMax = controllerSensMax;
+            newDefault = (controllerSensMin + controllerSensMax) / 2f;
+            Debug.Log($"[GeneralSettings] Set range for Gamepad: {controllerSensMin} - {controllerSensMax}");
+        }
+        else if (schemeName.Contains("keyboard"))
+        {
+            newMin = kbSensMin;
+            newMax = kbSensMax;
+            newDefault = (kbSensMin + kbSensMax) / 2f;
+            Debug.Log($"[GeneralSettings] Set range for Keyboard: {kbSensMin} - {kbSensMax}");
+        }
+        else
+        {
+            Debug.LogWarning($"[GeneralSettings] Unknown control scheme: '{schemeName}'");
+        }
+
+        sensSlider.minValue = newMin;
+        sensSlider.maxValue = newMax;
+        float savedSens = PlayerPrefs.HasKey("masterSens") ? PlayerPrefs.GetFloat("masterSens") : newDefault;
+        Debug.Log($"[GeneralSettings] ChangeSensivityThresholds: Loaded masterSens from PlayerPrefs: {savedSens}");
+        float clampedSens = Mathf.Clamp(savedSens, sensSlider.minValue, sensSlider.maxValue);
+        sensSlider.value = clampedSens;
+        // Force UI refresh
+        sensSlider.onValueChanged.Invoke(clampedSens);
+        SetSens(clampedSens);
+        Debug.Log($"[GeneralSettings] Scheme: {schemeName}, Set slider to: {clampedSens}, min: {sensSlider.minValue}, max: {sensSlider.maxValue}");
+        defaultSens = newDefault;
+    }
+    
     //All functions below sets values based on player choice
     public void SetSens(float sens)
     {
         SettingsManager.Instance.UpdatePlayerCameraSens(sens);
-        // Update live value; defer updating the read-only/static slider until Apply.
-        PlayerPrefs.SetFloat("masterSens", SettingsManager.Instance.sensitivity);
+        // Save the actual slider value, not the SettingsManager's field (which may not update immediately)
+        PlayerPrefs.SetFloat("masterSens", sens);
+        Debug.Log($"[GeneralSettings] SetSens: Saved masterSens to PlayerPrefs: {sens}");
     }
 
     public void SetVibration(float vibrate)
