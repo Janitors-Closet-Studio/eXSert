@@ -26,6 +26,7 @@ using Unity.Cinemachine;
 using UnityEngine.InputSystem;
 using Utilities.Combat;
 using Utilities.Combat.Attacks;
+using EnemyBehavior.Boss;
 #pragma warning disable CS0414
 
 public class PlayerMovement : MonoBehaviour
@@ -344,6 +345,14 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Tooltip("Failsafe timeout after plunge landing before forcing attack unlock if input remains busy.")]
     [Range(0.1f, 2f)] private float plungeRecoveryFailsafeSeconds = 0.9f;
 
+    [Header("Enemy Top-Surface Slide-Off")]
+    [SerializeField, Tooltip("Horizontal slide speed applied when standing on top of enemies (except Roomba).")]
+    [Range(0f, 25f)] private float enemyTopSlideOffSpeed = 9f;
+    [SerializeField, Tooltip("Extra multiplier applied while plunging to aggressively force player off enemy tops.")]
+    [Range(1f, 5f)] private float enemyTopSlideOffPlungeMultiplier = 2f;
+    [SerializeField, Tooltip("Downward probe distance used to detect enemy directly beneath the player.")]
+    [Range(0.1f, 3f)] private float enemyTopSlideProbeDistance = 1.2f;
+
     [Header("Camera Settings")]
     [SerializeField] bool invertYAxis = false;
 
@@ -428,6 +437,7 @@ public class PlayerMovement : MonoBehaviour
     private bool attackFacingLockInitialized;
     private bool waitingForPlungeRecoveryUnlock;
     private float plungeRecoveryBusyTimer;
+    private const float EnemyTopSlideMinDistanceSq = 0.0001f;
     private Vector3 attackFacingLockForward = Vector3.forward;
     private bool plungeJumpLocked;
     private Coroutine plungeJumpLockRoutine;
@@ -1118,6 +1128,42 @@ public class PlayerMovement : MonoBehaviour
             impactPoint.y = rayOrigin.y;
 
         return impactPoint;
+    }
+
+    private Vector3 GetEnemyTopSlideVelocity()
+    {
+        if (characterController == null || enemyTopSlideOffSpeed <= 0f)
+            return Vector3.zero;
+
+        if (!characterController.isGrounded && !IsGroundedNow())
+            return Vector3.zero;
+
+        Vector3 origin = characterController.bounds.center;
+        float probeDistance = Mathf.Max(0.05f, enemyTopSlideProbeDistance);
+
+        if (!Physics.Raycast(origin, Vector3.down, out RaycastHit hit, probeDistance, ~0, QueryTriggerInteraction.Ignore))
+            return Vector3.zero;
+
+        BaseEnemyCore enemy = hit.collider != null ? hit.collider.GetComponentInParent<BaseEnemyCore>() : null;
+        if (enemy == null)
+            return Vector3.zero;
+
+        if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+            return Vector3.zero;
+
+        Vector3 pushDir = transform.position - enemy.transform.position;
+        pushDir.y = 0f;
+        if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
+            pushDir = hit.normal;
+        pushDir.y = 0f;
+        if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
+            pushDir = transform.forward;
+
+        float speed = enemyTopSlideOffSpeed;
+        if (isPlunging)
+            speed *= Mathf.Max(1f, enemyTopSlideOffPlungeMultiplier);
+
+        return pushDir.normalized * speed;
     }
 
     private static void ApplyEnemyPlungePush(Transform enemyTransform, Vector3 displacement, bool allowWarp = true)
