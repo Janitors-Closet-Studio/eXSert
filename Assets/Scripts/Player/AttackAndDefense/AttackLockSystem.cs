@@ -26,6 +26,22 @@ public class AttackLockSystem : MonoBehaviour
     private float lockOnDistance = 6f;
 
     [SerializeField]
+    [Tooltip("Absolute maximum range allowed for lock-on target validation.")]
+    private float lockOnMaxRange = 12f;
+
+    [SerializeField]
+    [Tooltip("Optional model/chest/head origin for lock-on visibility raycasts. If empty, player root + height offset is used.")]
+    private Transform playerModelLockOnOrigin;
+
+    [SerializeField, Range(0f, 3f)]
+    [Tooltip("Vertical offset used when playerModelLockOnOrigin is not assigned.")]
+    private float playerLockOnRayOriginHeight = 1.2f;
+
+    [SerializeField]
+    [Tooltip("Layers considered as lock-on visibility blockers (for example walls/level geometry).")]
+    private LayerMask lockOnVisibilityBlockerMask = ~0;
+
+    [SerializeField]
     [CriticalReference]
     [Tooltip("Reference to the player GameObject (used as the search origin).")]
     private GameObject player;
@@ -248,7 +264,7 @@ public class AttackLockSystem : MonoBehaviour
             return;
         }
 
-        if (!IsTargetValid(currentTarget, lockOnDistance))
+        if (!IsTargetValid(currentTarget, GetEffectiveLockOnRange()))
         {
             Transform replacementTarget = FindBestHardLockTarget();
             if (replacementTarget == null)
@@ -647,7 +663,7 @@ public class AttackLockSystem : MonoBehaviour
     private Transform FindBestHardLockTarget()
     {
         // Hard lock only targets enemies that are currently visible in the camera view.
-        return FindScreenAlignedEnemy(lockOnDistance);
+        return FindScreenAlignedEnemy(GetEffectiveLockOnRange());
     }
 
     private Transform FindNearestEnemy(float radius, Transform ignore = null)
@@ -701,6 +717,9 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             Transform candidate = GetEnemyRoot(hit.transform);
+
+            if (!IsTargetValid(candidate, radius))
+                continue;
 
             // Skip enemies that are dying
             BaseEnemyCore enemy = candidate.GetComponent<BaseEnemyCore>();
@@ -897,7 +916,7 @@ public class AttackLockSystem : MonoBehaviour
         if (!TryGetCameraBasis(out Vector3 camForward, out Vector3 camRight) || !TryGetScreenCamera(out Camera screenCamera))
             return null;
 
-        Collider[] hits = GetEnemyHits(lockOnDistance);
+        Collider[] hits = GetEnemyHits(GetEffectiveLockOnRange());
         Transform best = null;
         float bestScore = float.MaxValue;
         float sideThreshold = 0.05f;
@@ -912,6 +931,9 @@ public class AttackLockSystem : MonoBehaviour
 
             Transform candidate = GetEnemyRoot(hit.transform);
             if (candidate == currentTarget)
+                continue;
+
+            if (!IsTargetValid(candidate, GetEffectiveLockOnRange()))
                 continue;
 
             // Skip enemies that are dying
@@ -1095,8 +1117,107 @@ public class AttackLockSystem : MonoBehaviour
         if (enemy != null && !enemy.isAlive)
             return false;
 
+        float effectiveMaxDistance = Mathf.Min(Mathf.Max(0f, maxDistance), GetEffectiveLockOnRange());
         float sqrDistance = (target.position - playerTransform.position).sqrMagnitude;
-        return sqrDistance <= maxDistance * maxDistance;
+        if (sqrDistance > effectiveMaxDistance * effectiveMaxDistance)
+            return false;
+
+        return HasLockOnLineOfSight(target);
+    }
+
+    private float GetEffectiveLockOnRange()
+    {
+        float detectionRange = Mathf.Max(0f, lockOnDistance);
+        float maxRange = Mathf.Max(0f, lockOnMaxRange);
+
+        if (maxRange <= 0f)
+            return detectionRange;
+
+        if (detectionRange <= 0f)
+            return maxRange;
+
+        return Mathf.Min(detectionRange, maxRange);
+    }
+
+    private bool HasLockOnLineOfSight(Transform target)
+    {
+        if (target == null)
+            return false;
+
+        if (!TryGetLockOnTargetPoint(target, out Vector3 targetPoint))
+            return false;
+
+        bool playerRayClear = IsLockOnRayClear(GetPlayerLockOnRayOrigin(), targetPoint, target);
+
+        if (TryGetScreenCamera(out Camera screenCamera) && screenCamera != null)
+        {
+            bool cameraRayClear = IsLockOnRayClear(screenCamera.transform.position, targetPoint, target);
+            return playerRayClear || cameraRayClear;
+        }
+
+        return playerRayClear;
+    }
+
+    private Vector3 GetPlayerLockOnRayOrigin()
+    {
+        if (playerModelLockOnOrigin != null)
+            return playerModelLockOnOrigin.position;
+
+        return playerTransform.position + Vector3.up * Mathf.Max(0f, playerLockOnRayOriginHeight);
+    }
+
+    private bool TryGetLockOnTargetPoint(Transform target, out Vector3 targetPoint)
+    {
+        targetPoint = target.position;
+        BaseEnemyCore enemyCore = ResolveEnemyCore(target);
+        if (enemyCore == null)
+            return true;
+
+        Collider targetCollider = enemyCore.GetComponentInChildren<Collider>();
+        if (targetCollider == null)
+            return true;
+
+        targetPoint = targetCollider.bounds.center;
+        return true;
+    }
+
+    private bool IsLockOnRayClear(Vector3 origin, Vector3 targetPoint, Transform target)
+    {
+        Vector3 direction = targetPoint - origin;
+        float distance = direction.magnitude;
+        if (distance <= 0.001f)
+            return true;
+
+        RaycastHit[] hits = Physics.RaycastAll(
+            origin,
+            direction / distance,
+            distance,
+            lockOnVisibilityBlockerMask,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            RaycastHit hit = hits[i];
+            if (hit.collider == null)
+                continue;
+
+            Transform hitTransform = hit.collider.transform;
+            if (hitTransform == null)
+                continue;
+
+            if (hitTransform == transform || hitTransform.IsChildOf(playerTransform))
+                continue;
+
+            if (hitTransform == target || hitTransform.IsChildOf(target))
+                continue;
+
+            if (HasEnemyTagInHierarchy(hitTransform))
+                continue;
+
+            return false;
+        }
+
+        return true;
     }
 
     private Vector3 GetFlatDirection(Vector3 targetPosition)

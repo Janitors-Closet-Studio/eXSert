@@ -5616,6 +5616,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AttackLockSystem
   lockOnAngle: 120
   lockOnDistance: 10
+  lockOnMaxRange: 12
+  playerModelLockOnOrigin: {fileID: 0}
+  playerLockOnRayOriginHeight: 1.2
+  lockOnVisibilityBlockerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   player: {fileID: 3646038222488559394}
   playerMovement: {fileID: 6150044602222399215}
   enemyLayers:
