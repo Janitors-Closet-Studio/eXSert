@@ -824,10 +824,90 @@ public class AttackLockSystem : MonoBehaviour
 
     private Transform FindBestHardLockTarget()
     {
-        // Hard lock only targets enemies that are currently visible in the camera view.
-        Transform target = FindScreenAlignedEnemy(GetEffectiveLockOnRange());
+        float effectiveRange = GetEffectiveLockOnRange();
+
+        // Priority 1: closest to screen center among visible candidates.
+        Transform target = FindScreenAlignedEnemy(effectiveRange);
+        if (target == null)
+        {
+            // Priority 2: nearest enemy that is visible in the camera view.
+            target = FindNearestEnemyInView(effectiveRange);
+        }
+
+        if (target == null)
+        {
+            // Priority 3: nearest valid enemy even if currently off-screen.
+            target = FindNearestEnemyOffscreenFallback(effectiveRange);
+        }
+
         LogLock($"FindBestHardLockTarget => {(target != null ? target.name : "null")}");
         return target;
+    }
+
+    private Transform FindNearestEnemyInView(float radius)
+    {
+        if (!TryGetScreenCamera(out Camera screenCamera))
+            return null;
+
+        Collider[] hits = GetEnemyHits(radius);
+        Transform closest = null;
+        float smallestDistance = float.MaxValue;
+
+        foreach (Collider hit in hits)
+        {
+            if (!ColliderIsEnemy(hit))
+                continue;
+
+            Transform candidate = GetEnemyRoot(hit.transform);
+            if (!IsTargetValid(candidate, radius))
+                continue;
+
+            BaseEnemyCore enemy = candidate.GetComponent<BaseEnemyCore>();
+            if (enemy != null && !enemy.isAlive)
+                continue;
+
+            if (!TryGetViewportPosition(screenCamera, candidate, out _))
+                continue;
+
+            float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (sqrDistance < smallestDistance)
+            {
+                smallestDistance = sqrDistance;
+                closest = candidate;
+            }
+        }
+
+        return closest;
+    }
+
+    private Transform FindNearestEnemyOffscreenFallback(float radius)
+    {
+        Collider[] hits = GetEnemyHits(radius);
+        Transform closest = null;
+        float smallestDistance = float.MaxValue;
+
+        foreach (Collider hit in hits)
+        {
+            if (!ColliderIsEnemy(hit))
+                continue;
+
+            Transform candidate = GetEnemyRoot(hit.transform);
+            if (!IsTargetValid(candidate, radius))
+                continue;
+
+            BaseEnemyCore enemy = candidate.GetComponent<BaseEnemyCore>();
+            if (enemy != null && !enemy.isAlive)
+                continue;
+
+            float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (sqrDistance < smallestDistance)
+            {
+                smallestDistance = sqrDistance;
+                closest = candidate;
+            }
+        }
+
+        return closest;
     }
 
     private Transform FindClosestTargetToReference(Transform referenceTarget, float radius)
@@ -1189,7 +1269,9 @@ public class AttackLockSystem : MonoBehaviour
 
         Collider[] hits = GetEnemyHits(GetEffectiveLockOnRange());
         Transform best = null;
-        float bestScore = float.MaxValue;
+        float bestPlayerDistanceScore = float.MaxValue;
+        float bestCurrentTargetDistanceScore = float.MaxValue;
+        float bestViewportScore = float.MaxValue;
         float sideThreshold = 0.05f;
 
         if (!TryGetViewportPosition(screenCamera, currentTarget, out Vector3 currentViewportPosition))
@@ -1236,9 +1318,20 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             float viewportDelta = Mathf.Abs(horizontalDelta) + Mathf.Abs(candidateViewportPosition.y - currentViewportPosition.y) * 0.25f;
-            if (viewportDelta < bestScore)
+            float playerDistanceScore = (candidate.position - playerTransform.position).sqrMagnitude;
+            float currentTargetDistanceScore = (candidate.position - currentTarget.position).sqrMagnitude;
+
+            bool isBetter = playerDistanceScore < bestPlayerDistanceScore
+                || (Mathf.Approximately(playerDistanceScore, bestPlayerDistanceScore)
+                    && (currentTargetDistanceScore < bestCurrentTargetDistanceScore
+                        || (Mathf.Approximately(currentTargetDistanceScore, bestCurrentTargetDistanceScore)
+                            && viewportDelta < bestViewportScore)));
+
+            if (isBetter)
             {
-                bestScore = viewportDelta;
+                bestPlayerDistanceScore = playerDistanceScore;
+                bestCurrentTargetDistanceScore = currentTargetDistanceScore;
+                bestViewportScore = viewportDelta;
                 best = candidate;
             }
         }
