@@ -126,6 +126,8 @@ public class InputReader : Singleton<InputReader>
 
     private bool callbacksRegistered = false;
     [SerializeField, Range(0f, 0.5f)] private float lockOnDashSuppressionWindow = 0.18f;
+    [SerializeField] private bool enableKeyboardLockOnFallbacks = true;
+    [SerializeField] private bool debugLockOnInput = true;
     private float lastDashPerformedTime = float.NegativeInfinity;
 
     public static event Action LockOnPressed;
@@ -314,6 +316,8 @@ public class InputReader : Singleton<InputReader>
             Debug.Log("[InputReader] _playerInput is null in LookInput update.");
             activeControlScheme = string.Empty;
         }
+
+        HandleKeyboardLockOnFallbacks();
     }
     #endregion
 
@@ -426,6 +430,8 @@ public class InputReader : Singleton<InputReader>
                 action.performed += handler;
         }
 
+        LogLockOnBindings();
+
         callbacksRegistered = true;
     }
 
@@ -457,11 +463,18 @@ public class InputReader : Singleton<InputReader>
             return;
 
         if (IsGameplayInputBlocked)
+        {
+            LogLockOnInput("LockOn input received but gameplay input is blocked.");
             return;
+        }
 
         if (Time.time - lastDashPerformedTime <= lockOnDashSuppressionWindow)
+        {
+            LogLockOnInput($"LockOn input suppressed by dash window ({lockOnDashSuppressionWindow:0.###}s).");
             return;
+        }
 
+        LogLockOnInput("LockOn action performed -> invoking LockOnPressed event.");
         LockOnPressed?.Invoke();
     }
 
@@ -471,8 +484,12 @@ public class InputReader : Singleton<InputReader>
             return;
 
         if (IsGameplayInputBlocked)
+        {
+            LogLockOnInput("LeftTarget input received but gameplay input is blocked.");
             return;
+        }
 
+        LogLockOnInput("LeftTarget action performed -> invoking LeftTargetPressed event.");
         LeftTargetPressed?.Invoke();
     }
 
@@ -482,8 +499,12 @@ public class InputReader : Singleton<InputReader>
             return;
 
         if (IsGameplayInputBlocked)
+        {
+            LogLockOnInput("RightTarget input received but gameplay input is blocked.");
             return;
+        }
 
+        LogLockOnInput("RightTarget action performed -> invoking RightTargetPressed event.");
         RightTargetPressed?.Invoke();
     }
 
@@ -496,6 +517,129 @@ public class InputReader : Singleton<InputReader>
             return;
 
         lastDashPerformedTime = Time.time;
+        LogLockOnInput($"Dash performed at t={lastDashPerformedTime:0.###}. LockOn suppression window active for {lockOnDashSuppressionWindow:0.###}s.");
+    }
+
+    private void HandleKeyboardLockOnFallbacks()
+    {
+        if (!enableKeyboardLockOnFallbacks)
+            return;
+
+        if (IsGameplayInputBlocked || CurrentActionMap != ActionMap.Gameplay)
+            return;
+
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+            return;
+
+        bool lockOnKeyPressed = keyboard.cKey.wasPressedThisFrame;
+        bool leftTargetKeyPressed = keyboard.tabKey.wasPressedThisFrame;
+        bool rightTargetKeyPressed = keyboard.leftAltKey.wasPressedThisFrame;
+
+        bool useLockOnFallback = ShouldUseKeyboardFallback(lockOnAction);
+        bool useLeftFallback = ShouldUseKeyboardFallback(leftTargetAction);
+        bool useRightFallback = ShouldUseKeyboardFallback(rightTargetAction);
+
+        if (lockOnKeyPressed && !useLockOnFallback)
+            LogLockOnInput("Keyboard C pressed, but LockOn fallback skipped because LockOn action already has keyboard binding(s).");
+
+        if (leftTargetKeyPressed && !useLeftFallback)
+            LogLockOnInput("Keyboard Tab pressed, but LeftTarget fallback skipped because LeftTarget action already has keyboard binding(s).");
+
+        if (rightTargetKeyPressed && !useRightFallback)
+            LogLockOnInput("Keyboard LeftAlt pressed, but RightTarget fallback skipped because RightTarget action already has keyboard binding(s).");
+
+        if (useLockOnFallback
+            && lockOnKeyPressed
+            && Time.time - lastDashPerformedTime > lockOnDashSuppressionWindow)
+        {
+            LogLockOnInput("Keyboard fallback: C -> LockOnPressed event.");
+            LockOnPressed?.Invoke();
+        }
+
+        if (useLockOnFallback
+            && lockOnKeyPressed
+            && Time.time - lastDashPerformedTime <= lockOnDashSuppressionWindow)
+        {
+            LogLockOnInput($"Keyboard fallback C pressed but suppressed by dash window ({lockOnDashSuppressionWindow:0.###}s).");
+        }
+
+        if (useLeftFallback && leftTargetKeyPressed)
+        {
+            LogLockOnInput("Keyboard fallback: Tab -> LeftTargetPressed event.");
+            LeftTargetPressed?.Invoke();
+        }
+
+        if (useRightFallback && rightTargetKeyPressed)
+        {
+            LogLockOnInput("Keyboard fallback: LeftAlt -> RightTargetPressed event.");
+            RightTargetPressed?.Invoke();
+        }
+    }
+
+    private void LogLockOnBindings()
+    {
+        if (!debugLockOnInput)
+            return;
+
+        LogActionBindings("LockOn", lockOnAction);
+        LogActionBindings("LeftTarget", leftTargetAction);
+        LogActionBindings("RightTarget", rightTargetAction);
+    }
+
+    private void LogActionBindings(string actionName, InputAction action)
+    {
+        if (!debugLockOnInput)
+            return;
+
+        if (action == null)
+        {
+            Debug.LogWarning($"[InputReader][LockOnDebug] Action '{actionName}' is null.");
+            return;
+        }
+
+        var bindings = action.bindings;
+        if (bindings.Count == 0)
+        {
+            Debug.LogWarning($"[InputReader][LockOnDebug] Action '{actionName}' has no bindings.");
+            return;
+        }
+
+        for (int i = 0; i < bindings.Count; i++)
+        {
+            string path = bindings[i].effectivePath;
+            if (string.IsNullOrEmpty(path))
+                path = bindings[i].path;
+
+            Debug.Log($"[InputReader][LockOnDebug] {actionName} binding[{i}] path='{path}' groups='{bindings[i].groups}'.");
+        }
+    }
+
+    private void LogLockOnInput(string message)
+    {
+        if (!debugLockOnInput)
+            return;
+
+        Debug.Log($"[InputReader][LockOnDebug] {message}");
+    }
+
+    private static bool ShouldUseKeyboardFallback(InputAction action)
+    {
+        if (action == null)
+            return true;
+
+        var bindings = action.bindings;
+        for (int i = 0; i < bindings.Count; i++)
+        {
+            string path = bindings[i].effectivePath;
+            if (string.IsNullOrEmpty(path))
+                path = bindings[i].path;
+
+            if (!string.IsNullOrEmpty(path) && path.StartsWith("<Keyboard>/", StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
     }
 
     public static string RequestGameplayInputBlock(string ownerId = null)

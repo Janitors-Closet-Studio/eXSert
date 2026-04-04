@@ -41,6 +41,11 @@ public class AttackLockSystem : MonoBehaviour
     [Tooltip("Layers considered as lock-on visibility blockers (for example walls/level geometry).")]
     private LayerMask lockOnVisibilityBlockerMask = ~0;
 
+    [Header("Debug")]
+    [SerializeField]
+    [Tooltip("Enable verbose lock-on diagnostics for input flow, target selection, validation and line-of-sight checks.")]
+    private bool debugLockOn = true;
+
     [SerializeField]
     [CriticalReference]
     [Tooltip("Reference to the player GameObject (used as the search origin).")]
@@ -208,6 +213,8 @@ public class AttackLockSystem : MonoBehaviour
     private ReticleController currentTargetReticle;
     private Transform softLockAttackFacingTarget;
     private float softLockAttackFacingExpireTime = -1f;
+    private float lastTargetInvalidLogTime = -1f;
+    private string lastTargetInvalidReason;
     public bool IsHardLockActive => hardLockActive && currentTarget != null;
     public Transform CurrentHardLockTarget => currentTarget;
     public bool IsSoftLockMotionInProgress => moveCoroutine != null;
@@ -264,15 +271,25 @@ public class AttackLockSystem : MonoBehaviour
             return;
         }
 
-        if (!IsTargetValid(currentTarget, GetEffectiveLockOnRange()))
+        if (!IsTargetValid(currentTarget, GetEffectiveLockOnRange(), out string invalidReason))
         {
+            if (debugLockOn
+                && (invalidReason != lastTargetInvalidReason || Time.time - lastTargetInvalidLogTime > 0.5f))
+            {
+                lastTargetInvalidReason = invalidReason;
+                lastTargetInvalidLogTime = Time.time;
+                LogLock($"Current hard-lock target became invalid: {invalidReason}");
+            }
+
             Transform replacementTarget = FindBestHardLockTarget();
             if (replacementTarget == null)
             {
+                LogLock("No replacement hard-lock target found. Clearing hard lock.");
                 ClearHardLock();
                 return;
             }
 
+            LogLock($"Switching hard-lock target to replacement '{replacementTarget.name}'.");
             SetHardLockTarget(replacementTarget, playEntryAnimation: true, playExitAnimation: true);
         }
 
@@ -332,13 +349,17 @@ public class AttackLockSystem : MonoBehaviour
 
     private void HandleLockOnToggle()
     {
+        LogLock($"LockOn toggle received. hardLockActive={hardLockActive}, currentTarget={(currentTarget != null ? currentTarget.name : "null")}");
+
         if (hardLockActive)
         {
             ClearHardLock();
             return;
         }
 
-        ActivateHardLock(null, instantCameraAlign: false); // Smooth transition when locking on
+        bool activated = ActivateHardLock(null, instantCameraAlign: false); // Smooth transition when locking on
+        if (!activated)
+            LogLock("ActivateHardLock failed: no valid hard-lock candidate found.");
     }
 
     private void HandleLeftTargetRequested() => CycleHardLock(-1);
@@ -348,12 +369,19 @@ public class AttackLockSystem : MonoBehaviour
     private void CycleHardLock(int direction)
     {
         if (!hardLockActive || direction == 0)
+        {
+            LogLock($"CycleHardLock ignored. hardLockActive={hardLockActive}, direction={direction}");
             return;
+        }
 
         Transform nextTarget = FindAdjacentTarget(direction);
         if (nextTarget == null || nextTarget == currentTarget)
+        {
+            LogLock($"CycleHardLock found no adjacent target. direction={direction}, current={(currentTarget != null ? currentTarget.name : "null")}");
             return;
+        }
 
+        LogLock($"CycleHardLock switching to '{nextTarget.name}' (direction={direction}).");
         SetHardLockTarget(nextTarget, playEntryAnimation: true, playExitAnimation: true);
         ResetLeanState(); // Reset lean when switching targets for clean transition
         AlignPlayerAndCamera(nextTarget, instantCameraAlign: false); // Smooth transition to new target
@@ -363,7 +391,12 @@ public class AttackLockSystem : MonoBehaviour
     {
         Transform candidate = forcedTarget ?? FindBestHardLockTarget();
         if (candidate == null)
+        {
+            LogLock($"ActivateHardLock failed. forcedTarget={(forcedTarget != null ? forcedTarget.name : "null")}, effectiveRange={GetEffectiveLockOnRange():0.##}");
             return false;
+        }
+
+        LogLock($"ActivateHardLock success. target='{candidate.name}', forcedTarget={(forcedTarget != null ? forcedTarget.name : "null")}, effectiveRange={GetEffectiveLockOnRange():0.##}");
 
         hardLockActive = true;
         SetHardLockTarget(candidate, playEntryAnimation: true, playExitAnimation: false);
@@ -663,7 +696,9 @@ public class AttackLockSystem : MonoBehaviour
     private Transform FindBestHardLockTarget()
     {
         // Hard lock only targets enemies that are currently visible in the camera view.
-        return FindScreenAlignedEnemy(GetEffectiveLockOnRange());
+        Transform target = FindScreenAlignedEnemy(GetEffectiveLockOnRange());
+        LogLock($"FindBestHardLockTarget => {(target != null ? target.name : "null")}");
+        return target;
     }
 
     private Transform FindNearestEnemy(float radius, Transform ignore = null)
@@ -867,45 +902,115 @@ public class AttackLockSystem : MonoBehaviour
 
     private Transform FindScreenAlignedEnemy(float radius)
     {
-        if (!TryGetCameraBasis(out Vector3 camForward, out _) || !TryGetScreenCamera(out Camera screenCamera))
+        if (!TryGetCameraBasis(out Vector3 camForward, out _))
+        {
+            LogLock("FindScreenAlignedEnemy aborted: unable to resolve camera basis.");
             return null;
+        }
+
+        if (!TryGetScreenCamera(out Camera screenCamera))
+        {
+            LogLock("FindScreenAlignedEnemy aborted: no screen camera available.");
+            return null;
+        }
 
         Collider[] hits = GetEnemyHits(radius);
+        if (hits == null || hits.Length == 0)
+        {
+            LogLock($"FindScreenAlignedEnemy found no colliders in range. radius={radius:0.##}");
+            return null;
+        }
+
         Transform best = null;
         float bestViewportScore = float.MaxValue;
         float bestDistanceScore = float.MaxValue;
+        float bestAngle = float.MaxValue;
+
+        int rejectedNotEnemy = 0;
+        int rejectedDead = 0;
+        int rejectedInvalid = 0;
+        int rejectedDirection = 0;
+        int rejectedAngle = 0;
+        int rejectedViewport = 0;
+        int considered = 0;
 
         foreach (Collider hit in hits)
         {
             if (!ColliderIsEnemy(hit))
+            {
+                rejectedNotEnemy++;
                 continue;
+            }
 
             Transform candidate = GetEnemyRoot(hit.transform);
+            considered++;
 
             // Skip enemies that are dying
             BaseEnemyCore enemy = candidate.GetComponent<BaseEnemyCore>();
             if (enemy != null && !enemy.isAlive)
+            {
+                rejectedDead++;
                 continue;
+            }
 
-            Vector3 direction = GetFlatDirection(candidate.position);
-            if (direction.sqrMagnitude < 0.001f)
+            if (!IsTargetValid(candidate, radius, out string invalidReason))
+            {
+                rejectedInvalid++;
+                LogLock($"FindScreenAlignedEnemy rejected '{candidate.name}' by IsTargetValid: {invalidReason}");
                 continue;
+            }
+
+            if (!TryGetLockOnTargetPoint(candidate, out Vector3 targetPoint))
+                targetPoint = candidate.position;
+
+            Vector3 direction = targetPoint - playerTransform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.001f)
+            {
+                rejectedDirection++;
+                continue;
+            }
+
+            direction.Normalize();
 
             float angle = Vector3.Angle(camForward, direction);
             if (angle > lockOnAngle * 2f)
+            {
+                rejectedAngle++;
                 continue;
+            }
 
-            if (!TryGetViewportScore(screenCamera, candidate, out float viewportScore))
+            if (!TryGetViewportScore(screenCamera, targetPoint, out float viewportScore))
+            {
+                rejectedViewport++;
                 continue;
+            }
 
-            float distanceScore = (candidate.position - playerTransform.position).sqrMagnitude;
+            float distanceScore = (targetPoint - playerTransform.position).sqrMagnitude;
             if (viewportScore < bestViewportScore
                 || (Mathf.Approximately(viewportScore, bestViewportScore) && distanceScore < bestDistanceScore))
             {
                 bestViewportScore = viewportScore;
                 bestDistanceScore = distanceScore;
+                bestAngle = angle;
                 best = candidate;
             }
+        }
+
+        if (best == null)
+        {
+            LogLock(
+                $"FindScreenAlignedEnemy found no candidate. considered={considered}, "
+                + $"rejectedNotEnemy={rejectedNotEnemy}, rejectedDead={rejectedDead}, "
+                + $"rejectedInvalid={rejectedInvalid}, rejectedDirection={rejectedDirection}, "
+                + $"rejectedAngle={rejectedAngle}, rejectedViewport={rejectedViewport}, "
+                + $"radius={radius:0.##}, angleLimit={lockOnAngle * 2f:0.##}");
+        }
+        else
+        {
+            LogLock(
+                $"FindScreenAlignedEnemy selected '{best.name}'. viewportScore={bestViewportScore:0.####}, "
+                + $"distance={Mathf.Sqrt(bestDistanceScore):0.##}, angle={bestAngle:0.##}");
         }
 
         return best;
@@ -992,8 +1097,11 @@ public class AttackLockSystem : MonoBehaviour
         if (hit == null)
             return false;
 
-        // Check the collider's GameObject and its parents for the "Enemy" tag
-        if (!HasEnemyTagInHierarchy(hit.transform))
+        bool hasEnemyTag = HasEnemyTagInHierarchy(hit.transform);
+        bool hasEnemyCore = hit.GetComponentInParent<BaseEnemyCore>() != null;
+
+        // Accept either explicit Enemy tag or presence of BaseEnemyCore in hierarchy.
+        if (!hasEnemyTag && !hasEnemyCore)
             return false;
 
         if (!enforceLayerMask)
@@ -1024,6 +1132,13 @@ public class AttackLockSystem : MonoBehaviour
     /// </summary>
     private Transform GetEnemyRoot(Transform t)
     {
+        if (t != null)
+        {
+            BaseEnemyCore enemyCore = t.GetComponentInParent<BaseEnemyCore>();
+            if (enemyCore != null)
+                return enemyCore.transform;
+        }
+
         Transform original = t;
         while (t != null)
         {
@@ -1063,7 +1178,30 @@ public class AttackLockSystem : MonoBehaviour
     private bool TryGetScreenCamera(out Camera screenCamera)
     {
         screenCamera = Camera.main;
-        return screenCamera != null;
+        if (screenCamera != null)
+            return true;
+
+        CinemachineBrain brain = FindFirstObjectByType<CinemachineBrain>();
+        if (brain != null)
+        {
+            screenCamera = brain.GetComponent<Camera>();
+            if (screenCamera != null && screenCamera.isActiveAndEnabled)
+                return true;
+        }
+
+        Camera[] cameras = Camera.allCameras;
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera candidate = cameras[i];
+            if (candidate == null || !candidate.isActiveAndEnabled)
+                continue;
+
+            screenCamera = candidate;
+            return true;
+        }
+
+        screenCamera = null;
+        return false;
     }
 
     private bool TryGetViewportScore(Camera screenCamera, Transform candidate, out float viewportScore)
@@ -1071,6 +1209,18 @@ public class AttackLockSystem : MonoBehaviour
         viewportScore = float.MaxValue;
 
         if (!TryGetViewportPosition(screenCamera, candidate, out Vector3 viewportPosition))
+            return false;
+
+        Vector2 offsetFromCenter = new Vector2(viewportPosition.x - 0.5f, viewportPosition.y - 0.5f);
+        viewportScore = offsetFromCenter.sqrMagnitude;
+        return true;
+    }
+
+    private bool TryGetViewportScore(Camera screenCamera, Vector3 worldPosition, out float viewportScore)
+    {
+        viewportScore = float.MaxValue;
+
+        if (!TryGetViewportPosition(screenCamera, worldPosition, out Vector3 viewportPosition))
             return false;
 
         Vector2 offsetFromCenter = new Vector2(viewportPosition.x - 0.5f, viewportPosition.y - 0.5f);
@@ -1098,6 +1248,26 @@ public class AttackLockSystem : MonoBehaviour
             && viewportPosition.y <= max;
     }
 
+    private bool TryGetViewportPosition(Camera screenCamera, Vector3 worldPosition, out Vector3 viewportPosition)
+    {
+        viewportPosition = Vector3.zero;
+
+        if (screenCamera == null)
+            return false;
+
+        viewportPosition = screenCamera.WorldToViewportPoint(worldPosition);
+        if (viewportPosition.z <= 0f)
+            return false;
+
+        float min = 0f + hardLockViewportPadding;
+        float max = 1f - hardLockViewportPadding;
+
+        return viewportPosition.x >= min
+            && viewportPosition.x <= max
+            && viewportPosition.y >= min
+            && viewportPosition.y <= max;
+    }
+
     private static bool IsSingleTargetAttack(PlayerAttack attack)
     {
         if (attack == null)
@@ -1109,20 +1279,44 @@ public class AttackLockSystem : MonoBehaviour
 
     private bool IsTargetValid(Transform target, float maxDistance)
     {
+        return IsTargetValid(target, maxDistance, out _);
+    }
+
+    private bool IsTargetValid(Transform target, float maxDistance, out string reason)
+    {
+        reason = string.Empty;
+
         if (target == null || !target.gameObject.activeInHierarchy)
+        {
+            reason = "Target is null or inactive in hierarchy.";
             return false;
+        }
 
         // Check if the enemy is still alive (not dying)
         BaseEnemyCore enemy = target.GetComponent<BaseEnemyCore>();
         if (enemy != null && !enemy.isAlive)
+        {
+            reason = "Target enemy is dead.";
             return false;
+        }
 
         float effectiveMaxDistance = Mathf.Min(Mathf.Max(0f, maxDistance), GetEffectiveLockOnRange());
         float sqrDistance = (target.position - playerTransform.position).sqrMagnitude;
         if (sqrDistance > effectiveMaxDistance * effectiveMaxDistance)
+        {
+            reason = $"Target out of range. distance={Mathf.Sqrt(sqrDistance):0.##}, max={effectiveMaxDistance:0.##}";
             return false;
+        }
 
-        return HasLockOnLineOfSight(target);
+        bool hasLos = HasLockOnLineOfSight(target, out string losReason);
+        if (!hasLos)
+        {
+            reason = losReason;
+            return false;
+        }
+
+        reason = "Valid";
+        return true;
     }
 
     private float GetEffectiveLockOnRange()
@@ -1139,23 +1333,47 @@ public class AttackLockSystem : MonoBehaviour
         return Mathf.Min(detectionRange, maxRange);
     }
 
-    private bool HasLockOnLineOfSight(Transform target)
+    private bool HasLockOnLineOfSight(Transform target, out string reason)
     {
+        reason = string.Empty;
+
         if (target == null)
+        {
+            reason = "No target transform for line-of-sight.";
             return false;
+        }
 
         if (!TryGetLockOnTargetPoint(target, out Vector3 targetPoint))
+        {
+            reason = "Failed to resolve lock-on target point.";
             return false;
+        }
 
-        bool playerRayClear = IsLockOnRayClear(GetPlayerLockOnRayOrigin(), targetPoint, target);
+        bool playerRayClear = IsLockOnRayClear(GetPlayerLockOnRayOrigin(), targetPoint, target, out string playerBlocker);
 
         if (TryGetScreenCamera(out Camera screenCamera) && screenCamera != null)
         {
-            bool cameraRayClear = IsLockOnRayClear(screenCamera.transform.position, targetPoint, target);
-            return playerRayClear || cameraRayClear;
+            bool cameraRayClear = IsLockOnRayClear(screenCamera.transform.position, targetPoint, target, out string cameraBlocker);
+            if (!playerRayClear && !cameraRayClear)
+            {
+                reason = $"LOS blocked. PlayerRay='{playerBlocker}', CameraRay='{cameraBlocker}'";
+                return false;
+            }
+
+            reason = playerRayClear
+                ? "LOS valid via player ray."
+                : "LOS valid via camera ray.";
+            return true;
         }
 
-        return playerRayClear;
+        if (!playerRayClear)
+        {
+            reason = $"LOS blocked. PlayerRay='{playerBlocker}'";
+            return false;
+        }
+
+        reason = "LOS valid via player ray (no camera available).";
+        return true;
     }
 
     private Vector3 GetPlayerLockOnRayOrigin()
@@ -1181,8 +1399,10 @@ public class AttackLockSystem : MonoBehaviour
         return true;
     }
 
-    private bool IsLockOnRayClear(Vector3 origin, Vector3 targetPoint, Transform target)
+    private bool IsLockOnRayClear(Vector3 origin, Vector3 targetPoint, Transform target, out string blocker)
     {
+        blocker = string.Empty;
+
         Vector3 direction = targetPoint - origin;
         float distance = direction.magnitude;
         if (distance <= 0.001f)
@@ -1214,10 +1434,19 @@ public class AttackLockSystem : MonoBehaviour
             if (HasEnemyTagInHierarchy(hitTransform))
                 continue;
 
+            blocker = hitTransform.name;
             return false;
         }
 
         return true;
+    }
+
+    private void LogLock(string message)
+    {
+        if (!debugLockOn)
+            return;
+
+        Debug.Log($"[AttackLockSystem][Debug] {message}");
     }
 
     private Vector3 GetFlatDirection(Vector3 targetPosition)
