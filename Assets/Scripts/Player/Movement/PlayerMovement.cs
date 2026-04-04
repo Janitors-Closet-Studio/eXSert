@@ -258,6 +258,19 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("Which layer the ground check detects for")]
     public LayerMask layerMask;
 
+    [Header("Downhill Animation Grounding")]
+    [SerializeField, Range(0f, 0.3f), Tooltip("How long to preserve grounded locomotion animations while descending valid slopes.")]
+    private float downhillAnimationGroundedGrace = 0.1f;
+
+    [SerializeField, Range(0.05f, 1f), Tooltip("How far below the controller to probe for walkable downhill ground while descending.")]
+    private float downhillGroundProbeDistance = 0.35f;
+
+    [SerializeField, Range(-20f, 0f), Tooltip("If vertical velocity is below this value, treat movement as a real fall instead of downhill descent.")]
+    private float downhillMaxFallSpeedForGroundedAnim = -6f;
+
+    [SerializeField, Tooltip("Enable debug logs for downhill locomotion grounding checks.")]
+    private bool enableDownhillAnimationGroundingDebugLogs = false;
+
     [Header("Dash Settings")]
     [SerializeField]
     private float dashDistance = 6f;
@@ -468,6 +481,8 @@ public class PlayerMovement : MonoBehaviour
     private float attackTurnReductionTimer;
     private bool attackFacingAnchorFrozenByHit;
     private bool attackMovementSuppressedByHit;
+    private float downhillGroundedGraceTimer;
+    private float nextDownhillGroundingDebugLogTime;
 
     private Transform ResolveCameraTransform()
     {
@@ -807,9 +822,9 @@ public class PlayerMovement : MonoBehaviour
 
         Move();
 
-        HandleAirborneAnimations();
-
         ApplyMovement();
+
+        HandleAirborneAnimations();
     }
 
     private void Move()
@@ -883,7 +898,23 @@ public class PlayerMovement : MonoBehaviour
 
             bool stateChanged = UpdateMoveState(usingAnalogThresholds, inputMagnitude);
 
-            Vector3 moveDirection = (forward * inputMove.y + right * inputMove.x).normalized;
+            bool guarding = CombatManager.isGuarding;
+            Vector3 moveForwardBasis = guarding
+                ? Vector3.ProjectOnPlane(transform.forward, Vector3.up)
+                : forward;
+            Vector3 moveRightBasis = guarding
+                ? Vector3.ProjectOnPlane(transform.right, Vector3.up)
+                : right;
+
+            if (moveForwardBasis.sqrMagnitude < 0.0001f)
+                moveForwardBasis = forward;
+            if (moveRightBasis.sqrMagnitude < 0.0001f)
+                moveRightBasis = right;
+
+            moveForwardBasis.Normalize();
+            moveRightBasis.Normalize();
+
+            Vector3 moveDirection = (moveForwardBasis * inputMove.y + moveRightBasis * inputMove.x).normalized;
             float targetSpeed = movementSpeedOverrideActive ? movementSpeedOverride : CurrentSpeed;
 
             if (attackMovementActive)
@@ -954,7 +985,8 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         bool grounded = IsGroundedNow();
-        if (!grounded || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackMovementActive)
+        bool guarding = CombatManager.isGuarding;
+        if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackMovementActive)
         {
             noInputGroundedTimer = 0f;
             idleRecoveryAppliedThisWindow = false;
@@ -2206,7 +2238,7 @@ public class PlayerMovement : MonoBehaviour
         characterController.Move(finalVelocity * movementDeltaTime);
 
         // reset vertical movement when grounded
-        if (characterController.isGrounded && currentMovement.y < 0)
+        if (IsGroundedNow() && currentMovement.y < 0)
         {
             DebugMovementLog($"ApplyMovement grounded reset | groundedNow={IsGroundedNow()} ccGrounded={characterController.isGrounded} yBeforeReset={currentMovement.y:F2} fallingAnimationPlaying={fallingAnimationPlaying} airborneAnimationLocked={airborneAnimationLocked}");
             currentMovement.y = -1f; // small negative value to keep the player grounded
@@ -2222,6 +2254,28 @@ public class PlayerMovement : MonoBehaviour
     private void HandleAirborneAnimations()
     {
         bool grounded = IsGroundedNow();
+
+        if (grounded)
+        {
+            downhillGroundedGraceTimer = downhillAnimationGroundedGrace;
+        }
+        else
+        {
+            downhillGroundedGraceTimer = Mathf.Max(0f, downhillGroundedGraceTimer - Time.deltaTime);
+            if (downhillGroundedGraceTimer > 0f)
+            {
+                bool downhillGrounded = ShouldTreatAsDownhillGrounded(out string reason, out float slopeAngle);
+                if (downhillGrounded)
+                {
+                    grounded = true;
+                    DownhillGroundingDebugLog($"Grace accepted | timer={downhillGroundedGraceTimer:F3} slope={slopeAngle:F1} moveInput={InputReader.MoveInput.magnitude:F2} currentY={currentMovement.y:F2}");
+                }
+                else
+                {
+                    DownhillGroundingDebugLog($"Grace rejected | reason={reason} timer={downhillGroundedGraceTimer:F3} currentY={currentMovement.y:F2} moveInput={InputReader.MoveInput.magnitude:F2}");
+                }
+            }
+        }
 
         if (pendingJump != PendingJumpType.None)
         {
@@ -2315,6 +2369,119 @@ public class PlayerMovement : MonoBehaviour
         }
 
         wasGrounded = grounded;
+    }
+
+    private bool ShouldTreatAsDownhillGrounded(out string reason, out float slopeAngle)
+    {
+        reason = string.Empty;
+        slopeAngle = 0f;
+
+        if (characterController == null)
+        {
+            reason = "Missing CharacterController";
+            return false;
+        }
+
+        if (currentMovement.y < downhillMaxFallSpeedForGroundedAnim)
+        {
+            reason = $"currentY below threshold ({currentMovement.y:F2} < {downhillMaxFallSpeedForGroundedAnim:F2})";
+            return false;
+        }
+
+        float horizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+        bool hasDirectionalIntent = InputReader.MoveInput.sqrMagnitude > moveInputDeadZone * moveInputDeadZone;
+        if (!hasDirectionalIntent && horizontalSpeed < 0.15f)
+        {
+            reason = "MoveInput/speed below threshold";
+            return false;
+        }
+
+        Bounds bounds = characterController.bounds;
+        float radius = Mathf.Max(0.08f, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.8f);
+        float probeDistance = Mathf.Max(0.01f, downhillGroundProbeDistance);
+        float flatGroundAcceptanceDistance = Mathf.Max(0.05f, Mathf.Min(0.2f, probeDistance * 0.35f));
+        LayerMask probeMask = layerMask.value == 0 ? Physics.DefaultRaycastLayers : layerMask;
+
+        Vector2 moveInput = InputReader.MoveInput;
+        Vector3 moveForwardBasis = CombatManager.isGuarding
+            ? Vector3.ProjectOnPlane(transform.forward, Vector3.up)
+            : forward;
+        Vector3 moveRightBasis = CombatManager.isGuarding
+            ? Vector3.ProjectOnPlane(transform.right, Vector3.up)
+            : right;
+
+        if (moveForwardBasis.sqrMagnitude < 0.0001f)
+            moveForwardBasis = forward;
+        if (moveRightBasis.sqrMagnitude < 0.0001f)
+            moveRightBasis = right;
+
+        moveForwardBasis.Normalize();
+        moveRightBasis.Normalize();
+
+        Vector3 moveDirection = (moveForwardBasis * moveInput.y + moveRightBasis * moveInput.x);
+        if (moveDirection.sqrMagnitude > 0.0001f)
+            moveDirection.Normalize();
+
+        Vector3 centerOrigin = bounds.center + Vector3.up * 0.05f;
+        Vector3 feetOrigin = new Vector3(bounds.center.x, bounds.min.y + 0.06f, bounds.center.z);
+        Vector3 forwardOrigin = centerOrigin + moveDirection * (radius * 0.9f);
+
+        bool hasHit = Physics.SphereCast(centerOrigin, radius, Vector3.down, out RaycastHit hit, probeDistance, probeMask, QueryTriggerInteraction.Ignore)
+            || Physics.SphereCast(feetOrigin, radius * 0.9f, Vector3.down, out hit, probeDistance, probeMask, QueryTriggerInteraction.Ignore)
+            || Physics.SphereCast(forwardOrigin, radius * 0.85f, Vector3.down, out hit, probeDistance, probeMask, QueryTriggerInteraction.Ignore);
+
+        if (!hasHit)
+        {
+            if (horizontalSpeed >= 0.35f && currentMovement.y <= -0.05f)
+            {
+                reason = $"Kinematic downhill fallback accepted (speed={horizontalSpeed:F2}, y={currentMovement.y:F2})";
+                slopeAngle = 0f;
+                return true;
+            }
+
+            reason = "No downhill ground hit (center/feet/forward)";
+            return false;
+        }
+
+        slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
+        if (slopeAngle <= 1f)
+        {
+            if (hit.distance <= flatGroundAcceptanceDistance && currentMovement.y <= 0f)
+            {
+                reason = $"Flat-ground fallback accepted ({hit.distance:F2}m)";
+                return true;
+            }
+
+            if (horizontalSpeed >= 0.35f && currentMovement.y <= -0.05f)
+            {
+                reason = $"Flat-hit kinematic fallback accepted (speed={horizontalSpeed:F2}, y={currentMovement.y:F2}, dist={hit.distance:F2})";
+                return true;
+            }
+
+            reason = $"Slope too flat ({slopeAngle:F1})";
+            return false;
+        }
+
+        if (slopeAngle > characterController.slopeLimit + 2f)
+        {
+            reason = $"Slope too steep ({slopeAngle:F1} > {characterController.slopeLimit + 2f:F1})";
+            return false;
+        }
+
+        reason = "Valid downhill grounding";
+        return true;
+    }
+
+    private void DownhillGroundingDebugLog(string message)
+    {
+        if (!enableDownhillAnimationGroundingDebugLogs)
+            return;
+
+        if (Time.time < nextDownhillGroundingDebugLogTime)
+            return;
+
+        nextDownhillGroundingDebugLogTime = Time.time + 0.1f;
+        Debug.Log($"[PlayerMovement][DownhillGrounding] {message}");
     }
 
     private void StartPlungeJumpLock()
@@ -2411,9 +2578,10 @@ public class PlayerMovement : MonoBehaviour
         animationController.EnsureAnimatorRuntimeHealthy();
 
         bool grounded = IsGroundedNow();
+        bool guarding = CombatManager.isGuarding;
         bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
 
-        if (!grounded || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackActive || InputReader.inputBusy)
+        if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackActive || InputReader.inputBusy)
         {
             nextLocomotionFailsafeRefreshTime = 0f;
             return;

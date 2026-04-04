@@ -75,6 +75,7 @@ MonoBehaviour:
     minZ: -3.69
     maxZ: 19.42
     useWorldPosition: 0
+  magnetBase: {fileID: 0}
   swapXZControls: 0
   craneMoveSpeed: 10
   craneUI:
@@ -82,6 +83,15 @@ MonoBehaviour:
   invertHorizontal: 0
   invertForwardBackward: 0
   forwardBackwardMoveSpeed: 0
+  lightBulb: {fileID: 0}
+  lockedLightBulbColor: {r: 0.6313726, g: 0, b: 0, a: 1}
+  lockedLightBulbEmissionColor: {r: 0.38, g: 0, b: 0, a: 1}
+  unlockedLightBulbColor: {r: 0.11372549, g: 0.78431374, b: 0.078431375, a: 1}
+  unlockedLightBulbEmissionColor: {r: 0, g: 0.13, b: 0.054166675, a: 1}
+  doorLight: {fileID: 0}
+  lockedLightColor: {r: 1, g: 0.11764706, b: 0.11764706, a: 1}
+  unlockedLightColor: {r: 0.26666668, g: 0.6509804, b: 0.34901962, a: 1}
+  lightFadeSpeed: 2
   magnetExtender: {fileID: 6928743870883200896}
   magnetExtendHeight: 0
   useExtendDistance: 1

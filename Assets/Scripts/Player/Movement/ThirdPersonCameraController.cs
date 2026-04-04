@@ -13,6 +13,12 @@ public class ThirdPersonCameraController : MonoBehaviour
     [SerializeField] private float guardRadius = 2.5f;     // Close over-shoulder distance
     [SerializeField] private float guardHeightOffset = 0.5f; // Added height offset for shoulder view
     [SerializeField] private float zoomLerpSpeed = 8f;     // Transition speed
+
+    [Header("Combat Camera Settings")]
+    [SerializeField] private bool useCombatCameraAdjustments = true;
+    [SerializeField, Range(1f, 2.5f)] private float combatRadiusMultiplier = 1.2f;
+    [SerializeField, Range(40f, 120f)] private float combatFieldOfView = 66f;
+    [SerializeField, Range(1f, 20f)] private float combatFovLerpSpeed = 8f;
     
     private CinemachineCamera cmCamera;
     private CinemachineOrbitalFollow orbital;
@@ -22,9 +28,11 @@ public class ThirdPersonCameraController : MonoBehaviour
     // Store original Three Ring settings to restore them
     private float originalRadius;
     private Vector3 originalTargetOffset;
+    private float originalFieldOfView;
     
     // Current state
     private bool wasGuarding = false;
+    private bool wasInCombat = false;
     private bool isTransitioning = false;
 
     private void Start()
@@ -77,6 +85,7 @@ public class ThirdPersonCameraController : MonoBehaviour
         // Store the original Three Ring setup from your Inspector settings
         originalRadius = orbital.Radius;
         originalTargetOffset = orbital.TargetOffset;
+        originalFieldOfView = cmCamera != null ? cmCamera.Lens.FieldOfView : 60f;
         
         Debug.Log($"Stored original settings - Radius: {originalRadius}, Offset: {originalTargetOffset}");
         
@@ -101,44 +110,48 @@ public class ThirdPersonCameraController : MonoBehaviour
 
     private void UpdateCameraTransition()
     {
-        if (wasGuarding) // Transitioning TO guard mode
+        float targetRadius = originalRadius;
+        Vector3 targetOffset = originalTargetOffset;
+
+        if (CombatManager.isGuarding)
         {
-            // Lerp to guard settings
-            float newRadius = Mathf.Lerp(orbital.Radius, guardRadius, Time.deltaTime * zoomLerpSpeed);
-            Vector3 targetGuardOffset = new Vector3(originalTargetOffset.x, originalTargetOffset.y + guardHeightOffset, originalTargetOffset.z);
-            Vector3 newOffset = Vector3.Lerp(orbital.TargetOffset, targetGuardOffset, Time.deltaTime * zoomLerpSpeed);
-
-            orbital.Radius = newRadius;
-            orbital.TargetOffset = newOffset;
-
-            // Check if transition is complete
-            if (Mathf.Abs(orbital.Radius - guardRadius) < 0.01f)
-            {
-                orbital.Radius = guardRadius;
-                orbital.TargetOffset = targetGuardOffset;
-                isTransitioning = false;
-                Debug.Log("Guard transition complete");
-            }
+            targetRadius = guardRadius;
+            targetOffset = new Vector3(originalTargetOffset.x, originalTargetOffset.y + guardHeightOffset, originalTargetOffset.z);
         }
-        else // Transitioning BACK to normal Three Ring
+        else if (useCombatCameraAdjustments && CombatManager.isInCombat)
         {
-            // Lerp back to original Three Ring settings
-            float newRadius = Mathf.Lerp(orbital.Radius, originalRadius, Time.deltaTime * zoomLerpSpeed);
-            Vector3 newOffset = Vector3.Lerp(orbital.TargetOffset, originalTargetOffset, Time.deltaTime * zoomLerpSpeed);
-
-            orbital.Radius = newRadius;
-            orbital.TargetOffset = newOffset;
-
-            // Check if transition is complete
-            if (Mathf.Abs(orbital.Radius - originalRadius) < 0.01f)
-            {
-                // Restore exact original settings
-                orbital.Radius = originalRadius;
-                orbital.TargetOffset = originalTargetOffset;
-                isTransitioning = false;
-                Debug.Log("Three Ring restoration complete");
-            }
+            targetRadius = originalRadius * Mathf.Max(1f, combatRadiusMultiplier);
         }
+
+        float newRadius = Mathf.Lerp(orbital.Radius, targetRadius, Time.deltaTime * zoomLerpSpeed);
+        Vector3 newOffset = Vector3.Lerp(orbital.TargetOffset, targetOffset, Time.deltaTime * zoomLerpSpeed);
+
+        orbital.Radius = newRadius;
+        orbital.TargetOffset = newOffset;
+
+        if (cmCamera != null)
+        {
+            float targetFov = (useCombatCameraAdjustments && !CombatManager.isGuarding && CombatManager.isInCombat)
+                ? combatFieldOfView
+                : originalFieldOfView;
+
+            var lens = cmCamera.Lens;
+            lens.FieldOfView = Mathf.Lerp(lens.FieldOfView, targetFov, Time.deltaTime * combatFovLerpSpeed);
+            cmCamera.Lens = lens;
+        }
+
+        bool reachedRadius = Mathf.Abs(orbital.Radius - targetRadius) < 0.01f;
+        bool reachedOffset = Vector3.SqrMagnitude(orbital.TargetOffset - targetOffset) < 0.0001f;
+        bool reachedFov = true;
+        if (cmCamera != null)
+        {
+            float targetFov = (useCombatCameraAdjustments && !CombatManager.isGuarding && CombatManager.isInCombat)
+                ? combatFieldOfView
+                : originalFieldOfView;
+            reachedFov = Mathf.Abs(cmCamera.Lens.FieldOfView - targetFov) < 0.05f;
+        }
+
+        isTransitioning = !(reachedRadius && reachedOffset && reachedFov);
     }
 
     // Public method to reset to original settings if needed
@@ -148,8 +161,15 @@ public class ThirdPersonCameraController : MonoBehaviour
         {
             orbital.Radius = originalRadius;
             orbital.TargetOffset = originalTargetOffset;
+            if (cmCamera != null)
+            {
+                var lens = cmCamera.Lens;
+                lens.FieldOfView = originalFieldOfView;
+                cmCamera.Lens = lens;
+            }
             isTransitioning = false;
             wasGuarding = false;
+            wasInCombat = false;
             Debug.Log("Camera reset to original Three Ring settings");
         }
     }
