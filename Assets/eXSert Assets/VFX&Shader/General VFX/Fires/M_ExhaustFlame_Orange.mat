@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_ExhaustFlame
+  m_Name: M_ExhaustFlame_Orange
   m_Shader: {fileID: -6465566751694194690, guid: e9ce7ce9d1871f0488fb0033d05ed734, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -38,10 +38,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _FlameSize: 0.71
     - _QueueControl: 0
     - _QueueOffset: 0
+    - _SmoothStep1: 0.19
+    - _SmoothStep2: 0.73
+    - _Smoothness: 0.54
     m_Colors:
-    - _Color: {r: 4, g: 0.4451606, b: 0, a: 1}
+    - _Color: {r: 5.7506113, g: 0.692482, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &7405899874717319640
