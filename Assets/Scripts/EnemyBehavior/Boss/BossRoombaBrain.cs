@@ -193,6 +193,18 @@ namespace EnemyBehavior.Boss
         [Tooltip("Radius around boss to check for player when applying spin knockback (in addition to top zone)")]
         public float SpinKnockbackRadius = 5f;
 
+        [Header("Knockback Tuning")]
+        [Tooltip("Minimum time between player knockback applications from this boss.")]
+        [Min(0f)] public float KnockbackCooldown = 0.45f;
+        [Tooltip("Knockback force for melee/arm hits that are not dash or charge attacks.")]
+        public float MeleeKnockbackForce = 10f;
+        [Tooltip("Upward knockback component for melee/arm hits that are not dash or charge attacks.")]
+        public float MeleeKnockbackUpwardForce = 2f;
+        [Tooltip("Knockback force for static charge hits.")]
+        public float StaticChargeKnockbackForce = 18f;
+        [Tooltip("Upward knockback component for static charge hits.")]
+        public float StaticChargeKnockbackUpwardForce = 5f;
+
         [Header("Vacuum & Form Change")]
         [Tooltip("Min/Max attack count before vacuum triggers")]
         public Vector2Int AttackCountForVacuumRange = new Vector2Int(8, 12);
@@ -435,6 +447,7 @@ namespace EnemyBehavior.Boss
         // Shared flag to prevent double-knockback during dashes
         // Both manual collision check and trigger-based hitboxes check/set this
         private bool dashHitAppliedThisAttack;
+        private float lastKnockbackAppliedTime = -999f;
 
         #region IQueuedAttacker Implementation
         
@@ -517,6 +530,51 @@ namespace EnemyBehavior.Boss
         /// Used by both manual collision check and trigger-based hitboxes.
         /// </summary>
         public bool HasDashHitBeenApplied => dashHitAppliedThisAttack;
+
+        public float StaticChargeTopSpeed => BaseSpeed * StaticChargeSpeedMultiplier;
+        public float TargetedChargeTopSpeed => BaseSpeed * TargetedChargeSpeedMultiplier;
+        public float DashTopSpeed => DashSpeed;
+        public float MeleeTopSpeed => EnableAttackLunge ? AttackLungeSpeed : DuelistFollowSpeed;
+
+        public float GetSpeedBasedKnockbackMultiplier(float attackTopSpeed)
+        {
+            if (agent == null || attackTopSpeed <= 0.001f)
+                return 1f;
+
+            return Mathf.Clamp01(agent.velocity.magnitude / attackTopSpeed);
+        }
+
+        public bool CanApplyKnockback => (Time.time - lastKnockbackAppliedTime) >= KnockbackCooldown;
+
+        public bool TryApplyKnockbackToPlayer(Vector3 baseImpulse, float attackTopSpeed, string sourceTag)
+        {
+            if (!CanApplyKnockback)
+            {
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Knockback blocked by cooldown ({sourceTag})");
+                return false;
+            }
+
+            float speedMultiplier = GetSpeedBasedKnockbackMultiplier(attackTopSpeed);
+            Vector3 finalImpulse = baseImpulse * speedMultiplier;
+            if (finalImpulse.sqrMagnitude <= 0.0001f)
+            {
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Knockback skipped - speed multiplier too low ({sourceTag})");
+                return false;
+            }
+
+            if (playerMovement == null)
+                CachePlayerReference();
+
+            if (playerMovement != null)
+            {
+                playerMovement.ApplyKnockback(finalImpulse);
+                lastKnockbackAppliedTime = Time.time;
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Knockback applied ({sourceTag}) base={baseImpulse.magnitude:F2} mult={speedMultiplier:F2} final={finalImpulse.magnitude:F2}");
+                return true;
+            }
+
+            return false;
+        }
         
         #endregion
 
@@ -541,6 +599,10 @@ namespace EnemyBehavior.Boss
 
         void Awake()
         {
+            // Ensure lock-on systems that query BaseEnemyCore can target the boss.
+            if (GetComponent<BossRoombaEnemyCoreAdapter>() == null)
+                gameObject.AddComponent<BossRoombaEnemyCoreAdapter>();
+
             ctrl = GetComponent<BossRoombaController>();
             agent = GetComponent<NavMeshAgent>();
             // GetComponentInChildren searches this GameObject and all children
@@ -2552,25 +2614,24 @@ namespace EnemyBehavior.Boss
                         if (dot > 0.2f) // Player is in front-ish
                         {
                             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] DASH MANUAL HIT! Distance: {distToPlayer:F2}, Dot: {dot:F2}");
-                            dashHitAppliedThisAttack = true; // Set shared flag
-                            
-                            // Disable hitboxes immediately to prevent trigger-based hit from also firing
-                            if (animMediator != null)
-                            {
-                                animMediator.DisableCharge();
-                                animMediator.DisableBothArms();
-                            }
-                            
                             // Apply knockback in attack direction
                             Vector3 knockbackDir = Vector3.Lerp(toPlayer, currentAttackDirection, KnockbackAttackDirectionWeight);
                             knockbackDir.y = 0;
                             knockbackDir.Normalize();
                             
                             Vector3 knockbackVelocity = knockbackDir * DashKnockbackForce + Vector3.up * DashKnockbackUpwardForce;
-                            
-                            if (playerMovement != null)
+
+                            if (TryApplyKnockbackToPlayer(knockbackVelocity, DashTopSpeed, "DashManualCollision"))
                             {
-                                playerMovement.ApplyKnockback(knockbackVelocity);
+                                dashHitAppliedThisAttack = true;
+
+                                // Disable hitboxes immediately to prevent trigger-based hit from also firing
+                                if (animMediator != null)
+                                {
+                                    animMediator.DisableCharge();
+                                    animMediator.DisableBothArms();
+                                }
+
                                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Applied dash knockback: {knockbackVelocity}, magnitude: {knockbackVelocity.magnitude:F1}");
                             }
                         }
@@ -2686,8 +2747,9 @@ namespace EnemyBehavior.Boss
             if (playerMovement != null)
             {
                 Vector3 knockbackVelocity = flingDir * SpinKnockbackForce;
-                playerMovement.ApplyKnockback(knockbackVelocity);
-                PushAction($"Player knocked back (spin) with velocity {SpinKnockbackForce:F1}");
+                float spinTopSpeed = Mathf.Max(0.1f, agent != null ? agent.speed : TopWanderSpeed);
+                if (TryApplyKnockbackToPlayer(knockbackVelocity, spinTopSpeed, "Spin"))
+                    PushAction($"Player knocked back (spin) with velocity {SpinKnockbackForce:F1}");
             }
             else
             {

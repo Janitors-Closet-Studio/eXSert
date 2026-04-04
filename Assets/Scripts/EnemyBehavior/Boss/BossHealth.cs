@@ -291,4 +291,79 @@ namespace EnemyBehavior.Boss
         
         #endregion
     }
+
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(BossHealth))]
+    public class BossRoombaEnemyCoreAdapter : BaseEnemyCore
+    {
+        [SerializeField] private BossHealth bossHealth;
+
+        private bool wasAlive;
+
+        public override bool isAlive => bossHealth != null && !bossHealth.IsDefeated && gameObject.activeInHierarchy;
+        public override float currentHP => bossHealth != null ? bossHealth.currentHP : 0f;
+        public override float maxHP => bossHealth != null ? bossHealth.maxHP : 0f;
+
+        private void Awake()
+        {
+            bossHealth ??= GetComponent<BossHealth>();
+            wasAlive = isAlive;
+        }
+
+        private void OnEnable()
+        {
+            bossHealth ??= GetComponent<BossHealth>();
+            if (bossHealth != null)
+                bossHealth.BossDefeated += HandleBossDefeated;
+
+            wasAlive = isAlive;
+        }
+
+        private void OnDisable()
+        {
+            if (bossHealth != null)
+                bossHealth.BossDefeated -= HandleBossDefeated;
+        }
+
+        private void Update()
+        {
+            bool aliveNow = isAlive;
+            if (wasAlive && !aliveNow)
+                InvokeOnDeath();
+
+            wasAlive = aliveNow;
+        }
+
+        private void HandleBossDefeated()
+        {
+            if (!wasAlive)
+                return;
+
+            wasAlive = false;
+            InvokeOnDeath();
+        }
+
+        public override void Spawn()
+        {
+            wasAlive = isAlive;
+            InvokeOnSpawn();
+        }
+
+        public override void ResetEnemy()
+        {
+            wasAlive = isAlive;
+            InvokeOnReset();
+        }
+
+        public override void HealHP(float hp)
+        {
+            bossHealth?.HealHP(hp);
+            wasAlive = isAlive;
+        }
+
+        public override void LoseHP(float damage)
+        {
+            bossHealth?.LoseHP(damage);
+        }
+    }
 }
