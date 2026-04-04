@@ -10,6 +10,7 @@
  */
 
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 using Utilities.Combat.Attacks;
@@ -187,6 +188,11 @@ public class AttackLockSystem : MonoBehaviour
     [Tooltip("How quickly the lean returns to center when input is released.")]
     private float leanReturnTime = 0.15f;
 
+    [Header("Reticle Stage Settings")]
+    [SerializeField, Min(1)]
+    [Tooltip("How many nearest enemies inside max lock-on range show the base gear reticle stage.")]
+    private int closestEnemiesWithBaseGear = 3;
+
     /// <summary>
     /// Gets or sets whether vertical lean input is inverted. Can be used by settings menu.
     /// </summary>
@@ -215,6 +221,9 @@ public class AttackLockSystem : MonoBehaviour
     private float softLockAttackFacingExpireTime = -1f;
     private float lastTargetInvalidLogTime = -1f;
     private string lastTargetInvalidReason;
+    private readonly List<Transform> reticleCandidates = new();
+    private readonly HashSet<ReticleController> drivenReticles = new();
+    private readonly HashSet<ReticleController> drivenReticlesThisFrame = new();
     public bool IsHardLockActive => hardLockActive && currentTarget != null;
     public Transform CurrentHardLockTarget => currentTarget;
     public bool IsSoftLockMotionInProgress => moveCoroutine != null;
@@ -257,47 +266,55 @@ public class AttackLockSystem : MonoBehaviour
         }
         
         ClearHardLock(playReticleExit: false);
+        ClearReticleStageOverrides();
     }
 
     private void Update()
     {
-        if (!hardLockActive || currentTarget == null)
-            return;
-
-        if (IsCurrentTargetDead())
+        if (hardLockActive && currentTarget != null)
         {
-            currentTargetReticle?.PlayTargetLost();
-            ClearHardLock(playReticleExit: false);
-            return;
-        }
-
-        if (!IsTargetValid(currentTarget, GetEffectiveLockOnRange(), out string invalidReason))
-        {
-            if (debugLockOn
-                && (invalidReason != lastTargetInvalidReason || Time.time - lastTargetInvalidLogTime > 0.5f))
+            if (IsCurrentTargetDead())
             {
-                lastTargetInvalidReason = invalidReason;
-                lastTargetInvalidLogTime = Time.time;
-                LogLock($"Current hard-lock target became invalid: {invalidReason}");
+                currentTargetReticle?.PlayTargetLost();
+                ClearHardLock(playReticleExit: false);
             }
 
-            float effectiveRange = GetEffectiveLockOnRange();
-            Transform replacementTarget = FindClosestTargetToReference(currentTarget, effectiveRange);
-            if (replacementTarget == null)
+            if (hardLockActive
+                && currentTarget != null
+                && !IsTargetValid(currentTarget, GetEffectiveLockOnRange(), out string invalidReason))
             {
-                LogLock("No replacement hard-lock target found. Clearing hard lock.");
-                ClearHardLock();
-                return;
+                if (debugLockOn
+                    && (invalidReason != lastTargetInvalidReason || Time.time - lastTargetInvalidLogTime > 0.5f))
+                {
+                    lastTargetInvalidReason = invalidReason;
+                    lastTargetInvalidLogTime = Time.time;
+                    LogLock($"Current hard-lock target became invalid: {invalidReason}");
+                }
+
+                float effectiveRange = GetEffectiveLockOnRange();
+                Transform replacementTarget = FindClosestTargetToReference(currentTarget, effectiveRange);
+                if (replacementTarget == null)
+                {
+                    LogLock("No replacement hard-lock target found. Clearing hard lock.");
+                    ClearHardLock();
+                }
+                else
+                {
+                    LogLock($"Switching hard-lock target to replacement '{replacementTarget.name}'.");
+                    SetHardLockTarget(replacementTarget, playEntryAnimation: true, playExitAnimation: true);
+                }
             }
 
-            LogLock($"Switching hard-lock target to replacement '{replacementTarget.name}'.");
-            SetHardLockTarget(replacementTarget, playEntryAnimation: true, playExitAnimation: true);
+            if (hardLockActive && currentTarget != null)
+            {
+                if (steerCamera)
+                    AimCameraAtTarget(currentTarget, instant: false);
+                else if (rotatePlayerIfCameraDisabled)
+                    FaceTargetImmediately(currentTarget);
+            }
         }
 
-        if (steerCamera)
-            AimCameraAtTarget(currentTarget, instant: false);
-        else if (rotatePlayerIfCameraDisabled)
-            FaceTargetImmediately(currentTarget);
+        UpdateTargetingReticles();
     }
 
     private void FixedUpdate()
@@ -309,6 +326,109 @@ public class AttackLockSystem : MonoBehaviour
             return;
 
         RotatePlayerTowardTarget(currentTarget, instant: false, deltaTimeOverride: Time.fixedDeltaTime);
+    }
+
+    private void UpdateTargetingReticles()
+    {
+        CollectReticleCandidates(Mathf.Max(GetEffectiveLockOnRange(), Mathf.Max(0f, lockOnMaxRange)));
+
+        Transform softLockTarget = null;
+        if (hardLockActive && currentTarget != null)
+            softLockTarget = currentTarget;
+        else
+            softLockTarget = FindNearestEnemyInPlayerCone(GetEffectiveLockOnRange(), includeDrones: true);
+
+        if (softLockTarget == null && reticleCandidates.Count > 0)
+            softLockTarget = reticleCandidates[0];
+
+        int baseCount = Mathf.Max(1, closestEnemiesWithBaseGear);
+        drivenReticlesThisFrame.Clear();
+
+        for (int i = 0; i < reticleCandidates.Count; i++)
+        {
+            Transform candidate = reticleCandidates[i];
+            ReticleController reticle = ResolveReticleController(candidate);
+            if (reticle == null)
+                continue;
+
+            bool isHardLockedTarget = hardLockActive && candidate == currentTarget;
+            bool isSoftLockTarget = candidate == softLockTarget || isHardLockedTarget;
+
+            bool showArrows = isHardLockedTarget;
+            bool showGlow = isSoftLockTarget;
+            bool showBase = !showGlow && i < baseCount;
+
+            reticle.SetExternalTargetingState(true, showBase, showGlow, showArrows);
+            drivenReticlesThisFrame.Add(reticle);
+        }
+
+        foreach (ReticleController reticle in drivenReticles)
+        {
+            if (reticle == null || drivenReticlesThisFrame.Contains(reticle))
+                continue;
+
+            reticle.SetExternalTargetingState(true, showBaseGear: false, showGlowGear: false, showArrowsState: false);
+        }
+
+        drivenReticles.Clear();
+        foreach (ReticleController reticle in drivenReticlesThisFrame)
+            drivenReticles.Add(reticle);
+    }
+
+    private void CollectReticleCandidates(float radius)
+    {
+        reticleCandidates.Clear();
+
+        if (radius <= 0f)
+            return;
+
+        Collider[] hits = GetEnemyHits(radius);
+        HashSet<Transform> uniqueCandidates = new();
+
+        foreach (Collider hit in hits)
+        {
+            if (!ColliderIsEnemy(hit))
+                continue;
+
+            Transform candidate = GetEnemyRoot(hit.transform);
+            if (candidate == null || !candidate.gameObject.activeInHierarchy)
+                continue;
+
+            if (!uniqueCandidates.Add(candidate))
+                continue;
+
+            BaseEnemyCore enemy = candidate.GetComponent<BaseEnemyCore>();
+            if (enemy != null && !enemy.isAlive)
+                continue;
+
+            float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (sqrDistance > radius * radius)
+                continue;
+
+            reticleCandidates.Add(candidate);
+        }
+
+        reticleCandidates.Sort((a, b) =>
+        {
+            float aDistance = (a.position - playerTransform.position).sqrMagnitude;
+            float bDistance = (b.position - playerTransform.position).sqrMagnitude;
+            return aDistance.CompareTo(bDistance);
+        });
+    }
+
+    private void ClearReticleStageOverrides()
+    {
+        foreach (ReticleController reticle in drivenReticles)
+        {
+            if (reticle == null)
+                continue;
+
+            reticle.SetExternalTargetingState(false, showBaseGear: false, showGlowGear: false, showArrowsState: false);
+        }
+
+        drivenReticles.Clear();
+        drivenReticlesThisFrame.Clear();
+        reticleCandidates.Clear();
     }
 
     private void HandleAttackEvent(PlayerAttack executedAttack)
