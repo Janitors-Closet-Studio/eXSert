@@ -67,8 +67,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [Header("Defense")]
     [SerializeField, Tooltip("When enabled, dashing grants brief invincibility (i-frames).")]
     private bool enableDashInvincibility = true;
-    [SerializeField, Range(0f, 1f), Tooltip("Real-time seconds of invincibility granted as soon as a dash starts.")]
-    private float dashInvincibilitySeconds = 0.35f;
+    [SerializeField, Range(0.05f, 2f), Tooltip("Failsafe duration in case dash i-frame end animation event is missed. Set to a small value to avoid accidental permanent invulnerability.")]
+    private float dashInvincibilityFailsafeSeconds = 0.5f;
 
     [Header("References")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -104,7 +104,9 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool deathInputLockOwned;
     private bool waitingForRespawnHeal;
     private bool suppressNextFlinch;
-    private float invincibleUntilUnscaledTime;
+    private bool dashInvincibilityActive;
+    private float dashInvincibilityFailsafeUntilUnscaledTime;
+    private bool attackManagerDisabledByDeath;
     private float defaultMaxHealth;
     private float defaultCurrentHealth;
 
@@ -148,10 +150,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Player.RespawnPlayer += HandleRespawnRequested;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
-        if (playerMovement != null)
-        {
-            playerMovement.DashPerformed += HandleDashPerformed;
-        }
+        dashInvincibilityActive = false;
+        dashInvincibilityFailsafeUntilUnscaledTime = 0f;
     }
     private void OnDisable() 
     { 
@@ -161,10 +161,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         LoadingScreenController.OnLoadingScreenShown -= HandleLoadingScreenShown;
         waitingForRespawnHeal = false;
 
-        if (playerMovement != null)
-        {
-            playerMovement.DashPerformed -= HandleDashPerformed;
-        }
+        dashInvincibilityActive = false;
+        dashInvincibilityFailsafeUntilUnscaledTime = 0f;
     }
     #endregion
 
@@ -325,24 +323,30 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         suppressNextFlinch = true;
     }
 
-    private void HandleDashPerformed()
+    public void BeginDashInvincibilityWindow()
     {
         if (!enableDashInvincibility)
             return;
 
-        if (dashInvincibilitySeconds <= 0f)
-            return;
+        dashInvincibilityActive = true;
+        dashInvincibilityFailsafeUntilUnscaledTime = Time.unscaledTime + Mathf.Max(0.05f, dashInvincibilityFailsafeSeconds);
+    }
 
-        float until = Time.unscaledTime + dashInvincibilitySeconds;
-        if (until > invincibleUntilUnscaledTime)
-        {
-            invincibleUntilUnscaledTime = until;
-        }
+    public void EndDashInvincibilityWindow()
+    {
+        dashInvincibilityActive = false;
+        dashInvincibilityFailsafeUntilUnscaledTime = 0f;
     }
 
     private bool IsTemporarilyInvincible()
     {
-        return Time.unscaledTime < invincibleUntilUnscaledTime;
+        if (dashInvincibilityActive && Time.unscaledTime > dashInvincibilityFailsafeUntilUnscaledTime)
+        {
+            dashInvincibilityActive = false;
+            dashInvincibilityFailsafeUntilUnscaledTime = 0f;
+        }
+
+        return dashInvincibilityActive;
     }
 
     public void LoadData(GameData data)
@@ -389,8 +393,15 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         deathSequenceRoutine = StartCoroutine(DeathSequenceRoutine(playDeathAnimation));
 
-        if (!CutsceneManager.IsCutscenePlaying && Time.timeScale > 0f)
-            SoundManager.Instance.voiceSource.PlayOneShot(playerDeathSFX);
+        if (!CutsceneManager.IsCutscenePlaying && Time.timeScale > 0f && playerDeathSFX != null)
+        {
+            SoundManager soundManager = SoundManager.Instance;
+            AudioSource source = soundManager != null ? soundManager.voiceSource : null;
+            if (source != null)
+                source.PlayOneShot(playerDeathSFX);
+            else if (!PlayerMovement.IsTestingOrDebugMode)
+                Debug.LogError("[PlayerHealthBarManager] Cannot play death SFX because SoundManager.voiceSource is missing.");
+        }
     }
 
     private void NotifyHealthChanged()
@@ -483,16 +494,35 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     private IEnumerator DeathSequenceRoutine(bool playDeathAnimation)
     {
+        if (attackManager != null && attackManager.enabled)
+        {
+            attackManager.enabled = false;
+            attackManagerDisabledByDeath = true;
+        }
+
         playerMovement?.EnterDeathState();
         AcquireDeathInputLock();
         if(playDeathAnimation) animationController?.PlayDeath();
 
         yield return WaitForDeathFadeTiming(playDeathAnimation);
 
-        if (restartFromCheckpointOnDeath) Player.TriggerRespawn();
+        bool canRespawnAtCheckpoint = CheckpointBehavior.currentCheckpoint != null || PlayerMovement.IsTestingOrDebugMode;
 
+        if (restartFromCheckpointOnDeath && canRespawnAtCheckpoint)
+        {
+            Player.TriggerRespawn();
+        }
         else if (destroyPlayerOnDeath)
+        {
             Destroy(gameObject);
+        }
+        else if (restartFromCheckpointOnDeath && !canRespawnAtCheckpoint)
+        {
+            animationController?.FreezeCurrentPose();
+            Debug.LogWarning("[PlayerHealthBarManager] Player is dead with no active checkpoint. Holding final death pose.");
+            deathSequenceRoutine = null;
+            yield break;
+        }
 
         ReleaseDeathSequenceLocks();
         deathSequenceRoutine = null;
@@ -529,6 +559,13 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         }
 
         ReleaseDeathSequenceLocks();
+
+        if (attackManagerDisabledByDeath && attackManager != null)
+        {
+            attackManager.enabled = true;
+            attackManagerDisabledByDeath = false;
+        }
+
         playerMovement?.ExitDeathState();
     }
 

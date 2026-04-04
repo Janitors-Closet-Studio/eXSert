@@ -115,6 +115,7 @@ public class ReticleController : MonoBehaviour
     private bool reticleRenderVisible;
     private bool playerInAttackZone;
     private float cachedAttackRange = -1f;
+    private bool externalTargetingStateActive;
 
     protected virtual void Awake()
     {
@@ -164,7 +165,8 @@ public class ReticleController : MonoBehaviour
 
         // Visibility and attack-zone state are evaluated every frame because they depend on live distance,
         // line-of-sight, and camera position. Billboard rotation also happens here so the reticle stays camera-facing.
-        UpdateRangeDrivenVisibility(camTransform);
+        if (!externalTargetingStateActive)
+            UpdateRangeDrivenVisibility(camTransform);
 
         if (!billboardToCamera)
             return;
@@ -174,6 +176,40 @@ public class ReticleController : MonoBehaviour
             targetRotation *= Quaternion.Euler(0f, 180f, 0f);
 
         transform.rotation = targetRotation;
+    }
+
+    public void SetExternalTargetingState(bool useExternalState, bool showBaseGear, bool showGlowGear, bool showArrowsState)
+    {
+        externalTargetingStateActive = useExternalState;
+
+        if (!useExternalState)
+            return;
+
+        stateSequence?.Kill();
+        stateSequence = null;
+
+        CaptureLayout();
+
+        bool isVisible = showBaseGear || showGlowGear || showArrowsState;
+        reticleRenderVisible = isVisible;
+        playerInAttackZone = showGlowGear;
+
+        if (showArrowsState)
+        {
+            RestoreArrowLockedPose();
+            SetGroupAlpha(leftArrowImages, 1f);
+            SetGroupAlpha(rightArrowImages, 1f);
+            currentState = ReticleState.Locked;
+        }
+        else
+        {
+            RestoreArrowStartPose();
+            SetGroupAlpha(leftArrowImages, 0f);
+            SetGroupAlpha(rightArrowImages, 0f);
+            currentState = isVisible ? ReticleState.Idle : ReticleState.Hidden;
+        }
+
+        ApplyGearState(showBaseGear || showGlowGear, showGlowGear, instant: true);
     }
 
     public void SetTarget(Transform target)
