@@ -771,6 +771,11 @@ MonoBehaviour:
   FlingForceRange: {x: 800, y: 1200}
   SpinKnockbackForce: 20
   SpinKnockbackRadius: 5
+  KnockbackCooldown: 0.6
+  MeleeKnockbackForce: 2
+  MeleeKnockbackUpwardForce: 0.5
+  StaticChargeKnockbackForce: 18
+  StaticChargeKnockbackUpwardForce: 5
   AttackCountForVacuumRange: {x: 8, y: 12}
   VacuumPosition: {fileID: 0}
   ArenaCenterBounds: {fileID: 0}
@@ -808,7 +813,7 @@ MonoBehaviour:
   _cageBullFormHelp: Settings specific to cage bull form.
   ChargeApproachSpeedMultiplier: 8
   StaticChargeSpeedMultiplier: 2
-  TargetedChargeSpeedMultiplier: 4
+  TargetedChargeSpeedMultiplier: 10
   StaticChargeAngularMultiplier: 8
   TargetedChargeAngularMultiplier: 0.15
   MaxDelayAtChargeStart: 2
