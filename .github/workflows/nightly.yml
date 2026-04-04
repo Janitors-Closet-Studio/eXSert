@@ -35,18 +35,51 @@ jobs:
       - name: Gather today's commits
         id: commits
         run: |
+          git fetch origin Development --depth=1
           SINCE=$(date -u '+%Y-%m-%dT00:00:00Z')
-          LOG=$(git log --since="$SINCE" --pretty=format:"- %s (%an)" origin/Development)
+          UNTIL=$(date -u -d 'tomorrow 00:00:00' '+%Y-%m-%dT00:00:00Z')
+          LOG=$(git log origin/Development --since="$SINCE" --until="$UNTIL" --pretty=format:"- %s (%an)")
           if [ -z "$LOG" ]; then
             LOG="- No new commits today."
           fi
-          echo "COMMIT_LOG<<EOF" >> $GITHUB_ENV
-          echo "$LOG" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          {
+            echo "commit_log<<EOF"
+            echo "$LOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Build fallback summary from commit titles
+        id: fallback_summary
+        run: |
+          COMMIT_LOG='${{ steps.commits.outputs.commit_log }}'
+
+          if [ "$COMMIT_LOG" = "- No new commits today." ]; then
+            SUMMARY="- No new Development commits were pushed today."
+          else
+            SUMMARY="$COMMIT_LOG"
+          fi
+
+          {
+            echo "summary<<EOF"
+            echo "$SUMMARY"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Summarize commits with Gemini
         id: summary
         run: |
+          COMMIT_LOG='${{ steps.commits.outputs.commit_log }}'
+          FALLBACK_SUMMARY='${{ steps.fallback_summary.outputs.summary }}'
+
+          if [ -z "${{ secrets.GEMINI_API_KEY }}" ]; then
+            {
+              echo "summary<<EOF"
+              echo "$FALLBACK_SUMMARY"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           PAYLOAD=$(jq -n \
             --arg log "$COMMIT_LOG" \
             '{
@@ -62,11 +95,23 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$PAYLOAD")
 
-          SUMMARY=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // "Could not generate summary."')
+          SUMMARY=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
-          echo "AI_SUMMARY<<EOF" >> $GITHUB_ENV
-          echo "$SUMMARY" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          if [ -z "$SUMMARY" ]; then
+            API_ERROR=$(echo "$RESPONSE" | jq -r '.error.message // empty')
+            if [ -n "$API_ERROR" ]; then
+              echo "Gemini summary failed: $API_ERROR"
+            else
+              echo "Gemini summary failed: empty response"
+            fi
+            SUMMARY="$FALLBACK_SUMMARY"
+          fi
+
+          {
+            echo "summary<<EOF"
+            echo "$SUMMARY"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Build project
         uses: game-ci/unity-builder@v4
@@ -80,11 +125,13 @@ jobs:
           unityVersion: 6000.2.15f1
 
       - name: Zip the build
+        id: package
         run: |
           BUILD_DATE=$(date -u '+%Y-%m-%d')
-          echo "BUILD_DATE=${BUILD_DATE}" >> $GITHUB_ENV
-          zip -r eXSert-daily-${BUILD_DATE}.zip build/StandaloneWindows64/
-          echo "ZIP_NAME=eXSert-daily-${BUILD_DATE}.zip" >> $GITHUB_ENV
+          ZIP_NAME=eXSert-daily-${BUILD_DATE}.zip
+          zip -r "$ZIP_NAME" build/StandaloneWindows64/
+          echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - name: Force-update DailyBuild tag
         run: |
@@ -106,9 +153,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: DailyBuild
-          name: "Daily Build — ${{ env.BUILD_DATE }}"
+          name: "Daily Build — ${{ steps.package.outputs.build_date }}"
           body: |
-            ## Daily Build — ${{ env.BUILD_DATE }}
+            ## Daily Build — ${{ steps.package.outputs.build_date }}
 
             Automated daily build from the **Development** branch.
             This release is automatically replaced every 24 hours.
@@ -117,14 +164,14 @@ jobs:
 
             ## What's new today
 
-            ${{ env.AI_SUMMARY }}
+            ${{ steps.summary.outputs.summary }}
 
             ---
 
             ## Raw commits
 
-            ${{ env.COMMIT_LOG }}
-          files: ${{ env.ZIP_NAME }}
+            ${{ steps.commits.outputs.commit_log }}
+          files: ${{ steps.package.outputs.zip_name }}
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
