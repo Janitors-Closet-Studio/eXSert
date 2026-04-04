@@ -150,6 +150,19 @@ public class SaveSlotsMenu : Menu
         else StartNewGame();
     }
 
+    
+    public void EnableAllSaveSlots()
+    {
+        if (saveSlots == null) return;
+
+        foreach (SaveSlots slot in saveSlots)
+        {
+            if (slot != null)
+                slot.SetInteractable(true);
+        }
+    }
+
+
     private void StartNewGame()
     {
         DataPersistenceManager.NewGame();

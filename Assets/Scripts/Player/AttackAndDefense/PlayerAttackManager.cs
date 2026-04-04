@@ -14,6 +14,7 @@ public class PlayerAttackManager : MonoBehaviour
     [SerializeField] private AttackDatabase attackDatabase;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private PlayerHealthBarManager playerHealth;
     [SerializeField] private AttackLockSystem attackLockSystem;
     [SerializeField, Tooltip("Registry of VFX anchor points on the player rig.")]
     private PlayerVfxAnchorRegistry vfxAnchorRegistry;
@@ -123,6 +124,7 @@ public class PlayerAttackManager : MonoBehaviour
     [SerializeField, Tooltip("Primary AudioSource for attack and stance SFX. Defaults to SoundManager's SFX source when unset.")]
     private AudioSource attackAudioSource;
     private AudioSource fallbackSfxSource;
+    private bool hasLoggedMissingAttackAudioSource;
     // private Coroutine stanceCooldownRoutine;
     private GameObject activeHitbox;
     private PlayerAttack currentAttack;
@@ -192,6 +194,7 @@ public class PlayerAttackManager : MonoBehaviour
         aerialComboManager ??= GetComponent<AerialComboManager>() ?? GetComponentInChildren<AerialComboManager>() ?? GetComponentInParent<AerialComboManager>();
         characterController ??= GetComponent<CharacterController>();
         playerMovement ??= GetComponent<PlayerMovement>() ?? GetComponentInChildren<PlayerMovement>() ?? GetComponentInParent<PlayerMovement>();
+        playerHealth ??= GetComponent<PlayerHealthBarManager>() ?? GetComponentInChildren<PlayerHealthBarManager>() ?? GetComponentInParent<PlayerHealthBarManager>();
         attackLockSystem ??= GetComponent<AttackLockSystem>() ?? GetComponentInChildren<AttackLockSystem>() ?? GetComponentInParent<AttackLockSystem>();
         vfxAnchorRegistry ??= GetComponent<PlayerVfxAnchorRegistry>() ?? GetComponentInChildren<PlayerVfxAnchorRegistry>() ?? GetComponentInParent<PlayerVfxAnchorRegistry>();
 
@@ -219,11 +222,13 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Start()
     {
-        fallbackSfxSource = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
+        fallbackSfxSource = SoundManager.Instance != null
+            ? (SoundManager.Instance.sfxSource != null ? SoundManager.Instance.sfxSource : SoundManager.Instance.voiceSource)
+            : null;
 
         if (attackAudioSource == null)
         {
-            attackAudioSource = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
+            attackAudioSource = fallbackSfxSource;
         }
 
     }
@@ -262,6 +267,8 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void Update()
     {
+        EnsureAttackStateConsistency();
+
         if (ShouldIgnoreAttackInput())
         {
             ClearBufferedAttack();
@@ -282,6 +289,37 @@ public class PlayerAttackManager : MonoBehaviour
         // Stance swapping removed.
         // if (InputReader.ChangeStanceTriggered)
         //     TryChangeStance();
+    }
+
+    private void EnsureAttackStateConsistency()
+    {
+        if (currentAttack == null)
+        {
+            if (InputReader.inputBusy && !CombatManager.isGuarding && !CombatManager.isParrying)
+            {
+                Debug.LogWarning("[PlayerAttackManager] Recovered orphaned inputBusy state with no active attack.");
+                InputReader.inputBusy = false;
+                animationController?.ResetAnimatorSpeed();
+                playerMovement?.SuppressLocomotionAnimations(false);
+                playerMovement?.ForceLocomotionRefresh();
+            }
+
+            return;
+        }
+
+        if (InputReader.inputBusy)
+            return;
+
+        if (plungeRecoveryRoutine != null)
+            return;
+
+        Debug.LogWarning("[PlayerAttackManager] Recovered stale attack state while input was unlocked.");
+        currentAttack = null;
+        currentAttackDamageMultiplier = 1f;
+        currentAttackSpeedMultiplier = 1f;
+        animationController?.ResetAnimatorSpeed();
+        playerMovement?.SuppressLocomotionAnimations(false);
+        playerMovement?.ForceLocomotionRefresh();
     }
 
     private void HandleGuardStateAttacks()
@@ -731,12 +769,40 @@ public class PlayerAttackManager : MonoBehaviour
         }
 
         var source = attackAudioSource != null ? attackAudioSource : fallbackSfxSource;
+
         if (source == null)
         {
-            if (!PlayerMovement.IsTestingOrDebugMode)
-                Debug.LogError("[PlayerAttackManager] No AudioSource available! attackAudioSource and fallbackSfxSource are both null. Check SoundManager.Instance.");
+            SoundManager soundManager = SoundManager.Instance;
+            if (soundManager != null)
+            {
+                source = soundManager.sfxSource != null ? soundManager.sfxSource : soundManager.voiceSource;
+                if (source != null)
+                {
+                    attackAudioSource = source;
+                    fallbackSfxSource = source;
+                }
+            }
+        }
+
+        if (source == null)
+        {
+            source = GetComponent<AudioSource>();
+            if (source == null)
+                source = GetComponentInChildren<AudioSource>();
+        }
+
+        if (source == null)
+        {
+            if (!hasLoggedMissingAttackAudioSource)
+            {
+                hasLoggedMissingAttackAudioSource = true;
+                if (!PlayerMovement.IsTestingOrDebugMode)
+                    Debug.LogWarning("[PlayerAttackManager] No AudioSource available for attack SFX. Assign attackAudioSource or configure SoundManager.sfxSource.");
+            }
             return;
         }
+
+        hasLoggedMissingAttackAudioSource = false;
 
         source.PlayOneShot(clip);
         Debug.Log($"[PlayerAttackManager] Playing SFX: {clip.name} on {source.gameObject.name}");
@@ -1142,6 +1208,9 @@ public class PlayerAttackManager : MonoBehaviour
 
     private bool ShouldIgnoreAttackInput()
     {
+        if (playerHealth != null && playerHealth.IsDead)
+            return true;
+
         if (InputReader.IsGameplayInputBlocked)
             return true;
 

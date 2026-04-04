@@ -69,7 +69,7 @@ namespace EnemyBehavior.Boss
             if (ArenaManager == null)
                 ArenaManager = GetComponent<BossArenaManager>() 
                     ?? GetComponentInParent<BossArenaManager>()
-                    ?? FindObjectOfType<BossArenaManager>();
+                    ?? FindFirstObjectByType<BossArenaManager>();
 
             CachePlayerReference();
         }

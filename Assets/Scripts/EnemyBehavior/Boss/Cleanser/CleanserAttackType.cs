@@ -292,6 +292,38 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("SFX/VFX")]
         [Tooltip("Sound effect played when Anime Dash Slash starts.")]
         public AudioClip AttackSFX;
+
+        [Header("Circular Trail VFX")]
+        [Tooltip("Optional after-image VFX prefab spawned repeatedly while circling (circular pattern only).")]
+        public GameObject CircleAfterImageVFX;
+
+        [Tooltip("Seconds between after-image spawns while circling.")]
+        [Min(0.01f)] public float CircleAfterImageSpawnInterval = 0.05f;
+
+        [Tooltip("Spawn interval multiplier at max circular speed (lower = more frequent when faster).")]
+        [Range(0.05f, 1f)] public float CircleAfterImageSpawnIntervalAtMaxSpeedMultiplier = 0.4f;
+
+        [Tooltip("Lifetime for each spawned after-image instance.")]
+        [Min(0.01f)] public float CircleAfterImageLifetime = 0.35f;
+
+        [Tooltip("Lifetime multiplier at max circular speed (lower = shorter after-images when faster).")]
+        [Range(0.05f, 1f)] public float CircleAfterImageLifetimeAtMaxSpeedMultiplier = 0.4f;
+
+        [Tooltip("Optional smoke trail VFX prefab spawned from foot level while circling (circular pattern only).")]
+        public GameObject CircleSmokeTrailVFX;
+
+        [Tooltip("Seconds between smoke trail spawns while circling.")]
+        [Min(0.01f)] public float CircleSmokeTrailSpawnInterval = 0.06f;
+
+        [Tooltip("Minimum current angular movement speed (deg/sec) required before smoke trail starts spawning.")]
+        [FormerlySerializedAs("CircleSmokeTrailMinSpeedThreshold")]
+        [Min(0f)] public float CircleSmokeTrailMinAngularSpeedDegPerSec = 360f;
+
+        [Tooltip("Y offset applied to smoke trail spawn so it can align with feet.")]
+        public float CircleSmokeTrailYOffset = 0f;
+
+        [Tooltip("Lifetime for each spawned smoke trail instance.")]
+        [Min(0.01f)] public float CircleSmokeTrailLifetime = 0.8f;
     }
 
     /// <summary>
@@ -663,6 +695,20 @@ namespace EnemyBehavior.Boss.Cleanser
     }
 
     /// <summary>
+    /// Damage falloff settings for the ultimate massive strike.
+    /// Uses DoubleMaximumSweepConfig.MassiveStrikeRadius as the effective outer range.
+    /// </summary>
+    [System.Serializable]
+    public class MassiveStrikeDamageConfig
+    {
+        [Tooltip("Inner percentage of MassiveStrikeRadius that deals full damage.")]
+        [Range(0f, 1f)] public float FullDamageRadiusPercent = 1f;
+
+        [Tooltip("Damage percentage dealt at the outer edge of MassiveStrikeRadius.")]
+        [Range(0f, 1f)] public float EdgeDamagePercent = 1f;
+    }
+
+    /// <summary>
     /// Configuration for the Double Maximum Sweep ultimate attack.
     /// </summary>
     [System.Serializable]
@@ -677,6 +723,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Playback speed multiplier specifically for JumpArcResolution during ultimate slam-down.")]
         [Min(0.1f)] public float JumpArcResolutionAnimSpeedMultiplier = 1f;
+
+        [Tooltip("Delay in seconds after starting JumpArcResolution animation before downward slam movement begins.")]
+        [Min(0f)] public float JumpArcResolutionMoveDelay = 0f;
 
         [Tooltip("Jump arc animation used for repositioning/float setup.")]
         public string JumpArcBaseTrigger = "JumpArcBase";
@@ -695,6 +744,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Travel duration for JumpFull repositioning hops.")]
         public float JumpFullTravelDuration = 1f;
+
+        [Tooltip("Apex height added above the midpoint for JumpFull reposition arcs (sweep-position jump and return-to-center jump).")]
+        [Min(0f)] public float JumpFullArcApexHeight = 5f;
 
         [Header("Sweep Projectiles")]
         [Tooltip("Projectile settings for the low sweep.")]
@@ -715,12 +767,34 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Yaw rotation speed (degrees/sec) while hovering. Can be negative for opposite direction.")]
         public float HoverRotationSpeed = 20f;
+
+        [Tooltip("Small vertical bob amplitude while hovering (world units). Set to 0 to disable bobbing.")]
+        [Min(0f)] public float HoverBobAmplitude = 0.08f;
+
+        [Tooltip("Bobbing speed while hovering (cycles per second).")]
+        [Min(0f)] public float HoverBobFrequency = 1.5f;
         
         [Tooltip("Delay added when hit by an aerial attack.")]
         public float AerialHitDelay = 2f;
         
-        [Tooltip("Number of valid plunge-finisher hits required to cancel the ultimate hover phase.")]
-        public int RequiredAerialHits = 2;
+        [Tooltip("If true, only a full aerial combo (2 light aerials + plunge finisher) can cancel the ultimate hover phase.")]
+        public bool FullAerialComboRequired = true;
+
+        [Header("Floating Platforms")]
+        [Tooltip("If true, uses pre-placed scene platform objects. If false, spawns platform prefabs at runtime.")]
+        public bool UseSceneFloatingPlatforms = false;
+
+        [Tooltip("Primary pre-placed scene platform object for ultimate hover phase.")]
+        public GameObject SceneFloatingPlatformPrimary;
+
+        [Tooltip("Optional second pre-placed scene platform object. If null, only the primary scene platform is used.")]
+        public GameObject SceneFloatingPlatformSecondary;
+
+        [Tooltip("Primary floating platform prefab used during ultimate hover phase.")]
+        public GameObject FloatingPlatformPrefabPrimary;
+
+        [Tooltip("Optional second floating platform prefab. If null, primary prefab is used for both platforms.")]
+        public GameObject FloatingPlatformPrefabSecondary;
 
         [Header("Massive Strike")]
         [Tooltip("Damage dealt if massive strike is NOT canceled.")]
@@ -731,6 +805,9 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("AoE radius of the massive strike.")]
         public float MassiveStrikeRadius = 20f;
+
+        [Tooltip("Controls how massive-strike impact damage range and falloff are evaluated.")]
+        public MassiveStrikeDamageConfig MassiveStrikeDamageConfig = new MassiveStrikeDamageConfig();
 
         [Header("Camera")]
         [Tooltip("Play cutscene camera on first use of this ultimate.")]

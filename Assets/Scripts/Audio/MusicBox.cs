@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+#pragma warning disable CS0414
 using Unity.VisualScripting;
 using NUnit.Framework;
 using System;
@@ -57,6 +58,7 @@ public class MusicBox : MonoBehaviour
         cachedSoundManager = SoundManager.Instance;
         TryBindMusicSource();
     }
+#pragma warning restore CS0414
 
     public void UpdateCachedVolumes()
     {

@@ -3,6 +3,7 @@
 */
 
 using UnityEngine;
+#pragma warning disable CS0414
 using Singletons;
 using System.Collections;
 public class SoundManager : Singleton<SoundManager>
@@ -35,6 +36,7 @@ public class SoundManager : Singleton<SoundManager>
         if (source == null) return;
         DontDestroyOnLoad(source.gameObject);
     }
+#pragma warning restore CS0414
 
     override protected void Awake()
     {

@@ -10,6 +10,8 @@ namespace Progression.Encounters
 {
     public class CombatEncounter : BasicEncounter
     {
+        public static event Action<CombatEncounter, bool> EncounterCombatStateChanged;
+
         #region Inspector Setup
         [Header("Combat Encounter Settings")]
         [SerializeField]
@@ -40,6 +42,7 @@ namespace Progression.Encounters
         private readonly Queue<Wave> wavesQueue = new();
 
         private bool encounterStarted = false;
+        private bool encounterActiveForCombatTracking;
         private Coroutine waveAdvanceRoutine;
 
         #region Basic Encounter Overrides
@@ -92,6 +95,8 @@ namespace Progression.Encounters
         {
             base.CleanupEncounter();
 
+            SetEncounterCombatActive(false);
+
             foreach (Wave wave in allWaves)
                 CleanupWave(wave);
 
@@ -124,6 +129,7 @@ namespace Progression.Encounters
             }
 
             encounterStarted = true;
+            SetEncounterCombatActive(true);
             SpawnNextWave();
         }
 
@@ -180,7 +186,11 @@ namespace Progression.Encounters
             if (wavesQueue.Count != 0) SpawnNextWave(delay);
 
             // If there are no more waves, then the encounter is completed and should be cleaned up
-            else HandleEncounterCompleted();
+            else
+            {
+                HandleEncounterCompleted();
+                SetEncounterCombatActive(false);
+            }
         }
 
         private void CleanupWave(Wave wave)
@@ -222,6 +232,7 @@ namespace Progression.Encounters
 
             wavesQueue.Clear();
             encounterStarted = false;
+            SetEncounterCombatActive(false);
             hasLastEnemyPosition = false;
             lastEnemyPosition = Vector3.zero;
 
@@ -259,6 +270,15 @@ namespace Progression.Encounters
                 Debug.Log($"[CombatEncounter] Generated new wave: {newWave} for encounter: {name}");
 
             return newWaveObject;
+        }
+
+        private void SetEncounterCombatActive(bool isActive)
+        {
+            if (encounterActiveForCombatTracking == isActive)
+                return;
+
+            encounterActiveForCombatTracking = isActive;
+            EncounterCombatStateChanged?.Invoke(this, isActive);
         }
         #endregion
     }

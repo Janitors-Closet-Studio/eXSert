@@ -56,6 +56,10 @@ public class HangarPlatExtHandler : MonoBehaviour
     [Tooltip("Time in seconds for the platform to fully extend/retract")]
     [SerializeField] private float openSpeed = 2f;
 
+    [Header("SFX")]
+    [SerializeField] private AudioClip extendSFX;
+    [SerializeField] private AudioClip extendStopSFX;
+
     internal bool isOpened = false;
 
     private void Awake()
@@ -125,6 +129,9 @@ public class HangarPlatExtHandler : MonoBehaviour
         if (doorParts == null || doorParts.Count == 0)
             yield break;
 
+        SoundManager.Instance.sfxSource.clip = extendSFX;
+        SoundManager.Instance.sfxSource.Play();
+
         List<GameObject> movingParts = new List<GameObject>();
         List<Vector3> startLocalPositions = new List<Vector3>();
         List<Vector3> targetLocalPositions = new List<Vector3>();
@@ -192,6 +199,8 @@ public class HangarPlatExtHandler : MonoBehaviour
             part.transform.localPosition = targetLocalPositions[i];
         }
 
+        SoundManager.Instance.sfxSource.Stop();
+        SoundManager.Instance.sfxSource.PlayOneShot(extendStopSFX);
         isOpened = true;
     }
 
@@ -199,6 +208,9 @@ public class HangarPlatExtHandler : MonoBehaviour
     {
         if (doorParts == null || doorParts.Count == 0)
             yield break;
+
+        SoundManager.Instance.sfxSource.clip = extendSFX;
+        SoundManager.Instance.sfxSource.Play();
 
         List<GameObject> movingParts = new List<GameObject>();
         List<Vector3> startLocalPositions = new List<Vector3>();
@@ -260,6 +272,8 @@ public class HangarPlatExtHandler : MonoBehaviour
             part.transform.localPosition = closedLocalPositions[i];
         }
 
+        SoundManager.Instance.sfxSource.Stop();
+        SoundManager.Instance.sfxSource.PlayOneShot(extendStopSFX);
         isOpened = false;
     }
 }
