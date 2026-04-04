@@ -298,9 +298,17 @@ public class AttackLockSystem : MonoBehaviour
             AimCameraAtTarget(currentTarget, instant: false);
         else if (rotatePlayerIfCameraDisabled)
             FaceTargetImmediately(currentTarget);
+    }
 
-        if (rotatePlayerDuringHardLock)
-            RotatePlayerTowardTarget(currentTarget, instant: false);
+    private void FixedUpdate()
+    {
+        if (!hardLockActive || currentTarget == null)
+            return;
+
+        if (!rotatePlayerDuringHardLock)
+            return;
+
+        RotatePlayerTowardTarget(currentTarget, instant: false, deltaTimeOverride: Time.fixedDeltaTime);
     }
 
     private void HandleAttackEvent(PlayerAttack executedAttack)
@@ -434,7 +442,7 @@ public class AttackLockSystem : MonoBehaviour
             FaceTargetImmediately(target);
 
         if (rotatePlayerDuringHardLock)
-            RotatePlayerTowardTarget(target, instant: true);
+            RotatePlayerTowardTarget(target, instant: instantCameraAlign);
         else
             FaceTargetImmediately(target);
     }
@@ -1632,7 +1640,7 @@ public class AttackLockSystem : MonoBehaviour
         playerTransform.rotation = Quaternion.LookRotation(direction);
     }
 
-    private void RotatePlayerTowardTarget(Transform target, bool instant)
+    private void RotatePlayerTowardTarget(Transform target, bool instant, float deltaTimeOverride = -1f)
     {
         if (target == null || playerTransform == null)
             return;
@@ -1653,24 +1661,13 @@ public class AttackLockSystem : MonoBehaviour
             return;
         }
 
-        // Use Slerp for smoother rotation that doesn't overshoot
-        // Convert degrees/second to a lerp factor (higher speed = faster lerp)
         float angularDifference = Quaternion.Angle(playerTransform.rotation, desired);
-        
-        // Only rotate if there's a meaningful difference (reduces micro-jitter)
-        if (angularDifference < 0.5f)
+        if (angularDifference < 0.1f)
             return;
 
-        // Calculate a smooth lerp factor based on the rotation speed
-        // This creates a smoother feel than RotateTowards
-        float rotationFactor = Mathf.Clamp01(hardLockRotateSpeed * Time.deltaTime / Mathf.Max(angularDifference, 1f));
-        rotationFactor = Mathf.Max(rotationFactor, 0.1f); // Minimum rotation speed
-        
-        playerTransform.rotation = Quaternion.Slerp(
-            playerTransform.rotation,
-            desired,
-            rotationFactor
-        );
+        float deltaTime = deltaTimeOverride > 0f ? deltaTimeOverride : Time.deltaTime;
+        float maxStep = hardLockRotateSpeed * deltaTime;
+        playerTransform.rotation = Quaternion.RotateTowards(playerTransform.rotation, desired, maxStep);
     }
 
     private bool IsPlayerCurrentlyDashing()

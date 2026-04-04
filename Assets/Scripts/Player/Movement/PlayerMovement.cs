@@ -883,7 +883,23 @@ public class PlayerMovement : MonoBehaviour
 
             bool stateChanged = UpdateMoveState(usingAnalogThresholds, inputMagnitude);
 
-            Vector3 moveDirection = (forward * inputMove.y + right * inputMove.x).normalized;
+            bool guarding = CombatManager.isGuarding;
+            Vector3 moveForwardBasis = guarding
+                ? Vector3.ProjectOnPlane(transform.forward, Vector3.up)
+                : forward;
+            Vector3 moveRightBasis = guarding
+                ? Vector3.ProjectOnPlane(transform.right, Vector3.up)
+                : right;
+
+            if (moveForwardBasis.sqrMagnitude < 0.0001f)
+                moveForwardBasis = forward;
+            if (moveRightBasis.sqrMagnitude < 0.0001f)
+                moveRightBasis = right;
+
+            moveForwardBasis.Normalize();
+            moveRightBasis.Normalize();
+
+            Vector3 moveDirection = (moveForwardBasis * inputMove.y + moveRightBasis * inputMove.x).normalized;
             float targetSpeed = movementSpeedOverrideActive ? movementSpeedOverride : CurrentSpeed;
 
             if (attackMovementActive)
@@ -954,7 +970,8 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         bool grounded = IsGroundedNow();
-        if (!grounded || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackMovementActive)
+        bool guarding = CombatManager.isGuarding;
+        if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackMovementActive)
         {
             noInputGroundedTimer = 0f;
             idleRecoveryAppliedThisWindow = false;
@@ -2411,9 +2428,10 @@ public class PlayerMovement : MonoBehaviour
         animationController.EnsureAnimatorRuntimeHealthy();
 
         bool grounded = IsGroundedNow();
+        bool guarding = CombatManager.isGuarding;
         bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
 
-        if (!grounded || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackActive || InputReader.inputBusy)
+        if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackActive || InputReader.inputBusy)
         {
             nextLocomotionFailsafeRefreshTime = 0f;
             return;
