@@ -127,7 +127,7 @@ public class InputReader : Singleton<InputReader>
     private bool callbacksRegistered = false;
     [SerializeField, Range(0f, 0.5f)] private float lockOnDashSuppressionWindow = 0.18f;
     [SerializeField] private bool enableKeyboardLockOnFallbacks = true;
-    [SerializeField] private bool debugLockOnInput = true;
+    [SerializeField] private bool debugLockOnInput = false;
     private float lastDashPerformedTime = float.NegativeInfinity;
 
     public static event Action LockOnPressed;

@@ -281,7 +281,8 @@ public class AttackLockSystem : MonoBehaviour
                 LogLock($"Current hard-lock target became invalid: {invalidReason}");
             }
 
-            Transform replacementTarget = FindBestHardLockTarget();
+            float effectiveRange = GetEffectiveLockOnRange();
+            Transform replacementTarget = FindClosestTargetToReference(currentTarget, effectiveRange);
             if (replacementTarget == null)
             {
                 LogLock("No replacement hard-lock target found. Clearing hard lock.");
@@ -699,6 +700,43 @@ public class AttackLockSystem : MonoBehaviour
         Transform target = FindScreenAlignedEnemy(GetEffectiveLockOnRange());
         LogLock($"FindBestHardLockTarget => {(target != null ? target.name : "null")}");
         return target;
+    }
+
+    private Transform FindClosestTargetToReference(Transform referenceTarget, float radius)
+    {
+        if (referenceTarget == null)
+            return null;
+
+        Collider[] hits = GetEnemyHits(radius);
+        Transform closest = null;
+        float smallestDistance = float.MaxValue;
+
+        foreach (Collider hit in hits)
+        {
+            if (!ColliderIsEnemy(hit))
+                continue;
+
+            Transform candidate = GetEnemyRoot(hit.transform);
+            if (candidate == null || candidate == referenceTarget)
+                continue;
+
+            if (!IsTargetValid(candidate, radius))
+                continue;
+
+            BaseEnemyCore enemy = candidate.GetComponent<BaseEnemyCore>();
+            if (enemy != null && !enemy.isAlive)
+                continue;
+
+            float sqrDistanceToReference = (candidate.position - referenceTarget.position).sqrMagnitude;
+            if (sqrDistanceToReference < smallestDistance)
+            {
+                smallestDistance = sqrDistanceToReference;
+                closest = candidate;
+            }
+        }
+
+        LogLock($"FindClosestTargetToReference => {(closest != null ? closest.name : "null")} (reference={(referenceTarget != null ? referenceTarget.name : "null")}, radius={radius:0.##})");
+        return closest;
     }
 
     private Transform FindNearestEnemy(float radius, Transform ignore = null)
