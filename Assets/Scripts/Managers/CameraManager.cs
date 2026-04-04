@@ -12,6 +12,7 @@
 
 using UnityEngine;
 using Unity.Cinemachine;
+using Utilities.Combat;
 
 public class CameraManager : MonoBehaviour
 {
@@ -36,12 +37,26 @@ public class CameraManager : MonoBehaviour
     [SerializeField] private int activePriority = 20;
     [SerializeField] private int inactivePriority = 0;
 
+    [Header("Gameplay Combat Camera")]
+    [SerializeField] private bool enableGameplayCombatZoom = true;
+    [SerializeField, Range(1f, 2.5f)] private float gameplayCombatRadiusMultiplier = 1.2f;
+    [SerializeField, Range(40f, 120f)] private float gameplayCombatFieldOfView = 66f;
+    [SerializeField, Range(1f, 20f)] private float gameplayCombatRadiusLerpSpeed = 8f;
+    [SerializeField, Range(1f, 20f)] private float gameplayCombatFovLerpSpeed = 8f;
+    [SerializeField] private bool logCombatCameraDebug;
+
     // Cached orbital follow components for orbit preservation
     private CinemachineOrbitalFollow gameplayOrbit;
     private CinemachineOrbitalFollow guardOrbit;
     private CinemachineOrbitalFollow ultimateOrbit;
     private CinemachineOrbitalFollow cutsceneOrbit;
     private CinemachineOrbitalFollow specialOrbit;
+    private float gameplayBaseRadius;
+    private float gameplayBaseFieldOfView;
+    private bool gameplayBaseSettingsCached;
+    private bool lastInCombat;
+    private CameraState lastState;
+    private float nextCombatCameraDebugLogTime;
 
     // Singleton pattern for easy access
     public static CameraManager Instance { get; private set; }
@@ -63,14 +78,31 @@ public class CameraManager : MonoBehaviour
         // Cache orbital follow components
         CacheOrbitalComponents();
 
-        // Set initial camera priorities
-        SetCameraActive(gameplayCamera, true);
+        // Ensure only the intended initial camera is active.
+        InitializeCameraPriorities();
+
+        CacheGameplayBaseSettings();
+        lastInCombat = CombatManager.isInCombat;
+        lastState = CurrentState;
+        _ = CombatManager.Instance;
 
         if (SettingsManager.Instance != null)
         {
             SettingsManager.Instance.UpdatePlayerCameraSens(SettingsManager.Instance.sensitivity);
             SettingsManager.Instance.UpdatePlayerInvertY(SettingsManager.Instance.invertY);
         }
+    }
+
+    private void InitializeCameraPriorities()
+    {
+        SetCameraActive(gameplayCamera, false);
+        SetCameraActive(guardCamera, false);
+        SetCameraActive(ultimateCamera, false);
+        SetCameraActive(cutsceneCamera, false);
+        SetCameraActive(specialCamera, false);
+
+        CurrentState = CameraState.Gameplay;
+        SetCameraActive(gameplayCamera, true);
     }
 
     private void CacheOrbitalComponents()
@@ -91,6 +123,74 @@ public class CameraManager : MonoBehaviour
             specialOrbit = specialCamera.GetComponent<CinemachineOrbitalFollow>();
 
         ValidateSetup();
+    }
+
+    private void CacheGameplayBaseSettings()
+    {
+        if (gameplayCamera == null || gameplayOrbit == null)
+            return;
+
+        gameplayBaseRadius = gameplayOrbit.Radius;
+        gameplayBaseFieldOfView = gameplayCamera.Lens.FieldOfView;
+        gameplayBaseSettingsCached = true;
+    }
+
+    private void Update()
+    {
+        if (logCombatCameraDebug)
+            LogCombatCameraStateTransitions();
+
+        UpdateGameplayCombatCamera();
+    }
+
+    private void LogCombatCameraStateTransitions()
+    {
+        if (lastInCombat != CombatManager.isInCombat || lastState != CurrentState)
+        {
+            Debug.Log($"[CameraManager][CombatCamera] state={CurrentState} inCombat={CombatManager.isInCombat} active={GetActiveCamera()?.name}");
+            lastInCombat = CombatManager.isInCombat;
+            lastState = CurrentState;
+        }
+    }
+
+    private void UpdateGameplayCombatCamera()
+    {
+        if (!enableGameplayCombatZoom || gameplayCamera == null || gameplayOrbit == null)
+            return;
+
+        if (!gameplayBaseSettingsCached)
+            CacheGameplayBaseSettings();
+
+        if (!gameplayBaseSettingsCached)
+            return;
+
+        bool useCombatValues = CurrentState == CameraState.Gameplay && CombatManager.isInCombat;
+
+        float targetRadius = useCombatValues
+            ? gameplayBaseRadius * Mathf.Max(1f, gameplayCombatRadiusMultiplier)
+            : gameplayBaseRadius;
+
+        float targetFov = useCombatValues
+            ? gameplayCombatFieldOfView
+            : gameplayBaseFieldOfView;
+
+        gameplayOrbit.Radius = Mathf.Lerp(
+            gameplayOrbit.Radius,
+            targetRadius,
+            Time.deltaTime * Mathf.Max(0.01f, gameplayCombatRadiusLerpSpeed));
+
+        LensSettings lens = gameplayCamera.Lens;
+        lens.FieldOfView = Mathf.Lerp(
+            lens.FieldOfView,
+            targetFov,
+            Time.deltaTime * Mathf.Max(0.01f, gameplayCombatFovLerpSpeed));
+        gameplayCamera.Lens = lens;
+
+        if (logCombatCameraDebug && Time.time >= nextCombatCameraDebugLogTime)
+        {
+            nextCombatCameraDebugLogTime = Time.time + 0.5f;
+            Debug.Log($"[CameraManager][CombatCamera] useCombat={useCombatValues} camera={gameplayCamera.name} radius={gameplayOrbit.Radius:F2}/{targetRadius:F2} fov={lens.FieldOfView:F1}/{targetFov:F1}");
+        }
     }
 
     private void ValidateSetup()

@@ -209,24 +209,28 @@ namespace EnemyBehavior.Boss
             // Determine force and upward component based on attack type
             float force;
             float upwardForce;
+            float attackTopSpeed;
             
             // Check if this is a charge attack (use higher force and upward)
             if (armSide == ArmSide.Charge && bossBrain.IsCharging)
             {
-                force = bossBrain.IsTargetedCharge ? bossBrain.ChargeKnockbackForce : bossBrain.DashKnockbackForce;
-                upwardForce = bossBrain.IsTargetedCharge ? bossBrain.ChargeKnockbackUpwardForce : bossBrain.DashKnockbackUpwardForce;
+                force = bossBrain.IsTargetedCharge ? bossBrain.ChargeKnockbackForce : bossBrain.StaticChargeKnockbackForce;
+                upwardForce = bossBrain.IsTargetedCharge ? bossBrain.ChargeKnockbackUpwardForce : bossBrain.StaticChargeKnockbackUpwardForce;
+                attackTopSpeed = bossBrain.IsTargetedCharge ? bossBrain.TargetedChargeTopSpeed : bossBrain.StaticChargeTopSpeed;
             }
             else if (dashModeKnockback)
             {
                 // Dash mode - use dash knockback force (or override if set)
                 force = dashModeForceOverride > 0 ? dashModeForceOverride : bossBrain.DashKnockbackForce;
                 upwardForce = bossBrain.DashKnockbackUpwardForce;
+                attackTopSpeed = bossBrain.DashTopSpeed;
                 EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Using dash mode knockback - force: {force}");
             }
             else
             {
-                force = knockbackForceOverride > 0 ? knockbackForceOverride : bossBrain.DashKnockbackForce;
-                upwardForce = bossBrain.DashKnockbackUpwardForce;
+                force = knockbackForceOverride > 0 ? knockbackForceOverride : bossBrain.MeleeKnockbackForce;
+                upwardForce = bossBrain.MeleeKnockbackUpwardForce;
+                attackTopSpeed = bossBrain.MeleeTopSpeed;
             }
             
             // Add upward component
@@ -243,7 +247,9 @@ namespace EnemyBehavior.Boss
                 
             if (playerMovement != null)
             {
-                playerMovement.ApplyKnockback(knockbackImpulse);
+                if (!bossBrain.TryApplyKnockbackToPlayer(knockbackImpulse, attackTopSpeed, armSide.ToString()))
+                    return;
+
                 EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via PlayerMovement.ApplyKnockback: impulse={knockbackImpulse}, magnitude={knockbackImpulse.magnitude:F1}");
                 
                 // Notify the brain that a dash hit was applied (if in dash mode)

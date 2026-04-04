@@ -183,6 +183,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private float originalMovementSFXVolume;
     private bool wasMovingForSFX;
     private Coroutine movementSFXFadeCoroutine;
+    private bool hasLoggedMissingHitSfxSource;
     
     
     [Header("Behavior Profile")]
@@ -1211,16 +1212,43 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         if (clip == null)
             return;
 
-        SoundManager soundManager = SoundManager.Instance;
-        AudioSource source = soundManager != null ? soundManager.sfxSource : null;
+        AudioSource source = ResolveHitSfxSource();
         if (source == null)
         {
-            if (!PlayerMovement.IsTestingOrDebugMode)
-                Debug.LogError("[BaseEnemy] Cannot play hit SFX because SoundManager.sfxSource is missing.");
+            if (!hasLoggedMissingHitSfxSource)
+            {
+                hasLoggedMissingHitSfxSource = true;
+                if (!PlayerMovement.IsTestingOrDebugMode)
+                    Debug.LogWarning("[BaseEnemy] Cannot play hit SFX because no audio source is available.");
+            }
             return;
         }
 
+        hasLoggedMissingHitSfxSource = false;
+
         source.PlayOneShot(clip);
+    }
+
+    private AudioSource ResolveHitSfxSource()
+    {
+        SoundManager soundManager = SoundManager.Instance;
+        if (soundManager != null)
+        {
+            if (soundManager.sfxSource != null)
+                return soundManager.sfxSource;
+
+            if (soundManager.voiceSource != null)
+                return soundManager.voiceSource;
+        }
+
+        if (movementAudioSource != null)
+            return movementAudioSource;
+
+        AudioSource localSource = GetComponent<AudioSource>();
+        if (localSource != null)
+            return localSource;
+
+        return GetComponentInChildren<AudioSource>();
     }
 
     #region Movement SFX
@@ -1559,6 +1587,14 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     // Method to fire triggers safely by value, returns true if fired
     protected bool FireTrigger(TTrigger trigger)
     {
+        if (enemyAI == null)
+        {
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.LogWarning("BaseEnemy", $"[{name}] Cannot fire trigger {trigger}: state machine is null.");
+#endif
+            return false;
+        }
+
         if (enemyAI.CanFire(trigger))
         {
             enemyAI.Fire(trigger);
@@ -1704,6 +1740,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     // Simplify OnTriggerStay
     protected virtual void OnTriggerStay(Collider other)
     {
+        if (enemyAI == null) return;
+
         if (!other.CompareTag("Player")) return;
         
         EnsurePlayerTargetReference(other.transform);

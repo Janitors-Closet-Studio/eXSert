@@ -112,11 +112,15 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private PlayerAttackManager attackManager;
     [Tooltip("Player movement that receives jump event callbacks.")]
     [SerializeField] private PlayerMovement playerMovement;
+    [Tooltip("Player health manager that receives dash i-frame animation window callbacks.")]
+    [SerializeField] private PlayerHealthBarManager playerHealth;
     [Tooltip("Optional: log animation event invocations for debugging.")]
     [SerializeField] private bool logAnimationEvents = false;
 
     private Animator animator;
     private string currentState;
+
+    public string CurrentStateName => currentState;
 
     private Coroutine hardLockCoroutine;
     private string hardLockedState;
@@ -143,6 +147,13 @@ public class PlayerAnimationController : MonoBehaviour
                 ?? GetComponentInChildren<PlayerMovement>();
         }
 
+        if (playerHealth == null)
+        {
+            playerHealth = GetComponent<PlayerHealthBarManager>()
+                ?? GetComponentInParent<PlayerHealthBarManager>()
+                ?? GetComponentInChildren<PlayerHealthBarManager>();
+        }
+
         if (animator != null)
             animator.speed = 1f;
     }
@@ -161,6 +172,14 @@ public class PlayerAnimationController : MonoBehaviour
             return;
 
         animator.speed = 1f;
+    }
+
+    public void FreezeCurrentPose()
+    {
+        if (animator == null)
+            return;
+
+        animator.speed = 0f;
     }
 
     public void PlayIdle() => CrossFade(PlayerAnim.SingleTarget.Breathing);
@@ -200,8 +219,8 @@ public class PlayerAnimationController : MonoBehaviour
     }
 
     public void PlayGuardUp() => CrossFade(PlayerAnim.Guard.Raise, 0.02f, true);
-    public void PlayGuardIdle() => CrossFade(PlayerAnim.Guard.Idle);
-    public void PlayGuardWalk() => CrossFade(PlayerAnim.Guard.Walk);
+    public void PlayGuardIdle() => CrossFadeOrReplayIfFinished(PlayerAnim.Guard.Idle);
+    public void PlayGuardWalk() => CrossFadeOrReplayIfFinished(PlayerAnim.Guard.Walk);
     public void PlayGuardAttack() => CrossFade(PlayerAnim.Guard.Attack, 0.03f, true);
     public void PlayGuardDashLeft() => CrossFade(PlayerAnim.Guard.DashLeft, 0.02f, true);
     public void PlayGuardDashRight() => CrossFade(PlayerAnim.Guard.DashRight, 0.02f, true);
@@ -311,6 +330,38 @@ public class PlayerAnimationController : MonoBehaviour
         float crossFade = transition >= 0f ? transition : defaultTransition;
         animator.CrossFadeInFixedTime(stateName, crossFade, layerIndex, 0f);
         currentState = stateName;
+    }
+
+    private void CrossFadeOrReplayIfFinished(string stateName, float transition = -1f)
+    {
+        if (string.IsNullOrWhiteSpace(stateName) || animator == null)
+            return;
+
+        if (animator.GetCurrentAnimatorStateInfo(layerIndex).IsName(stateName)
+            && !animator.IsInTransition(layerIndex))
+        {
+            float normalizedTime = animator.GetCurrentAnimatorStateInfo(layerIndex).normalizedTime;
+            if (normalizedTime >= 1f)
+            {
+                animator.Play(stateName, layerIndex, 0f);
+                currentState = stateName;
+                return;
+            }
+        }
+
+        CrossFade(stateName, transition);
+    }
+
+    public string GetCurrentClipName()
+    {
+        if (animator == null)
+            return "<none>";
+
+        AnimatorClipInfo[] clips = animator.GetCurrentAnimatorClipInfo(layerIndex);
+        if (clips != null && clips.Length > 0 && clips[0].clip != null)
+            return clips[0].clip.name;
+
+        return "<none>";
     }
 
     private void StartHardLock(string stateName)
@@ -441,6 +492,22 @@ public class PlayerAnimationController : MonoBehaviour
             Debug.Log("[PlayerAnimationController] Jump invoked");
 
         playerMovement?.HandleAnimationJumpEvent();
+    }
+
+    public void StartDashInvincibility()
+    {
+        if (logAnimationEvents)
+            Debug.Log("[PlayerAnimationController] StartDashInvincibility invoked");
+
+        playerHealth?.BeginDashInvincibilityWindow();
+    }
+
+    public void EndDashInvincibility()
+    {
+        if (logAnimationEvents)
+            Debug.Log("[PlayerAnimationController] EndDashInvincibility invoked");
+
+        playerHealth?.EndDashInvincibilityWindow();
     }
 
     // Legacy event names kept to avoid missing-method errors on existing clips

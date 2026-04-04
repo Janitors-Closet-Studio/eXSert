@@ -13,11 +13,22 @@ public class Guard : MonoBehaviour
     [SerializeField, Range(0f, 2f)] private float guardDashCooldown = 0.45f;
 
     [Header("Targeting & Camera")]
-    [SerializeField] private bool autoHardLockWhileGuarding = true;
+    [SerializeField] private bool autoHardLockWhileGuarding = false;
     [SerializeField] private bool instantAlignOnEntry = true;
     [SerializeField] private bool switchToGuardCamera = true;
     [SerializeField] private CameraManager cameraOverride;
     [SerializeField, Range(90f, 1440f)] private float freeAimTurnSpeed = 540f;
+
+    [Header("Guard Animation")]
+    [SerializeField, Range(0f, 1f)] private float guardWalkEnterThreshold = 0.2f;
+    [SerializeField, Range(0f, 1f)] private float guardWalkExitThreshold = 0.12f;
+    [SerializeField, Range(0f, 0.5f)] private float guardRaiseBlendLockDuration = 0.12f;
+    [SerializeField] private bool debugGuardAnimation;
+    [SerializeField, Range(0.05f, 1f)] private float debugGuardLogInterval = 0.15f;
+
+    [Header("Guard Lock Diagnostics")]
+    [SerializeField] private bool debugGuardHardLockDiagnostics = true;
+    [SerializeField, Range(0.05f, 1f)] private float debugGuardHardLockLogInterval = 0.2f;
 
     [Header("References")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -34,8 +45,17 @@ public class Guard : MonoBehaviour
     private bool forcedHardLock;
     private bool cameraForced;
     private bool originalFaceMoveDirection = true;
+    private bool guardWalkAnimationActive;
     private float guardDashCooldownTimer;
     private float lastDashSign = 1f;
+    private float guardRaiseLockUntilTime;
+    private float nextGuardDebugLogTime;
+    private float nextGuardHardLockDebugLogTime;
+    private float lastGuardDiagnosticYaw;
+    private float lastGuardDiagnosticSampleTime;
+    private Vector3 lastGuardDiagnosticPosition;
+    private bool hasGuardDiagnosticSample;
+    private Animator guardAnimator;
     private Transform GuardRoot => playerMovement != null ? playerMovement.transform : transform;
 
     private void Awake()
@@ -44,6 +64,7 @@ public class Guard : MonoBehaviour
         playerMovement ??= GetComponent<PlayerMovement>();
         attackManager ??= GetComponent<PlayerAttackManager>();
         attackLockSystem ??= GetComponent<AttackLockSystem>();
+        guardAnimator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
     }
 
     private void OnEnable()
@@ -70,6 +91,16 @@ public class Guard : MonoBehaviour
 
         if (autoHardLockWhileGuarding)
             MaintainHardLock();
+
+        LogGuardHardLockDiagnostics();
+    }
+
+    private void FixedUpdate()
+    {
+        if (!guardActive || guardDashActive)
+            return;
+
+        AlignGuardRotation(InputReader.MoveInput);
     }
 
     private void OnDisable()
@@ -81,7 +112,16 @@ public class Guard : MonoBehaviour
     private void EnterGuard()
     {
         guardActive = true;
-        SoundManager.Instance.sfxSource.PlayOneShot(guardUpSFX);
+        guardWalkAnimationActive = false;
+        guardRaiseLockUntilTime = Time.time + Mathf.Max(0f, guardRaiseBlendLockDuration);
+        if (guardUpSFX != null)
+        {
+            AudioSource sfxSource = SoundManager.Instance != null ? SoundManager.Instance.sfxSource : null;
+            if (sfxSource != null)
+                sfxSource.PlayOneShot(guardUpSFX);
+            else if (debugGuardAnimation)
+                Debug.LogWarning("[Guard][AnimDebug] Guard up SFX skipped because SoundManager.sfxSource is missing.");
+        }
 
         if (InputReader.inputBusy)
             attackManager?.ForceCancelCurrentAttack(resetCombo: false);
@@ -101,8 +141,8 @@ public class Guard : MonoBehaviour
         if (switchToGuardCamera)
             ActivateGuardCamera();
 
-        if (autoHardLockWhileGuarding)
-            forcedHardLock = EnsureHardLock(instantAlignOnEntry);
+        if (autoHardLockWhileGuarding && attackLockSystem != null && attackLockSystem.IsHardLockActive)
+            attackLockSystem.EnsureHardLock(instantAlignOnEntry);
     }
 
     private void ExitGuard()
@@ -110,6 +150,7 @@ public class Guard : MonoBehaviour
         
         guardActive = false;
         guardDashActive = false;
+        guardWalkAnimationActive = false;
 
         CombatManager.ExitGuard();
 
@@ -138,6 +179,15 @@ public class Guard : MonoBehaviour
 
     private void UpdateGuardLocomotion()
     {
+        if (playerMovement != null)
+        {
+            if (playerMovement.ShouldFaceMoveDirection)
+                playerMovement.SetShouldFaceMoveDirection(false);
+
+            if (!playerMovement.IsLocomotionAnimationSuppressed)
+                playerMovement.SuppressLocomotionAnimations(true);
+        }
+
         if (playerMovement != null && !playerMovement.HasMovementSpeedOverride)
             playerMovement.SetMovementSpeedOverride(guardMoveSpeed);
 
@@ -145,13 +195,26 @@ public class Guard : MonoBehaviour
             return;
 
         Vector2 moveInput = InputReader.MoveInput;
-        AlignGuardRotation(moveInput);
-
-        if (InputReader.inputBusy)
-            return;
 
         float moveAmount = Mathf.Clamp01(moveInput.magnitude);
-        animationController?.PlayGuard(moveAmount);
+
+        if (Time.time < guardRaiseLockUntilTime)
+        {
+            LogGuardAnimationDebug(moveInput, moveAmount, "GuardRaiseLock", guardWalkAnimationActive);
+            return;
+        }
+
+        if (guardWalkAnimationActive)
+            guardWalkAnimationActive = moveAmount > guardWalkExitThreshold;
+        else
+            guardWalkAnimationActive = moveAmount > guardWalkEnterThreshold;
+
+        if (guardWalkAnimationActive)
+            animationController?.PlayGuardWalk();
+        else
+            animationController?.PlayGuardIdle();
+
+        LogGuardAnimationDebug(moveInput, moveAmount, guardWalkAnimationActive ? "GuardWalk" : "GuardIdle", guardWalkAnimationActive);
     }
 
     private void HandleGuardDashInput()
@@ -197,7 +260,8 @@ public class Guard : MonoBehaviour
     private void MaintainHardLock()
     {
         EnsureAttackLockReference();
-        attackLockSystem?.EnsureHardLock(instantCameraAlign: false);
+        if (attackLockSystem != null && attackLockSystem.IsHardLockActive)
+            attackLockSystem.AlignPlayerAndCamera(attackLockSystem.CurrentHardLockTarget, instantCameraAlign: false);
     }
 
     private void ActivateGuardCamera()
@@ -227,13 +291,11 @@ public class Guard : MonoBehaviour
     private void AlignGuardRotation(Vector2 moveInput)
     {
         if (attackLockSystem != null && attackLockSystem.IsHardLockActive)
+        {
+            // While hard-locked, let AttackLockSystem own player facing to avoid
+            // rotation fighting/jitter between systems.
             return;
-
-        if (InputReader.inputBusy)
-            return;
-
-        if (moveInput.sqrMagnitude < movementDeadZone * movementDeadZone)
-            return;
+        }
 
         Transform basis = cameraManager != null
             ? cameraManager.GetActiveCamera()?.transform
@@ -245,20 +307,19 @@ public class Guard : MonoBehaviour
         if (basis == null)
             return;
 
-        Vector3 camForward = Vector3.ProjectOnPlane(basis.forward, Vector3.up).normalized;
-        Vector3 camRight = Vector3.ProjectOnPlane(basis.right, Vector3.up).normalized;
-
-        if (camForward.sqrMagnitude < 0.0001f)
-            camForward = transform.forward;
-
-        if (camRight.sqrMagnitude < 0.0001f)
-            camRight = transform.right;
-
-        Vector3 desiredDirection = (camForward * moveInput.y + camRight * moveInput.x).normalized;
-        if (desiredDirection.sqrMagnitude < 0.0001f)
+        Vector3 cameraForward = Vector3.ProjectOnPlane(basis.forward, Vector3.up);
+        if (cameraForward.sqrMagnitude < 0.0001f)
             return;
 
-        Quaternion targetRotation = Quaternion.LookRotation(desiredDirection, Vector3.up);
+        RotateGuardRootTowards(cameraForward);
+    }
+
+    private void RotateGuardRootTowards(Vector3 worldDirection)
+    {
+        if (worldDirection.sqrMagnitude < 0.0001f)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(worldDirection.normalized, Vector3.up);
         Transform root = GuardRoot;
         root.rotation = Quaternion.RotateTowards(
             root.rotation,
@@ -315,5 +376,84 @@ public class Guard : MonoBehaviour
 #else
         attackLockSystem = FindObjectOfType<AttackLockSystem>();
 #endif
+    }
+
+    private void LogGuardAnimationDebug(Vector2 moveInput, float moveAmount, string requestedState, bool walkActive)
+    {
+        if (!debugGuardAnimation || Time.time < nextGuardDebugLogTime)
+            return;
+
+        nextGuardDebugLogTime = Time.time + Mathf.Max(0.05f, debugGuardLogInterval);
+
+        string currentClip = animationController != null
+            ? animationController.GetCurrentClipName()
+            : "<none>";
+
+        string currentControllerState = animationController != null ? animationController.CurrentStateName : "<null>";
+        bool isHardLocked = attackLockSystem != null && attackLockSystem.IsHardLockActive;
+        string targetName = attackLockSystem != null && attackLockSystem.CurrentHardLockTarget != null
+            ? attackLockSystem.CurrentHardLockTarget.name
+            : "null";
+
+        Debug.Log($"[Guard][AnimDebug] requested={requestedState} currentController={currentControllerState} currentClip={currentClip} move=({moveInput.x:0.00},{moveInput.y:0.00}) mag={moveAmount:0.00} walkActive={walkActive} enter={guardWalkEnterThreshold:0.00} exit={guardWalkExitThreshold:0.00} inputBusy={InputReader.inputBusy} hardLock={isHardLocked} target={targetName}");
+    }
+
+    private void LogGuardHardLockDiagnostics()
+    {
+        if (!debugGuardHardLockDiagnostics || !guardActive)
+        {
+            hasGuardDiagnosticSample = false;
+            return;
+        }
+
+        EnsureAttackLockReference();
+        if (attackLockSystem == null || !attackLockSystem.IsHardLockActive || attackLockSystem.CurrentHardLockTarget == null)
+        {
+            hasGuardDiagnosticSample = false;
+            return;
+        }
+
+        if (Time.time < nextGuardHardLockDebugLogTime)
+            return;
+
+        nextGuardHardLockDebugLogTime = Time.time + Mathf.Max(0.05f, debugGuardHardLockLogInterval);
+
+        Transform root = GuardRoot;
+        Transform target = attackLockSystem.CurrentHardLockTarget;
+        Vector3 rootPosition = root.position;
+        Vector3 toTarget = target.position - rootPosition;
+        toTarget.y = 0f;
+
+        float currentYaw = root.eulerAngles.y;
+        float desiredYaw = toTarget.sqrMagnitude > 0.0001f
+            ? Quaternion.LookRotation(toTarget.normalized, Vector3.up).eulerAngles.y
+            : currentYaw;
+        float yawError = Mathf.DeltaAngle(currentYaw, desiredYaw);
+
+        float yawSpeed = 0f;
+        float planarSpeed = 0f;
+        float now = Time.time;
+
+        if (hasGuardDiagnosticSample)
+        {
+            float dt = Mathf.Max(0.0001f, now - lastGuardDiagnosticSampleTime);
+            yawSpeed = Mathf.DeltaAngle(lastGuardDiagnosticYaw, currentYaw) / dt;
+
+            Vector3 planarDelta = rootPosition - lastGuardDiagnosticPosition;
+            planarDelta.y = 0f;
+            planarSpeed = planarDelta.magnitude / dt;
+        }
+
+        lastGuardDiagnosticYaw = currentYaw;
+        lastGuardDiagnosticPosition = rootPosition;
+        lastGuardDiagnosticSampleTime = now;
+        hasGuardDiagnosticSample = true;
+
+        Vector2 moveInput = InputReader.MoveInput;
+        float moveAmount = Mathf.Clamp01(moveInput.magnitude);
+        string currentClip = animationController != null ? animationController.GetCurrentClipName() : "<none>";
+        string controllerState = animationController != null ? animationController.CurrentStateName : "<null>";
+
+        Debug.Log($"[Guard][LockDiag] target={target.name} move=({moveInput.x:0.00},{moveInput.y:0.00}) mag={moveAmount:0.00} walkActive={guardWalkAnimationActive} inputBusy={InputReader.inputBusy} yaw={currentYaw:0.0} desiredYaw={desiredYaw:0.0} yawError={yawError:0.00} yawSpeed={yawSpeed:0.00} planarSpeed={planarSpeed:0.00} controller={controllerState} clip={currentClip}");
     }
 }

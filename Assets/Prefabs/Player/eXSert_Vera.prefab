@@ -1571,6 +1571,12 @@ MonoBehaviour:
   preserveOrbitOnSwitch: 1
   activePriority: 20
   inactivePriority: 0
+  enableGameplayCombatZoom: 1
+  gameplayCombatRadiusMultiplier: 2
+  gameplayCombatFieldOfView: 90
+  gameplayCombatRadiusLerpSpeed: 1.5
+  gameplayCombatFovLerpSpeed: 1.5
+  logCombatCameraDebug: 0
 --- !u!1 &749378645244079403
 GameObject:
   m_ObjectHideFlags: 0
@@ -4408,17 +4414,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -16.14568, y: 2.6423864, z: 0.60567856}
-  - {x: -16.19642, y: 2.5482707, z: 0.60663736}
-  - {x: -16.247164, y: 2.4737067, z: 0.6075961}
-  - {x: -16.297905, y: 2.4186945, z: 0.60855484}
-  - {x: -16.348648, y: 2.3832347, z: 0.6095136}
-  - {x: -16.39939, y: 2.3673265, z: 0.6104723}
-  - {x: -16.45013, y: 2.3709702, z: 0.611431}
-  - {x: -16.500874, y: 2.394166, z: 0.6123898}
-  - {x: -16.551615, y: 2.4369137, z: 0.61334854}
-  - {x: -16.602356, y: 2.4992132, z: 0.6143073}
-  - {x: -16.6531, y: 2.581065, z: 0.615266}
+  - {x: -13.61384, y: 1.4923862, z: -6.9016514}
+  - {x: -13.664582, y: 1.3982705, z: -6.900693}
+  - {x: -13.715325, y: 1.3237067, z: -6.899734}
+  - {x: -13.766067, y: 1.2686948, z: -6.898775}
+  - {x: -13.816809, y: 1.2332348, z: -6.897817}
+  - {x: -13.86755, y: 1.2173266, z: -6.8968573}
+  - {x: -13.918291, y: 1.2209705, z: -6.895899}
+  - {x: -13.969034, y: 1.2441661, z: -6.8949404}
+  - {x: -14.019776, y: 1.2869139, z: -6.893982}
+  - {x: -14.0705185, y: 1.3492134, z: -6.8930225}
+  - {x: -14.121261, y: 1.4310648, z: -6.892064}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -5065,17 +5071,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -15.699648, y: 2.6168985, z: 0.5101117}
-  - {x: -15.683695, y: 2.616553, z: 0.51966786}
-  - {x: -15.667743, y: 2.616727, z: 0.5292239}
-  - {x: -15.651788, y: 2.6174195, z: 0.53878}
-  - {x: -15.635837, y: 2.6186314, z: 0.5483361}
-  - {x: -15.619883, y: 2.6203618, z: 0.5578922}
-  - {x: -15.6039295, y: 2.6226115, z: 0.5674483}
-  - {x: -15.5879755, y: 2.6253803, z: 0.57700443}
-  - {x: -15.572023, y: 2.628668, z: 0.5865605}
-  - {x: -15.556068, y: 2.6324744, z: 0.5961166}
-  - {x: -15.540116, y: 2.6368003, z: 0.6056727}
+  - {x: -13.167809, y: 1.4668983, z: -6.9972186}
+  - {x: -13.151856, y: 1.4665531, z: -6.9876623}
+  - {x: -13.135903, y: 1.4667267, z: -6.978107}
+  - {x: -13.119948, y: 1.4674194, z: -6.9685497}
+  - {x: -13.103997, y: 1.468631, z: -6.9589944}
+  - {x: -13.088043, y: 1.4703617, z: -6.949438}
+  - {x: -13.07209, y: 1.4726113, z: -6.939882}
+  - {x: -13.056137, y: 1.47538, z: -6.930326}
+  - {x: -13.040184, y: 1.4786677, z: -6.92077}
+  - {x: -13.024229, y: 1.4824744, z: -6.9112134}
+  - {x: -13.008277, y: 1.4868001, z: -6.9016576}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -5437,6 +5443,7 @@ MonoBehaviour:
   attackDatabase: {fileID: 11400000, guid: 5faf74d628b25214ca871b83ff4b455d, type: 2}
   characterController: {fileID: 2289477533837267770}
   playerMovement: {fileID: 6150044602222399215}
+  playerHealth: {fileID: 0}
   attackLockSystem: {fileID: 0}
   vfxAnchorRegistry: {fileID: 0}
   guardAttackOverride: {fileID: 11400000, guid: 5a480b1f839418f4f8f624bbd8b6cc3d, type: 2}
@@ -5566,11 +5573,18 @@ MonoBehaviour:
   guardDashDistance: 3.75
   guardDashDuration: 0.18
   guardDashCooldown: 0.45
-  autoHardLockWhileGuarding: 1
+  autoHardLockWhileGuarding: 0
   instantAlignOnEntry: 1
   switchToGuardCamera: 1
   cameraOverride: {fileID: 5480205498155007657}
   freeAimTurnSpeed: 180
+  guardWalkEnterThreshold: 0.25
+  guardWalkExitThreshold: 0.14
+  guardRaiseBlendLockDuration: 0.12
+  debugGuardAnimation: 0
+  debugGuardLogInterval: 0.15
+  debugGuardHardLockDiagnostics: 0
+  debugGuardHardLockLogInterval: 0.2
   animationController: {fileID: 5311890396266669227}
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
@@ -5608,7 +5622,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AttackLockSystem
   lockOnAngle: 120
-  lockOnDistance: 10
+  lockOnDistance: 15
+  lockOnMaxRange: 15
+  playerModelLockOnOrigin: {fileID: 0}
+  playerLockOnRayOriginHeight: 1.2
+  lockOnVisibilityBlockerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  debugLockOn: 0
   player: {fileID: 3646038222488559394}
   playerMovement: {fileID: 6150044602222399215}
   enemyLayers:
@@ -5645,6 +5666,7 @@ MonoBehaviour:
   invertVerticalLean: 0
   leanResponseSpeed: 2
   leanReturnTime: 0.15
+  closestEnemiesWithBaseGear: 500
 --- !u!1 &2525516429101545011
 GameObject:
   m_ObjectHideFlags: 0
@@ -7993,6 +8015,10 @@ MonoBehaviour:
   layerMask:
     serializedVersion: 2
     m_Bits: 8
+  downhillAnimationGroundedGrace: 0.3
+  downhillGroundProbeDistance: 1
+  downhillMaxFallSpeedForGroundedAnim: -6
+  enableDownhillAnimationGroundingDebugLogs: 0
   dashDistance: 3
   dashDuration: 0.25
   dashAnimationTransition: 0.08
@@ -8055,8 +8081,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d148d6942d9792e4ea0b56afc1424cbc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealthBarManager
-  maxHealth: 1
-  currentHealth: 1
+  maxHealth: 100
+  currentHealth: 100
   startingHealthPercent: 1
   invulnerable: 0
   restartFromCheckpointOnDeath: 1
@@ -8067,7 +8093,7 @@ MonoBehaviour:
   flinchChance: 0.2
   flinchLockSeconds: 0.35
   enableDashInvincibility: 1
-  dashInvincibilitySeconds: 0.35
+  dashInvincibilityFailsafeSeconds: 0.5
   animationController: {fileID: 5311890396266669227}
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
@@ -12155,17 +12181,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -15.99172, y: 2.6195002, z: 0.51013017}
-  - {x: -16.006218, y: 2.6166346, z: 0.5196868}
-  - {x: -16.020714, y: 2.6147897, z: 0.52924347}
-  - {x: -16.03521, y: 2.613965, z: 0.53880006}
-  - {x: -16.049706, y: 2.6141615, z: 0.5483567}
-  - {x: -16.064201, y: 2.6153784, z: 0.55791336}
-  - {x: -16.078697, y: 2.6176157, z: 0.56747}
-  - {x: -16.093193, y: 2.620874, z: 0.57702667}
-  - {x: -16.107689, y: 2.6251528, z: 0.58658326}
-  - {x: -16.122185, y: 2.6304522, z: 0.5961399}
-  - {x: -16.13668, y: 2.6367722, z: 0.60569656}
+  - {x: -13.459881, y: 1.4695001, z: -6.9972}
+  - {x: -13.474377, y: 1.4666343, z: -6.9876437}
+  - {x: -13.4888735, y: 1.4647893, z: -6.9780874}
+  - {x: -13.503368, y: 1.4639646, z: -6.9685307}
+  - {x: -13.517864, y: 1.4641612, z: -6.958974}
+  - {x: -13.53236, y: 1.4653778, z: -6.949417}
+  - {x: -13.546856, y: 1.4676154, z: -6.9398603}
+  - {x: -13.561352, y: 1.4708736, z: -6.9303036}
+  - {x: -13.575849, y: 1.4751525, z: -6.9207478}
+  - {x: -13.590343, y: 1.4804518, z: -6.9111905}
+  - {x: -13.60484, y: 1.4867721, z: -6.9016337}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -17249,6 +17275,7 @@ MonoBehaviour:
   fallingTransition: 0.5
   attackManager: {fileID: 2445762002116463598}
   playerMovement: {fileID: 6150044602222399215}
+  playerHealth: {fileID: 0}
   logAnimationEvents: 1
 --- !u!114 &2544315719399479553
 MonoBehaviour:
@@ -18670,17 +18697,17 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: -15.537916, y: 2.6398847, z: 0.60534763}
-  - {x: -15.486827, y: 2.5474124, z: 0.60618126}
-  - {x: -15.435737, y: 2.4744089, z: 0.6070149}
-  - {x: -15.384645, y: 2.4208744, z: 0.6078485}
-  - {x: -15.333556, y: 2.3868086, z: 0.60868216}
-  - {x: -15.282465, y: 2.3722115, z: 0.6095158}
-  - {x: -15.231375, y: 2.3770833, z: 0.6103494}
-  - {x: -15.1802845, y: 2.4014242, z: 0.61118305}
-  - {x: -15.129194, y: 2.4452338, z: 0.6120167}
-  - {x: -15.078104, y: 2.5085123, z: 0.6128503}
-  - {x: -15.027014, y: 2.5912595, z: 0.61368394}
+  - {x: -13.006077, y: 1.4898846, z: -6.9019823}
+  - {x: -12.954987, y: 1.3974123, z: -6.901149}
+  - {x: -12.903897, y: 1.3244088, z: -6.9003153}
+  - {x: -12.852806, y: 1.270874, z: -6.899481}
+  - {x: -12.801716, y: 1.2368085, z: -6.8986483}
+  - {x: -12.750626, y: 1.2222114, z: -6.8978143}
+  - {x: -12.699535, y: 1.2270833, z: -6.896981}
+  - {x: -12.648445, y: 1.2514241, z: -6.896147}
+  - {x: -12.597355, y: 1.2952337, z: -6.8953133}
+  - {x: -12.546265, y: 1.358512, z: -6.8944798}
+  - {x: -12.495174, y: 1.4412594, z: -6.8936462}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1

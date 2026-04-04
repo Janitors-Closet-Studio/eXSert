@@ -32,19 +32,38 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg libgstreamer1.0-0 libgstreamer-plugins-base1.0-0
 
-      - name: Gather today's commits
+      - name: Gather today's introduced changes
         id: commits
         run: |
           git fetch origin Development --depth=1
           SINCE=$(date -u '+%Y-%m-%dT00:00:00Z')
-          UNTIL=$(date -u -d 'tomorrow 00:00:00' '+%Y-%m-%dT00:00:00Z')
-          LOG=$(git log origin/Development --since="$SINCE" --until="$UNTIL" --pretty=format:"- %s (%an)")
-          if [ -z "$LOG" ]; then
-            LOG="- No new commits today."
+          BASE_COMMIT=$(git rev-list -1 --before="$SINCE" origin/Development)
+
+          if [ -n "$BASE_COMMIT" ]; then
+            RANGE="$BASE_COMMIT..origin/Development"
+          else
+            RANGE="origin/Development"
           fi
+
+          LOG=$(git log "$RANGE" --reverse --no-merges --pretty=format:"- %s (%an)")
+          if [ -z "$LOG" ]; then
+            LOG=$(git log "$RANGE" --reverse --pretty=format:"- %s (%an)" | grep -vE '^- Merge ' || true)
+          fi
+          if [ -z "$LOG" ]; then
+            LOG="- No new Development changes were introduced today."
+          fi
+
+          RAW_LOG=$(git log "$RANGE" --reverse --pretty=format:"- %h %s (%an)")
+          if [ -z "$RAW_LOG" ]; then
+            RAW_LOG="$LOG"
+          fi
+
           {
             echo "commit_log<<EOF"
             echo "$LOG"
+            echo "EOF"
+            echo "raw_commit_log<<EOF"
+            echo "$RAW_LOG"
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
@@ -53,7 +72,7 @@ jobs:
         run: |
           COMMIT_LOG='${{ steps.commits.outputs.commit_log }}'
 
-          if [ "$COMMIT_LOG" = "- No new commits today." ]; then
+          if [ "$COMMIT_LOG" = "- No new Development changes were introduced today." ]; then
             SUMMARY="- No new Development commits were pushed today."
           else
             SUMMARY="$COMMIT_LOG"
@@ -85,7 +104,7 @@ jobs:
             '{
               contents: [{
                 parts: [{
-                  text: ("You are a changelog writer for a game development project called eXSert. Given the following git commits from today, write a short, friendly summary (3-6 bullet points) of what was added, fixed, or changed. Group related changes together. Do not repeat commit messages verbatim — paraphrase them clearly. Use plain language a playtester would understand.\n\nCommits:\n" + $log)
+                  text: ("You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the Development branch today, write a short, friendly summary (3-6 bullet points) of what was added, fixed, or changed. Group related changes together. Ignore merge commits, PR bookkeeping, and branch sync messages. Do not repeat commit messages verbatim — paraphrase them clearly. Use plain language a playtester would understand.\n\nCommits:\n" + $log)
                 }]
               }]
             }')
@@ -124,41 +143,36 @@ jobs:
           buildName: eXSert
           unityVersion: 6000.2.15f1
 
-      - name: Zip the build
+      - name: Package build
         id: package
         run: |
           BUILD_DATE=$(date -u '+%Y-%m-%d')
+          SHORT_SHA=$(git rev-parse --short origin/Development)
           ZIP_NAME=eXSert-daily-${BUILD_DATE}.zip
           zip -r "$ZIP_NAME" build/StandaloneWindows64/
           echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "tag_name=daily-${BUILD_DATE}-${GITHUB_RUN_NUMBER}-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
-      - name: Force-update DailyBuild tag
+      - name: Create and push daily tag
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag -f DailyBuild
-          git push origin DailyBuild --force
-
-      - name: Delete existing DailyBuild release (if any)
-        run: |
-          RELEASE_ID=$(gh release view DailyBuild --json id -q '.id' 2>/dev/null || echo "")
-          if [ -n "$RELEASE_ID" ]; then
-            gh release delete DailyBuild --yes
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git tag "${{ steps.package.outputs.tag_name }}"
+          git push origin "${{ steps.package.outputs.tag_name }}"
 
       - name: Create DailyBuild release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: DailyBuild
-          name: "Daily Build — ${{ steps.package.outputs.build_date }}"
+          tag_name: ${{ steps.package.outputs.tag_name }}
+          name: "Daily Build — ${{ steps.package.outputs.build_date }} (#${{ github.run_number }}, ${{ steps.package.outputs.short_sha }})"
           body: |
             ## Daily Build — ${{ steps.package.outputs.build_date }}
 
             Automated daily build from the **Development** branch.
-            This release is automatically replaced every 24 hours.
+            Workflow run: #${{ github.run_number }}
+            Source commit: `${{ steps.package.outputs.short_sha }}`
 
             ---
 
@@ -170,31 +184,8 @@ jobs:
 
             ## Raw commits
 
-            ${{ steps.commits.outputs.commit_log }}
+            ${{ steps.commits.outputs.raw_commit_log }}
           files: ${{ steps.package.outputs.zip_name }}
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  cleanup-old-daily:
-    name: Delete Previous Daily Build Asset
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Wait 24 hours
-        run: sleep 86400
-
-      - name: Delete DailyBuild release if still old
-        run: |
-          RELEASE_DATE=$(gh release view DailyBuild --json createdAt -q '.createdAt' 2>/dev/null || echo "")
-          if [ -n "$RELEASE_DATE" ]; then
-            RELEASE_EPOCH=$(date -d "$RELEASE_DATE" +%s)
-            NOW_EPOCH=$(date +%s)
-            AGE=$(( NOW_EPOCH - RELEASE_EPOCH ))
-            if [ "$AGE" -ge 82800 ]; then
-              gh release delete DailyBuild --yes || true
-              git push origin :refs/tags/DailyBuild || true
-            fi
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
