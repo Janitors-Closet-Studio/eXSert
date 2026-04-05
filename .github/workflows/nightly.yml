@@ -20,6 +20,20 @@ jobs:
           lfs: false
           fetch-depth: 0
 
+      - name: Capture build metadata
+        id: build_meta
+        run: |
+          BUILD_COMMIT=$(git rev-parse HEAD)
+          SHORT_SHA=$(git rev-parse --short "$BUILD_COMMIT")
+          BUILD_DATE=$(date -u '+%Y-%m-%d')
+          BUILD_VERSION="0.0.${GITHUB_RUN_NUMBER}-nightly+${SHORT_SHA}"
+          {
+            echo "commit_sha=$BUILD_COMMIT"
+            echo "short_sha=$SHORT_SHA"
+            echo "build_date=$BUILD_DATE"
+            echo "build_version=$BUILD_VERSION"
+          } >> $GITHUB_OUTPUT
+
       - name: Cache Unity Library
         uses: actions/cache@v3
         with:
@@ -48,14 +62,14 @@ jobs:
       - name: Gather today's introduced changes
         id: commits
         run: |
-          git fetch origin Development --depth=1
           SINCE=$(date -u '+%Y-%m-%dT00:00:00Z')
-          BASE_COMMIT=$(git rev-list -1 --before="$SINCE" origin/Development)
+          TARGET_COMMIT="${{ steps.build_meta.outputs.commit_sha }}"
+          BASE_COMMIT=$(git rev-list -1 --before="$SINCE" "$TARGET_COMMIT")
 
           if [ -n "$BASE_COMMIT" ]; then
-            RANGE="$BASE_COMMIT..origin/Development"
+            RANGE="$BASE_COMMIT..$TARGET_COMMIT"
           else
-            RANGE="origin/Development"
+            RANGE="$TARGET_COMMIT"
           fi
 
           LOG=$(git log "$RANGE" --reverse --no-merges --pretty=format:"- %s (%an)")
@@ -155,12 +169,15 @@ jobs:
           targetPlatform: StandaloneWindows64
           buildName: eXSert
           unityVersion: 6000.2.15f1
+          versioning: Custom
+          version: ${{ steps.build_meta.outputs.build_version }}
+          allowDirtyBuild: true
 
       - name: Package build
         id: package
         run: |
-          BUILD_DATE=$(date -u '+%Y-%m-%d')
-          SHORT_SHA=$(git rev-parse --short origin/Development)
+          BUILD_DATE='${{ steps.build_meta.outputs.build_date }}'
+          SHORT_SHA='${{ steps.build_meta.outputs.short_sha }}'
           ZIP_NAME=eXSert-daily-${BUILD_DATE}.zip
           zip -r "$ZIP_NAME" build/StandaloneWindows64/
           echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
