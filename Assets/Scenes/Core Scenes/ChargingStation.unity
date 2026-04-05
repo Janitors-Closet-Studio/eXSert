@@ -84403,7 +84403,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: OverlapCheckRadius
-      value: 2.3
+      value: 3.4
       objectReference: {fileID: 0}
     - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: EjectionUpwardForce
@@ -84531,11 +84531,11 @@ MonoBehaviour:
   EjectionCooldown: 0.35
   MinimumOverlapSecondsForEjection: 0.35
   UseHardEjectionRadiusCap: 1
-  HardEjectionRadiusCap: 1.5
+  HardEjectionRadiusCap: 2.5
   UseHardEjectionForceCap: 1
-  HardMaxEjectionForce: 4
+  HardMaxEjectionForce: 8
   HardMaxEjectionUpwardForce: 2
-  TeleportOnEmergencyEject: 0
+  TeleportOnEmergencyEject: 1
   TeleportOverlapRadius: 0.75
   BossCenter: {fileID: 1556584614}
   ArenaManager: {fileID: 0}
