@@ -32,11 +32,28 @@ namespace EnemyBehavior.Boss
                 // Try to find on parent
                 controller = GetComponentInParent<BossRoombaController>();
             }
+
+            EnsureDamageableTag();
             
             if (controller == null)
             {
                 EnemyBehaviorDebugLogBools.LogError($"[BossAlarmDamageReceiver] No BossRoombaController found! Alarm damage won't work.");
             }
+        }
+
+        private void OnValidate()
+        {
+            EnsureDamageableTag();
+        }
+
+        private void EnsureDamageableTag()
+        {
+            if (CompareTag("Enemy") || CompareTag("Boss"))
+                return;
+
+            gameObject.tag = "Enemy";
+            if (showDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossAlarmDamageReceiver), $"[BossAlarmDamageReceiver] Auto-set tag to 'Enemy' on {name} so player hitboxes can damage alarm.");
         }
         
         /// <summary>

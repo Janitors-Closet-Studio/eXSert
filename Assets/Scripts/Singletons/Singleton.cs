@@ -49,7 +49,7 @@ namespace Singletons {
                 if (_instance != null) return _instance;
 
                 // If no instance is found, create a new GameObject and attach the singleton component to it
-                Debug.Log($"No instance of singleton {typeof(T)} found in the scene. Creating a new one.");
+                DebugLogSettingsM.ConditionalLog(DebugLogCategory.Singleton, $"No instance of singleton {typeof(T)} found in the scene. Creating a new one.");
                 _instance = CreateInstance();
 
                 return _instance;

@@ -16,24 +16,26 @@ public class BossAnimatorDebugger : MonoBehaviour
             EnemyBehaviorDebugLogBools.LogError("[BossAnimatorDebugger] No Animator found!");
             return;
         }
-        
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"[BossAnimatorDebugger] Monitoring animator on '{animator.gameObject.name}'");
-        
-        // CRITICAL DIAGNOSTICS
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"[BossAnimatorDebugger] ===== ANIMATOR CONFIGURATION =====");
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Animator Enabled: {animator.enabled}");
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Animator Speed: {animator.speed}");
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Controller Assigned: {(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "NONE - THIS IS THE PROBLEM!")}");
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Update Mode: {animator.updateMode}");
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Culling Mode: {animator.cullingMode}");
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  Layer Count: {animator.layerCount}");
-        
+
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"[BossAnimatorDebugger] Monitoring animator on '{animator.gameObject.name}'");
+
+        // CRITICAL DIAGNOSTICS - Only log if enabled
+        if (!DebugLogSettingsM.IsLogEnabled(DebugLogCategory.AnimatorDebug)) return;
+
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"[BossAnimatorDebugger] ===== ANIMATOR CONFIGURATION =====");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"  Animator Enabled: {animator.enabled}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"  Animator Speed: {animator.speed}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"  Controller Assigned: {(animator.runtimeAnimatorController != null ? animator.runtimeAnimatorController.name : "NONE - THIS IS THE PROBLEM!")}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"  Update Mode: {animator.updateMode}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"  Culling Mode: {animator.cullingMode}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"  Layer Count: {animator.layerCount}");
+
         for (int i = 0; i < animator.layerCount; i++)
         {
-            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"    Layer {i}: {animator.GetLayerName(i)}, Weight: {animator.GetLayerWeight(i)}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"    Layer {i}: {animator.GetLayerName(i)}, Weight: {animator.GetLayerWeight(i)}");
         }
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"==========================================");
-        
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"==========================================");
+
         LogAnimatorParameters();
     }
     
@@ -125,8 +127,8 @@ public class BossAnimatorDebugger : MonoBehaviour
     private void LogAnimatorParameters()
     {
         if (animator == null) return;
-        
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), "[BossAnimatorDebugger] ===== ANIMATOR PARAMETERS =====");
+
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, "[BossAnimatorDebugger] ===== ANIMATOR PARAMETERS =====");
         foreach (var param in animator.parameters)
         {
             string value = param.type switch
@@ -137,9 +139,9 @@ public class BossAnimatorDebugger : MonoBehaviour
                 AnimatorControllerParameterType.Trigger => "(trigger)",
                 _ => "Unknown"
             };
-            
-            EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), $"  {param.type} '{param.name}' = {value}");
+
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, $"  {param.type} '{param.name}' = {value}");
         }
-        EnemyBehaviorDebugLogBools.Log(nameof(BossAnimatorDebugger), "==========================================");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.AnimatorDebug, "==========================================");
     }
 }

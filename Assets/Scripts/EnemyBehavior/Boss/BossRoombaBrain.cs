@@ -89,6 +89,10 @@ namespace EnemyBehavior.Boss
             "Attack timings are driven by animation clip lengths × speed multipliers.\n" +
             "Use Animation Events in clips for precise phase transitions.";
 
+        [Header("Debug Settings")]
+        [SerializeField, Tooltip("Enable debug logs for boss behavior")]
+        private bool enableDebugLogs = false;
+
         [Header("Fight Initialization")]
         [Tooltip("Delay in seconds before the boss begins chasing and attacking the player after scene load. Minimum 0.5s.")]
         [Min(0.5f)]
@@ -115,6 +119,28 @@ namespace EnemyBehavior.Boss
         public BossAttackDescriptor StaticChargeLeft;
         public BossAttackDescriptor StaticChargeRight;
         public BossAttackDescriptor TargetedCharge;
+
+        [Header("Attack Damage Configuration")]
+        [SerializeField, Tooltip("Damage for BasicSwipe attacks (Left/Right variants)")]
+        public float DamageBasicSwipe = 10f;
+
+        [SerializeField, Tooltip("Damage for ArmSweep attacks (Left/Right variants)")]
+        public float DamageArmSweep = 10f;
+
+        [SerializeField, Tooltip("Damage for DashLunge attacks (Left/Right/NoArms variants)")]
+        public float DamageDashLunge = 10f;
+
+        [SerializeField, Tooltip("Damage for ArmPoke attacks")]
+        public float DamageArmPoke = 10f;
+
+        [SerializeField, Tooltip("Damage for KnockOffSpin attacks")]
+        public float DamageKnockOffSpin = 10f;
+
+        [SerializeField, Tooltip("Damage for Charge attacks (Static and Targeted variants)")]
+        public float DamageCharge = 10f;
+
+        [SerializeField, Tooltip("Damage for Vacuum/Suction attacks")]
+        public float DamageVacuum = 10f;
 
         [Header("Arms Deploy/ Retract")]
         public string ArmsDeployTrigger = "Arms_Deploy";
@@ -205,6 +231,12 @@ namespace EnemyBehavior.Boss
         public float StaticChargeKnockbackForce = 18f;
         [Tooltip("Upward knockback component for static charge hits.")]
         public float StaticChargeKnockbackUpwardForce = 5f;
+        [Tooltip("Knockback force for regular dash/lunge attacks (DashLungeLeft/Right/NoArms).")]
+        public float DashKnockbackForce = 15f;
+        [Tooltip("Upward component of knockback force for regular dash/lunge attacks.")]
+        public float DashKnockbackUpwardForce = 3f;
+        [Tooltip("How much knockback direction is influenced by attack direction vs radial (0=radial, 1=attack direction).")]
+        [Range(0f, 1f)] public float KnockbackAttackDirectionWeight = 0.8f;
 
         [Header("Vacuum & Form Change")]
         [Tooltip("Min/Max attack count before vacuum triggers")]
@@ -264,12 +296,6 @@ namespace EnemyBehavior.Boss
         public bool ValidateDashDestination = true;
         [Tooltip("Sample radius for NavMesh validation")]
         public float DashNavMeshSampleRadius = 2f;
-        [Tooltip("Force applied to push player when hit by dash attacks")]
-        public float DashKnockbackForce = 15f;
-        [Tooltip("Upward component of knockback force for dash attacks")]
-        public float DashKnockbackUpwardForce = 3f;
-        [Tooltip("How much knockback direction is influenced by attack direction vs radial (0=radial, 1=attack direction)")]
-        [Range(0f, 1f)] public float KnockbackAttackDirectionWeight = 0.8f;
         
         [Header("Melee Attack Lunge (Duelist)")]
         [Tooltip("Enable forward lunge during melee attacks")]
@@ -392,6 +418,7 @@ namespace EnemyBehavior.Boss
         private BossAnimationEventMediator animMediator;
 
         private bool playerOnTop;
+        public bool IsPlayerMountedOnTop => playerOnTop;
 
         private bool armsDeployed;
         private bool armsDeployInProgress;
@@ -448,6 +475,8 @@ namespace EnemyBehavior.Boss
         // Shared flag to prevent double-knockback during dashes
         // Both manual collision check and trigger-based hitboxes check/set this
         private bool dashHitAppliedThisAttack;
+        // Shared flag to prevent duplicate damage application from mixed hit detection paths
+        private bool attackDamageAppliedThisAttack;
         private float lastKnockbackAppliedTime = -999f;
         private Coroutine playerRefRetryRoutine;
         private const float PlayerRefRetryIntervalSeconds = 0.5f;
@@ -527,6 +556,15 @@ namespace EnemyBehavior.Boss
         {
             dashHitAppliedThisAttack = true;
         }
+
+        /// <summary>
+        /// Called by hitboxes when attack damage is successfully applied.
+        /// Prevents fallback/manual paths from applying duplicate damage.
+        /// </summary>
+        public void NotifyAttackDamageApplied()
+        {
+            attackDamageAppliedThisAttack = true;
+        }
         
         /// <summary>
         /// Check if a dash hit has already been applied this attack.
@@ -549,15 +587,20 @@ namespace EnemyBehavior.Boss
 
         public bool CanApplyKnockback => (Time.time - lastKnockbackAppliedTime) >= KnockbackCooldown;
 
-        public bool TryApplyKnockbackToPlayer(Vector3 baseImpulse, float attackTopSpeed, string sourceTag)
+        public bool TryApplyKnockbackToPlayer(
+            Vector3 baseImpulse,
+            float attackTopSpeed,
+            string sourceTag,
+            bool ignoreCooldown = false,
+            bool ignoreSpeedScaling = false)
         {
-            if (!CanApplyKnockback)
+            if (!ignoreCooldown && !CanApplyKnockback)
             {
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Knockback blocked by cooldown ({sourceTag})");
                 return false;
             }
 
-            float speedMultiplier = GetSpeedBasedKnockbackMultiplier(attackTopSpeed);
+            float speedMultiplier = ignoreSpeedScaling ? 1f : GetSpeedBasedKnockbackMultiplier(attackTopSpeed);
             Vector3 finalImpulse = baseImpulse * speedMultiplier;
             if (finalImpulse.sqrMagnitude <= 0.0001f)
             {
@@ -802,16 +845,18 @@ namespace EnemyBehavior.Boss
                 if (playerMovement != null)
                 {
                     player = playerMovement.transform;
-                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Player cached: {player.name} (has PlayerMovement)");
+                    if (enableDebugLogs)
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Player cached: {player.name} (has PlayerMovement)");
                 }
                 else
                 {
-                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[BossRoombaBrain] Player found ({player.name}) but no PlayerMovement component!");
+                    if (enableDebugLogs)
+                        EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[BossRoombaBrain] Player found ({player.name}) but no PlayerMovement component!");
                 }
             }
             else
             {
-                if (logIfMissing)
+                if (logIfMissing && enableDebugLogs)
                     EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] No player found in loaded scenes. Will keep retrying.");
             }
         }
@@ -878,21 +923,24 @@ namespace EnemyBehavior.Boss
                 if (baseLayerIndex > 0)
                 {
                     animator.SetLayerWeight(baseLayerIndex, 0f); // Disable misplaced base layer
-                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[BossRoombaBrain] Disabled Base Layer at index {baseLayerIndex}");
+                    if (enableDebugLogs)
+                        EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), $"[BossRoombaBrain] Disabled Base Layer at index {baseLayerIndex}");
                 }
-                
+
                 // Ensure layer 0 (whatever it's called) is enabled
                 animator.SetLayerWeight(0, 1f);
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Enabled layer 0: {animator.GetLayerName(0)}");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Enabled layer 0: {animator.GetLayerName(0)}");
             }
-            
+
             hitReactLayer = !string.IsNullOrEmpty(LayerNameHitReact) ? animator.GetLayerIndex(LayerNameHitReact) : -1;
             stunLayer = !string.IsNullOrEmpty(LayerNameStun) ? animator.GetLayerIndex(LayerNameStun) : -1;
             attacksLayer = !string.IsNullOrEmpty(LayerNameAttacks) ? animator.GetLayerIndex(LayerNameAttacks) : -1;
             idleAdditiveLayer = !string.IsNullOrEmpty(LayerNameIdleAdditive) ? animator.GetLayerIndex(LayerNameIdleAdditive) : -1;
-            
+
             // Log final layer configuration
-            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Layer indices - HitReact: {hitReactLayer}, Stun: {stunLayer}, Attacks: {attacksLayer}, Idle: {idleAdditiveLayer}");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Layer indices - HitReact: {hitReactLayer}, Stun: {stunLayer}, Attacks: {attacksLayer}, Idle: {idleAdditiveLayer}");
         }
 
         private void InitializeAttackDescriptors()
@@ -1053,19 +1101,21 @@ namespace EnemyBehavior.Boss
         {
             if (FightStartDelay > 0f)
             {
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Waiting {FightStartDelay}s before starting fight...");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Waiting {FightStartDelay}s before starting fight...");
                 yield return WaitForSecondsCache.Get(FightStartDelay);
             }
-            
+
             // Now start the fight
             if (loop != null) StopCoroutine(loop);
             loop = StartCoroutine(FormLoop());
             ctrl.StartFollowingPlayer(0.1f);
-            
+
             // Register with attack queue system
             RegisterWithAttackQueue();
-            
-            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Fight started!");
+
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Fight started!");
         }
 
 
@@ -1134,7 +1184,8 @@ namespace EnemyBehavior.Boss
         {
             if (lastActions.Count == 8) lastActions.Dequeue();
             lastActions.Enqueue(s);
-            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] {s}");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] {s}");
         }
 
         public IEnumerable<string> GetRecentActions() => lastActions;
@@ -1478,6 +1529,7 @@ namespace EnemyBehavior.Boss
         {
             var a = VacuumSuction;
             currentAttack = a;
+            attackDamageAppliedThisAttack = false;
             PushAction($"Attack: {a.Id}");
 
             // NO IncrementAttackCounter() here - vacuum is a transition attack
@@ -1607,9 +1659,10 @@ namespace EnemyBehavior.Boss
             VacuumSuctionController.MaxPullStrength = VacuumMaxPullStrength;
             VacuumSuctionController.EffectiveRadius = VacuumEffectiveRadius;
             VacuumSuctionController.ArenaManager = ArenaManager;
-            
+
             // Pass cached player references to avoid repeated FindWithTag calls
             VacuumSuctionController.SetPlayerReferences(player, playerMovement);
+            VacuumSuctionController.SetBossBrainReference(this);
             
             
             // Set the suction target to the arena center bounds center
@@ -1827,26 +1880,29 @@ namespace EnemyBehavior.Boss
                         DuelistAngularSpeed = BaseAngularSpeed;
                     if (Mathf.Approximately(DuelistAcceleration, 8f))
                         DuelistAcceleration = BaseAcceleration;
-                    
-                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Loaded settings from profile: BaseSpeed={BaseSpeed:F1}, BaseAngular={BaseAngularSpeed}, BaseAccel={BaseAcceleration}");
+
+                    if (enableDebugLogs)
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Loaded settings from profile: BaseSpeed={BaseSpeed:F1}, BaseAngular={BaseAngularSpeed}, BaseAccel={BaseAcceleration}");
                 }
                 else
                 {
-                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] No profile found on BossRoombaController - using serialized Base values");
+                    if (enableDebugLogs)
+                        EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] No profile found on BossRoombaController - using serialized Base values");
                 }
-                
+
                 // Cache the base values for use by charge multipliers
                 baseAgentSpeed = BaseSpeed;
                 baseAgentAngularSpeed = BaseAngularSpeed;
                 baseAgentAcceleration = BaseAcceleration;
-                
+
                 // Apply these values to the agent
                 agent.speed = baseAgentSpeed;
                 agent.angularSpeed = baseAgentAngularSpeed;
                 agent.acceleration = baseAgentAcceleration;
-                
+
                 agentSettingsCached = true;
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Cached agent settings - Speed: {baseAgentSpeed}, Angular: {baseAgentAngularSpeed}, Accel: {baseAgentAcceleration}");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Cached agent settings - Speed: {baseAgentSpeed}, Angular: {baseAgentAngularSpeed}, Accel: {baseAgentAcceleration}");
             }
         }
 
@@ -2323,6 +2379,9 @@ namespace EnemyBehavior.Boss
 
             while (IsMountedWithGrace())
             {
+                // Keep top-wander active while running mounted poke logic.
+                ctrl?.StartTopWander();
+
                 if (topPokeCount < requiredPokesForSpin)
                 {
                     if (IsOffCooldown(ArmPoke))
@@ -2378,7 +2437,10 @@ namespace EnemyBehavior.Boss
             if (IsMountedWithGrace() && !IsTopExclusive(a)) yield break;
             if (isStunned) yield break;
 
+            bool topMountedAttack = IsTopExclusive(a) && IsMountedWithGrace();
+
             currentAttack = a;
+            attackDamageAppliedThisAttack = false;
             PushAction($"Attack: {a.Id}");
 
             if (a != ArmPoke && form == RoombaForm.DuelistSummoner)
@@ -2420,7 +2482,7 @@ namespace EnemyBehavior.Boss
             // Horns deployment/retraction handled within attack timings
             
             // CRITICAL: Turn to face player BEFORE starting the attack windup (prevents swiping at air)
-            if (player != null && a.RequiresArms)
+            if (!topMountedAttack && player != null && a.RequiresArms)
             {
                 Vector3 toPlayer = player.position - transform.position;
                 toPlayer.y = 0f;
@@ -2449,7 +2511,7 @@ namespace EnemyBehavior.Boss
             bool didLunge = false;
             
             // Start attack lunge during active phase (if enabled and this is a melee attack)
-            if (EnableAttackLunge && player != null && a.RequiresArms)
+            if (!topMountedAttack && EnableAttackLunge && player != null && a.RequiresArms)
             {
                 // Calculate lunge direction toward player
                 Vector3 toPlayer = player.position - transform.position;
@@ -2488,7 +2550,21 @@ namespace EnemyBehavior.Boss
             
             yield return WaitForSecondsCache.Get(a.RecoverySpeedMultiplier * GetClipLength(animator, a.RecoveryClipName));
 
-            ApplyBossDamageIfPlayerPresent(1.0f);
+            // ArmPoke commonly relies on top-hitbox setup. Apply a close-range fallback if no hitbox damage landed.
+            if (a == ArmPoke && !attackDamageAppliedThisAttack)
+            {
+                bool canFallbackHit = IsPlayerMounted();
+                if (!canFallbackHit && player != null)
+                {
+                    float fallbackRange = Mathf.Max(1.5f, ArmPoke != null ? ArmPoke.RangeMax : 0f);
+                    canFallbackHit = Vector3.Distance(transform.position, player.position) <= fallbackRange;
+                }
+
+                if (canFallbackHit)
+                {
+                    TryApplyConfiguredDamageForAttack(a.Id, "ArmPokeFallback");
+                }
+            }
 
             MarkCooldown(a);
 
@@ -2543,6 +2619,7 @@ namespace EnemyBehavior.Boss
             }
 
             currentAttack = a;
+            attackDamageAppliedThisAttack = false;
             PushAction($"Attack: {a.Id}");
 
             IncrementAttackCounter();
@@ -2680,6 +2757,11 @@ namespace EnemyBehavior.Boss
                             {
                                 dashHitAppliedThisAttack = true;
 
+                                if (!attackDamageAppliedThisAttack)
+                                {
+                                    TryApplyConfiguredDamageForAttack(a.Id, "DashManualCollision");
+                                }
+
                                 // Disable hitboxes immediately to prevent trigger-based hit from also firing
                                 if (animMediator != null)
                                 {
@@ -2742,6 +2824,7 @@ namespace EnemyBehavior.Boss
         private IEnumerator ExecuteKnockOffSpin()
         {
             currentAttack = KnockOffSpin;
+            attackDamageAppliedThisAttack = false;
             PushAction("Attack: KnockOffSpin");
 
             // ALWAYS cancel pending retraction
@@ -2778,7 +2861,14 @@ namespace EnemyBehavior.Boss
                 
                 if (shouldFling)
                 {
+                    BossTopZone topZone = GetComponentInChildren<BossTopZone>(true);
+                    topZone?.ForceDetachPlayer(0.45f);
                     FlingPlayer();
+
+                    if (!attackDamageAppliedThisAttack)
+                    {
+                        TryApplyConfiguredDamageForAttack(a.Id, "KnockOffSpinFallback");
+                    }
                 }
             }
 
@@ -2795,7 +2885,11 @@ namespace EnemyBehavior.Boss
             if (player == null) return;
 
             // Generate random horizontal direction away from boss
-            Vector2 randomDir = Random.insideUnitCircle.normalized;
+            Vector2 randomDir = Random.insideUnitCircle;
+            if (randomDir.sqrMagnitude < 0.0001f)
+                randomDir = Vector2.right;
+            else
+                randomDir.Normalize();
             Vector3 flingDir = new Vector3(randomDir.x, 0.3f, randomDir.y).normalized;
 
             // Try to use PlayerMovement's ApplyKnockback for CharacterController-based movement
@@ -2803,7 +2897,12 @@ namespace EnemyBehavior.Boss
             {
                 Vector3 knockbackVelocity = flingDir * SpinKnockbackForce;
                 float spinTopSpeed = Mathf.Max(0.1f, agent != null ? agent.speed : TopWanderSpeed);
-                if (TryApplyKnockbackToPlayer(knockbackVelocity, spinTopSpeed, "Spin"))
+                if (TryApplyKnockbackToPlayer(
+                    knockbackVelocity,
+                    spinTopSpeed,
+                    "Spin",
+                    ignoreCooldown: true,
+                    ignoreSpeedScaling: true))
                     PushAction($"Player knocked back (spin) with velocity {SpinKnockbackForce:F1}");
             }
             else
@@ -4335,7 +4434,7 @@ namespace EnemyBehavior.Boss
         {
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] SetPlayerOnTop called: {value}, playerOnTop was: {playerOnTop}, form: {form}");
             playerOnTop = value;
-            
+
             // During CageBull form (cage match with charges), ignore top mounting
             // Player shouldn't be able to ride the boss during the charge phase
             if (form == RoombaForm.CageBull)
@@ -4344,7 +4443,7 @@ namespace EnemyBehavior.Boss
                 // Still track the mount state, but don't trigger wander behavior
                 return;
             }
-            
+
             if (value)
             {
                 lastMountedTime = Time.time;
@@ -4358,6 +4457,44 @@ namespace EnemyBehavior.Boss
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Player dismounted! Stopping top wander.");
                 ctrl.StopTopWander();
             }
+        }
+
+        /// <summary>
+        /// Gets the damage value for a specific attack type.
+        /// Called by BossArmHitbox and other attack systems to determine damage to apply.
+        /// </summary>
+        public float GetDamageForAttackType(string attackType)
+        {
+            return attackType switch
+            {
+                "BasicSwipe" or
+                "BasicSwipeLeft" or "BasicSwipeRight" => DamageBasicSwipe,
+                "ArmSweep" or
+                "ArmSweepLeft" or "ArmSweepRight" => DamageArmSweep,
+                "DashLunge" or
+                "DashLungeLeft" or "DashLungeRight" or "DashLungeNoArms" => DamageDashLunge,
+                "ArmPoke" => DamageArmPoke,
+                "KnockOffSpin" => DamageKnockOffSpin,
+                "StaticCharge" or
+                "Charge" or
+                "StaticChargeLeft" or "StaticChargeRight" or "TargetedCharge" => DamageCharge,
+                "Vacuum" or
+                "VacuumSuction" => DamageVacuum,
+                _ => 10f // Default fallback
+            };
+        }
+
+        private bool TryApplyConfiguredDamageForAttack(string attackId, string sourceTag)
+        {
+            float configuredDamage = GetDamageForAttackType(attackId);
+            bool applied = ApplyBossDamageIfPlayerPresent(configuredDamage);
+            if (applied)
+            {
+                attackDamageAppliedThisAttack = true;
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] {sourceTag} applied {configuredDamage} damage for {attackId}");
+            }
+
+            return applied;
         }
 
         private IEnumerator MoveTowardPlayer(float seconds)
@@ -4524,17 +4661,19 @@ namespace EnemyBehavior.Boss
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] OnHornsLowerComplete() - hornsLowerInProgress cleared");
         }
 
-        private void ApplyBossDamageIfPlayerPresent(float damage)
+        private bool ApplyBossDamageIfPlayerPresent(float damage)
         {
-            if (player == null) return;
+            if (player == null) return false;
             if (CombatManager.isParrying && currentAttack != null && currentAttack.Parryable)
             {
                 CombatManager.ParrySuccessful();
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"Boss attack {currentAttack?.Id} parried.");
-                return;
+                return true;
             }
-            var hs = player.GetComponent<IHealthSystem>();
-            if (hs == null || damage <= 0f) return;
+            var hs = player.GetComponent<IHealthSystem>()
+                ?? player.GetComponentInChildren<IHealthSystem>()
+                ?? player.GetComponentInParent<IHealthSystem>();
+            if (hs == null || damage <= 0f) return false;
             if (CombatManager.isGuarding)
             {
                 float reduced = damage * 0.5f;
@@ -4545,6 +4684,8 @@ namespace EnemyBehavior.Boss
             {
                 hs.LoseHP(damage);
             }
+
+            return true;
         }
 
         private float GetClipLength(Animator anim, string clipName)

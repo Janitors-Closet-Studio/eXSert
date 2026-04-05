@@ -137,7 +137,7 @@ public class MenuListManager : MonoBehaviour
             }
         }
 
-        Debug.Log("Menu added to list. Current menus in list: " + menusToManage.Count);
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, "Menu added to list. Current menus in list: " + menusToManage.Count);
     }
 
     // Ensures the entire parent chain of the menu is active so that it can be properly displayed and interacted with.

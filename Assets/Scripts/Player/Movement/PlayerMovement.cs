@@ -56,6 +56,8 @@ public class PlayerMovement : MonoBehaviour
     private bool testingOrDebugMode = false;
     [SerializeField, Tooltip("Verbose movement diagnostics for jump/grounded/animation state transitions. Use for reproducing movement bugs in test scenes.")]
     private bool verboseMovementDebugLogs = false;
+    [SerializeField, Tooltip("Enable debug logs for external velocity (mounting/carrying system).")]
+    private bool enableExternalVelocityDebugLogs = false;
 
     [Header("Player Animator")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -3646,14 +3648,13 @@ public class PlayerMovement : MonoBehaviour
     /// </summary>
     public void SetExternalVelocity(Vector3 velocity)
     {
-#if UNITY_EDITOR
         // Only log when first activated (not every frame)
         if (!externalVelocityActive && velocity.sqrMagnitude > 0.1f)
         {
-            Debug.Log($"[PlayerMovement] SetExternalVelocity STARTED: {velocity}, magnitude={velocity.magnitude:F2}");
+            if (enableExternalVelocityDebugLogs)
+                Debug.Log($"[PlayerMovement] SetExternalVelocity STARTED: {velocity}, magnitude={velocity.magnitude:F2}");
         }
-#endif
-        
+
         externalVelocity = velocity;
         externalVelocityActive = true;
     }
@@ -3677,10 +3678,16 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.y = impulse.y;
         }
         
-        // CRITICAL FIX: Apply an immediate position offset to "punch" through any blocking colliders
-        // This prevents the CharacterController from getting stuck on the boss's body
-        Vector3 immediateOffset = new Vector3(impulse.x, 0f, impulse.z).normalized * 0.5f;
-        if (characterController != null && immediateOffset.sqrMagnitude > 0.001f)
+        // Apply a small immediate position offset to help clear overlapping boss colliders.
+        // Scale by impulse strength so low-force hits do not still feel like large knockbacks.
+        Vector3 planarImpulse = new Vector3(impulse.x, 0f, impulse.z);
+        float planarImpulseMagnitude = planarImpulse.magnitude;
+        float immediateOffsetDistance = Mathf.Clamp(planarImpulseMagnitude * 0.06f, 0f, 0.5f);
+        Vector3 immediateOffset = planarImpulseMagnitude > 0.0001f
+            ? planarImpulse.normalized * immediateOffsetDistance
+            : Vector3.zero;
+
+        if (characterController != null && immediateOffset.sqrMagnitude > 0.000001f)
         {
             // Temporarily disable CharacterController to allow direct position manipulation
             bool wasEnabled = characterController.enabled;
@@ -3688,9 +3695,10 @@ public class PlayerMovement : MonoBehaviour
             transform.position += immediateOffset;
             characterController.enabled = wasEnabled;
         }
-        
+
 #if UNITY_EDITOR
-        Debug.Log($"[PlayerMovement] ApplyKnockback: {impulse}, magnitude={knockbackStartMagnitude:F2}, applied Y velocity={impulse.y:F2}, immediate offset={immediateOffset}");
+        if (enableExternalVelocityDebugLogs)
+            Debug.Log($"[PlayerMovement] ApplyKnockback: {impulse}, magnitude={knockbackStartMagnitude:F2}, applied Y velocity={impulse.y:F2}, immediate offset={immediateOffset}");
 #endif
     }
     
@@ -3706,7 +3714,7 @@ public class PlayerMovement : MonoBehaviour
         {
             // Knockback finished
 #if UNITY_EDITOR
-            if (isKnockbackActive)
+            if (isKnockbackActive && enableExternalVelocityDebugLogs)
             {
                 Debug.Log($"[PlayerMovement] Knockback finished - horizontal velocity {Mathf.Sqrt(horizontalSqrMag):F2} below threshold {knockbackMinVelocity:F2}");
             }
@@ -3773,15 +3781,15 @@ public class PlayerMovement : MonoBehaviour
         // This makes decay rate frame-rate independent
         float decayThisFrame = Mathf.Pow(knockbackDecayRate, Time.deltaTime * 60f);
         knockbackVelocity *= decayThisFrame;
-        
+
 #if UNITY_EDITOR
         // Log every 10 frames to track knockback progress
-        if (Time.frameCount % 10 == 0)
+        if (Time.frameCount % 10 == 0 && enableExternalVelocityDebugLogs)
         {
             Debug.Log($"[PlayerMovement] Knockback active: horizontal vel={thisFrameMovement.magnitude:F2}, after decay={Mathf.Sqrt(knockbackVelocity.x*knockbackVelocity.x + knockbackVelocity.z*knockbackVelocity.z):F2}");
         }
 #endif
-        
+
         return thisFrameMovement;
     }
 
@@ -3791,7 +3799,7 @@ public class PlayerMovement : MonoBehaviour
     public void ClearExternalVelocity()
     {
 #if UNITY_EDITOR
-        if (externalVelocityActive)
+        if (externalVelocityActive && enableExternalVelocityDebugLogs)
         {
             Debug.Log("[PlayerMovement] ClearExternalVelocity called - external velocity stopped");
         }

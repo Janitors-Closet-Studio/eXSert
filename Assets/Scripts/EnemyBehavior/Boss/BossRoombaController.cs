@@ -110,10 +110,18 @@ public class BossRoombaController : MonoBehaviour
     [Header("Top-Wander (Player On Top)")]
     [Tooltip("Speed multiplier during top-wander movement.")]
     public float TopWanderSpeedMultiplier = 1.1f;
+    [Tooltip("Optional absolute top-wander speed. If > 0, this value is used directly instead of SpeedMultiplier × current speed.")]
+    public float TopWanderSpeedOverride = 0f;
+    [Tooltip("Minimum absolute movement speed while top-wander is active (prevents getting stuck if top-wander starts during low-speed turn states).")]
+    public float TopWanderMinSpeed = 6f;
     [Tooltip("Random target radius range (meters) for top-wander.")]
     public Vector2 TopWanderRadiusRange = new Vector2(4f, 10f);
     [Tooltip("Time range (seconds) before repicking a new wander target.")]
     public Vector2 TopWanderRepathTimeRange = new Vector2(0.7f, 1.4f);
+
+    [Header("Debug")]
+    [Tooltip("Enable verbose [BossTopWander] logs.")]
+    [SerializeField] private bool enableTopWanderDebugLogs = false;
 
     // Object pools
     private readonly Dictionary<Transform, GameObject> activeDrones = new Dictionary<Transform, GameObject>();
@@ -140,6 +148,20 @@ public class BossRoombaController : MonoBehaviour
 
     void Awake()
     {
+        // Roomba top-mount design expects stable standing/walking on top.
+        // Disable generic slide-off behavior if present on this boss hierarchy.
+        var slideOffComponents = GetComponentsInChildren<PlayerSlideOffSurface>(true);
+        if (slideOffComponents != null)
+        {
+            foreach (var slideOff in slideOffComponents)
+            {
+                if (slideOff == null)
+                    continue;
+
+                slideOff.SetDisabled(true);
+            }
+        }
+
         if (EnsureKinematicRigidbody)
         {
             var rb = GetComponent<Rigidbody>();
@@ -353,6 +375,12 @@ public class BossRoombaController : MonoBehaviour
 
     public void StartFollowingPlayer(float cadenceSeconds)
     {
+        if (topWanderActive)
+        {
+            TopWanderLog("[BossTopWander] Ignoring StartFollowingPlayer while top-wander is active.");
+            return;
+        }
+
         lastFollowCadence = Mathf.Max(0.02f, cadenceSeconds);
         if (followRoutine != null) StopCoroutine(followRoutine);
         followRoutine = StartCoroutine(FollowLoop(lastFollowCadence));
@@ -420,7 +448,28 @@ public class BossRoombaController : MonoBehaviour
 
     public void StartTopWander()
     {
-        if (topWanderActive) return;
+        if (topWanderActive)
+        {
+            StopFollowing();
+            if (agent != null)
+            {
+                agent.isStopped = false;
+                if (!agent.hasPath || (agent.remainingDistance <= 0.05f && !agent.pathPending))
+                {
+                    Vector3 origin = transform.position;
+                    float radius = Random.Range(TopWanderRadiusRange.x, TopWanderRadiusRange.y);
+                    Vector2 dir2D = Random.insideUnitCircle.normalized;
+                    Vector3 candidate = origin + new Vector3(dir2D.x, 0f, dir2D.y) * radius;
+                    if (NavMesh.SamplePosition(candidate, out var hit, 2.0f, NavMesh.AllAreas))
+                        candidate = hit.position;
+
+                    agent.SetDestination(candidate);
+                }
+            }
+
+            TopWanderLog($"[BossTopWander] StartTopWander ignored (already active). isStopped={agent.isStopped} speed={agent.speed:F2} vel={agent.velocity.magnitude:F2}");
+            return;
+        }
         topWanderActive = true;
 
         // Trigger alarm on player mount (if not already activated)
@@ -435,7 +484,15 @@ public class BossRoombaController : MonoBehaviour
 
         agent.autoBraking = false;
         agent.stoppingDistance = 0f;
-        agent.speed = savedSpeed * TopWanderSpeedMultiplier;
+        float topWanderSpeed = TopWanderSpeedOverride > 0f
+            ? TopWanderSpeedOverride
+            : savedSpeed * TopWanderSpeedMultiplier;
+        if (topWanderSpeed < TopWanderMinSpeed)
+            topWanderSpeed = TopWanderMinSpeed;
+        agent.speed = topWanderSpeed;
+        agent.isStopped = false;
+
+        TopWanderLog($"[BossTopWander] START speed={agent.speed:F2} savedSpeed={savedSpeed:F2} minSpeed={TopWanderMinSpeed:F2} autoBraking={agent.autoBraking} stoppingDistance={agent.stoppingDistance:F2}");
 
         StopFollowing();
         if (topWanderRoutine != null) StopCoroutine(topWanderRoutine);
@@ -446,6 +503,8 @@ public class BossRoombaController : MonoBehaviour
     {
         if (!topWanderActive) return;
         topWanderActive = false;
+
+        TopWanderLog($"[BossTopWander] STOP restoringSpeed={savedSpeed:F2} currentVel={agent.velocity.magnitude:F2}");
 
         if (topWanderRoutine != null)
         {
@@ -468,22 +527,40 @@ public class BossRoombaController : MonoBehaviour
             float radius = Random.Range(TopWanderRadiusRange.x, TopWanderRadiusRange.y);
             Vector2 dir2D = Random.insideUnitCircle.normalized;
             Vector3 candidate = origin + new Vector3(dir2D.x, 0f, dir2D.y) * radius;
+            bool sampledNav = false;
             if (NavMesh.SamplePosition(candidate, out var hit, 2.0f, NavMesh.AllAreas))
+            {
                 candidate = hit.position;
+                sampledNav = true;
+            }
 
             agent.isStopped = false;
-            agent.SetDestination(candidate);
+            bool setDestinationOk = agent.SetDestination(candidate);
+
+            TopWanderLog($"[BossTopWander] Repath origin={origin} candidate={candidate} radius={radius:F2} sampledNav={sampledNav} setDestinationOk={setDestinationOk} pathPending={agent.pathPending} hasPath={agent.hasPath} pathStatus={agent.pathStatus} remDist={agent.remainingDistance:F2} speed={agent.speed:F2} vel={agent.velocity.magnitude:F2}");
 
             float timeout = Random.Range(TopWanderRepathTimeRange.x, TopWanderRepathTimeRange.y);
             float t = 0f;
             while (t < timeout)
             {
+                if (t <= 0.001f || t >= timeout - 0.02f)
+                {
+                    TopWanderLog($"[BossTopWander] Tick t={t:F2}/{timeout:F2} pos={transform.position} vel={agent.velocity.magnitude:F2} isStopped={agent.isStopped} hasPath={agent.hasPath} pathPending={agent.pathPending} remDist={agent.remainingDistance:F2}");
+                }
+
                 t += Time.deltaTime;
                 yield return null;
             }
         }
     }
 
+    private void TopWanderLog(string message)
+    {
+        if (!enableTopWanderDebugLogs)
+            return;
+
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), message);
+    }
     public void ActivateAlarm()
     {
         // Don't activate if destroyed

@@ -80,6 +80,7 @@ namespace EnemyBehavior.Boss
         // Runtime state
         private Transform player;
         private PlayerMovement playerMovement;
+        private IHealthSystem playerHealthSystem;
         private bool isActive;
         private float currentPullStrength;
         private NavMeshPath currentPath;
@@ -87,6 +88,9 @@ namespace EnemyBehavior.Boss
         private float lastPathCalculateTime;
         private Vector3[] pathCorners = new Vector3[32];
         private int pathCornerCount;
+        private BossRoombaBrain bossBrain;
+        private float damageTickInterval = 0.5f; // Apply damage every 0.5 seconds
+        private float lastDamageTickTime;
 
         private void Awake()
         {
@@ -101,9 +105,23 @@ namespace EnemyBehavior.Boss
         {
             player = playerTransform;
             playerMovement = movement;
+            if (player != null)
+            {
+                playerHealthSystem = player.GetComponent<IHealthSystem>()
+                    ?? player.GetComponentInChildren<IHealthSystem>()
+                    ?? player.GetComponentInParent<IHealthSystem>();
+            }
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Player references set: player={player?.name}, hasMovement={playerMovement != null}");
+            EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Player references set: player={player?.name}, hasMovement={playerMovement != null}, hasHealth={playerHealthSystem != null}");
 #endif
+        }
+
+        /// <summary>
+        /// Sets the boss brain reference for damage queries.
+        /// </summary>
+        public void SetBossBrainReference(BossRoombaBrain brain)
+        {
+            bossBrain = brain;
         }
 
         /// <summary>
@@ -248,6 +266,7 @@ namespace EnemyBehavior.Boss
 #if UNITY_EDITOR
             int frameCount = 0;
 #endif
+            lastDamageTickTime = Time.time;
 
             while (elapsed < duration && isActive)
             {
@@ -324,6 +343,17 @@ namespace EnemyBehavior.Boss
                 // Apply the pull velocity
                 Vector3 pullVelocity = pullDirection.normalized * currentPullStrength;
                 playerMovement.SetExternalVelocity(pullVelocity);
+
+                // Apply damage on tick intervals
+                if (playerHealthSystem != null && bossBrain != null && Time.time - lastDamageTickTime >= damageTickInterval)
+                {
+                    float damage = bossBrain.GetDamageForAttackType("VacuumSuction");
+                    playerHealthSystem.LoseHP(damage);
+                    lastDamageTickTime = Time.time;
+#if UNITY_EDITOR
+                    EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect][DamageDebug] Vacuum HIT PLAYER for {damage} damage!");
+#endif
+                }
 
 #if UNITY_EDITOR
                 // Debug log every 60 frames (~1 second) to reduce spam

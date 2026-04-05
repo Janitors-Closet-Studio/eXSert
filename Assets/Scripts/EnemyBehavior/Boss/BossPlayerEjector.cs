@@ -72,6 +72,10 @@ namespace EnemyBehavior.Boss
         [Header("References")]
         [Tooltip("Transform representing the center of the boss (auto-found if null)")]
         public Transform BossCenter;
+
+        [Header("Mounting Integration")]
+        [Tooltip("If true, disables repulsion/ejection while player is intentionally mounted on boss top.")]
+        public bool DisableWhilePlayerMounted = true;
         
         [Tooltip("Reference to BossArenaManager for arena bounds (auto-found if null)")]
         public BossArenaManager ArenaManager;
@@ -84,6 +88,7 @@ namespace EnemyBehavior.Boss
         private PlayerMovement playerMovement;
         private CharacterController playerController;
         private bool isApplyingRepulsion;
+        private BossRoombaBrain bossBrain;
         
         // Grace period tracking
         private float graceEndTime;
@@ -95,6 +100,9 @@ namespace EnemyBehavior.Boss
         {
             if (BossCenter == null)
                 BossCenter = transform;
+
+            if (bossBrain == null)
+                bossBrain = GetComponent<BossRoombaBrain>() ?? GetComponentInParent<BossRoombaBrain>();
             
             if (ArenaManager == null)
                 ArenaManager = GetComponent<BossArenaManager>() 
@@ -150,6 +158,17 @@ namespace EnemyBehavior.Boss
             if (player == null)
             {
                 CachePlayerReference();
+                return;
+            }
+
+            if (DisableWhilePlayerMounted && IsPlayerIntentionallyMounted())
+            {
+                if (isApplyingRepulsion)
+                {
+                    playerMovement?.ClearExternalVelocity();
+                    isApplyingRepulsion = false;
+                }
+                overlapTimeSeconds = 0f;
                 return;
             }
 
@@ -349,18 +368,6 @@ namespace EnemyBehavior.Boss
             if (ArenaManager != null)
             {
                 Vector3 arenaCenter = ArenaManager.GetArenaCenter();
-                
-                // If boss is very close to arena center, calculate direction away from nearest wall
-                float bossToCenter = Vector3.Distance(
-                    new Vector3(bossPos.x, 0, bossPos.z),
-                    new Vector3(arenaCenter.x, 0, arenaCenter.z));
-                
-                if (bossToCenter < 3f)
-                {
-                    // Boss is near center - use player's position relative to center instead
-                    return arenaCenter;
-                }
-                
                 return arenaCenter;
             }
             
@@ -372,6 +379,18 @@ namespace EnemyBehavior.Boss
                 awayFromBoss = Vector3.forward;
             }
             return bossPos + awayFromBoss.normalized * 10f;
+        }
+
+        private bool IsPlayerIntentionallyMounted()
+        {
+            if (bossBrain != null && bossBrain.IsPlayerMountedOnTop)
+                return true;
+
+            if (player == null || BossCenter == null)
+                return false;
+
+            // Fallback: parented under boss hierarchy indicates intentional mount carry state.
+            return player.IsChildOf(BossCenter);
         }
 
         private void OnDrawGizmosSelected()
