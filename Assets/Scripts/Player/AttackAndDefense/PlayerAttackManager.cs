@@ -828,6 +828,13 @@ public class PlayerAttackManager : MonoBehaviour
             return;
         }
 
+        SoundManager manager = SoundManager.Instance;
+        if (manager != null && manager.TryPlayPlayerActionSfx(clip, priority: 3))
+        {
+            hasLoggedMissingAttackAudioSource = false;
+            return;
+        }
+
         var source = attackAudioSource != null ? attackAudioSource : fallbackSfxSource;
 
         if (source == null)
@@ -865,7 +872,6 @@ public class PlayerAttackManager : MonoBehaviour
         hasLoggedMissingAttackAudioSource = false;
 
         source.PlayOneShot(clip);
-        Debug.Log($"[PlayerAttackManager] Playing SFX: {clip.name} on {source.gameObject.name}");
     }
 
     private void ClearHitbox()

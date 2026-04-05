@@ -17,6 +17,11 @@ public class SoundManager : Singleton<SoundManager>
     public AudioSource musicSource;
     public AudioSource sfxSource;
     public AudioSource voiceSource;
+    [Header("Player Action SFX")]
+    [SerializeField, Tooltip("Dedicated source for player action SFX (guard/dash/attack). Falls back to SFX/Voice source when missing.")]
+    private AudioSource playerActionSfxSource;
+    [SerializeField, Range(0f, 0.5f)] private float playerActionFadeOutSeconds = 0.08f;
+    [SerializeField, Range(0f, 0.5f)] private float playerActionFadeInSeconds = 0.04f;
 
     // Sub Categories
     public AudioSource ambienceSource;
@@ -29,6 +34,10 @@ public class SoundManager : Singleton<SoundManager>
     private float ogLevelMusicVolume = 1f;
     private float ogAmbienceVolume = 1f;
     private float ogVoiceVolume = 1f;   
+    private float ogPlayerActionVolume = 1f;
+    private Coroutine playerActionSfxRoutine;
+    private int playerActionSfxPriority = -1;
+    private int playerActionSfxRequestToken;
 
     //Debug logs
     private void PersistAudioSource(AudioSource source)
@@ -45,6 +54,7 @@ public class SoundManager : Singleton<SoundManager>
         PersistAudioSource(levelMusicSource);
         PersistAudioSource(sfxSource);
         PersistAudioSource(voiceSource);
+        PersistAudioSource(playerActionSfxSource);
 
         base.Awake();
 
@@ -85,6 +95,9 @@ public class SoundManager : Singleton<SoundManager>
 
         if (voiceSource != null)
             voiceSource.volume = voiceRaw * masterRaw;
+
+        if (playerActionSfxSource != null)
+            playerActionSfxSource.volume = sfxSource != null ? sfxSource.volume : (voiceSource != null ? voiceSource.volume : masterRaw);
 
         if(ambienceSource != null)
             ambienceSource.volume = musicSource.volume * 0.2f; // Ambience is typically quieter than music
@@ -206,6 +219,7 @@ public class SoundManager : Singleton<SoundManager>
             if (levelMusicSource != null) ogLevelMusicVolume = levelMusicSource.volume;
             if (ambienceSource != null) ogAmbienceVolume = ambienceSource.volume;
             if (voiceSource != null) ogVoiceVolume = voiceSource.volume;
+            if (playerActionSfxSource != null) ogPlayerActionVolume = playerActionSfxSource.volume;
 
             if (musicSource != null && musicSource.isPlaying)
                 musicSource.Pause();
@@ -217,12 +231,15 @@ public class SoundManager : Singleton<SoundManager>
                 sfxSource.Pause();
             if (voiceSource != null && voiceSource.isPlaying)
                 voiceSource.Pause();
+            if (playerActionSfxSource != null && playerActionSfxSource.isPlaying)
+                playerActionSfxSource.Pause();
 
             if (sfxSource != null) sfxSource.volume = 0f; // Mute SFX
             if (musicSource != null) musicSource.volume = 0f; // Mute music
             if (levelMusicSource != null) levelMusicSource.volume = 0f; // Mute level music
             if (ambienceSource != null) ambienceSource.volume = 0f; // Mute ambience
             if (voiceSource != null) voiceSource.volume = 0f; // Mute voice
+            if (playerActionSfxSource != null) playerActionSfxSource.volume = 0f;
         }
         else
         {
@@ -236,15 +253,106 @@ public class SoundManager : Singleton<SoundManager>
                 sfxSource.UnPause();
             if (voiceSource != null && !voiceSource.isPlaying)
                 voiceSource.UnPause();
+            if (playerActionSfxSource != null && !playerActionSfxSource.isPlaying)
+                playerActionSfxSource.UnPause();
 
             if (sfxSource != null) sfxSource.volume = ogSfxVolume;
             if (musicSource != null) musicSource.volume = ogMusicVolume;
             if (levelMusicSource != null) levelMusicSource.volume = ogLevelMusicVolume;
             if (ambienceSource != null) ambienceSource.volume = ogAmbienceVolume;
             if (voiceSource != null) voiceSource.volume = ogVoiceVolume;
+            if (playerActionSfxSource != null) playerActionSfxSource.volume = ogPlayerActionVolume;
 
             // Ensure all volumes are reset to user settings
             ApplySavedVolumes();
         }
+    }
+
+    public bool TryPlayPlayerActionSfx(AudioClip clip, int priority)
+    {
+        if (clip == null)
+            return false;
+
+        AudioSource source = ResolvePlayerActionSource();
+        if (source == null)
+            return false;
+
+        if (source.isPlaying && priority < playerActionSfxPriority)
+            return false;
+
+        playerActionSfxPriority = priority;
+        playerActionSfxRequestToken++;
+
+        if (playerActionSfxRoutine != null)
+        {
+            StopCoroutine(playerActionSfxRoutine);
+            playerActionSfxRoutine = null;
+        }
+
+        playerActionSfxRoutine = StartCoroutine(PlayPlayerActionSfxRoutine(source, clip, playerActionSfxRequestToken));
+        return true;
+    }
+
+    private AudioSource ResolvePlayerActionSource()
+    {
+        if (playerActionSfxSource != null)
+            return playerActionSfxSource;
+
+        if (sfxSource != null)
+            return sfxSource;
+
+        return voiceSource;
+    }
+
+    private IEnumerator PlayPlayerActionSfxRoutine(AudioSource source, AudioClip clip, int requestToken)
+    {
+        if (source == null || clip == null)
+            yield break;
+
+        float targetVolume = Mathf.Max(0.0001f, source.volume);
+        if (source.isPlaying && playerActionFadeOutSeconds > 0f)
+        {
+            float startVolume = source.volume;
+            float elapsed = 0f;
+            while (elapsed < playerActionFadeOutSeconds)
+            {
+                if (requestToken != playerActionSfxRequestToken)
+                    yield break;
+
+                elapsed += Time.unscaledDeltaTime;
+                source.volume = Mathf.Lerp(startVolume, 0f, Mathf.Clamp01(elapsed / playerActionFadeOutSeconds));
+                yield return null;
+            }
+        }
+
+        if (requestToken != playerActionSfxRequestToken)
+            yield break;
+
+        source.Stop();
+        source.clip = clip;
+        source.volume = 0f;
+        source.Play();
+
+        if (playerActionFadeInSeconds <= 0f)
+        {
+            source.volume = targetVolume;
+        }
+        else
+        {
+            float elapsed = 0f;
+            while (elapsed < playerActionFadeInSeconds)
+            {
+                if (requestToken != playerActionSfxRequestToken)
+                    yield break;
+
+                elapsed += Time.unscaledDeltaTime;
+                source.volume = Mathf.Lerp(0f, targetVolume, Mathf.Clamp01(elapsed / playerActionFadeInSeconds));
+                yield return null;
+            }
+
+            source.volume = targetVolume;
+        }
+
+        playerActionSfxRoutine = null;
     }
 }
