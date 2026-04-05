@@ -32,6 +32,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg libgstreamer1.0-0 libgstreamer-plugins-base1.0-0
 
+      - name: Remove CI-incompatible demo assets
+        run: |
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/Headphone.prefab"
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/Headphone.prefab.meta"
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/SimplePole Variant.prefab"
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/SimplePole Variant.prefab.meta"
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/Snow_Flake Variant.prefab"
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/Snow_Flake Variant.prefab.meta"
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/TelephonePole Variant.prefab"
+          rm -f "Assets/Imported Assets/GogoGaga/OptimizedRopesAndCables/Example/Prefab/TelephonePole Variant.prefab.meta"
+          rm -f "Assets/Imported Assets/WireBuilder/Prefabs/EndAnchor.prefab"
+          rm -f "Assets/Imported Assets/WireBuilder/Prefabs/EndAnchor.prefab.meta"
+
       - name: Gather today's introduced changes
         id: commits
         run: |
