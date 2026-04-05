@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &3378559145851604519
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.025052477
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.033477627
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.025052477
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -17.285
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -5.489
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 536.345
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.97849536
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.20626901
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 23.808
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: ee71b2eb913665b46b13ca73fb03749c, type: 2}
+    - target: {fileID: 919132149155446097, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      propertyPath: m_Name
+      value: ladder platform
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6920516567996146520}
+  m_SourcePrefab: {fileID: 100100000, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+--- !u!1 &2459638801936216950 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
+  m_PrefabInstance: {fileID: 3378559145851604519}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &6920516567996146520
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2459638801936216950}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -6602441374692447843, guid: 5e0b8ae9020f1a94e8abfc82ca97d42d, type: 3}
