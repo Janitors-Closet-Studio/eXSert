@@ -73,7 +73,10 @@ public abstract class UnlockableInteraction : InteractionManager
     {
         Debug.Log($"[UnlockableInteraction] Failed interaction attempt on {gameObject.name}. needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}");
 
-        if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null && InteractionUI.Instance != null && !InternalPlayerInventory.Instance.collectedInteractables.Contains(requiredItemID))
+        bool playerAlreadyHasRequiredItem = InternalPlayerInventory.Instance != null
+            && InternalPlayerInventory.Instance.collectedInteractables.Contains(requiredItemID);
+
+        if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null && InteractionUI.Instance != null && !playerAlreadyHasRequiredItem)
         {
             Debug.Log($"[UnlockableInteraction] Playing error SFX: {errorSFXClip.name} on sfxSource from {gameObject.name}");
             SoundManager.Instance.sfxSource.PlayOneShot(errorSFXClip);
@@ -98,20 +101,24 @@ public abstract class UnlockableInteraction : InteractionManager
             return;
         }
 
-        if (canExecuteInteraction && InternalPlayerInventory.Instance.collectedInteractables.Contains(requiredItemID))
+        if (!canExecuteInteraction)
         {
-            if (onInteractionExecuted == null)
-            {
-                Debug.LogWarning("[UnlockableInteraction] onInteractionExecuted event is not assigned.");
-            }
-            ExecuteInteraction();
-            onInteractionExecuted?.Invoke();
-            InteractionUI.Instance.OnCollectedItem($"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
-            if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
-                SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+            FailedInteract();
             return;
         }
 
-        FailedInteract();
+        if (onInteractionExecuted == null)
+        {
+            Debug.LogWarning("[UnlockableInteraction] onInteractionExecuted event is not assigned.");
+        }
+
+        ExecuteInteraction();
+        onInteractionExecuted?.Invoke();
+
+        if (needsItem && canUnlock && InteractionUI.Instance != null)
+            InteractionUI.Instance.OnCollectedItem($"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
+
+        if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
+            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
     }
 }
