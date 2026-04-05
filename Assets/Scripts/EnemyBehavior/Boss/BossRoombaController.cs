@@ -9,6 +9,7 @@ using System.Linq;
 using EnemyBehavior.Boss;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Determines which enemy type spawns first when the alarm activates.
@@ -128,6 +129,7 @@ public class BossRoombaController : MonoBehaviour
     private Coroutine animParamsRoutine;
     private Coroutine topWanderRoutine;
     private Coroutine spawnManagementRoutine;
+    private Coroutine playerRefRetryRoutine;
     private float lastFollowCadence = 0.1f;
 
     // Saved agent settings for top-wander
@@ -218,6 +220,8 @@ public class BossRoombaController : MonoBehaviour
     {
         if (animParamsRoutine != null) StopCoroutine(animParamsRoutine);
         animParamsRoutine = StartCoroutine(AnimParamsLoop(0.05f));
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        StartPlayerRefRetryIfNeeded();
         
         alarmActivated = false;
         // Reset alarm on enable (in case of pooling/re-enabling)
@@ -231,6 +235,8 @@ public class BossRoombaController : MonoBehaviour
     {
         if (animParamsRoutine != null) { StopCoroutine(animParamsRoutine); animParamsRoutine = null; }
         if (spawnManagementRoutine != null) { StopCoroutine(spawnManagementRoutine); spawnManagementRoutine = null; }
+        if (playerRefRetryRoutine != null) { StopCoroutine(playerRefRetryRoutine); playerRefRetryRoutine = null; }
+        SceneManager.sceneLoaded -= OnSceneLoaded;
         StopTopWander();
         StopFollowing();
     }
@@ -271,11 +277,67 @@ public class BossRoombaController : MonoBehaviour
     void Start()
     {
         ApplyProfile();
-        player = GameObject.FindWithTag("Player")?.transform;
+        TryCachePlayerReference();
         
         var ca = new EnemyBehavior.Crowd.CrowdAgent() { Agent = agent, Profile = profile };
         if (EnemyBehavior.Crowd.CrowdController.Instance != null)
             EnemyBehavior.Crowd.CrowdController.Instance.Register(ca);
+    }
+
+    private bool TryCachePlayerReference(bool logIfMissing = false)
+    {
+        if (PlayerPresenceManager.IsPlayerPresent && PlayerPresenceManager.PlayerTransform != null)
+        {
+            player = PlayerPresenceManager.PlayerTransform;
+            return true;
+        }
+
+        var playerObj = GameObject.FindWithTag("Player");
+        if (playerObj != null)
+        {
+            player = playerObj.transform;
+            return true;
+        }
+
+        if (logIfMissing)
+        {
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), "[BossRoombaController] Player not found in loaded scenes yet. Retrying...");
+        }
+
+        return false;
+    }
+
+    private IEnumerator RetryPlayerReferenceRoutine()
+    {
+        while (player == null)
+        {
+            if (TryCachePlayerReference())
+            {
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Player resolved after delayed scene load: {player.name}");
+                break;
+            }
+
+            yield return WaitForSecondsCache.Get(0.5f);
+        }
+
+        playerRefRetryRoutine = null;
+    }
+
+    private void StartPlayerRefRetryIfNeeded()
+    {
+        if (player != null || playerRefRetryRoutine != null)
+            return;
+
+        playerRefRetryRoutine = StartCoroutine(RetryPlayerReferenceRoutine());
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (player != null)
+            return;
+
+        TryCachePlayerReference();
+        StartPlayerRefRetryIfNeeded();
     }
 
     void ApplyProfile()
@@ -321,6 +383,14 @@ public class BossRoombaController : MonoBehaviour
         var wait = WaitForSecondsCache.Get(Mathf.Max(0.02f, cadence));
         while (true)
         {
+            if (player == null)
+            {
+                TryCachePlayerReference();
+                StartPlayerRefRetryIfNeeded();
+                yield return wait;
+                continue;
+            }
+
             if (player != null)
             {
                 Vector3 bossPos = transform.position;
@@ -1430,8 +1500,17 @@ public class BossRoombaController : MonoBehaviour
         }
         else
         {
+            TryCachePlayerReference(logIfMissing: true);
+            if (player != null)
+            {
+                crawler.PlayerTarget = player;
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Late-resolved player and assigned PlayerTarget to {crawler.gameObject.name}");
+            }
+            else
+            {
             EnemyBehaviorDebugLogBools.LogError($"[BossRoombaController] player reference is NULL! Crawlers won't be able to chase.");
             yield break;
+            }
         }
         
         // Handle different starting states - we need to get the crawler into Chase

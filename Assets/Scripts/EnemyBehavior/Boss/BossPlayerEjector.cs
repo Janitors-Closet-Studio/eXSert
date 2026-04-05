@@ -12,6 +12,9 @@ namespace EnemyBehavior.Boss
     public class BossPlayerEjector : MonoBehaviour
     {
         [Header("Repulsion Zone (Prevention)")]
+        [Tooltip("If true, applies continuous repulsion in the outer radius. Disable to only use emergency ejection when player is truly overlapping the boss.")]
+        public bool EnableContinuousRepulsion = false;
+
         [Tooltip("Radius at which the repulsion force starts (outer edge of repulsion zone)")]
         public float RepulsionOuterRadius = 5f;
         
@@ -41,6 +44,31 @@ namespace EnemyBehavior.Boss
         [Tooltip("Upward force component to help player clear the boss")]
         public float EjectionUpwardForce = 8f;
 
+        [Tooltip("Minimum time between emergency ejections while overlapping the boss.")]
+        [Min(0f)]
+        public float EjectionCooldown = 0.35f;
+
+        [Tooltip("How long the player must remain inside overlap range before emergency ejection is allowed. Prevents bump/touch ejections.")]
+        [Min(0f)]
+        public float MinimumOverlapSecondsForEjection = 0.35f;
+
+        [Header("Safety Caps")]
+        [Tooltip("Clamp emergency ejection trigger radius to this cap to prevent side-touch launches from oversized/overridden inspector values.")]
+        public bool UseHardEjectionRadiusCap = true;
+        [Min(0f)] public float HardEjectionRadiusCap = 1.5f;
+
+        [Tooltip("Clamp emergency ejection force to this cap to prevent strong launches from oversized/overridden inspector values.")]
+        public bool UseHardEjectionForceCap = true;
+        [Min(0f)] public float HardMaxEjectionForce = 4f;
+        [Min(0f)] public float HardMaxEjectionUpwardForce = 2f;
+
+        [Tooltip("If true, emergency ejection can teleport the player out when they are deeply inside the boss.")]
+        public bool TeleportOnEmergencyEject = false;
+
+        [Tooltip("Player must be within this radius (from boss center) before emergency ejection is allowed to teleport.")]
+        [Min(0f)]
+        public float TeleportOverlapRadius = 0.75f;
+
         [Header("References")]
         [Tooltip("Transform representing the center of the boss (auto-found if null)")]
         public Transform BossCenter;
@@ -60,6 +88,8 @@ namespace EnemyBehavior.Boss
         // Grace period tracking
         private float graceEndTime;
         private bool isInGracePeriod;
+        private float lastEjectionTime = -999f;
+        private float overlapTimeSeconds;
 
         private void Start()
         {
@@ -144,32 +174,47 @@ namespace EnemyBehavior.Boss
             Vector3 playerPos2D = new Vector3(playerPos.x, 0, playerPos.z);
             float distance2D = Vector3.Distance(bossPos2D, playerPos2D);
 
-            // PREVENTION: Apply repulsion force when in repulsion zone
-            if (distance2D < RepulsionOuterRadius && distance2D > 0.01f)
+            if (EnableContinuousRepulsion)
             {
-                // During grace period, only apply gentle repulsion (no strong ejection)
-                if (isInGracePeriod && Time.time < graceEndTime)
+                // PREVENTION: Apply repulsion force when in repulsion zone
+                if (distance2D < RepulsionOuterRadius && distance2D > 0.01f)
                 {
-                    // Reduced force during grace period
-                    ApplyRepulsionForce(bossPos, playerPos, distance2D, 0.3f);
+                    // During grace period, only apply gentle repulsion (no strong ejection)
+                    if (isInGracePeriod && Time.time < graceEndTime)
+                    {
+                        // Reduced force during grace period
+                        ApplyRepulsionForce(bossPos, playerPos, distance2D, 0.3f);
+                    }
+                    else
+                    {
+                        isInGracePeriod = false;
+                        ApplyRepulsionForce(bossPos, playerPos, distance2D, 1.0f);
+                    }
                 }
-                else
+                else if (isApplyingRepulsion)
                 {
-                    isInGracePeriod = false;
-                    ApplyRepulsionForce(bossPos, playerPos, distance2D, 1.0f);
+                    // Player left repulsion zone - clear external velocity
+                    playerMovement?.ClearExternalVelocity();
+                    isApplyingRepulsion = false;
                 }
             }
             else if (isApplyingRepulsion)
             {
-                // Player left repulsion zone - clear external velocity
+                // Continuous repulsion disabled - ensure we don't leave stale external velocity active.
                 playerMovement?.ClearExternalVelocity();
                 isApplyingRepulsion = false;
             }
 
+            float effectiveOverlapRadius = UseHardEjectionRadiusCap
+                ? Mathf.Min(OverlapCheckRadius, HardEjectionRadiusCap)
+                : OverlapCheckRadius;
+
             // FALLBACK: Emergency ejection if player is fully inside
             // Skip strong ejection during grace period
-            if (distance2D < OverlapCheckRadius)
+            if (distance2D < effectiveOverlapRadius)
             {
+                overlapTimeSeconds += Time.fixedDeltaTime;
+
                 if (isInGracePeriod && Time.time < graceEndTime)
                 {
                     // During grace period, just apply gentle repulsion, not full ejection
@@ -177,11 +222,16 @@ namespace EnemyBehavior.Boss
                     EnemyBehaviorDebugLogBools.Log(nameof(BossPlayerEjector), $"[BossPlayerEjector] Skipping strong ejection during grace period (ends in {graceEndTime - Time.time:F1}s)");
 #endif
                 }
-                else
+                else if (overlapTimeSeconds >= MinimumOverlapSecondsForEjection && (Time.time - lastEjectionTime) >= EjectionCooldown)
                 {
                     isInGracePeriod = false;
-                    EjectPlayerSafely(bossPos, playerPos);
+                    lastEjectionTime = Time.time;
+                    EjectPlayerSafely(bossPos, playerPos, distance2D, effectiveOverlapRadius);
                 }
+            }
+            else
+            {
+                overlapTimeSeconds = 0f;
             }
         }
         
@@ -235,46 +285,57 @@ namespace EnemyBehavior.Boss
         /// Emergency ejection when player is fully inside the boss.
         /// Ejects toward the arena center to avoid going through walls.
         /// </summary>
-        private void EjectPlayerSafely(Vector3 bossPos, Vector3 playerPos)
+        private void EjectPlayerSafely(Vector3 bossPos, Vector3 playerPos, float distance2D, float effectiveOverlapRadius)
         {
-            // Calculate direction toward arena center (safe direction)
-            Vector3 arenaCenter = GetSafeEjectionTarget(bossPos, playerPos);
-            Vector3 ejectionDir = (arenaCenter - bossPos);
+            // Primary direction is away from boss center (outward), so side contact doesn't launch toward arena center.
+            Vector3 ejectionDir = (playerPos - bossPos);
             ejectionDir.y = 0;
             
             if (ejectionDir.sqrMagnitude < 0.01f)
             {
-                // Boss is at arena center - eject in a random direction
-                float randomAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                ejectionDir = new Vector3(Mathf.Cos(randomAngle), 0, Mathf.Sin(randomAngle));
+                // Fallback when the player is exactly centered: use arena-center direction if available.
+                Vector3 arenaCenter = GetSafeEjectionTarget(bossPos, playerPos);
+                ejectionDir = (arenaCenter - bossPos);
+                ejectionDir.y = 0f;
+
+                if (ejectionDir.sqrMagnitude < 0.01f)
+                {
+                    float randomAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+                    ejectionDir = new Vector3(Mathf.Cos(randomAngle), 0, Mathf.Sin(randomAngle));
+                }
             }
             
             ejectionDir.Normalize();
 
-            // Calculate target position: between boss and arena center, at safe distance
+            bool shouldTeleport = TeleportOnEmergencyEject && distance2D <= TeleportOverlapRadius;
             Vector3 targetPos = bossPos + ejectionDir * (RepulsionOuterRadius + 1f);
             targetPos.y = playerPos.y;
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossPlayerEjector), $"[BossPlayerEjector] EMERGENCY EJECTION! Player inside boss - ejecting toward arena center at {targetPos}");
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossPlayerEjector), $"[BossPlayerEjector] EMERGENCY EJECTION! dist={distance2D:F2}, overlap={OverlapCheckRadius:F2}, effectiveOverlap={effectiveOverlapRadius:F2}, teleport={shouldTeleport}, force={EjectionForce:F2}, up={EjectionUpwardForce:F2}");
 #endif
 
-            // Teleport player to safe position
-            if (playerController != null)
+            // Optional teleport only for deep overlap, otherwise rely on knockback impulse.
+            if (shouldTeleport)
             {
-                playerController.enabled = false;
-                player.position = targetPos;
-                playerController.enabled = true;
-            }
-            else
-            {
-                player.position = targetPos;
+                if (playerController != null)
+                {
+                    playerController.enabled = false;
+                    player.position = targetPos;
+                    playerController.enabled = true;
+                }
+                else
+                {
+                    player.position = targetPos;
+                }
             }
 
             // Apply ejection velocity to push them further away
             if (playerMovement != null)
             {
-                Vector3 ejectionVelocity = ejectionDir * EjectionForce + Vector3.up * EjectionUpwardForce;
+                float finalEjectionForce = UseHardEjectionForceCap ? Mathf.Min(EjectionForce, HardMaxEjectionForce) : EjectionForce;
+                float finalEjectionUpwardForce = UseHardEjectionForceCap ? Mathf.Min(EjectionUpwardForce, HardMaxEjectionUpwardForce) : EjectionUpwardForce;
+                Vector3 ejectionVelocity = ejectionDir * finalEjectionForce + Vector3.up * finalEjectionUpwardForce;
                 playerMovement.ApplyKnockback(ejectionVelocity);
             }
         }

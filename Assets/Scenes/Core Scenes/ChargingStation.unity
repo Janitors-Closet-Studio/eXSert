@@ -84389,6 +84389,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: EjectionForce
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: MaxRepulsionForce
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: MinRepulsionForce
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: OverlapCheckRadius
+      value: 2.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: EjectionUpwardForce
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: RepulsionInnerRadius
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: RepulsionOuterRadius
+      value: 3.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -84490,6 +84518,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3fd5f5d6f89d53459ef4695d71ed661, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossPlayerEjector
+  EnableContinuousRepulsion: 0
   RepulsionOuterRadius: 5
   RepulsionInnerRadius: 2
   MaxRepulsionForce: 25
@@ -84499,6 +84528,15 @@ MonoBehaviour:
   BelowThreshold: 1
   EjectionForce: 15
   EjectionUpwardForce: 5
+  EjectionCooldown: 0.35
+  MinimumOverlapSecondsForEjection: 0.35
+  UseHardEjectionRadiusCap: 1
+  HardEjectionRadiusCap: 1.5
+  UseHardEjectionForceCap: 1
+  HardMaxEjectionForce: 4
+  HardMaxEjectionUpwardForce: 2
+  TeleportOnEmergencyEject: 0
+  TeleportOverlapRadius: 0.75
   BossCenter: {fileID: 1556584614}
   ArenaManager: {fileID: 0}
   PostAttackGracePeriod: 1

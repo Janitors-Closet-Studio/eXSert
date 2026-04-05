@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 using Utilities.Combat;
 using Managers.TimeLord; // PauseCoordinator
 
@@ -448,6 +449,8 @@ namespace EnemyBehavior.Boss
         // Both manual collision check and trigger-based hitboxes check/set this
         private bool dashHitAppliedThisAttack;
         private float lastKnockbackAppliedTime = -999f;
+        private Coroutine playerRefRetryRoutine;
+        private const float PlayerRefRetryIntervalSeconds = 0.5f;
 
         #region IQueuedAttacker Implementation
         
@@ -765,7 +768,7 @@ namespace EnemyBehavior.Boss
         /// Caches the player Transform and PlayerMovement component.
         /// Searches the hierarchy since PlayerMovement may be on a parent of the tagged object.
         /// </summary>
-        private void CachePlayerReference()
+        private void CachePlayerReference(bool logIfMissing = true)
         {
             // First try PlayerPresenceManager if available
             if (PlayerPresenceManager.IsPlayerPresent)
@@ -808,8 +811,44 @@ namespace EnemyBehavior.Boss
             }
             else
             {
-                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] No player found in scene during Awake!");
+                if (logIfMissing)
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] No player found in loaded scenes. Will keep retrying.");
             }
+        }
+
+        private IEnumerator RetryCachePlayerReferenceRoutine()
+        {
+            while (!isDefeated && player == null)
+            {
+                CachePlayerReference(logIfMissing: false);
+
+                if (player != null)
+                {
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[BossRoombaBrain] Player resolved after delayed scene load: {player.name}");
+                    break;
+                }
+
+                yield return WaitForSecondsCache.Get(PlayerRefRetryIntervalSeconds);
+            }
+
+            playerRefRetryRoutine = null;
+        }
+
+        private void BeginRetryingPlayerReferenceIfNeeded()
+        {
+            if (player != null || playerRefRetryRoutine != null)
+                return;
+
+            playerRefRetryRoutine = StartCoroutine(RetryCachePlayerReferenceRoutine());
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (player != null)
+                return;
+
+            CachePlayerReference(logIfMissing: false);
+            BeginRetryingPlayerReferenceIfNeeded();
         }
 
         /// <summary>
@@ -998,6 +1037,9 @@ namespace EnemyBehavior.Boss
             // Subscribe to pause events for audio handling
             PauseCoordinator.OnPaused += OnGamePaused;
             PauseCoordinator.OnResumed += OnGameResumed;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            BeginRetryingPlayerReferenceIfNeeded();
             
             // Start the delayed fight initialization
             StartCoroutine(DelayedFightStart());
@@ -1045,6 +1087,13 @@ namespace EnemyBehavior.Boss
             // Unsubscribe from pause events
             PauseCoordinator.OnPaused -= OnGamePaused;
             PauseCoordinator.OnResumed -= OnGameResumed;
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
+            if (playerRefRetryRoutine != null)
+            {
+                StopCoroutine(playerRefRetryRoutine);
+                playerRefRetryRoutine = null;
+            }
         }
 
         void Update()
@@ -1174,7 +1223,13 @@ namespace EnemyBehavior.Boss
                     continue;
                 }
 
-                if (player == null) yield break;
+                if (player == null)
+                {
+                    CachePlayerReference(logIfMissing: false);
+                    BeginRetryingPlayerReferenceIfNeeded();
+                    yield return WaitForSecondsCache.Get(PlayerRefRetryIntervalSeconds);
+                    continue;
+                }
 
                 // Check vacuum threshold ONLY when not in special states
                 if (attackCounter >= attackThresholdForVacuum && !IsMountedWithGrace())
