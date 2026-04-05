@@ -1,5 +1,58 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &492252982151845650
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3198949174785338739}
+  - component: {fileID: 4703054606334555394}
+  m_Layer: 8
+  m_Name: FaceplateCollider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3198949174785338739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 492252982151845650}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 2.211}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8773002588802439141}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4703054606334555394
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 492252982151845650}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1121683285325084451
 GameObject:
   m_ObjectHideFlags: 0
@@ -350,6 +403,7 @@ Transform:
   - {fileID: 6827231175664723454}
   - {fileID: 9110870473529243030}
   - {fileID: 766420067526550047}
+  - {fileID: 3198949174785338739}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!195 &7631148118547818447
@@ -409,15 +463,15 @@ MonoBehaviour:
   crawlerPrefab: {fileID: 2757122947255948302, guid: e1b11366c95442f489e8e074c928f67c, type: 3}
   maxDrones: 0
   maxCrawlers: 0
-  dronesPerSpawn: 0
-  crawlersPerSpawn: 0
+  dronesPerSpawn: 4
+  crawlersPerSpawn: 2
   AddFleeSpeedMultiplier: 3
   AddFleeArrivalThreshold: 1.5
   AddFleeDestroyDelay: 2
   suctionRadius: 5
   suctionStrength: 10
   dashSpeedMultiplier: 5
-  MinStoppingDistance: 2
+  MinStoppingDistance: 3
   CombatDistanceOffset: 0.1
   EnsureKinematicRigidbody: 1
   ManualColliderSetup: 1
@@ -528,7 +582,7 @@ MonoBehaviour:
     Id: ArmSweepLeft
     Parryable: 1
     Cooldown: 1.5
-    RangeMin: 0.5
+    RangeMin: 0
     RangeMax: 5
     WindupClipName: 
     ActiveClipName: 
@@ -546,7 +600,7 @@ MonoBehaviour:
     Id: ArmSweepRight
     Parryable: 1
     Cooldown: 1.5
-    RangeMin: 0.5
+    RangeMin: 0
     RangeMax: 5
     WindupClipName: 
     ActiveClipName: 
@@ -821,22 +875,24 @@ MonoBehaviour:
   TopWanderSpeed: 16
   TopWanderAngularSpeed: 90
   _cageBullFormHelp: Settings specific to cage bull form.
-  ChargeApproachSpeedMultiplier: 8
-  StaticChargeSpeedMultiplier: 2
-  TargetedChargeSpeedMultiplier: 4
+  ChargeApproachSpeedMultiplier: 10
+  StaticChargeSpeedMultiplier: 20
+  TargetedChargeSpeedMultiplier: 15
   StaticChargeAngularMultiplier: 8
   TargetedChargeAngularMultiplier: 0.15
   MaxDelayAtChargeStart: 2
   ChargeOvershootDistance: 5
-  ChargeRestDuration: 5
+  ChargeRestDuration: 1
   StaticChargeCountRange: {x: 3, y: 5}
   ChargeArrivalThreshold: 1.5
-  ChargeKnockbackForce: 5
-  ChargeKnockbackUpwardForce: 1
-  ComboApproachDecelerationDistance: 5
+  StaticChargeArrivalThreshold: 0.25
+  ChargeKnockbackForce: 10
+  ChargeKnockbackUpwardForce: 5
+  ComboApproachDecelerationDistance: 3
   ComboDecelerationMinSpeedMultiplier: 0.15
-  ComboPointWaitDuration: 0.3
-  ComboTurnSpeedMultiplier: 1.5
+  ComboPointWaitDuration: 0.16
+  StaticChargeInterSegmentDelay: 0.05
+  ComboTurnSpeedMultiplier: 3
   TargetedChargeTurnSpeedMultiplier: 1
   _baseSpeed: 12
   _baseAngularSpeed: 120
@@ -1004,29 +1060,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3fd5f5d6f89d53459ef4695d71ed661, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossPlayerEjector
-  EnableContinuousRepulsion: 0
-  RepulsionOuterRadius: 3.5
-  RepulsionInnerRadius: 0.5
-  MaxRepulsionForce: 5
-  MinRepulsionForce: 1
-  OverlapCheckRadius: 3.4
+  RepulsionRadius: 2.9
+  RepulsionForce: 4
   OnTopHeightThreshold: 1.07
-  BelowThreshold: 1
-  EjectionForce: 1
+  EjectionForce: 5
   EjectionUpwardForce: 2
   EjectionCooldown: 0.35
-  MinimumOverlapSecondsForEjection: 0.35
-  UseHardEjectionRadiusCap: 1
-  HardEjectionRadiusCap: 3.44
-  UseHardEjectionForceCap: 1
-  HardMaxEjectionForce: 10
-  HardMaxEjectionUpwardForce: 2
   TeleportOnEmergencyEject: 1
-  TeleportOverlapRadius: 2
+  TeleportOverlapRadius: 2.5
   BossCenter: {fileID: 8773002588802439141}
-  DisableWhilePlayerMounted: 1
-  ArenaManager: {fileID: 0}
-  PostAttackGracePeriod: 1
 --- !u!114 &200851258585206296
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -95,6 +95,12 @@ namespace EnemyBehavior.Boss
         [Tooltip("Height walls lower to when down (usually below ground)")]
         public float WallLoweredHeight = -3f;
 
+        [Tooltip("If true, forces walls to snap exactly to the configured final height after animated travel. Prevents partial/stuck lowers.")]
+        public bool ForceSnapAfterWallAnimation = true;
+
+        [Tooltip("Extra delay (seconds) before force-snap, after estimated travel time.")]
+        [Range(0f, 1f)] public float WallSnapBufferSeconds = 0.1f;
+
         /// <summary>
         /// Fired when the boss collides with a pillar during a charge.
         /// The boss should stun and transition back to Duelist form.
@@ -110,6 +116,7 @@ namespace EnemyBehavior.Boss
 
         private List<NavMeshAgent> disabledAgentsOutsideCage = new List<NavMeshAgent>();
         private HashSet<int> destroyedPillars = new HashSet<int>();
+        private Coroutine wallSnapRoutine;
 
         /// <summary>
         /// Returns the number of active (non-destroyed) pillars.
@@ -169,6 +176,17 @@ namespace EnemyBehavior.Boss
                 }
             }
 
+            if (wallSnapRoutine != null)
+            {
+                StopCoroutine(wallSnapRoutine);
+                wallSnapRoutine = null;
+            }
+
+            if (AnimateWalls && ForceSnapAfterWallAnimation)
+            {
+                wallSnapRoutine = StartCoroutine(SnapWallsAfterAnimation(up ? WallRaisedHeight : WallLoweredHeight));
+            }
+
             if (up)
             {
                 DisableAgentsOutsideCage();
@@ -180,6 +198,37 @@ namespace EnemyBehavior.Boss
 
             OnWallsStateChanged?.Invoke(up);
             EnemyBehaviorDebugLogBools.Log(nameof(BossArenaManager), $"[BossArenaManager] Walls {(up ? "RAISED" : "LOWERED")}");
+        }
+
+        private System.Collections.IEnumerator SnapWallsAfterAnimation(float finalTargetY)
+        {
+            float maxDistance = 0f;
+            for (int i = 0; i < Walls.Count; i++)
+            {
+                GameObject wall = Walls[i];
+                if (wall == null)
+                    continue;
+
+                float dist = Mathf.Abs(finalTargetY - wall.transform.position.y);
+                if (dist > maxDistance)
+                    maxDistance = dist;
+            }
+
+            float travelTime = maxDistance / Mathf.Max(0.01f, WallAnimationSpeed);
+            yield return WaitForSecondsCache.Get(travelTime + Mathf.Max(0f, WallSnapBufferSeconds));
+
+            for (int i = 0; i < Walls.Count; i++)
+            {
+                GameObject wall = Walls[i];
+                if (wall == null)
+                    continue;
+
+                Vector3 pos = wall.transform.position;
+                pos.y = finalTargetY;
+                wall.transform.position = pos;
+            }
+
+            wallSnapRoutine = null;
         }
 
         private void DisableAgentsOutsideCage()

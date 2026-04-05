@@ -345,6 +345,8 @@ namespace EnemyBehavior.Boss
         public Vector2Int StaticChargeCountRange = new Vector2Int(3, 5);
         [Tooltip("Distance threshold to consider 'arrived' at charge destination")]
         public float ChargeArrivalThreshold = 1.5f;
+        [Tooltip("Arrival threshold used specifically for static charge segment endpoints to avoid visibly stopping short.")]
+        [Range(0.05f, 1f)] public float StaticChargeArrivalThreshold = 0.25f;
         [Tooltip("Force applied to push player when hit by targeted charge")]
         public float ChargeKnockbackForce = 25f;
         [Tooltip("Upward component of knockback force for targeted charge (higher = more dramatic launch)")]
@@ -355,8 +357,10 @@ namespace EnemyBehavior.Boss
         public float ComboApproachDecelerationDistance = 5f;
         [Tooltip("Minimum speed multiplier when fully decelerated (0.1 = 10% of approach speed at destination)")]
         [Range(0.05f, 0.5f)] public float ComboDecelerationMinSpeedMultiplier = 0.15f;
-        [Tooltip("Time in seconds to wait at each combo point before turning to face the next")]
-        public float ComboPointWaitDuration = 0.3f;
+        [Tooltip("Time in seconds to wait at each static charge destination before turning to the next segment.")]
+        [Range(0f, 1f)] public float ComboPointWaitDuration = 0f;
+        [Tooltip("Extra delay between static charge segments after a segment completes.")]
+        [Range(0f, 0.5f)] public float StaticChargeInterSegmentDelay = 0.05f;
         [Tooltip("Angular speed multiplier for turning at combo points (relative to base angular speed).")]
         [Range(0.5f, 5f)] public float ComboTurnSpeedMultiplier = 1.5f;
         
@@ -1213,10 +1217,9 @@ namespace EnemyBehavior.Boss
         private BossAttackDescriptor SelectCloseRangeAttack(float dist)
         {
             var options = new List<BossAttackDescriptor>();
-            
-            // Account for stopping distance to prevent getting too close
-            // Increased from 2.0f to 3.5f to ensure arm swings hit at the sweet spot
-            float effectiveDist = dist - Mathf.Max(agent.stoppingDistance, 3.5f);
+
+            float stoppingBias = agent != null ? Mathf.Min(agent.stoppingDistance, 1.5f) : 0f;
+            float effectiveDist = Mathf.Max(0f, dist - stoppingBias);
 
             if (effectiveDist >= BasicSwipe.RangeMin && effectiveDist <= BasicSwipe.RangeMax)
             {
@@ -1228,6 +1231,18 @@ namespace EnemyBehavior.Boss
             {
                 if (IsOffCooldown(ArmSweepLeft)) options.Add(ArmSweepLeft);
                 if (IsOffCooldown(ArmSweepRight)) options.Add(ArmSweepRight);
+            }
+
+            if (options.Count == 0)
+            {
+                float meleeEnvelope = Mathf.Max(BasicSwipe.RangeMax, ArmSweep.RangeMax);
+                if (dist <= meleeEnvelope)
+                {
+                    if (IsOffCooldown(BasicSwipeLeft)) options.Add(BasicSwipeLeft);
+                    if (IsOffCooldown(BasicSwipeRight)) options.Add(BasicSwipeRight);
+                    if (IsOffCooldown(ArmSweepLeft)) options.Add(ArmSweepLeft);
+                    if (IsOffCooldown(ArmSweepRight)) options.Add(ArmSweepRight);
+                }
             }
 
             if (options.Count == 0) return null;
@@ -1386,16 +1401,21 @@ namespace EnemyBehavior.Boss
                 float originalAngularSpeed = agent.angularSpeed;
                 float originalAcceleration = agent.acceleration;
                 float originalStoppingDistance = agent.stoppingDistance;
+
+                // Use a stable baseline so multiplier is meaningful even if current speed was temporarily reduced.
+                float approachBaseSpeed = Mathf.Max(originalSpeed, baseAgentSpeed, DuelistFollowSpeed);
+                float approachBaseAngularSpeed = Mathf.Max(originalAngularSpeed, baseAgentAngularSpeed, DuelistAngularSpeed);
+                float approachBaseAcceleration = Mathf.Max(originalAcceleration, baseAgentAcceleration, DuelistAcceleration);
                 
                 // Boost speed, angular speed, and acceleration for vacuum approach
                 // Set small stopping distance so it gets close to exact position
-                agent.speed = originalSpeed * VacuumApproachSpeedMultiplier;
-                agent.angularSpeed = originalAngularSpeed * VacuumApproachSpeedMultiplier; // Turn faster to match movement speed
-                agent.acceleration = originalAcceleration * VacuumApproachSpeedMultiplier; // Accelerate faster
+                agent.speed = approachBaseSpeed * VacuumApproachSpeedMultiplier;
+                agent.angularSpeed = approachBaseAngularSpeed * VacuumApproachSpeedMultiplier; // Turn faster to match movement speed
+                agent.acceleration = approachBaseAcceleration * VacuumApproachSpeedMultiplier; // Accelerate faster
                 agent.stoppingDistance = 0.5f;
                 
 #if UNITY_EDITOR
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Vacuum approach: speed {originalSpeed:F1}→{agent.speed:F1}, angularSpeed {originalAngularSpeed:F1}→{agent.angularSpeed:F1}, accel {originalAcceleration:F1}→{agent.acceleration:F1}");
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Vacuum approach: speed {approachBaseSpeed:F1}→{agent.speed:F1}, angularSpeed {approachBaseAngularSpeed:F1}→{agent.angularSpeed:F1}, accel {approachBaseAcceleration:F1}→{agent.acceleration:F1}");
 #endif
 
                 // Ensure agent is ready to move
@@ -1805,11 +1825,28 @@ namespace EnemyBehavior.Boss
                     float approachSpeed = agent.speed; // Cache the full approach speed for deceleration calculation
                     agent.isStopped = false;
                     agent.SetDestination(start);
+                    Vector3 approachStartPos = transform.position;
+                    Vector3 approachDir = (start - approachStartPos);
+                    approachDir.y = 0f;
+                    if (approachDir.sqrMagnitude > 0.001f)
+                        approachDir.Normalize();
                     
-                    while (Vector3.Distance(transform.position, start) > ChargeArrivalThreshold && !isStunned && !isDefeated)
+                    while (!isStunned && !isDefeated)
                     {
-                        // Apply deceleration as we get close to the destination
                         float currentDist = Vector3.Distance(transform.position, start);
+
+                        // Prefer agent remaining distance to avoid overshoot/backtrack rubberbanding.
+                        bool arrivedByPath = !agent.pathPending && agent.hasPath && agent.remainingDistance <= ChargeArrivalThreshold;
+
+                        // Fallback: if we've moved past the start point, stop immediately instead of turning back.
+                        Vector3 toStartNow = start - transform.position;
+                        toStartNow.y = 0f;
+                        bool passedStart = approachDir.sqrMagnitude > 0.001f && Vector3.Dot(toStartNow, approachDir) < 0f;
+
+                        if (currentDist <= ChargeArrivalThreshold || arrivedByPath || passedStart)
+                            break;
+
+                        // Apply deceleration as we get close to the destination
                         if (currentDist <= ComboApproachDecelerationDistance)
                         {
                             // Lerp speed from full approach speed down to minimum as we get closer
@@ -1845,8 +1882,9 @@ namespace EnemyBehavior.Boss
                 // Charge to end
                 yield return ExecuteChargeDash(end, isTargeted: false);
 
-                // Brief pause between segments
-                yield return WaitForSecondsCache.Get(0.2f);
+                // Brief pause between segments (configurable)
+                if (StaticChargeInterSegmentDelay > 0f)
+                    yield return WaitForSecondsCache.Get(StaticChargeInterSegmentDelay);
             }
         }
 
@@ -1988,7 +2026,7 @@ namespace EnemyBehavior.Boss
                 agent.angularSpeed = baseAgentAngularSpeed * StaticChargeAngularMultiplier;
                 agent.acceleration = baseAgentAcceleration * StaticChargeSpeedMultiplier * 2f;
                 agent.autoBraking = false;
-                agent.stoppingDistance = 0.5f;
+                agent.stoppingDistance = 0.05f;
                 agent.updateRotation = true; // Allow rotation during static charges (can adjust)
             }
         }
@@ -2127,6 +2165,7 @@ namespace EnemyBehavior.Boss
                 
                 float totalDistance = Vector3.Distance(startPos, destination);
                 float chargeSpeed = agent.speed; // Use the speed we set in ApplyTargetedChargeSettings
+                Rigidbody rb = GetComponent<Rigidbody>();
                 
                 // Lock rotation to face charge direction
                 if (chargeDirection.sqrMagnitude > 0.001f)
@@ -2157,19 +2196,21 @@ namespace EnemyBehavior.Boss
                     
                     float moveDistance = chargeSpeed * Time.deltaTime;
                     Vector3 moveVector = chargeDirection * moveDistance;
-                    
-                    // Manually move in the locked direction using NavMeshAgent.Move()
-                    // NavMesh Obstacle carving on walls will prevent passing through them
-                    agent.Move(moveVector);
-                    
-                    // Check if we actually moved - if not, we hit something (wall/obstacle)
-                    float actualMovement = Vector3.Distance(transform.position, lastPosition);
-                    if (actualMovement < moveDistance * 0.1f && chargeTimer > 0.1f)
+
+                    // Move manually in world space so targeted charges do not get clamped short by NavMesh obstacle carving.
+                    if (rb != null && rb.isKinematic)
+                        rb.MovePosition(transform.position + moveVector);
+                    else
+                        transform.position += moveVector;
+
+                    // If we overlap an active pillar while targeted-charging, treat this as a valid pillar impact.
+                    if (TryHandleTargetedChargePillarImpact())
                     {
-                        // We're blocked - likely hit a wall
-                        PushAction($"Targeted charge BLOCKED (moved {actualMovement:F2} of {moveDistance:F2})");
-                        break;
+                        PushAction("Targeted charge HIT pillar (proximity fallback)");
+                        yield break;
                     }
+
+                    float actualMovement = Vector3.Distance(transform.position, lastPosition);
                     lastPosition = transform.position;
                     
                     distanceTraveled += actualMovement;
@@ -2196,6 +2237,7 @@ namespace EnemyBehavior.Boss
                 // STATIC CHARGE: Normal NavMeshAgent behavior with turning allowed
                 agent.isStopped = false;
                 agent.SetDestination(destination);
+                float staticArrivalThreshold = Mathf.Max(0.05f, StaticChargeArrivalThreshold);
                 
                 // Store the initial attack direction for knockback (static charges can turn, so this is the initial direction)
                 Vector3 staticChargeDir = (destination - transform.position).normalized;
@@ -2213,6 +2255,8 @@ namespace EnemyBehavior.Boss
                 // Wait until arrival or interruption
                 float maxChargeTime = 5f; // Safety timeout
                 float chargeTimer = 0f;
+                float lastDistToTarget = float.MaxValue;
+                float stalledTimer = 0f;
 
                 while (chargeTimer < maxChargeTime && !isStunned)
                 {
@@ -2224,17 +2268,39 @@ namespace EnemyBehavior.Boss
                     }
                     
                     float distToTarget = Vector3.Distance(transform.position, destination);
+                    bool arrivedByPath = !agent.pathPending && agent.hasPath && agent.remainingDistance <= Mathf.Max(staticArrivalThreshold, 0.2f);
+                    bool effectivelyStoppedAtEnd = arrivedByPath && agent.velocity.sqrMagnitude <= 0.05f;
 
-                    if (distToTarget <= ChargeArrivalThreshold)
+                    if (distToTarget <= staticArrivalThreshold || effectivelyStoppedAtEnd)
                     {
                         PushAction("Charge arrived at destination");
                         break;
                     }
 
+                    // If we are no longer making progress toward the destination, treat as arrived
+                    // to avoid a long visible stall waiting for timeout.
+                    if (distToTarget < lastDistToTarget - 0.02f)
+                    {
+                        stalledTimer = 0f;
+                        lastDistToTarget = distToTarget;
+                    }
+                    else
+                    {
+                        stalledTimer += Time.deltaTime;
+                        if (stalledTimer >= 0.5f)
+                        {
+                            PushAction($"Charge settled near destination (dist={distToTarget:F2})");
+                            break;
+                        }
+                    }
+
                     chargeTimer += Time.deltaTime;
                     yield return null;
                 }
-                
+
+                if (chargeTimer >= maxChargeTime)
+                    PushAction($"Static charge timeout near destination (dist={Vector3.Distance(transform.position, destination):F2})");
+
                 // Disable charge hitbox after static charge completes
                 if (animMediator != null)
                 {
@@ -2365,6 +2431,36 @@ namespace EnemyBehavior.Boss
             {
                 ctrl.ActivateAlarmWithDelay();
             }
+        }
+
+        private bool TryHandleTargetedChargePillarImpact()
+        {
+            if (!isCharging || !isTargetedCharge || ArenaManager == null || ArenaManager.Pillars == null)
+                return false;
+
+            const float impactRadius = 2.0f;
+            Vector3 bossPos = transform.position;
+
+            for (int i = 0; i < ArenaManager.Pillars.Count; i++)
+            {
+                if (!ArenaManager.IsPillarActive(i))
+                    continue;
+
+                GameObject pillar = ArenaManager.Pillars[i];
+                if (pillar == null)
+                    continue;
+
+                Vector3 pillarPos = pillar.transform.position;
+                Vector3 delta = bossPos - pillarPos;
+                delta.y = 0f;
+                if (delta.sqrMagnitude <= impactRadius * impactRadius)
+                {
+                    OnPillarCollision(i);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private IEnumerator ExecuteArmPokeSequenceThenSpin()

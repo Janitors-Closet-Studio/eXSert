@@ -594,7 +594,9 @@ MonoBehaviour:
   AnimateWalls: 1
   WallAnimationSpeed: 8
   WallRaisedHeight: 15
-  WallLoweredHeight: 5
+  WallLoweredHeight: 4
+  ForceSnapAfterWallAnimation: 1
+  WallSnapBufferSeconds: 0.1
 --- !u!114 &29310178
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82465,6 +82467,59 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ffebf7b8d28411048a4549036c38bf41, type: 3}
   m_PrefabInstance: {fileID: 2093944768}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2096677393
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2096677394}
+  - component: {fileID: 2096677395}
+  m_Layer: 8
+  m_Name: FaceplateCollider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2096677394
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2096677393}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 2.211}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1556584614}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &2096677395
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2096677393}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2097324637
 GameObject:
   m_ObjectHideFlags: 0
@@ -83827,9 +83882,65 @@ PrefabInstance:
       propertyPath: ArenaCenterBounds
       value: 
       objectReference: {fileID: 1966718067}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ChargeRestDuration
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ChargeKnockbackForce
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ArmSweepLeft.RangeMin
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ArmSweepRight.RangeMin
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ComboPointWaitDuration
+      value: 0.16
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ComboTurnSpeedMultiplier
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ChargeKnockbackUpwardForce
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: StaticChargeSpeedMultiplier
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ChargeApproachSpeedMultiplier
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: TargetedChargeSpeedMultiplier
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ComboApproachDecelerationDistance
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 3308009278746904747, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_Name
       value: Boss_Augur
+      objectReference: {fileID: 0}
+    - target: {fileID: 4930849861261429573, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: dronesPerSpawn
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4930849861261429573, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: crawlersPerSpawn
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4930849861261429573, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: MinStoppingDistance
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4930849861261429573, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: 'droneSpawnPoints.Array.data[0]'
@@ -83895,9 +84006,32 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: EjectionForce
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: RepulsionForce
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: RepulsionRadius
+      value: 2.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: HardEjectionRadiusCap
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: TeleportOverlapRadius
+      value: 2.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8773002588802439141, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2096677394}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
 --- !u!114 &4051711074320609378 stripped
