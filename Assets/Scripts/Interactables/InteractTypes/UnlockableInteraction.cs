@@ -50,6 +50,7 @@ public abstract class UnlockableInteraction : InteractionManager
         return false;
     }
 
+
     protected override void OnTriggerEnter(Collider other)
     {
         base.OnTriggerEnter(other);
@@ -68,8 +69,28 @@ public abstract class UnlockableInteraction : InteractionManager
         }
     }
 
-    protected override void Interact()
+    private void FailedInteract()
     {
+        Debug.Log($"[UnlockableInteraction] Failed interaction attempt on {gameObject.name}. needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}");
+
+        if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null && InteractionUI.Instance != null && !InternalPlayerInventory.Instance.collectedInteractables.Contains(requiredItemID))
+        {
+            Debug.Log($"[UnlockableInteraction] Playing error SFX: {errorSFXClip.name} on sfxSource from {gameObject.name}");
+            SoundManager.Instance.sfxSource.PlayOneShot(errorSFXClip);
+            RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.2f);
+            InteractionUI.Instance.AddCollectableToFindToObjective(requiredItemID);
+            InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemID} is required to use this machine.", 0.5f, 2f);
+        }
+        else
+        {
+            Debug.LogWarning($"[UnlockableInteraction] Cannot play error SFX. Missing SoundManager instance, sfxSource, InteractionUI instance, or errorSFXClip on {gameObject.name}");
+        }
+    }
+
+    protected override void Interact()    
+    {
+        
+        Debug.Log($"[UnlockableInteraction] Interact called on {gameObject.name}.\n needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}, canExecuteInteraction: {canExecuteInteraction}, requiredItemID: '{requiredItemID}', playerHasItem: {(InternalPlayerInventory.Instance != null ? InternalPlayerInventory.Instance.HasItem(requiredItemID) : (bool?)null)}");
         // Defensive null checks
         if (needsItem && InternalPlayerInventory.Instance == null)
         {
@@ -77,7 +98,7 @@ public abstract class UnlockableInteraction : InteractionManager
             return;
         }
 
-        if (canExecuteInteraction)
+        if (canExecuteInteraction && InternalPlayerInventory.Instance.collectedInteractables.Contains(requiredItemID))
         {
             if (onInteractionExecuted == null)
             {
@@ -85,19 +106,12 @@ public abstract class UnlockableInteraction : InteractionManager
             }
             ExecuteInteraction();
             onInteractionExecuted?.Invoke();
+            InteractionUI.Instance.OnCollectedItem($"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
             if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
                 SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
             return;
         }
 
-        if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.puzzleSource != null)
-        {
-            SoundManager.Instance.puzzleSource.PlayOneShot(errorSFXClip);
-            RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.2f);
-        }
-        else if (errorSFXClip != null)
-        {
-            Debug.LogWarning("[UnlockableInteraction] SoundManager.Instance or puzzleSource is null. Cannot play error SFX.");
-        }
+        FailedInteract();
     }
 }

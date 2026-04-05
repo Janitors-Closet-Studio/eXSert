@@ -5,6 +5,8 @@ using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(BoxCollider))]
 public abstract class InteractionManager : MonoBehaviour, IInteractable
+    
+
 {
     // IInteractable implementation
     public string interactId { get => _interactId; set => _interactId = value; }
@@ -14,6 +16,9 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     [Header("Debugging")]
     [SerializeField] private bool _showHitbox;
+    // Prevent prompt when player is attacking or dashing
+    [Header("Interaction Blocking")]
+    [SerializeField] protected bool blockPromptWhenAttackingOrDashing = true;
     internal bool interactable = true;
 
     [Space(10)]
@@ -127,37 +132,31 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     public virtual void SetInteractionEnabled(bool isEnabled)
     {
         interactable = isEnabled;
-
-        if (!isEnabled)
+        var interactionUI = GetInteractionUIIfAvailable();
+        // Only show prompt if enabled AND player is nearby
+        if (isEnabled && isPlayerNearby)
         {
-            if (isPlayerNearby)
+            SwapBasedOnInputMethod();
+            if (interactionUI != null)
             {
-                GetInteractionUIIfAvailable()?.HideInteractPrompt();
+                if (interactionUI._interactText != null)
+                {
+                    interactionUI._interactText.gameObject.SetActive(true);
+                    if (interactionUI._interactText.transform.parent != null)
+                        interactionUI._interactText.transform.parent.gameObject.SetActive(true);
+                }
+                if (interactionUI._interactIcon != null)
+                    interactionUI._interactIcon.gameObject.SetActive(true);
+                // Set currentInteractable if prompt is shown
+                interactionUI.currentInteractable = this;
             }
-
-            return;
         }
-
-        if (!isPlayerNearby)
+        else
         {
-            return;
+            // Only hide prompt if this is still the current interactable
+            if (interactionUI != null && interactionUI.currentInteractable == this)
+                interactionUI.HideInteractPrompt();
         }
-
-        SwapBasedOnInputMethod();
-
-        InteractionUI interactionUI = GetInteractionUIIfAvailable();
-        if (interactionUI == null)
-            return;
-
-        if (interactionUI._interactText != null)
-        {
-            interactionUI._interactText.gameObject.SetActive(true);
-            if (interactionUI._interactText.transform.parent != null)
-                interactionUI._interactText.transform.parent.gameObject.SetActive(true);
-        }
-
-        if (interactionUI._interactIcon != null)
-            interactionUI._interactIcon.gameObject.SetActive(true);
     }
 
     private void OnInteract(InputAction.CallbackContext context)
@@ -167,15 +166,21 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     public void OnInteractButtonPressed()
     {
+        Debug.Log($"[InteractionManager] OnInteractButtonPressed called on {gameObject.name}");
         // Prevent interaction if gameplay input is blocked (e.g., during pause)
         if (InputReader.IsGameplayInputBlocked)
         {
             Debug.Log($"Interaction attempted with {gameObject.name}, but gameplay input is blocked.");
             return;
         }
-        if (!isPlayerNearby || !interactable || PlayerMovement.isDashingFlag)
+        var interactionUI = GetInteractionUIIfAvailable();
+        // Only allow if player is nearby, interactable, not dashing, and this is the current interactable (if set)
+        if (!isPlayerNearby || !interactable || PlayerMovement.isDashingFlag || (interactionUI != null && interactionUI.currentInteractable != null && interactionUI.currentInteractable != this))
         {
-            Debug.Log($"Interaction attempted with {gameObject.name}, but conditions not met. isPlayerNearby: {isPlayerNearby}, interactable: {interactable}, isDashing: {PlayerMovement.isDashingFlag}");
+            Debug.Log($"Interaction attempted with {gameObject.name}, but conditions not met. isPlayerNearby: {isPlayerNearby}, interactable: {interactable}, isDashing: {PlayerMovement.isDashingFlag}, isCurrent: {interactionUI?.currentInteractable == this}");
+            // Only hide prompt if this is still the current interactable
+            if (interactionUI != null && interactionUI.currentInteractable == this)
+                interactionUI.HideInteractPrompt();
             return;
         }
 
@@ -185,11 +190,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         Interact();
-
-        AudioSource interactionSfxSource = GetInteractionSfxSourceIfAvailable();
-        if (interactionSfxSource != null && _interactionSFX != null)
-            interactionSfxSource.PlayOneShot(_interactionSFX);
-
     }
 
     protected abstract void Interact();
@@ -218,11 +218,34 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         {
             Debug.Log($"[InteractionManager] Player entered interaction zone of {gameObject.name}. Setting isPlayerNearby true.");
             isPlayerNearby = true;
+
+            // Block prompt if attacking or dashing
+            bool isAttacking = false;
+            bool isDashing = false;
+            // Try to get PlayerCombatIdleController and PlayerMovement
+            var player = other.transform.root.gameObject;
+            var combatController = player.GetComponentInChildren<PlayerAttackManager>();
+            if (combatController != null)
+            {
+                isAttacking = combatController.IsAttackInProgress;
+            }
+            var movement = player.GetComponentInChildren<PlayerMovement>();
+            if (movement != null)
+            {
+                isDashing = PlayerMovement.isDashingFlag;
+            }
+
+            if (blockPromptWhenAttackingOrDashing && (isAttacking || isDashing))
+            {
+                Debug.Log($"[InteractionManager] Blocking prompt because player is attacking: {isAttacking} or dashing: {isDashing}");
+                return;
+            }
+
             SwapBasedOnInputMethod();
-            InteractionUI interactionUI = GetInteractionUIIfAvailable();
+            var interactionUI = GetInteractionUIIfAvailable();
             if (interactionUI == null)
                 return;
-            // Set this as the current interactable
+            // Set this as the current interactable only if prompt is shown
             interactionUI.currentInteractable = this;
             if (interactionUI._interactText != null && interactable)
             {
@@ -241,7 +264,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         {
             isPlayerNearby = false;
             var interactionUI = GetInteractionUIIfAvailable();
-            // Only hide the prompt if this is the current interactable
+            // Only clear currentInteractable if it matches this
             if (interactionUI != null && interactionUI.currentInteractable == this)
             {
                 interactionUI.HideInteractPrompt();
