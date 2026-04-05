@@ -232,7 +232,9 @@ public class AerialComboManager : MonoBehaviour
         if (characterController != null && characterController.isGrounded)
             return false;
 
-        if (playerMovement != null && !playerMovement.CanStartAerialCombat())
+        bool continuingAerialCombo = isInAerialCombo && aerialFastCount > 0;
+
+        if (playerMovement != null && !playerMovement.CanStartAerialCombat() && !continuingAerialCombo)
             return false;
 
         if (InputReader.inputBusy)
@@ -246,7 +248,9 @@ public class AerialComboManager : MonoBehaviour
         if (characterController != null && characterController.isGrounded)
             return false;
 
-        if (playerMovement != null && !playerMovement.CanStartAerialCombat())
+        bool continuingAerialCombo = isInAerialCombo;
+
+        if (playerMovement != null && !playerMovement.CanStartAerialCombat() && !continuingAerialCombo)
             return false;
 
         if (hasUsedAerialHeavy)

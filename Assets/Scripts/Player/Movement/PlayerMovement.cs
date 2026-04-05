@@ -1397,7 +1397,7 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.y = jumpForce;
             doubleJumpAvailable = canDoubleJump;
             pendingJump = PendingJumpType.None;
-            PlaySFX(jumpSFX);
+            PlaySFX(jumpSFX, priority: 1);
             DebugMovementLog($"Ground jump applied | currentY={currentMovement.y:F2} doubleJumpAvailable={doubleJumpAvailable}");
             return;
         }
@@ -1409,7 +1409,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         currentMovement.y = MathF.Max(currentMovement.y, doubleJumpForce);
-        PlaySFX(doubleJumpSFX);
+        PlaySFX(doubleJumpSFX, priority: 1);
         doubleJumpAvailable = false;
         pendingJump = PendingJumpType.None;
         DoubleJumpPerformed?.Invoke();
@@ -1491,7 +1491,7 @@ public class PlayerMovement : MonoBehaviour
                         ResetMoveState();
                 }));
         if(!isAirDash)
-            PlaySFX(dashSFX);
+            PlaySFX(dashSFX, priority: 2);
     }
 
     private IEnumerator DashCoroutine(
@@ -2535,9 +2535,11 @@ public class PlayerMovement : MonoBehaviour
         }
 
         bool grounded = IsGroundedNow();
+        bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
         bool shouldDefer = !grounded
             || CombatManager.isGuarding
             || CombatManager.isParrying
+            || attackActive
             || isDashing
             || isPlunging
             || plungeLandingPending
@@ -3196,24 +3198,20 @@ public class PlayerMovement : MonoBehaviour
         return false;
     }
 
-    private void PlaySFX(AudioClip clip)
+    private void PlaySFX(AudioClip clip, int priority = 0)
     {
         if (clip == null)
             return;
 
         SoundManager soundManager = SoundManager.Instance;
-        AudioSource source = soundManager != null ? soundManager.voiceSource : null;
-        if (source == null)
+        if (soundManager == null || !soundManager.TryPlayPlayerActionSfx(clip, priority))
         {
             if (!warnedMissingSoundSource)
             {
-                Debug.LogWarning("[PlayerMovement] SoundManager/voiceSource missing. Movement SFX playback skipped.");
+                Debug.LogWarning("[PlayerMovement] SoundManager/player action SFX source missing. Movement SFX playback skipped.");
                 warnedMissingSoundSource = true;
             }
-            return;
         }
-
-        source.PlayOneShot(clip);
     }
 
     private void PlayMovementAnimation()
