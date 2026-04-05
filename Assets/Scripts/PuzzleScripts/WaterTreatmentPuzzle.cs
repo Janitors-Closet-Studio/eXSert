@@ -9,7 +9,6 @@
 **/
 
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 using System.Collections;
 
@@ -257,7 +256,13 @@ public class KeycardPositions
     [Tooltip("Local end point for this keycard segment.")]
     public Vector3 endPos;
     [Tooltip("Pause in seconds after this segment before moving to the next one.")]
+    public bool playWaterFilterSFXDuringThisSegment = false;
+    public bool playWaterDrumSFXDuringThisSegment = false;
+    public bool keepPlayingWaterSwishing = false;
+    public bool playWaterExhaustandSuccessSFXAtStartOfThisSegment = true;
     public float delayBeforeNextPipe;
+    public float startingDelay;
+    public float properyKeycardRotationForThisPath;
 }
 public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
 {
@@ -290,6 +295,13 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
     [SerializeField] private AudioClip valveTurnSFX;
     [SerializeField] private AudioClip valveTurnFailSFX;
     [SerializeField] private AudioClip keycardInWaterFilterSFX;
+    [SerializeField] private AudioClip keycardInWaterDrumSFX;
+    [SerializeField] private AudioClip keycardInWaterPipeSFX;
+    [SerializeField] private AudioClip waterExhaustSFX;
+    [SerializeField] private AudioClip filterSuccessSfx;
+    [SerializeField] private AudioClip gotToEndOfPathSFX;
+    [SerializeField] private AudioClip pipeHumSFX;
+    [SerializeField] private AudioClip turnOnPuzzle;
 
     private Coroutine keycardMovementRoutine;
     private Vector2 radialOffset;
@@ -344,8 +356,44 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
             }
         }
 
+        StartKeycardFromFirstInitialPos();
+        SetKeycardInteractable(false, waterContainers[currentWaterContainerIndex]);
+
         currentWaterContainerIndex = firstUnturnedIndex >= 0 ? firstUnturnedIndex : waterContainers.Count;
         LogVerbose($"Awake complete | firstUnturnedIndex={firstUnturnedIndex} currentIndex={currentWaterContainerIndex}");
+    }
+
+    
+    private void StartKeycardFromFirstInitialPos()
+    {
+        if (waterContainers == null || waterContainers.Count == 0)
+        {
+            LogWarningVerbose("StartKeycardFromFirstInitialPos aborted: no water containers.");
+            return;
+        }
+
+        if (currentWaterContainerIndex >= waterContainers.Count)
+        {
+            LogWarningVerbose("StartKeycardFromFirstInitialPos aborted: all containers are turned.");
+            return;
+        }
+
+        WaterContainerData containerData = waterContainers[currentWaterContainerIndex];
+        if (containerData == null)
+        {
+            LogWarningVerbose("StartKeycardFromFirstInitialPos aborted: current container data is null.");
+            return;
+        }
+
+        if (containerData.keycard != null)
+        {
+            containerData.keycard.transform.localPosition = containerData.GetKeycardInitialPos();
+            LogVerbose("StartKeycardFromFirstInitialPos set keycard to initial position.");
+        }
+        else
+        {
+            LogWarningVerbose("StartKeycardFromFirstInitialPos could not find keycard GameObject on current container.");
+        }
     }
 
     public void TriggerCurrentValveFromInspector()
@@ -367,7 +415,6 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
     public override void ConsoleInteracted()
     {
         LogVerbose($"ConsoleInteracted() called | currentIndex={currentWaterContainerIndex}");
-        TurnValveOnWaterContainer(currentWaterContainerIndex);
     }
 
     public void ConsoleInteracted(PuzzleInteraction interaction)
@@ -375,12 +422,11 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         if (interaction == null)
         {
             LogWarningVerbose("ConsoleInteracted(PuzzleInteraction) received null sender; using current index.");
-            TurnValveOnWaterContainer(currentWaterContainerIndex);
             return;
         }
 
         LogVerbose($"ConsoleInteracted(PuzzleInteraction) called | sender={interaction.name} consoleIndex={interaction.ConsoleIndex}");
-        TurnValveOnWaterContainer(interaction.ConsoleIndex);
+       TurnValveOnWaterContainer(interaction.ConsoleIndex);
     }
 
     private void PlaySFX(AudioClip clip)
@@ -391,13 +437,23 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         SoundManager.Instance.sfxSource.PlayOneShot(clip);
     }
 
+    private IEnumerator PlayStartingSFX()
+    {
+        SoundManager.Instance.puzzleSource.PlayOneShot(turnOnPuzzle);
+        yield return new WaitForSeconds(turnOnPuzzle.length);
+    }
+
     public void TurnValveOnWaterContainer(int containerIndex)
     {
+        StartCoroutine(PlayStartingSFX());
+
+        SoundManager.Instance.puzzleSource.clip = pipeHumSFX;
+        SoundManager.Instance.puzzleSource.Play();
+        Debug.Log($"{DebugPrefix} TurnValveOnWaterContainer called with index {containerIndex}.");
+
         Debug.Log($"{DebugPrefix} Attempting to turn valve on water container at index {containerIndex}. Current expected index: {currentWaterContainerIndex}.");
-        LogVerbose($"Before advance | activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled} listCount={(waterContainers == null ? -1 : waterContainers.Count)}");
+        LogVerbose($"Before validation | activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled} listCount={(waterContainers == null ? -1 : waterContainers.Count)}");
         PlaySFX(valveTurnSFX);
-        AdvanceToNextValidContainerIndex();
-        LogVerbose($"After advance | currentIndex={currentWaterContainerIndex}");
 
         if (containerIndex < 0 || containerIndex >= waterContainers.Count)
         {
@@ -418,7 +474,6 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         {
             Debug.LogError($"Container data at index {containerIndex} is null.");
             PlaySFX(valveTurnFailSFX);
-            AdvanceToNextValidContainerIndex();
             return;
         }
 
@@ -426,12 +481,13 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         {
             Debug.Log($"{DebugPrefix} Container at index {containerIndex} is already turned.");
             PlaySFX(valveTurnFailSFX);
-            AdvanceToNextValidContainerIndex();
             return;
         }
 
         LogVerbose($"TurnValveOnWaterContainer accepted | index={containerIndex}");
         UpdateWaterContainerState(containerData);
+        
+        AdvanceToNextValidContainerIndex();
     }
 
     private void UpdateWaterContainerState(WaterContainerData containerData)
@@ -439,7 +495,6 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         LogVerbose($"UpdateWaterContainerState start | isTurned(before)={containerData.isTurned} currentIndex(before)={currentWaterContainerIndex}");
         containerData.isTurned = true;
         currentWaterContainerIndex++;
-        AdvanceToNextValidContainerIndex();
         LogVerbose($"UpdateWaterContainerState progressed | currentIndex(after)={currentWaterContainerIndex}");
 
         StartCoroutine(containerData.FadeLightBulbColor(
@@ -482,16 +537,42 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
             for (int i = 0; i < containerData.keycardPositions.Count; i++)
             {
                 KeycardPositions segment = containerData.keycardPositions[i];
+
+                keycardTransform.localRotation = Quaternion.Euler(keycardTransform.localRotation.eulerAngles.x, segment.properyKeycardRotationForThisPath, keycardTransform.localRotation.eulerAngles.z);
+
                 if (segment == null)
                 {
                     LogWarningVerbose($"MoveKeycardPath segment {i} is null; skipping.");
                     continue;
                 }
 
+                if (segment.startingDelay > 0f)
+                {
+                    LogVerbose($"MoveKeycardPath segment {i} starting delay | delay={segment.startingDelay}");
+                    yield return new WaitForSeconds(segment.startingDelay);
+                }
+
                 LogVerbose($"MoveKeycardPath segment {i} | start={segment.initialPos} end={segment.endPos} delay={segment.delayBeforeNextPipe}");
+
+                if (segment.playWaterExhaustandSuccessSFXAtStartOfThisSegment)
+                {
+                    PlaySFX(waterExhaustSFX);
+                    PlaySFX(filterSuccessSfx);
+                }
+                SoundManager.Instance.sfxSource.clip = null;
+
                 yield return MoveKeycardBetween(keycardTransform, segment.initialPos, segment.endPos, containerData.keycardMoveSpeed);
-                PlaySFX(keycardInWaterFilterSFX);
-                
+
+                if (segment.playWaterFilterSFXDuringThisSegment)
+                {
+                    SoundManager.Instance.sfxSource.clip = keycardInWaterFilterSFX;
+                    SoundManager.Instance.sfxSource.Play();
+                }
+                else if (segment.playWaterDrumSFXDuringThisSegment)
+                {
+                    SoundManager.Instance.sfxSource.clip = keycardInWaterDrumSFX;
+                    SoundManager.Instance.sfxSource.Play();
+                }
 
                 if (segment.delayBeforeNextPipe > 0f)
                     yield return new WaitForSeconds(segment.delayBeforeNextPipe);
@@ -503,15 +584,57 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
             yield return MoveKeycardBetween(keycardTransform, containerData.GetKeycardInitialPos(), containerData.GetKeycardEndPos(), containerData.keycardMoveSpeed);
         }
 
-        // After the full path finishes, place the keycard at the next valve's start position.
+        // Always stop SFX after movement completes
+        SoundManager.Instance.sfxSource.Stop();
+        SoundManager.Instance.puzzleSource.Stop();
+
+        // After the full path finishes, place the keycard at the next valve's start position (if not already at the final destination)
         if (currentWaterContainerIndex < waterContainers.Count && waterContainers[currentWaterContainerIndex] != null)
         {
             LogVerbose($"MoveKeycardPath handoff | nextIndex={currentWaterContainerIndex}");
             keycardTransform.localPosition = waterContainers[currentWaterContainerIndex].GetKeycardInitialPos();
+            PlaySFX(gotToEndOfPathSFX);
+        }
+
+        
+
+        // If puzzle is finished, set keycard interactable
+        if (currentWaterContainerIndex >= waterContainers.Count && waterContainers != null && waterContainers.Count > 0)
+        {
+            Debug.Log($"{DebugPrefix} MoveKeycardPath reached end of path; all containers turned. Setting final keycard interactable.");
+            SetKeycardInteractable(true, waterContainers[waterContainers.Count - 1]);
+            PlaySFX(gotToEndOfPathSFX);
         }
 
         keycardMovementRoutine = null;
         LogVerbose("MoveKeycardPath complete.");
+    }
+
+    private void SetKeycardInteractable(bool interactable, WaterContainerData containerData)
+    {
+        InteractionManager keycardInteraction = containerData.keycard.GetComponent<InteractionManager>();
+        if (keycardInteraction != null)
+        {
+            keycardInteraction.SetInteractionEnabled(interactable);
+        }
+    }
+
+    private Vector3 GetAbsoluteFinalKeyPosition(WaterContainerData containerData)
+    {
+        Vector3 finalPosition;
+
+        if (containerData.keycardPositions != null && containerData.keycardPositions.Count > 0)
+        {
+            KeycardPositions lastSegment = containerData.keycardPositions[containerData.keycardPositions.Count - 1];
+            finalPosition = lastSegment.endPos;
+            
+            return finalPosition;
+        }
+        else
+        {
+            finalPosition = containerData.GetKeycardEndPos();
+            return finalPosition;
+        }
     }
 
     private IEnumerator MoveKeycardBetween(Transform keycardTransform, Vector3 startPos, Vector3 endPos, float moveSpeed)
@@ -521,6 +644,8 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         float segmentDistance = flowVector.magnitude;
         // Keep travel speed constant across all segment lengths.
         float segmentDuration = moveSpeed > 0f ? segmentDistance / moveSpeed : 0f;
+        SoundManager.Instance.sfxSource.clip = keycardInWaterPipeSFX;
+        SoundManager.Instance.sfxSource.Play();
 
         if (segmentDuration <= 0f)
         {
@@ -540,6 +665,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         }
 
         StepWaterWobble(keycardTransform, endPos, flowDirection, 0f);
+
     }
 
     private void AdvanceToNextValidContainerIndex()
