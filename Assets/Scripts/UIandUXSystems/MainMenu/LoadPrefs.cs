@@ -50,11 +50,11 @@ public class LoadPrefs : MonoBehaviour
     {
         if (canUse)
         {
-            Debug.Log("[LoadPrefs] Loading Audio Settings...");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "[LoadPrefs] Loading Audio Settings...");
             LoadAudioSettings();
-            Debug.Log("[LoadPrefs] Loading General Settings...");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "[LoadPrefs] Loading General Settings...");
             LoadGeneralSettings();
-            Debug.Log("[LoadPrefs] Loading Graphics Settings...");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "[LoadPrefs] Loading Graphics Settings...");
             LoadGraphicsSettings();
         }
         else
@@ -65,13 +65,12 @@ public class LoadPrefs : MonoBehaviour
         }
     }
 
-
     public void LoadAudioSettings()
     {
         if (PlayerPrefs.HasKey("masterVolume"))
         {
             float masterVolume = PlayerPrefs.GetFloat("masterVolume");
-            Debug.Log($"[LoadPrefs] Loading masterVolume: {masterVolume}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterVolume: {masterVolume}");
             if (masterVolumeSlider) masterVolumeSlider.value = masterVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.masterSource)
                 SoundManager.Instance.masterSource.volume = masterVolume;
@@ -84,7 +83,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("sfxVolume"))
         {
             float sfxVolume = PlayerPrefs.GetFloat("sfxVolume");
-            Debug.Log($"[LoadPrefs] Loading sfxVolume: {sfxVolume}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading sfxVolume: {sfxVolume}");
             if (sfxVolumeSlider) sfxVolumeSlider.value = sfxVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.sfxSource)
                 SoundManager.Instance.sfxSource.volume = sfxVolume;
@@ -97,7 +96,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("voiceVolume"))
         {
             float voiceVolume = PlayerPrefs.GetFloat("voiceVolume");
-            Debug.Log($"[LoadPrefs] Loading voiceVolume: {voiceVolume}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading voiceVolume: {voiceVolume}");
             if (voiceVolumeSlider) voiceVolumeSlider.value = voiceVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.voiceSource)
                 SoundManager.Instance.voiceSource.volume = voiceVolume;
@@ -110,7 +109,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("musicVolume"))
         {
             float musicVolume = PlayerPrefs.GetFloat("musicVolume");
-            Debug.Log($"[LoadPrefs] Loading musicVolume: {musicVolume}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading musicVolume: {musicVolume}");
             if (musicVolumeSlider) musicVolumeSlider.value = musicVolume;
             if (SoundManager.Instance != null && SoundManager.Instance.musicSource)
                 SoundManager.Instance.musicSource.volume = musicVolume;
@@ -126,7 +125,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterVibrateStrength"))
         {
             float localVibration = PlayerPrefs.GetFloat("masterVibrateStrength");
-            Debug.Log($"[LoadPrefs] Loading masterVibrateStrength: {localVibration}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterVibrateStrength: {localVibration}");
             if (vibrationSlider) vibrationSlider.value = localVibration;
         }
         else
@@ -137,7 +136,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterCombo"))
         {
             int localCombo = PlayerPrefs.GetInt("masterCombo");
-            Debug.Log($"[LoadPrefs] Loading masterCombo: {localCombo}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterCombo: {localCombo}");
             if (localCombo == 1)
             {
                 if (general != null)
@@ -157,7 +156,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterSens"))
         {
             float localSens = PlayerPrefs.GetFloat("masterSens");
-            Debug.Log($"[LoadPrefs] Loading masterSens: {localSens}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterSens: {localSens}");
             if (sensSlider) sensSlider.value = localSens;
         }
         else
@@ -168,7 +167,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterInvertY"))
         {
             int localInvert = PlayerPrefs.GetInt("masterInvertY");
-            Debug.Log($"[LoadPrefs] Loading masterInvertY: {localInvert}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterInvertY: {localInvert}");
             if (localInvert == 1)
             {
                 if (SettingsManager.Instance != null)
@@ -191,7 +190,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterFullscreen"))
         {
             int fullscreenInt = PlayerPrefs.GetInt("masterFullscreen");
-            Debug.Log($"[LoadPrefs] Loading masterFullscreen: {fullscreenInt}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterFullscreen: {fullscreenInt}");
             if (fullscreenInt == 0)
             {
                 if (graphics != null)
@@ -222,7 +221,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterResolution"))
         {
             int resolutionInt = PlayerPrefs.GetInt("masterResolution");
-            Debug.Log($"[LoadPrefs] Loading masterResolution: {resolutionInt}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterResolution: {resolutionInt}");
             if (resolutionInt == 0)
             {
                 if (graphics != null)
@@ -246,7 +245,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterCameraShake"))
         {
             int cameraShakeInt = PlayerPrefs.GetInt("masterCameraShake");
-            Debug.Log($"[LoadPrefs] Loading masterCameraShake: {cameraShakeInt}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterCameraShake: {cameraShakeInt}");
             bool isCameraShake = cameraShakeInt == 1;
             if (graphics != null)
             {
@@ -261,7 +260,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterFPS"))
         {
             int localFPS = PlayerPrefs.GetInt("masterFPS");
-            Debug.Log($"[LoadPrefs] Loading masterFPS: {localFPS}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterFPS: {localFPS}");
             Application.targetFrameRate = localFPS;
         }
         else
@@ -272,7 +271,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterMotionBlur"))
         {
             int motionBlurInt = PlayerPrefs.GetInt("masterMotionBlur");
-            Debug.Log($"[LoadPrefs] Loading masterMotionBlur: {motionBlurInt}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterMotionBlur: {motionBlurInt}");
             bool isMotionBlur = motionBlurInt == 1;
             if (graphics != null)
             {
@@ -287,7 +286,7 @@ public class LoadPrefs : MonoBehaviour
         if (PlayerPrefs.HasKey("masterBrightness"))
         {
             float localBrightness = PlayerPrefs.GetFloat("masterBrightness");
-            Debug.Log($"[LoadPrefs] Loading masterBrightness: {localBrightness}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterBrightness: {localBrightness}");
             if (brightnessSlider) brightnessSlider.value = localBrightness;
 
             float defaultBrightness = fallbackDefaultBrightness;
@@ -295,7 +294,7 @@ public class LoadPrefs : MonoBehaviour
             {
                 defaultBrightness = graphics.defaultBrightness;
                 graphics.SetBrightness(localBrightness);
-                Debug.Log($"[LoadPrefs] Loaded Brightness: {localBrightness}, Applied to GraphicsSettings.");
+                DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loaded Brightness: {localBrightness}, Applied to GraphicsSettings.");
             }
             else
             {

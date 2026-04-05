@@ -57,7 +57,7 @@ public class FadeMenus : MonoBehaviour
         }
         else
         {
-            Debug.Log($"Fading out {menu.name} over {duration} seconds.");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, $"Fading out {menu.name} over {duration} seconds.");
 
             while(elapsed < duration)
             {

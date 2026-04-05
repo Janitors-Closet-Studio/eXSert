@@ -252,7 +252,7 @@ public class InputReader : Singleton<InputReader>
         if (TryGetComponent<PlayerInput>(out var existingInput))
         {
             RebindTo(existingInput);
-            Debug.Log("[InputReader] Found existing PlayerInput on Start and bound to it.");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Input, "[InputReader] Found existing PlayerInput on Start and bound to it.");
         }
         else
         {
@@ -336,7 +336,7 @@ public class InputReader : Singleton<InputReader>
             Debug.LogWarning("[InputReader] RebindTo called with null PlayerInput");
             return;
         }
-        else Debug.Log("[InputReader] RebindTo received a valid PlayerInput.");
+        else DebugLogSettingsM.ConditionalLog(DebugLogCategory.Input, "[InputReader] RebindTo received a valid PlayerInput.");
 
         // Disable any old actions to avoid ghost reads
         SetAllActionsEnabled(false);
@@ -700,7 +700,7 @@ public class InputReader : Singleton<InputReader>
     {
         if (PlayerInput == null || PlayerInput.actions == null)
         {
-            Debug.Log("[InputReader] PlayerInput or PlayerInput.actions is null in GetAction.");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Input, "[InputReader] PlayerInput or PlayerInput.actions is null in GetAction.");
             return null;
         }
 

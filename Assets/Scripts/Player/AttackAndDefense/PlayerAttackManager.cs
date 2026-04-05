@@ -142,6 +142,24 @@ public class PlayerAttackManager : MonoBehaviour
     [Header("Input Buffering")]
     [SerializeField, Range(0.05f, 0.6f)] private float inputBufferWindow = 0.25f;
 
+    [Header("Ground Attack Grace")]
+    [SerializeField, Range(0f, 0.5f), Tooltip("Short coyote-time window where grounded attacks are still allowed right after leaving the floor.")]
+    private float groundedAttackGraceSeconds = 0.12f;
+    [SerializeField, Range(0f, 1f), Tooltip("Extra downward probe distance used to treat the player as grounded for attack selection when barely above the floor.")]
+    private float groundedAttackProbeDistance = 0.2f;
+    [SerializeField, Tooltip("Layers considered ground for grounded-attack grace probing.")]
+    private LayerMask groundedAttackProbeMask = ~0;
+
+    [Header("Aerial Attack Requirements")]
+    [SerializeField, Tooltip("When enabled, aerial attacks can only be started after a double jump in the current airtime.")]
+    private bool requireDoubleJumpForAerialAttacks = true;
+
+    [Header("Input Busy Failsafe")]
+    [SerializeField, Range(0f, 2f), Tooltip("Extra time added beyond expected attack end before forcing a stuck input-busy recovery.")]
+    private float attackLockFailsafeExtraSeconds = 0.35f;
+    [SerializeField, Range(0.5f, 5f), Tooltip("Fallback timeout used when attack duration data is unavailable.")]
+    private float attackLockFailsafeFallbackSeconds = 1.5f;
+
     [Header("Attack Spam Prevention")]
     [SerializeField, Tooltip("When enabled, the next buffered attack can only start after the active attack animation has fully finished.")]
     private bool requireFullAnimationPlaybackBeforeNextAttack = true;
@@ -223,6 +241,8 @@ public class PlayerAttackManager : MonoBehaviour
     private float bufferedAttackExpiresAt = -1f;
     private float currentAttackSpeedMultiplier = 1f;
     private float currentAttackEarliestEndTime = -1f;
+    private float currentAttackLockFailsafeTime = -1f;
+    private float lastGroundedAttackEligibleTime = float.NegativeInfinity;
     private Coroutine deferredCancelRoutine;
     private Coroutine earlyTrimCompletionRoutine;
 
@@ -311,12 +331,14 @@ public class PlayerAttackManager : MonoBehaviour
         ClearHitbox();
         currentAttackSpeedMultiplier = 1f;
         currentAttackEarliestEndTime = -1f;
+        currentAttackLockFailsafeTime = -1f;
         animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
     }
 
     private void Update()
     {
+        UpdateGroundedAttackGraceState();
         EnsureAttackStateConsistency();
 
         if (ShouldIgnoreAttackInput())
@@ -349,6 +371,7 @@ public class PlayerAttackManager : MonoBehaviour
             {
                 Debug.LogWarning("[PlayerAttackManager] Recovered orphaned inputBusy state with no active attack.");
                 InputReader.inputBusy = false;
+                currentAttackLockFailsafeTime = -1f;
                 animationController?.ResetAnimatorSpeed();
                 playerMovement?.SuppressLocomotionAnimations(false);
                 playerMovement?.ForceLocomotionRefresh();
@@ -358,7 +381,15 @@ public class PlayerAttackManager : MonoBehaviour
         }
 
         if (InputReader.inputBusy)
+        {
+            if (IsCurrentAttackLockTimedOut())
+            {
+                Debug.LogWarning("[PlayerAttackManager] Attack input lock timed out. Forcing recovery.");
+                ForceCancelCurrentAttack(resetCombo: false);
+            }
+
             return;
+        }
 
         if (plungeRecoveryRoutine != null)
             return;
@@ -368,6 +399,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = 1f;
         currentAttackEarliestEndTime = -1f;
+        currentAttackLockFailsafeTime = -1f;
         StopEarlyTrimCompletionRoutine();
         animationController?.ResetAnimatorSpeed();
         playerMovement?.SuppressLocomotionAnimations(false);
@@ -522,7 +554,7 @@ public class PlayerAttackManager : MonoBehaviour
         PlayerAttack attackData;
         string attackId;
 
-        if (IsGrounded())
+        if (ShouldTreatAsGroundedForAttackSelection())
         {
             attackId = ResolveGroundAttackId(lightAttack);
             if (string.IsNullOrEmpty(attackId))
@@ -538,6 +570,15 @@ public class PlayerAttackManager : MonoBehaviour
         else
         {
             bool continuingAerialCombo = aerialComboManager != null && aerialComboManager.IsInAerialCombo;
+
+            if (requireDoubleJumpForAerialAttacks
+                && !continuingAerialCombo
+                && playerMovement != null
+                && !playerMovement.HasPerformedDoubleJumpSinceGrounded)
+            {
+                return;
+            }
+
             if (playerMovement != null && !playerMovement.CanStartAerialCombat() && !continuingAerialCombo)
             {
                 // Prevent "barely off the ground" aerial attacks. Attacks are only allowed
@@ -631,6 +672,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = ResolveAttackSpeedMultiplier(attackData, attackId);
         currentAttackEarliestEndTime = ResolveCurrentAttackEarliestEndTime();
+        currentAttackLockFailsafeTime = ResolveCurrentAttackLockFailsafeTime(attackData);
         ScheduleEarlyTrimCompletionIfNeeded();
 
         if (currentAttack != null
@@ -818,6 +860,53 @@ public class PlayerAttackManager : MonoBehaviour
             return characterController.isGrounded;
 
         return PlayerMovement.isGrounded;
+    }
+
+    private void UpdateGroundedAttackGraceState()
+    {
+        if (IsGrounded() || IsNearGroundForAttackSelection())
+            lastGroundedAttackEligibleTime = Time.time;
+    }
+
+    private bool ShouldTreatAsGroundedForAttackSelection()
+    {
+        if (IsGrounded())
+            return true;
+
+        if (playerMovement != null && playerMovement.IsTouchingBossFaceplateForCombat())
+            return true;
+
+        if (IsNearGroundForAttackSelection())
+            return true;
+
+        float grace = Mathf.Max(0f, groundedAttackGraceSeconds);
+        if (grace <= 0f)
+            return false;
+
+        return Time.time - lastGroundedAttackEligibleTime <= grace;
+    }
+
+    private bool IsNearGroundForAttackSelection()
+    {
+        if (characterController == null)
+            return false;
+
+        float probeDistance = Mathf.Max(0f, groundedAttackProbeDistance);
+        if (probeDistance <= 0f)
+            return false;
+
+        Bounds bounds = characterController.bounds;
+        float radius = Mathf.Max(0.05f, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.9f);
+        Vector3 origin = new Vector3(bounds.center.x, bounds.min.y + radius + 0.02f, bounds.center.z);
+
+        return Physics.SphereCast(
+            origin,
+            radius,
+            Vector3.down,
+            out _,
+            probeDistance,
+            groundedAttackProbeMask,
+            QueryTriggerInteraction.Ignore);
     }
 
     private void PlaySfx(AudioClip clip)
@@ -1202,6 +1291,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = 1f;
         currentAttackEarliestEndTime = -1f;
+        currentAttackLockFailsafeTime = -1f;
         animationController?.ResetAnimatorSpeed();
 
         if (TryConsumeBufferedAttack())
@@ -1315,6 +1405,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = 1f;
         currentAttackEarliestEndTime = -1f;
+        currentAttackLockFailsafeTime = -1f;
         animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
         playerMovement?.SuppressLocomotionAnimations(false);
@@ -1403,6 +1494,33 @@ public class PlayerAttackManager : MonoBehaviour
             animationDuration = Mathf.Max(0f, animationDuration - attackEndTrim);
 
         return Time.time + animationDuration;
+    }
+
+    private float ResolveCurrentAttackLockFailsafeTime(PlayerAttack attackData)
+    {
+        float extra = Mathf.Max(0f, attackLockFailsafeExtraSeconds);
+
+        if (currentAttackEarliestEndTime >= 0f)
+            return currentAttackEarliestEndTime + extra;
+
+        float fallback = Mathf.Max(0.5f, attackLockFailsafeFallbackSeconds);
+        float duration = ScaleDurationForAttack(GetAnimationDurationOrFallback(attackData, fallback), attackData);
+        duration = Mathf.Max(0.1f, duration + extra);
+        return Time.time + duration;
+    }
+
+    private bool IsCurrentAttackLockTimedOut()
+    {
+        if (currentAttack == null)
+            return false;
+
+        if (currentAttackLockFailsafeTime < 0f)
+            return false;
+
+        if (plungeRecoveryRoutine != null)
+            return false;
+
+        return Time.time >= currentAttackLockFailsafeTime;
     }
 
     private float ResolveAttackEndTrimSeconds(PlayerAttack attackData)

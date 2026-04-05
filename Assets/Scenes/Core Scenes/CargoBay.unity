@@ -18587,6 +18587,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3244857234327776749, guid: 6b3cb745ca066644ab3633f7d209e55f, type: 3}
   m_PrefabInstance: {fileID: 927987735}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &927987739 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7006565367186408323, guid: 6b3cb745ca066644ab3633f7d209e55f, type: 3}
+  m_PrefabInstance: {fileID: 927987735}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &931632636
 Mesh:
   m_ObjectHideFlags: 0
@@ -21959,6 +21964,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: LogEntry4
       objectReference: {fileID: 0}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: entryData
+      value: 
+      objectReference: {fileID: 11400000, guid: a4ffd7266933cd74e9fb8bacbdca8713, type: 2}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.7160206
@@ -30594,7 +30603,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 1656406991}
     m_Modifications:
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: consoleIndex
@@ -30614,15 +30623,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7726893552283810044, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 22.355
+      value: 23.52344
       objectReference: {fileID: 0}
     - target: {fileID: 7726893552283810044, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.97006416
+      value: 0.9499358
       objectReference: {fileID: 0}
     - target: {fileID: 7726893552283810044, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 84.696
+      value: 22.896
       objectReference: {fileID: 0}
     - target: {fileID: 7726893552283810044, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: m_LocalRotation.w
@@ -30681,6 +30690,22 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0, z: 0}
   m_TimeToStationary: 0.5
+--- !u!4 &1652818829 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7726893552283810044, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+  m_PrefabInstance: {fileID: 1652818826}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1652818830 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+  m_PrefabInstance: {fileID: 1652818826}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 783730fa20d4f9b4e9bf2372e82e57ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
 --- !u!1001 &1656406990
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -30742,6 +30767,14 @@ PrefabInstance:
       value: -3.25
       objectReference: {fileID: 0}
     - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: doorLight
+      value: 
+      objectReference: {fileID: 927987737}
+    - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: lightBulb
+      value: 
+      objectReference: {fileID: 927987739}
+    - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: magnetBase
       value: 
       objectReference: {fileID: 1656406993}
@@ -30783,7 +30816,7 @@ PrefabInstance:
       objectReference: {fileID: 1648712789}
     - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: invertForwardBackward
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1177427173962401517, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: craneParts.Array.data[1].minZ
@@ -30828,7 +30861,7 @@ PrefabInstance:
     - target: {fileID: 5970010156459918155, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1335743561}
     - target: {fileID: 6010323191669219731, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_LocalPosition.x
       value: -5.6357656
@@ -30861,10 +30894,18 @@ PrefabInstance:
       propertyPath: 'overrideInteractPoints.Array.data[0]'
       value: 
       objectReference: {fileID: 5960073906962354268}
+    - target: {fileID: 8631346809535284705, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: 'overrideInteractPoints.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1652818830}
     - target: {fileID: 8866400004900502311, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_Carve
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9075723500813484111, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: craneSFXClip
+      value: 
+      objectReference: {fileID: 8300000, guid: f44c8d7b487112241aaffc2a615b8b7a, type: 3}
     m_RemovedComponents:
     - {fileID: 6578881789697925817, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
     - {fileID: 4965247282811737687, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
@@ -30876,6 +30917,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 366249933239526967, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5960073906962354267}
+    - targetCorrespondingSourceObject: {fileID: 366249933239526967, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1652818829}
     - targetCorrespondingSourceObject: {fileID: 5592278172108904763, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       insertIndex: 0
       addedObject: {fileID: 927987736}
@@ -35045,6 +35089,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: LogEntry2
       objectReference: {fileID: 0}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: entryData
+      value: 
+      objectReference: {fileID: 11400000, guid: 68b523c5b7f34cc4db62046c6fa8a18e, type: 2}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalScale.y
       value: 2.2727995
@@ -37051,6 +37099,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  blockPromptWhenAttackingOrDashing: 1
   _interactAnimation: {fileID: 0}
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
@@ -37068,6 +37117,7 @@ MonoBehaviour:
   usePuzzleCameraOnInteraction: 0
   puzzleCinemachineCamera: {fileID: 0}
   puzzleCameraDurationSeconds: 2
+  puzzleCameraFailsafeSeconds: 7
 --- !u!1 &1959569044
 GameObject:
   m_ObjectHideFlags: 0
@@ -41292,6 +41342,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: LogEntry3
       objectReference: {fileID: 0}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: entryData
+      value: 
+      objectReference: {fileID: 11400000, guid: 58b00db1641c211448ac89d50730c985, type: 2}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalScale.y
       value: 2.2727995
@@ -41832,6 +41886,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8235322712172420788, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: m_Size.z
+      value: 24.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -41889,4 +41947,3 @@ SceneRoots:
   - {fileID: 387321457}
   - {fileID: 831474616}
   - {fileID: 416575058}
-  - {fileID: 1652818826}

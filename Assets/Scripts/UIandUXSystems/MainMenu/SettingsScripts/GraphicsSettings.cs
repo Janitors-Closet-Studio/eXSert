@@ -124,7 +124,7 @@ public class GraphicsSettings : MonoBehaviour
         {
             liftGammaGain.gamma.value = new Vector4(1f, 1f, 1f, brightness);
             brightnessLevel = brightness;
-            Debug.Log("Brightness set to: " + brightness);
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Brightness set to: " + brightness);
         }
     }
 

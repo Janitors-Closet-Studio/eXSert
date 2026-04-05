@@ -56,6 +56,8 @@ public class PlayerMovement : MonoBehaviour
     private bool testingOrDebugMode = false;
     [SerializeField, Tooltip("Verbose movement diagnostics for jump/grounded/animation state transitions. Use for reproducing movement bugs in test scenes.")]
     private bool verboseMovementDebugLogs = false;
+    [SerializeField, Tooltip("Enable debug logs for external velocity (mounting/carrying system).")]
+    private bool enableExternalVelocityDebugLogs = false;
 
     [Header("Player Animator")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -64,6 +66,7 @@ public class PlayerMovement : MonoBehaviour
     public event Action DoubleJumpPerformed;
     public event Action DashPerformed;
     public event Action AirDashPerformed;
+    public bool HasPerformedDoubleJumpSinceGrounded { get; private set; }
 
     [Header("Input")]
     [SerializeField] private InputActionReference _jumpAction;
@@ -380,6 +383,27 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Tooltip("Vertical thickness of the footprint overlap used for enemy-top detection.")]
     [Range(0.05f, 1f)] private float enemyTopSlideFootprintThickness = 0.35f;
 
+    [Header("Boss Faceplate Unstick")]
+    [SerializeField, Tooltip("Applies a small outward assist when movement input is held but the player is stuck against the Roomba body/faceplate.")]
+    private bool enableBossFaceplateUnstick = true;
+    [SerializeField, Range(0f, 20f), Tooltip("Outward assist speed while stuck against the boss faceplate.")]
+    private float bossFaceplateUnstickSpeed = 7f;
+    [SerializeField, Range(0.1f, 1.5f), Tooltip("Probe radius used to detect nearby boss colliders for unstick assist.")]
+    private float bossFaceplateUnstickProbeRadius = 0.45f;
+    [SerializeField, Range(0f, 2f), Tooltip("Only apply faceplate unstick when player horizontal speed is below this threshold.")]
+    private float bossFaceplateStuckSpeedThreshold = 0.25f;
+    [SerializeField, Range(1f, 4f), Tooltip("Multiplier used for fallback faceplate probe radius when the primary probe misses boss colliders.")]
+    private float bossFaceplateFallbackProbeRadiusMultiplier = 1.75f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Forward offset used for fallback faceplate probing based on player facing direction.")]
+    private float bossFaceplateForwardProbeOffset = 0.35f;
+    [SerializeField, Tooltip("When enabled, keeps vertical velocity slightly grounded while attacking in contact with the boss faceplate to reduce bounce/cutoff issues.")]
+    private bool stabilizeBossFaceplateVerticalDuringAttacks = true;
+    [SerializeField, Range(-5f, 0f), Tooltip("Ground-stick vertical velocity used while attacking on boss faceplate.")]
+    private float bossFaceplateAttackGroundStickVelocity = -1f;
+    [SerializeField, Tooltip("Enable focused debug logging for boss faceplate bounce/attack-cancel cases.")]
+    private bool enableBossFaceplateBounceDebugLogs = false;
+    [SerializeField, Range(0.02f, 0.5f), Tooltip("Minimum interval between boss faceplate debug logs.")]
+    private float bossFaceplateBounceDebugLogInterval = 0.08f;
     [Header("Camera Settings")]
     [SerializeField] bool invertYAxis = false;
 
@@ -459,6 +483,7 @@ public class PlayerMovement : MonoBehaviour
     private bool idleRecoveryAppliedThisWindow;
     private readonly Collider[] plungeEnemyPushBuffer = new Collider[32];
     private readonly Collider[] enemyTopSlideHits = new Collider[32];
+    private readonly Collider[] bossFaceplateHits = new Collider[24];
     private readonly int[] plungeProcessedEnemyIds = new int[32];
     private bool warnedMissingSoundSource;
     private Vector3 dashCarryVelocity = Vector3.zero;
@@ -483,6 +508,14 @@ public class PlayerMovement : MonoBehaviour
     private bool attackMovementSuppressedByHit;
     private float downhillGroundedGraceTimer;
     private float nextDownhillGroundingDebugLogTime;
+    private float nextBossFaceplateBounceDebugLogTime;
+    private float nextBossFaceplateCriticalLogTime;
+    private float lastLightAttackIntentTime = float.NegativeInfinity;
+    private float lastHeavyAttackIntentTime = float.NegativeInfinity;
+    private bool faceplateWatchInitialized;
+    private float previousFaceplateWatchY;
+    private bool previousFaceplateWatchGrounded;
+    private bool previousFaceplateWatchCcGrounded;
 
     private Transform ResolveCameraTransform()
     {
@@ -625,6 +658,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         doubleJumpAvailable = canDoubleJump;
+        HasPerformedDoubleJumpSinceGrounded = false;
         //airborneStartHeight = transform.position.y;
         airDashAvailable = true;
         suspendGravityDuringDash = false;
@@ -761,6 +795,12 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         DebugStateTransitions();
+
+        if (InputReader.LightAttackTriggered)
+            lastLightAttackIntentTime = Time.time;
+
+        if (InputReader.HeavyAttackTriggered)
+            lastHeavyAttackIntentTime = Time.time;
 
         EnsurePlungeRecoveryFailsafe();
         EnsureGroundedInputBusyFailsafe();
@@ -1282,6 +1322,198 @@ public class PlayerMovement : MonoBehaviour
         return pushDir.normalized * speed;
     }
 
+    private Vector3 GetBossFaceplateUnstickVelocity()
+    {
+        if (!enableBossFaceplateUnstick || characterController == null)
+            return Vector3.zero;
+
+        bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
+        if (InputReader.inputBusy && !attackActive)
+            return Vector3.zero;
+
+        Vector2 moveInput = ApplyMoveDeadZone(InputReader.MoveInput);
+        if (moveInput.sqrMagnitude <= moveInputDeadZone * moveInputDeadZone)
+            return Vector3.zero;
+
+        float horizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+        if (horizontalSpeed > Mathf.Max(0f, bossFaceplateStuckSpeedThreshold))
+            return Vector3.zero;
+
+        if (!TryGetBossFaceplatePushDirection(out Vector3 pushDirection))
+            return Vector3.zero;
+
+        return pushDirection * Mathf.Max(0f, bossFaceplateUnstickSpeed);
+    }
+
+    private bool ShouldStabilizeBossFaceplateAttackVertical()
+    {
+        if (!stabilizeBossFaceplateVerticalDuringAttacks)
+            return false;
+
+        if (characterController == null)
+            return false;
+
+        if (isDashing || isPlunging || isKnockbackActive)
+            return false;
+
+        bool attackInProgress = attackManager != null && attackManager.IsAttackInProgress;
+        bool recentAttackIntent = HasRecentAttackIntent();
+        if (!attackInProgress && !recentAttackIntent)
+            return false;
+
+        // Allow a small airborne tolerance so brief pogo lift doesn't immediately disable
+        // stabilization between attack intent and attack start.
+        if (!IsGroundedNow() && currentMovement.y > 0.25f)
+            return false;
+
+        return TryGetBossFaceplatePushDirection(out _);
+    }
+
+    private bool HasRecentAttackIntent(float windowSeconds = 0.2f)
+    {
+        float window = Mathf.Max(0.02f, windowSeconds);
+        float now = Time.time;
+        return now - lastLightAttackIntentTime <= window
+            || now - lastHeavyAttackIntentTime <= window;
+    }
+
+    public bool IsTouchingBossFaceplateForCombat()
+    {
+        if (characterController == null)
+            return false;
+
+        if (isDashing || isPlunging || isKnockbackActive)
+            return false;
+
+        return TryGetBossFaceplatePushDirection(out _);
+    }
+
+    private bool TryGetBossFaceplatePushDirection(out Vector3 pushDirection)
+    {
+        pushDirection = Vector3.zero;
+
+        if (characterController == null)
+            return false;
+
+        Bounds bounds = characterController.bounds;
+        float probeRadius = Mathf.Max(0.1f, bossFaceplateUnstickProbeRadius);
+        Vector3 probeCenter = new Vector3(bounds.center.x, bounds.min.y + Mathf.Max(0.2f, bounds.extents.y * 0.5f), bounds.center.z);
+
+        if (TryGetBossFaceplatePushDirectionAtProbe(probeCenter, probeRadius, out pushDirection, out int primaryHits, out int primaryContributors))
+            return true;
+
+        Vector3 chestProbeCenter = new Vector3(bounds.center.x, bounds.center.y, bounds.center.z);
+        float fallbackRadius = probeRadius * Mathf.Max(1f, bossFaceplateFallbackProbeRadiusMultiplier);
+        if (TryGetBossFaceplatePushDirectionAtProbe(chestProbeCenter, fallbackRadius, out pushDirection, out int chestHits, out int chestContributors))
+            return true;
+
+        Vector3 forwardFlat = transform.forward;
+        forwardFlat.y = 0f;
+        if (forwardFlat.sqrMagnitude < 0.0001f)
+            forwardFlat = Vector3.forward;
+        else
+            forwardFlat.Normalize();
+
+        Vector3 forwardProbeCenter = chestProbeCenter + (forwardFlat * Mathf.Max(0f, bossFaceplateForwardProbeOffset));
+        if (TryGetBossFaceplatePushDirectionAtProbe(forwardProbeCenter, fallbackRadius, out pushDirection, out int forwardHits, out int forwardContributors))
+            return true;
+
+        if (enableBossFaceplateBounceDebugLogs && (HasRecentAttackIntent(0.25f) || InputReader.inputBusy))
+        {
+            BossFaceplateBounceDebugLog(
+                $"Faceplate probe miss after fallbacks. primaryHits={primaryHits}/contrib={primaryContributors}, chestHits={chestHits}/contrib={chestContributors}, forwardHits={forwardHits}/contrib={forwardContributors}");
+        }
+
+        return false;
+    }
+
+    private bool TryGetBossFaceplatePushDirectionAtProbe(
+        Vector3 probeCenter,
+        float probeRadius,
+        out Vector3 pushDirection,
+        out int hitCount,
+        out int contributing)
+    {
+        pushDirection = Vector3.zero;
+        hitCount = Physics.OverlapSphereNonAlloc(
+            probeCenter,
+            Mathf.Max(0.1f, probeRadius),
+            bossFaceplateHits,
+            ~0,
+            QueryTriggerInteraction.Collide);
+
+        if (hitCount <= 0)
+        {
+            contributing = 0;
+            return false;
+        }
+
+        Vector3 accumulatedAway = Vector3.zero;
+        contributing = 0;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hit = bossFaceplateHits[i];
+            if (hit == null)
+                continue;
+
+            if (hit.transform != null && hit.transform.root == transform.root)
+                continue;
+
+            BossRoombaBrain boss = hit.GetComponentInParent<BossRoombaBrain>();
+            if (boss == null)
+                continue;
+
+            Vector3 closest = GetSafeColliderClosestPoint(hit, probeCenter);
+            Vector3 away = probeCenter - closest;
+            away.y = 0f;
+
+            if (away.sqrMagnitude < 0.0001f)
+            {
+                away = transform.position - boss.transform.position;
+                away.y = 0f;
+            }
+
+            if (away.sqrMagnitude < 0.0001f)
+                continue;
+
+            accumulatedAway += away.normalized;
+            contributing++;
+        }
+
+        if (contributing <= 0 || accumulatedAway.sqrMagnitude < 0.0001f)
+            return false;
+
+        pushDirection = accumulatedAway.normalized;
+        return true;
+    }
+
+    private Vector3 GetSafeColliderClosestPoint(Collider collider, Vector3 point)
+    {
+        if (collider == null)
+            return point;
+
+        if (collider is MeshCollider meshCollider && !meshCollider.convex)
+        {
+            BossFaceplateBounceDebugLog($"Using ClosestPointOnBounds fallback for non-convex MeshCollider '{collider.name}'.", force: true);
+            return collider.ClosestPointOnBounds(point);
+        }
+
+        return collider.ClosestPoint(point);
+    }
+
+    private void BossFaceplateBounceDebugLog(string message, bool force = false)
+    {
+        if (!enableBossFaceplateBounceDebugLogs)
+            return;
+
+        if (!force && Time.time < nextBossFaceplateBounceDebugLogTime)
+            return;
+
+        nextBossFaceplateBounceDebugLogTime = Time.time + Mathf.Max(0.02f, bossFaceplateBounceDebugLogInterval);
+        Debug.Log($"[PlayerMovement][FaceplateBounce] {message}");
+    }
+
     private static void ApplyEnemyPlungePush(Transform enemyTransform, Vector3 displacement, bool allowWarp = true)
     {
         if (enemyTransform == null || displacement.sqrMagnitude < 0.000001f)
@@ -1357,6 +1589,7 @@ public class PlayerMovement : MonoBehaviour
             airborneAnimationLocked = true;
             fallingAnimationPlaying = false;
             highFallActive = false;
+            HasPerformedDoubleJumpSinceGrounded = false;
             pendingJump = PendingJumpType.Ground;
             StartPendingJumpTimeout();
             animationController?.PlayJump();
@@ -1368,6 +1601,7 @@ public class PlayerMovement : MonoBehaviour
             airborneAnimationLocked = true;
             fallingAnimationPlaying = false;
             highFallActive = true;
+            HasPerformedDoubleJumpSinceGrounded = true;
             pendingJump = PendingJumpType.Double;
             StartPendingJumpTimeout();
             animationController?.PlayAirJumpStart();
@@ -1412,6 +1646,7 @@ public class PlayerMovement : MonoBehaviour
         PlaySFX(doubleJumpSFX, priority: 1);
         doubleJumpAvailable = false;
         pendingJump = PendingJumpType.None;
+        HasPerformedDoubleJumpSinceGrounded = true;
         DoubleJumpPerformed?.Invoke();
         DebugMovementLog($"Double jump applied | currentY={currentMovement.y:F2} doubleJumpAvailable={doubleJumpAvailable}");
     }
@@ -2188,6 +2423,26 @@ public class PlayerMovement : MonoBehaviour
         {
             currentMovement.y += gravity * Time.deltaTime;
         }
+
+        bool faceplateAttackVerticalStabilized = ShouldStabilizeBossFaceplateAttackVertical();
+        if (faceplateAttackVerticalStabilized)
+            currentMovement.y = bossFaceplateAttackGroundStickVelocity;
+
+        if (enableBossFaceplateBounceDebugLogs && Time.time >= nextBossFaceplateBounceDebugLogTime)
+        {
+            bool touchingFaceplate = IsTouchingBossFaceplateForCombat();
+            bool recentAttackIntent = HasRecentAttackIntent(0.25f);
+            bool suspiciousVerticalMotion = Mathf.Abs(currentMovement.y) > 0.2f;
+
+            if (touchingFaceplate || recentAttackIntent || suspiciousVerticalMotion)
+            {
+                float horizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+                bool attackInProgress = attackManager != null && attackManager.IsAttackInProgress;
+                BossFaceplateBounceDebugLog(
+                    $"contact={touchingFaceplate} groundedNow={IsGroundedNow()} ccGrounded={(characterController != null && characterController.isGrounded)} inputBusy={InputReader.inputBusy} attackInProgress={attackInProgress} recentAttackIntent={recentAttackIntent} stabilizeY={faceplateAttackVerticalStabilized} currentY={currentMovement.y:F2} horizontal={horizontalSpeed:F2} lightTrig={InputReader.LightAttackTriggered} heavyTrig={InputReader.HeavyAttackTriggered} jumpTrig={InputReader.JumpTriggered}");
+            }
+        }
+
         currentMovement.y = Mathf.Clamp(currentMovement.y, -terminalVelocity, terminalVelocity);
 
         float movementDeltaTime = Time.inFixedTimeStep ? Time.fixedDeltaTime : Time.deltaTime;
@@ -2195,6 +2450,9 @@ public class PlayerMovement : MonoBehaviour
 
         if (!isDashing)
             horizontalMovement += GetEnemyTopSlideVelocity();
+
+        if (!isDashing && !isKnockbackActive && !isPlunging)
+            horizontalMovement += GetBossFaceplateUnstickVelocity();
 
         if (isPlunging)
             horizontalMovement += ApplyPlungeSustainRepulsion(movementDeltaTime);
@@ -2237,10 +2495,14 @@ public class PlayerMovement : MonoBehaviour
         // Apply movement using the simulation timestep (FixedUpdate-safe) to avoid dash jitter.
         characterController.Move(finalVelocity * movementDeltaTime);
 
+        LogFaceplateBounceWatchdog(faceplateAttackVerticalStabilized);
+
+        bool groundedAfterMove = IsGroundedNow();
+
         // reset vertical movement when grounded
-        if (IsGroundedNow() && currentMovement.y < 0)
+        if (groundedAfterMove && currentMovement.y < 0)
         {
-            DebugMovementLog($"ApplyMovement grounded reset | groundedNow={IsGroundedNow()} ccGrounded={characterController.isGrounded} yBeforeReset={currentMovement.y:F2} fallingAnimationPlaying={fallingAnimationPlaying} airborneAnimationLocked={airborneAnimationLocked}");
+            DebugMovementLog($"ApplyMovement grounded reset | groundedNow={groundedAfterMove} ccGrounded={characterController.isGrounded} yBeforeReset={currentMovement.y:F2} fallingAnimationPlaying={fallingAnimationPlaying} airborneAnimationLocked={airborneAnimationLocked}");
             currentMovement.y = -1f; // small negative value to keep the player grounded
             if (isPlunging)
                 plungeLandingPending = true;
@@ -2251,9 +2513,67 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void LogFaceplateBounceWatchdog(bool stabilizeYThisStep)
+    {
+        if (!enableBossFaceplateBounceDebugLogs || characterController == null)
+            return;
+
+        bool groundedNow = IsGroundedNow();
+        bool ccGroundedNow = characterController.isGrounded;
+
+        Bounds bounds = characterController.bounds;
+        float probeRadius = Mathf.Max(0.1f, bossFaceplateUnstickProbeRadius);
+        Vector3 probeCenter = new Vector3(bounds.center.x, bounds.min.y + Mathf.Max(0.2f, bounds.extents.y * 0.5f), bounds.center.z);
+
+        bool hasBossContributor = TryGetBossFaceplatePushDirectionAtProbe(
+            probeCenter,
+            probeRadius,
+            out _,
+            out int probeHits,
+            out int probeContributors);
+
+        bool verticalDirectionFlip = faceplateWatchInitialized
+            && Mathf.Sign(previousFaceplateWatchY) != Mathf.Sign(currentMovement.y)
+            && Mathf.Abs(previousFaceplateWatchY) > 0.12f
+            && Mathf.Abs(currentMovement.y) > 0.12f;
+
+        bool groundedFlip = faceplateWatchInitialized && (groundedNow != previousFaceplateWatchGrounded || ccGroundedNow != previousFaceplateWatchCcGrounded);
+        bool suspiciousInputLock = InputReader.inputBusy && (attackManager == null || !attackManager.IsAttackInProgress);
+
+        bool shouldLogCritical = verticalDirectionFlip
+            || groundedFlip
+            || (probeHits > 0 && probeContributors == 0)
+            || (suspiciousInputLock && probeHits > 0)
+            || (hasBossContributor && Mathf.Abs(currentMovement.y) > 0.3f);
+
+        if (shouldLogCritical && Time.time >= nextBossFaceplateCriticalLogTime)
+        {
+            nextBossFaceplateCriticalLogTime = Time.time + 0.03f;
+            BossFaceplateBounceDebugLog(
+                $"watchdog probeHits={probeHits} probeContrib={probeContributors} hasBossContrib={hasBossContributor} groundedNow={groundedNow} ccGrounded={ccGroundedNow} y={currentMovement.y:F2} prevY={previousFaceplateWatchY:F2} groundedFlip={groundedFlip} yFlip={verticalDirectionFlip} inputBusy={InputReader.inputBusy} attackInProgress={(attackManager != null && attackManager.IsAttackInProgress)} stabilizeY={stabilizeYThisStep}",
+                force: true);
+        }
+
+        previousFaceplateWatchY = currentMovement.y;
+        previousFaceplateWatchGrounded = groundedNow;
+        previousFaceplateWatchCcGrounded = ccGroundedNow;
+        faceplateWatchInitialized = true;
+    }
+
     private void HandleAirborneAnimations()
     {
         bool grounded = IsGroundedNow();
+        bool forceFaceplateGrounded = false;
+
+        if (!grounded)
+        {
+            bool attackInProgress = attackManager != null && attackManager.IsAttackInProgress;
+            if (attackInProgress && TryGetBossFaceplatePushDirection(out _))
+            {
+                grounded = true;
+                forceFaceplateGrounded = true;
+            }
+        }
 
         if (grounded)
         {
@@ -2281,6 +2601,12 @@ public class PlayerMovement : MonoBehaviour
         {
             wasGrounded = grounded;
             return;
+        }
+
+        if (forceFaceplateGrounded)
+        {
+            airborneAnimationLocked = false;
+            fallingAnimationPlaying = false;
         }
 
         bool recoverMissedPlungeLanding = wasGrounded && grounded && (plungeLandingPending || isPlunging);
@@ -2316,6 +2642,7 @@ public class PlayerMovement : MonoBehaviour
             }
             ResetMoveState();
             doubleJumpAvailable = canDoubleJump;
+            HasPerformedDoubleJumpSinceGrounded = false;
             airborneAnimationLocked = false;
             fallingAnimationPlaying = false;
             highFallActive = false;
@@ -3321,14 +3648,13 @@ public class PlayerMovement : MonoBehaviour
     /// </summary>
     public void SetExternalVelocity(Vector3 velocity)
     {
-#if UNITY_EDITOR
         // Only log when first activated (not every frame)
         if (!externalVelocityActive && velocity.sqrMagnitude > 0.1f)
         {
-            Debug.Log($"[PlayerMovement] SetExternalVelocity STARTED: {velocity}, magnitude={velocity.magnitude:F2}");
+            if (enableExternalVelocityDebugLogs)
+                Debug.Log($"[PlayerMovement] SetExternalVelocity STARTED: {velocity}, magnitude={velocity.magnitude:F2}");
         }
-#endif
-        
+
         externalVelocity = velocity;
         externalVelocityActive = true;
     }
@@ -3352,10 +3678,16 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.y = impulse.y;
         }
         
-        // CRITICAL FIX: Apply an immediate position offset to "punch" through any blocking colliders
-        // This prevents the CharacterController from getting stuck on the boss's body
-        Vector3 immediateOffset = new Vector3(impulse.x, 0f, impulse.z).normalized * 0.5f;
-        if (characterController != null && immediateOffset.sqrMagnitude > 0.001f)
+        // Apply a small immediate position offset to help clear overlapping boss colliders.
+        // Scale by impulse strength so low-force hits do not still feel like large knockbacks.
+        Vector3 planarImpulse = new Vector3(impulse.x, 0f, impulse.z);
+        float planarImpulseMagnitude = planarImpulse.magnitude;
+        float immediateOffsetDistance = Mathf.Clamp(planarImpulseMagnitude * 0.06f, 0f, 0.5f);
+        Vector3 immediateOffset = planarImpulseMagnitude > 0.0001f
+            ? planarImpulse.normalized * immediateOffsetDistance
+            : Vector3.zero;
+
+        if (characterController != null && immediateOffset.sqrMagnitude > 0.000001f)
         {
             // Temporarily disable CharacterController to allow direct position manipulation
             bool wasEnabled = characterController.enabled;
@@ -3363,9 +3695,10 @@ public class PlayerMovement : MonoBehaviour
             transform.position += immediateOffset;
             characterController.enabled = wasEnabled;
         }
-        
+
 #if UNITY_EDITOR
-        Debug.Log($"[PlayerMovement] ApplyKnockback: {impulse}, magnitude={knockbackStartMagnitude:F2}, applied Y velocity={impulse.y:F2}, immediate offset={immediateOffset}");
+        if (enableExternalVelocityDebugLogs)
+            Debug.Log($"[PlayerMovement] ApplyKnockback: {impulse}, magnitude={knockbackStartMagnitude:F2}, applied Y velocity={impulse.y:F2}, immediate offset={immediateOffset}");
 #endif
     }
     
@@ -3381,7 +3714,7 @@ public class PlayerMovement : MonoBehaviour
         {
             // Knockback finished
 #if UNITY_EDITOR
-            if (isKnockbackActive)
+            if (isKnockbackActive && enableExternalVelocityDebugLogs)
             {
                 Debug.Log($"[PlayerMovement] Knockback finished - horizontal velocity {Mathf.Sqrt(horizontalSqrMag):F2} below threshold {knockbackMinVelocity:F2}");
             }
@@ -3448,15 +3781,15 @@ public class PlayerMovement : MonoBehaviour
         // This makes decay rate frame-rate independent
         float decayThisFrame = Mathf.Pow(knockbackDecayRate, Time.deltaTime * 60f);
         knockbackVelocity *= decayThisFrame;
-        
+
 #if UNITY_EDITOR
         // Log every 10 frames to track knockback progress
-        if (Time.frameCount % 10 == 0)
+        if (Time.frameCount % 10 == 0 && enableExternalVelocityDebugLogs)
         {
             Debug.Log($"[PlayerMovement] Knockback active: horizontal vel={thisFrameMovement.magnitude:F2}, after decay={Mathf.Sqrt(knockbackVelocity.x*knockbackVelocity.x + knockbackVelocity.z*knockbackVelocity.z):F2}");
         }
 #endif
-        
+
         return thisFrameMovement;
     }
 
@@ -3466,7 +3799,7 @@ public class PlayerMovement : MonoBehaviour
     public void ClearExternalVelocity()
     {
 #if UNITY_EDITOR
-        if (externalVelocityActive)
+        if (externalVelocityActive && enableExternalVelocityDebugLogs)
         {
             Debug.Log("[PlayerMovement] ClearExternalVelocity called - external velocity stopped");
         }

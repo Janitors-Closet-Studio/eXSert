@@ -62,6 +62,11 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     private int currentFloor = 0;
     private bool isMoving = false;
 
+    private const string ExitMenuActionName = "ExitMenu";
+    private const string FloorOneActionName = "FloorOne";
+    private const string FloorTwoActionName = "FloorTwo";
+    private const string FloorThreeActionName = "FloorThree";
+
     private void Awake()
     {
         HideElevatorUI();
@@ -72,6 +77,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         TryResolveRuntimeActions();
 
         TryResolveLockCoordinates();
+        SyncCurrentFloorToLiftPosition();
     }
 
     private void OnDisable()
@@ -101,7 +107,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
     private void TryResolveLockCoordinates()
     {
-        if (desiredLiftPosition == null || desiredLiftPosition.Length == 0)
+        if (desiredLiftPosition == null || desiredLiftPosition.Length == 0 || elevatorLift == null)
             return;
 
         for (int i = 0; i < desiredLiftPosition.Length; i++)
@@ -147,10 +153,71 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
     private InputAction ResolveRuntimeAction(InputActionReference actionReference)
     {
-        if (actionReference == null || actionReference.action == null || elevatorActionMap == null)
+        if (elevatorActionMap == null)
             return null;
 
-        return elevatorActionMap.FindAction(actionReference.action.name, throwIfNotFound: false);
+        if (actionReference != null && actionReference.action != null)
+        {
+            InputAction referencedAction = elevatorActionMap.FindAction(actionReference.action.name, throwIfNotFound: false);
+            if (referencedAction != null)
+                return referencedAction;
+        }
+
+        if (ReferenceEquals(actionReference, backToGameplayAction))
+            return elevatorActionMap.FindAction(ExitMenuActionName, throwIfNotFound: false);
+        if (ReferenceEquals(actionReference, firstFloorAction))
+            return elevatorActionMap.FindAction(FloorOneActionName, throwIfNotFound: false);
+        if (ReferenceEquals(actionReference, secondFloorAction))
+            return elevatorActionMap.FindAction(FloorTwoActionName, throwIfNotFound: false);
+        if (ReferenceEquals(actionReference, thirdFloorAction))
+            return elevatorActionMap.FindAction(FloorThreeActionName, throwIfNotFound: false);
+
+        return null;
+    }
+
+    private bool HasValidLiftConfiguration(int? targetFloor = null)
+    {
+        if (elevatorLift == null)
+        {
+            Debug.LogError($"[ElevatorLift] Elevator platform is missing on {name}.");
+            return false;
+        }
+
+        if (desiredLiftPosition == null || desiredLiftPosition.Length == 0)
+        {
+            Debug.LogError($"[ElevatorLift] No floor positions are configured on {name}.");
+            return false;
+        }
+
+        if (targetFloor.HasValue && (targetFloor.Value < 0 || targetFloor.Value >= desiredLiftPosition.Length))
+        {
+            Debug.LogError($"[ElevatorLift] Target floor {targetFloor.Value} is out of range on {name}.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void SyncCurrentFloorToLiftPosition()
+    {
+        if (!HasValidLiftConfiguration())
+            return;
+
+        Vector3 liftLocalPosition = elevatorLift.transform.localPosition;
+        float bestDistance = float.MaxValue;
+        int nearestFloor = currentFloor;
+
+        for (int i = 0; i < desiredLiftPosition.Length; i++)
+        {
+            float distance = Vector3.SqrMagnitude(liftLocalPosition - desiredLiftPosition[i]);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                nearestFloor = i;
+            }
+        }
+
+        currentFloor = nearestFloor;
     }
 
     private void SubscribeToInputActions()
@@ -207,6 +274,9 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     public void EnterElevatorLiftMenu()
     {
         if (menuActive || isMoving)
+            return;
+
+        if (!HasValidLiftConfiguration())
             return;
 
         CachePlayerReferences();
@@ -394,6 +464,11 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
     private void ManageElevatorButtons(int currentFloor)
     {
+        if (floorButtonUI == null || floorButtonUI.Length == 0)
+            return;
+
+        currentFloor = Mathf.Clamp(currentFloor, 0, floorButtonUI.Length - 1);
+
         foreach (var button in floorButtonUI)
         {
             if (button != floorButtonUI[currentFloor] && button != null)
@@ -537,10 +612,20 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
     private IEnumerator MoveLift(int targetFloor, bool carryPlayerWithLift)
     {
+        if (!HasValidLiftConfiguration(targetFloor))
+        {
+            RestoreGameplayState();
+            yield break;
+        }
+
         TurnOffAllButtons();
 
-        SoundManager.Instance.sfxSource.clip = elevatorSFX;
-        SoundManager.Instance.sfxSource.Play();
+        AudioSource sfxSource = SoundManager.Instance != null ? SoundManager.Instance.sfxSource : null;
+        if (sfxSource != null)
+        {
+            sfxSource.clip = elevatorSFX;
+            sfxSource.Play();
+        }
 
 
         isMoving = true;
@@ -572,8 +657,12 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             playerReference.transform.position += finalWorldDelta;
 
         isMoving = false;
-        SoundManager.Instance.sfxSource.Stop();
-        SoundManager.Instance.sfxSource.PlayOneShot(elevatorStopSFX);
+        if (sfxSource != null)
+        {
+            sfxSource.Stop();
+            if (elevatorStopSFX != null)
+                sfxSource.PlayOneShot(elevatorStopSFX);
+        }
         currentFloor = targetFloor;
         if (playerCC != null)
             playerCC.enabled = true; // Re-enable CharacterController after movement

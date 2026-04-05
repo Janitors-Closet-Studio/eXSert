@@ -87,6 +87,15 @@ public class DoorInteractions : UnlockableInteraction
 
     protected override void Interact()
     {
+
+        base.Interact();  
+        // Only allow interaction if player has the required item or can otherwise execute
+        if (!canExecuteInteraction)
+        {
+            // Optionally, play error SFX or show locked prompt here if needed
+            return;
+        }
+
         // Block repeat execution at the interaction entrypoint so base class events do not fire again.
         if (onlyInteractableOnce && hasInteracted)
         {
@@ -94,11 +103,12 @@ public class DoorInteractions : UnlockableInteraction
             return;
         }
 
-        // Only start cooldown/hide flow when this interaction can actually execute.
-        if (canExecuteInteraction)
-            BeginInteractionPromptCooldown();
+        
 
-        base.Interact();
+        // Only start cooldown/hide flow when this interaction can actually execute.
+        BeginInteractionPromptCooldown();
+
+        
 
         // Consume one-time interaction after the first successful base execution.
         if (onlyInteractableOnce && canExecuteInteraction)
@@ -142,6 +152,9 @@ public class DoorInteractions : UnlockableInteraction
         {
             foreach (DoorHandler doorHandler in doorHandlers)
             {
+                if (!doorHandler.isActiveAndEnabled)
+                    continue;
+
                 if (doorHandler != null)
                 {
                     if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
