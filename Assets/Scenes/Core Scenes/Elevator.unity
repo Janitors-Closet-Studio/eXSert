@@ -12240,48 +12240,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27c7e7aa1fe6e5242aa1e87d29f8890d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehaviorDebugLogBools
-  BaseEnemy: 1
-  BaseCrawlerEnemy: 1
-  BoxerEnemy: 1
-  DroneEnemy: 1
-  AlarmCarrierEnemy: 1
-  BombCarrierEnemy: 1
-  TestingEnemy: 1
-  AttackBehavior: 1
-  DeathBehavior: 1
-  IdleBehavior: 1
-  FleeBehavior: 1
-  DroneIdleBehavior: 1
-  DroneRelocateBehavior: 1
-  SwarmManager: 1
-  DroneSwarmManager: 1
-  EnemyAttackQueueManager: 1
-  EnemyHealthManager: 1
-  CrowdController: 1
-  ScenePoolManager: 1
-  BossRoombaController: 1
-  BossRoombaBrain: 1
-  BossArenaManager: 1
-  BossHealth: 1
-  BossTopZone: 1
-  BossSidePanelCollider: 1
-  BossPillarCollider: 1
-  BossPlayerEjector: 1
-  BossScenePlayerManager: 1
-  VacuumSuctionEffect: 1
-  ArenaWallCollider: 1
-  BossAnimationEventMediator: 1
-  BossAnimationEventRelay: 1
-  BossAnimatorDebugger: 1
-  BossArmHitbox: 1
-  BossAlarmDamageReceiver: 1
-  NavMeshAStarPlanner: 1
-  PathRequestManager: 1
-  AutomatedPathTestRunner: 1
-  EnemyProjectile: 1
-  ExplosiveEnemyProjectile: 1
-  EnemyDeathSoundConfig: 1
-  EnableAllLogs: 1
 --- !u!4 &359158191
 Transform:
   m_ObjectHideFlags: 0
@@ -28881,6 +28839,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HintInteractions
   _showHitbox: 0
+  blockPromptWhenAttackingOrDashing: 1
   _interactAnimation: {fileID: 0}
   _interactId: 
   _interactionSFX: {fileID: 0}
@@ -64597,6 +64556,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 0
+  blockPromptWhenAttackingOrDashing: 1
   _interactAnimation: {fileID: 0}
   _interactId: Elevator Door
   _interactionSFX: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
@@ -64614,6 +64574,7 @@ MonoBehaviour:
   usePuzzleCameraOnInteraction: 0
   puzzleCinemachineCamera: {fileID: 0}
   puzzleCameraDurationSeconds: 2
+  puzzleCameraFailsafeSeconds: 7
 --- !u!1001 &2041196814
 PrefabInstance:
   m_ObjectHideFlags: 0
