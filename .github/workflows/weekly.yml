@@ -19,6 +19,18 @@ jobs:
           ref: main
           lfs: false
 
+      - name: Capture build metadata
+        id: build_meta
+        run: |
+          BUILD_COMMIT=$(git rev-parse HEAD)
+          SHORT_SHA=$(git rev-parse --short "$BUILD_COMMIT")
+          BUILD_VERSION="0.0.${GITHUB_RUN_NUMBER}-weekly+${SHORT_SHA}"
+          {
+            echo "commit_sha=$BUILD_COMMIT"
+            echo "short_sha=$SHORT_SHA"
+            echo "build_version=$BUILD_VERSION"
+          } >> $GITHUB_OUTPUT
+
       - name: Cache Unity Library
         uses: actions/cache@v3
         with:
@@ -54,6 +66,9 @@ jobs:
           targetPlatform: StandaloneWindows64
           buildName: eXSert
           unityVersion: 6000.2.15f1
+          versioning: Custom
+          version: ${{ steps.build_meta.outputs.build_version }}
+          allowDirtyBuild: true
 
       - name: Zip the build
         run: zip -r eXSert-main-${{ github.run_number }}.zip build/StandaloneWindows64/
@@ -69,8 +84,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: weekly-${{ github.run_number }}
-          name: "Weekly Build #${{ github.run_number }}"
-          body: "Automated weekly build from the main branch."
+          name: "Weekly Build #${{ github.run_number }} (${{ steps.build_meta.outputs.short_sha }})"
+          body: |
+            Automated weekly build from the main branch.
+
+            Source commit: `${{ steps.build_meta.outputs.short_sha }}`
           files: eXSert-main-${{ github.run_number }}.zip
           prerelease: false
         env:
