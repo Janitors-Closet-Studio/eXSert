@@ -96,6 +96,41 @@ public sealed class PlayerVFXManager : MonoBehaviour
     [Tooltip("Audio clip played when double jump / air dash VFX enable.")]
     private AudioClip airMoveAudioClip;
 
+    [Header("Dash Dust VFX")]
+    [SerializeField]
+    [Tooltip("Dash dust root triggered by the DashDust animation event.")]
+    private GameObject dashDustVfx;
+
+    [Header("Exhaust Flame VFX")]
+    [SerializeField]
+    [Tooltip("Left-hand exhaust flame root triggered by the LExhaust animation event.")]
+    private GameObject leftExhaustVfx;
+
+    [SerializeField]
+    [Tooltip("Right-hand exhaust flame root triggered by the RExhaust animation event.")]
+    private GameObject rightExhaustVfx;
+
+    [SerializeField]
+    [Tooltip("How long the exhaust stays at full authored emission before tapering.")]
+    private float exhaustFullEmissionDuration = 0.18f;
+
+    [SerializeField]
+    [Tooltip("How long the exhaust takes to fall from full emission to the tail value.")]
+    private float exhaustFadeDuration = 0.14f;
+
+    [SerializeField]
+    [Range(0f, 1f)]
+    [Tooltip("Emission multiplier after the taper finishes. 0.1 means authored 10 becomes 1.")]
+    private float exhaustTailEmissionScale = 0.1f;
+
+    [SerializeField]
+    [Tooltip("How long to let already-spawned exhaust particles finish before hiding the root object.")]
+    private float exhaustDisableDelay = 0.35f;
+
+    [SerializeField]
+    [Tooltip("Audio clip played when an exhaust flame is triggered.")]
+    private AudioClip exhaustAudioClip;
+
     [Header("Ground Explosion VFX (AY3 / Plunge)")]
     [SerializeField]
     [Tooltip("Short-lived shockwave VFX toggled by the GroundExplosion animation event.")]
@@ -121,13 +156,19 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private Coroutine leftEmberDelayRoutine;
     private Coroutine rightEmberDelayRoutine;
     private Coroutine fireShockWaveDisableRoutine;
+    private Coroutine leftExhaustRoutine;
+    private Coroutine rightExhaustRoutine;
     private bool airMoveCallbacksRegistered;
 
     private VisualEffect leftAttackEffect;
     private VisualEffect rightAttackEffect;
+    private ParticleSystem[] dashDustParticles = Array.Empty<ParticleSystem>();
+    private ParticleSystem[] leftExhaustParticles = Array.Empty<ParticleSystem>();
+    private ParticleSystem[] rightExhaustParticles = Array.Empty<ParticleSystem>();
     private bool leftAttackActive;
     private bool rightAttackActive;
     private readonly Dictionary<Light, float> originalLightIntensity = new();
+    private readonly Dictionary<ParticleSystem, float> originalExhaustEmissionRates = new();
 
     private void Awake()
     {
@@ -144,6 +185,8 @@ public sealed class PlayerVFXManager : MonoBehaviour
         audioSource = SoundManager.Instance?.sfxSource;
 
         EnsureAttackVfxWired();
+    EnsureDashDustVfxWired();
+        EnsureExhaustVfxWired();
 
         SetVfxActive(airMoveVfxObjects, false);
 
@@ -152,6 +195,9 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
+        StopAndClearParticleSystems(dashDustParticles);
+        SetExhaustVfxIdle(leftExhaustVfx, leftExhaustParticles, hideRoot: true);
+        SetExhaustVfxIdle(rightExhaustVfx, rightExhaustParticles, hideRoot: true);
         SetLeftLightsActive(false);
         SetRightLightsActive(false);
     }
@@ -185,11 +231,16 @@ public sealed class PlayerVFXManager : MonoBehaviour
         StopAndClearRoutine(ref leftEmberDelayRoutine);
         StopAndClearRoutine(ref rightEmberDelayRoutine);
         StopAndClearRoutine(ref fireShockWaveDisableRoutine);
+        StopAndClearRoutine(ref leftExhaustRoutine);
+        StopAndClearRoutine(ref rightExhaustRoutine);
 
         leftAttackActive = false;
         rightAttackActive = false;
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
+        StopAndClearParticleSystems(dashDustParticles);
+        SetExhaustVfxIdle(leftExhaustVfx, leftExhaustParticles, hideRoot: true);
+        SetExhaustVfxIdle(rightExhaustVfx, rightExhaustParticles, hideRoot: true);
         SetLeftLightsActive(false);
         SetRightLightsActive(false);
 
@@ -243,12 +294,34 @@ public sealed class PlayerVFXManager : MonoBehaviour
         CacheOriginalLightIntensities(rightHandPointLights);
     }
 
+    private void EnsureDashDustVfxWired()
+    {
+        dashDustParticles = CollectParticleSystems(dashDustVfx);
+    }
+
+    private void EnsureExhaustVfxWired()
+    {
+        leftExhaustParticles = CollectParticleSystems(leftExhaustVfx);
+        rightExhaustParticles = CollectParticleSystems(rightExhaustVfx);
+
+        CacheOriginalExhaustEmissionRates(leftExhaustParticles);
+        CacheOriginalExhaustEmissionRates(rightExhaustParticles);
+    }
+
     private static Light[] CollectLights(GameObject root)
     {
         if (root == null)
             return Array.Empty<Light>();
 
         return root.GetComponentsInChildren<Light>(true) ?? Array.Empty<Light>();
+    }
+
+    private static ParticleSystem[] CollectParticleSystems(GameObject root)
+    {
+        if (root == null)
+            return Array.Empty<ParticleSystem>();
+
+        return root.GetComponentsInChildren<ParticleSystem>(true) ?? Array.Empty<ParticleSystem>();
     }
 
     private void CacheOriginalLightIntensities(Light[] lights)
@@ -264,6 +337,25 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
             if (!originalLightIntensity.ContainsKey(light))
                 originalLightIntensity.Add(light, light.intensity);
+        }
+    }
+
+    private void CacheOriginalExhaustEmissionRates(ParticleSystem[] particleSystems)
+    {
+        if (particleSystems == null)
+            return;
+
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            if (!originalExhaustEmissionRates.ContainsKey(particleSystem))
+                originalExhaustEmissionRates.Add(
+                    particleSystem,
+                    particleSystem.emission.rateOverTimeMultiplier
+                );
         }
     }
 
@@ -312,6 +404,12 @@ public sealed class PlayerVFXManager : MonoBehaviour
     public void LeftFire() => TriggerLeftAttackVfx();
 
     public void RightFire() => TriggerRightAttackVfx();
+
+    public void DashDust() => TriggerDashDustVfx();
+
+    public void LExhaust() => TriggerLeftExhaustVfx();
+
+    public void RExhaust() => TriggerRightExhaustVfx();
 
     // Animation Event: add this event to AY3 + Plunge at landing/finish frame.
     public void GroundExplosion()
@@ -409,6 +507,55 @@ public sealed class PlayerVFXManager : MonoBehaviour
         );
     }
 
+    private void TriggerDashDustVfx()
+    {
+        if (dashDustVfx == null)
+            return;
+
+        if (dashDustParticles == null || dashDustParticles.Length == 0)
+            dashDustParticles = CollectParticleSystems(dashDustVfx);
+
+        PlayParticleSystemsOnce(dashDustVfx, dashDustParticles);
+    }
+
+    private void TriggerLeftExhaustVfx()
+    {
+        if (leftExhaustVfx == null)
+            return;
+
+        if (leftExhaustParticles == null || leftExhaustParticles.Length == 0)
+        {
+            leftExhaustParticles = CollectParticleSystems(leftExhaustVfx);
+            CacheOriginalExhaustEmissionRates(leftExhaustParticles);
+        }
+
+        RestartExhaustRoutine(
+            leftExhaustVfx,
+            leftExhaustParticles,
+            ref leftExhaustRoutine,
+            () => leftExhaustRoutine = null
+        );
+    }
+
+    private void TriggerRightExhaustVfx()
+    {
+        if (rightExhaustVfx == null)
+            return;
+
+        if (rightExhaustParticles == null || rightExhaustParticles.Length == 0)
+        {
+            rightExhaustParticles = CollectParticleSystems(rightExhaustVfx);
+            CacheOriginalExhaustEmissionRates(rightExhaustParticles);
+        }
+
+        RestartExhaustRoutine(
+            rightExhaustVfx,
+            rightExhaustParticles,
+            ref rightExhaustRoutine,
+            () => rightExhaustRoutine = null
+        );
+    }
+
     private void EnableHandAttackVfx(
         VisualEffect effect,
         ref Coroutine emberDelayRoutine,
@@ -473,6 +620,186 @@ public sealed class PlayerVFXManager : MonoBehaviour
         effect.Stop();
         if (reinitOnAttackVfxDisable)
             effect.Reinit();
+    }
+
+    private void RestartExhaustRoutine(
+        GameObject root,
+        ParticleSystem[] particleSystems,
+        ref Coroutine routine,
+        Action onComplete
+    )
+    {
+        if (root == null || particleSystems == null || particleSystems.Length == 0)
+            return;
+
+        StopAndClearRoutine(ref routine);
+        PrepareExhaustVfx(root, particleSystems);
+        PlayAudio(exhaustAudioClip);
+        routine = StartCoroutine(RunExhaustVfx(root, particleSystems, onComplete));
+    }
+
+    private void PlayParticleSystemsOnce(GameObject root, ParticleSystem[] particleSystems)
+    {
+        if (root == null || particleSystems == null || particleSystems.Length == 0)
+            return;
+
+        if (!root.activeSelf)
+            root.SetActive(true);
+
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            if (!particleSystem.gameObject.activeSelf)
+                particleSystem.gameObject.SetActive(true);
+
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particleSystem.Clear(true);
+            particleSystem.Play(true);
+        }
+    }
+
+    private void StopAndClearParticleSystems(ParticleSystem[] particleSystems)
+    {
+        if (particleSystems == null)
+            return;
+
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particleSystem.Clear(true);
+        }
+    }
+
+    private void PrepareExhaustVfx(GameObject root, ParticleSystem[] particleSystems)
+    {
+        if (root != null && !root.activeSelf)
+            root.SetActive(true);
+
+        SetExhaustEmissionScale(particleSystems, 1f);
+
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            if (!particleSystem.gameObject.activeSelf)
+                particleSystem.gameObject.SetActive(true);
+
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particleSystem.Clear(true);
+            particleSystem.Play(true);
+        }
+    }
+
+    private IEnumerator RunExhaustVfx(
+        GameObject root,
+        ParticleSystem[] particleSystems,
+        Action onComplete
+    )
+    {
+        float fullEmissionDuration = Mathf.Max(0f, exhaustFullEmissionDuration);
+        if (fullEmissionDuration > 0f)
+            yield return new WaitForSeconds(fullEmissionDuration);
+
+        float fadeDuration = Mathf.Max(0f, exhaustFadeDuration);
+        float tailScale = Mathf.Clamp01(exhaustTailEmissionScale);
+
+        if (fadeDuration > 0f)
+        {
+            float elapsed = 0f;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = Mathf.Clamp01(elapsed / fadeDuration);
+                SetExhaustEmissionScale(particleSystems, Mathf.Lerp(1f, tailScale, progress));
+                yield return null;
+            }
+        }
+
+        SetExhaustEmissionScale(particleSystems, tailScale);
+        StopExhaustEmission(particleSystems);
+
+        float disableDelay = Mathf.Max(0f, exhaustDisableDelay);
+        if (disableDelay > 0f)
+            yield return new WaitForSeconds(disableDelay);
+
+        SetExhaustVfxIdle(root, particleSystems, hideRoot: true);
+        onComplete?.Invoke();
+    }
+
+    private void StopExhaustEmission(ParticleSystem[] particleSystems)
+    {
+        if (particleSystems == null)
+            return;
+
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+    }
+
+    private void SetExhaustVfxIdle(GameObject root, ParticleSystem[] particleSystems, bool hideRoot)
+    {
+        if (particleSystems != null)
+        {
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                RestoreExhaustEmissionRate(particleSystem);
+            }
+        }
+
+        if (hideRoot && root != null && root.activeSelf)
+            root.SetActive(false);
+    }
+
+    private void SetExhaustEmissionScale(ParticleSystem[] particleSystems, float scale)
+    {
+        if (particleSystems == null)
+            return;
+
+        scale = Mathf.Max(0f, scale);
+
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            ParticleSystem.EmissionModule emission = particleSystem.emission;
+            if (originalExhaustEmissionRates.TryGetValue(particleSystem, out float originalRate))
+                emission.rateOverTimeMultiplier = originalRate * scale;
+            else
+                emission.rateOverTimeMultiplier *= scale;
+        }
+    }
+
+    private void RestoreExhaustEmissionRate(ParticleSystem particleSystem)
+    {
+        if (particleSystem == null)
+            return;
+
+        if (!originalExhaustEmissionRates.TryGetValue(particleSystem, out float originalRate))
+            return;
+
+        ParticleSystem.EmissionModule emission = particleSystem.emission;
+        emission.rateOverTimeMultiplier = originalRate;
     }
 
     private void TrySetFloat(VisualEffect effect, string propertyName, float value)
