@@ -116,11 +116,10 @@ public class Guard : MonoBehaviour
         guardRaiseLockUntilTime = Time.time + Mathf.Max(0f, guardRaiseBlendLockDuration);
         if (guardUpSFX != null)
         {
-            AudioSource sfxSource = SoundManager.Instance != null ? SoundManager.Instance.sfxSource : null;
-            if (sfxSource != null)
-                sfxSource.PlayOneShot(guardUpSFX);
-            else if (debugGuardAnimation)
-                Debug.LogWarning("[Guard][AnimDebug] Guard up SFX skipped because SoundManager.sfxSource is missing.");
+            SoundManager soundManager = SoundManager.Instance;
+            bool played = soundManager != null && soundManager.TryPlayPlayerActionSfx(guardUpSFX, priority: 1);
+            if (!played && debugGuardAnimation)
+                Debug.LogWarning("[Guard][AnimDebug] Guard up SFX skipped because SoundManager player-action SFX source is missing.");
         }
 
         if (InputReader.inputBusy)
