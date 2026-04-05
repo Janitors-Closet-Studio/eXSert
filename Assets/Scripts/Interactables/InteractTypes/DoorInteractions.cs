@@ -24,11 +24,21 @@ public class DoorInteractions : UnlockableInteraction
     [SerializeField, Tooltip("Optional Cinemachine camera to use for the puzzle interaction.")]
     private CinemachineCamera puzzleCinemachineCamera;
     [SerializeField, Min(0f)] private float puzzleCameraDurationSeconds = 2f;
+    [SerializeField, Min(0f)] private float puzzleCameraFailsafeSeconds = 7f;
 
     private Coroutine puzzleCameraRoutine;
+    private Coroutine puzzleCameraFailsafeRoutine;
     private Coroutine interactionPromptRoutine;
     private int cachedPuzzleCameraPriority;
+    private int puzzleCameraSessionId;
+    private bool isPuzzleCameraActive;
     private bool hasInteracted;
+
+    protected override void OnDisable()
+    {
+        RestorePuzzleCameraIfActive();
+        base.OnDisable();
+    }
 
     public bool ContainsDoorHandler(DoorHandler targetDoorHandler)
     {
@@ -178,23 +188,121 @@ public class DoorInteractions : UnlockableInteraction
             return;
         }
 
-        if (puzzleCameraRoutine != null)
-            StopCoroutine(puzzleCameraRoutine);
+        RestorePuzzleCameraIfActive();
 
-        puzzleCameraRoutine = StartCoroutine(PuzzleCameraRoutine());
+        puzzleCameraSessionId++;
+
+        if (puzzleCameraRoutine != null)
+        {
+            StopCoroutine(puzzleCameraRoutine);
+            puzzleCameraRoutine = null;
+        }
+
+        if (puzzleCameraFailsafeRoutine != null)
+        {
+            StopCoroutine(puzzleCameraFailsafeRoutine);
+            puzzleCameraFailsafeRoutine = null;
+        }
+
+        puzzleCameraRoutine = StartCoroutine(PuzzleCameraRoutine(puzzleCameraSessionId));
+
+        float failsafeDuration = Mathf.Max(0f, puzzleCameraFailsafeSeconds);
+        if (failsafeDuration > 0f)
+            puzzleCameraFailsafeRoutine = StartCoroutine(PuzzleCameraFailsafeRoutine(puzzleCameraSessionId, failsafeDuration));
     }
 
-    private IEnumerator PuzzleCameraRoutine()
+    private IEnumerator PuzzleCameraRoutine(int sessionId)
     {
         cachedPuzzleCameraPriority = puzzleCinemachineCamera.Priority;
+        isPuzzleCameraActive = true;
         puzzleCinemachineCamera.Priority = 21;
 
         float duration = Mathf.Max(0f, puzzleCameraDurationSeconds);
         if (duration > 0f)
             yield return new WaitForSeconds(duration);
 
-        puzzleCinemachineCamera.Priority = cachedPuzzleCameraPriority;
-
         puzzleCameraRoutine = null;
+        RestorePuzzleCameraState(sessionId, triggeredByFailsafe: false);
+    }
+
+    private IEnumerator PuzzleCameraFailsafeRoutine(int sessionId, float failsafeDuration)
+    {
+        yield return new WaitForSeconds(failsafeDuration);
+
+        puzzleCameraFailsafeRoutine = null;
+
+        if (!isPuzzleCameraActive || sessionId != puzzleCameraSessionId)
+            yield break;
+
+        Debug.LogWarning("[DoorInteractions] Puzzle camera failsafe triggered. Restoring camera and allowing interaction retry if needed.");
+        RestorePuzzleCameraState(sessionId, triggeredByFailsafe: true);
+    }
+
+    private void RestorePuzzleCameraState(int sessionId, bool triggeredByFailsafe)
+    {
+        if (sessionId != puzzleCameraSessionId)
+            return;
+
+        RestorePuzzleCameraIfActive();
+
+        if (triggeredByFailsafe)
+            TryRearmOneTimeInteraction();
+    }
+
+    private void RestorePuzzleCameraIfActive()
+    {
+        if (puzzleCameraRoutine != null)
+        {
+            StopCoroutine(puzzleCameraRoutine);
+            puzzleCameraRoutine = null;
+        }
+
+        if (puzzleCameraFailsafeRoutine != null)
+        {
+            StopCoroutine(puzzleCameraFailsafeRoutine);
+            puzzleCameraFailsafeRoutine = null;
+        }
+
+        if (!isPuzzleCameraActive)
+            return;
+
+        if (puzzleCinemachineCamera != null)
+            puzzleCinemachineCamera.Priority = cachedPuzzleCameraPriority;
+
+        isPuzzleCameraActive = false;
+    }
+
+    private void TryRearmOneTimeInteraction()
+    {
+        if (!onlyInteractableOnce)
+            return;
+
+        if (AreAllAssignedDoorsOpen())
+            return;
+
+        hasInteracted = false;
+        SetInteractionEnabled(true);
+    }
+
+    private bool AreAllAssignedDoorsOpen()
+    {
+        if (doorHandlers == null || doorHandlers.Count == 0)
+            return false;
+
+        bool hasAssignedDoor = false;
+
+        for (int i = 0; i < doorHandlers.Count; i++)
+        {
+            DoorHandler doorHandler = doorHandlers[i];
+            if (doorHandler == null)
+                continue;
+
+            hasAssignedDoor = true;
+
+            if (doorHandler.currentDoorState != DoorHandler.DoorState.Open)
+                return false;
+        }
+
+        return hasAssignedDoor;
     }
 }
