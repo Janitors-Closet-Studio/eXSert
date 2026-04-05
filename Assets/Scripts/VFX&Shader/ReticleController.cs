@@ -105,6 +105,7 @@ public class ReticleController : MonoBehaviour
     private ImageState[] leftArrowImages;
     private ImageState[] rightArrowImages;
     private Image[] allReticleImages;
+    private bool imageTargetsCached;
     private Transform fallbackCameraTransform;
     private BaseEnemyCore targetEnemyCore;
     private Transform cachedPlayerTransform;
@@ -129,10 +130,11 @@ public class ReticleController : MonoBehaviour
     protected virtual void OnEnable()
     {
         ResolveReferences();
-        CacheImageTargets();
+        EnsureImageTargetsCached();
         CaptureLayout();
         CacheCombatSources();
         RefreshEnemyCoreSubscription();
+        ResetRuntimeState();
         StartContinuousRotation();
         HideImmediate();
     }
@@ -185,31 +187,42 @@ public class ReticleController : MonoBehaviour
         if (!useExternalState)
             return;
 
-        stateSequence?.Kill();
-        stateSequence = null;
-
         CaptureLayout();
 
         bool isVisible = showBaseGear || showGlowGear || showArrowsState;
         reticleRenderVisible = isVisible;
         playerInAttackZone = showGlowGear;
 
+        // Preserve DOTween-driven release animations when the lock system is still updating this reticle.
+        if (currentState == ReticleState.Releasing)
+            return;
+
+        // Preserve the arrow lock-in animation once it has started.
         if (showArrowsState)
         {
-            RestoreArrowLockedPose();
-            SetGroupAlpha(leftArrowImages, 1f);
-            SetGroupAlpha(rightArrowImages, 1f);
-            currentState = ReticleState.Locked;
-        }
-        else
-        {
-            RestoreArrowStartPose();
-            SetGroupAlpha(leftArrowImages, 0f);
-            SetGroupAlpha(rightArrowImages, 0f);
-            currentState = isVisible ? ReticleState.Idle : ReticleState.Hidden;
+            if (currentState != ReticleState.Locked && currentState != ReticleState.Locking)
+            {
+                PlayLockedOn();
+                return;
+            }
+
+            ApplyGearState(true, showGlowGear, instant: false);
+            return;
         }
 
-        ApplyGearState(showBaseGear || showGlowGear, showGlowGear, instant: true);
+        // If unlock is currently playing, do not snap the reticle back to idle/hidden mid-sequence.
+        if (currentState == ReticleState.Locking || currentState == ReticleState.Locked)
+        {
+            ApplyGearState(isVisible, showGlowGear, instant: false);
+            return;
+        }
+
+        RestoreArrowStartPose();
+        SetGroupAlpha(leftArrowImages, 0f);
+        SetGroupAlpha(rightArrowImages, 0f);
+        currentState = isVisible ? ReticleState.Idle : ReticleState.Hidden;
+
+        ApplyGearState(isVisible, showGlowGear, instant: false);
     }
 
     public void SetTarget(Transform target)
@@ -471,12 +484,31 @@ public class ReticleController : MonoBehaviour
 
     private void CacheImageTargets()
     {
+        imageTargetsCached = true;
+
         // Cache all Image references once so fades operate on grouped alpha instead of repeated GetComponent calls.
         baseGearImages = CaptureImages(baseGear);
         glowGearImages = CaptureImages(glowGear);
         leftArrowImages = CaptureImages(leftArrow);
         rightArrowImages = CaptureImages(rightArrow);
         allReticleImages = GetComponentsInChildren<Image>(true);
+    }
+
+    private void EnsureImageTargetsCached()
+    {
+        if (!imageTargetsCached || baseGearImages == null || glowGearImages == null || leftArrowImages == null || rightArrowImages == null || allReticleImages == null)
+            CacheImageTargets();
+    }
+
+    private void ResetRuntimeState()
+    {
+        externalTargetingStateActive = false;
+        reticleRenderVisible = false;
+        playerInAttackZone = false;
+        cachedDetectionRange = -1f;
+        cachedAttackRange = -1f;
+        currentState = ReticleState.Hidden;
+        SetGearRotationSpeedScale(1f);
     }
 
     private void CacheCombatSources()
