@@ -9,18 +9,15 @@ namespace EnemyBehavior.Boss
     /// </summary>
     public sealed class BossArmHitbox : MonoBehaviour
     {
-        [SerializeField, Tooltip("Damage dealt by this hitbox")]
-        private float damage = 1f;
-
         [SerializeField, Tooltip("Reference to boss brain for attack info")]
         private BossRoombaBrain bossBrain;
 
         [SerializeField, Tooltip("Which arm is this")]
         private ArmSide armSide = ArmSide.Left;
-        
+
         [SerializeField, Tooltip("Root transform to search for colliders. If null, uses this GameObject. Use this for complex arm hierarchies where colliders are spread across multiple bones.")]
         private Transform colliderSearchRoot;
-        
+
         [Header("Knockback")]
         [SerializeField, Tooltip("If true, this hitbox applies knockback (for dashes/charges)")]
         private bool applyKnockback = false;
@@ -34,6 +31,10 @@ namespace EnemyBehavior.Boss
         private float playerStaggerDuration = 0.45f;
         [SerializeField, Tooltip("If enabled, player combo is reset when this stagger is applied.")]
         private bool resetPlayerComboOnStagger = true;
+
+        [Header("Debug")]
+        [SerializeField, Tooltip("Enable debug logs for this hitbox")]
+        private bool enableDebugLogs = false;
 
         private Collider[] hitboxColliders;
         private bool isActive;
@@ -55,7 +56,8 @@ namespace EnemyBehavior.Boss
             
             if (hitboxColliders.Length == 0)
             {
-                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossArmHitbox), $"[BossArmHitbox] No colliders found under '{root.name}'! Hitbox will not work. Make sure colliders exist as children of the specified root.");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossArmHitbox), $"[BossArmHitbox] No colliders found under '{root.name}'! Hitbox will not work. Make sure colliders exist as children of the specified root.");
             }
             
             foreach (var col in hitboxColliders)
@@ -81,7 +83,8 @@ namespace EnemyBehavior.Boss
             hasHitThisActivation = false;
             dashModeKnockback = false; // Reset dash mode
             dashModeForceOverride = 0f;
-            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox ENABLED ({hitboxColliders.Length} segments)");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox ENABLED ({hitboxColliders.Length} segments)");
         }
         
         /// <summary>
@@ -98,7 +101,8 @@ namespace EnemyBehavior.Boss
             hasHitThisActivation = false;
             dashModeKnockback = true;
             dashModeForceOverride = forceOverride;
-            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox ENABLED with DASH KNOCKBACK ({hitboxColliders.Length} segments, force override: {forceOverride})");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox ENABLED with DASH KNOCKBACK ({hitboxColliders.Length} segments, force override: {forceOverride})");
         }
 
         public void DisableHitbox()
@@ -111,7 +115,8 @@ namespace EnemyBehavior.Boss
             hasHitThisActivation = false;
             dashModeKnockback = false; // Clear dash mode
             dashModeForceOverride = 0f;
-            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox DISABLED");
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} arm hitbox DISABLED");
         }
 
         private void OnTriggerEnter(Collider other)
@@ -119,18 +124,37 @@ namespace EnemyBehavior.Boss
             if (!isActive) return;
             if (hasHitThisActivation) return;
 
-            if (other.CompareTag("Player"))
+            if (TryResolvePlayerTarget(other, out GameObject playerTarget))
             {
-                ApplyDamageToPlayer(other.gameObject);
-                hasHitThisActivation = true;
+                bool applied = ApplyDamageToPlayer(playerTarget);
+                if (applied)
+                    hasHitThisActivation = true;
             }
         }
 
-        private void ApplyDamageToPlayer(GameObject player)
+        private bool TryResolvePlayerTarget(Collider other, out GameObject playerTarget)
         {
-            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} ATTEMPTING TO HIT PLAYER");
-            
-            var healthSystem = player.GetComponent<IHealthSystem>();
+            playerTarget = null;
+            if (other == null)
+                return false;
+
+            Transform root = other.transform != null ? other.transform.root : null;
+            bool isPlayer = other.CompareTag("Player") || (root != null && root.CompareTag("Player"));
+            if (!isPlayer)
+                return false;
+
+            playerTarget = root != null ? root.gameObject : other.gameObject;
+            return playerTarget != null;
+        }
+
+        private bool ApplyDamageToPlayer(GameObject player)
+        {
+            if (enableDebugLogs)
+                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox][DamageDebug] {armSide} ATTEMPTING TO HIT PLAYER target={player.name}");
+
+            var healthSystem = player.GetComponent<IHealthSystem>()
+                ?? player.GetComponentInChildren<IHealthSystem>()
+                ?? player.GetComponentInParent<IHealthSystem>();
             if (healthSystem != null)
             {
                 if (CombatManager.isParrying && bossBrain != null)
@@ -139,21 +163,36 @@ namespace EnemyBehavior.Boss
                     if (currentAttack != null && currentAttack.Parryable)
                     {
                         CombatManager.ParrySuccessful();
-                        EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Player PARRIED {currentAttack.Id}");
+                        if (enableDebugLogs)
+                            EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Player PARRIED {currentAttack.Id}");
                         DisableHitbox();
-                        return;
+                        return true;
                     }
                 }
 
-                float finalDamage = damage;
+                // Get damage from BossRoombaBrain based on current attack type
+                float baseDamage = 10f; // Default fallback
+                if (bossBrain != null)
+                {
+                    var currentAttack = bossBrain.GetCurrentAttack();
+                    if (currentAttack != null)
+                    {
+                        baseDamage = bossBrain.GetDamageForAttackType(currentAttack.Id);
+                    }
+                }
+
+                float finalDamage = baseDamage;
                 if (CombatManager.isGuarding)
                 {
                     finalDamage *= 0.5f;
-                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Player GUARDED - damage reduced to {finalDamage}");
+                    if (enableDebugLogs)
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Player GUARDED - damage reduced to {finalDamage}");
                 }
 
                 healthSystem.LoseHP(finalDamage);
-                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] {armSide} HIT PLAYER for {finalDamage} damage!");
+                bossBrain?.NotifyAttackDamageApplied();
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox][DamageDebug] {armSide} HIT PLAYER for {finalDamage} damage! healthType={healthSystem.GetType().Name}");
 
                 if (applyPlayerStagger && healthSystem is PlayerHealthBarManager playerHealth)
                     playerHealth.ApplyForcedStagger(playerStaggerDuration, resetPlayerComboOnStagger);
@@ -165,10 +204,13 @@ namespace EnemyBehavior.Boss
                 }
 
                 DisableHitbox();
+                return true;
             }
             else
             {
-                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossArmHitbox), $"[BossArmHitbox] Player has no IHealthSystem component!");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.LogWarning(nameof(BossArmHitbox), $"[BossArmHitbox][DamageDebug] Player has no IHealthSystem component on {player.name} (self/children/parents checked)");
+                return false;
             }
         }
         
@@ -178,18 +220,19 @@ namespace EnemyBehavior.Boss
             // This prevents double-knockback during dashes
             if (dashModeKnockback && bossBrain != null && bossBrain.HasDashHitBeenApplied)
             {
-                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Skipping knockback - dash hit already applied by manual check");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Skipping knockback - dash hit already applied by manual check");
                 return;
             }
-            
+
             // Calculate radial knockback direction (from boss to player) as base
             Vector3 radialDir = (player.transform.position - bossBrain.transform.position).normalized;
             radialDir.y = 0f;
             radialDir.Normalize();
-            
+
             // Get attack direction from brain (if available) for directional knockback
             Vector3 attackDir = bossBrain.CurrentAttackDirection;
-            
+
             // Blend between radial and attack direction based on weight
             // If no attack direction set, use pure radial
             Vector3 knockbackDir;
@@ -197,12 +240,14 @@ namespace EnemyBehavior.Boss
             {
                 float weight = bossBrain.KnockbackAttackDirectionWeight;
                 knockbackDir = Vector3.Lerp(radialDir, attackDir, weight).normalized;
-                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Knockback blend: radial={radialDir}, attack={attackDir}, weight={weight}, result={knockbackDir}");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Knockback blend: radial={radialDir}, attack={attackDir}, weight={weight}, result={knockbackDir}");
             }
             else
             {
                 knockbackDir = radialDir;
-                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Knockback using radial only: {knockbackDir}");
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Knockback using radial only: {knockbackDir}");
             }
             
             
@@ -250,24 +295,27 @@ namespace EnemyBehavior.Boss
                 if (!bossBrain.TryApplyKnockbackToPlayer(knockbackImpulse, attackTopSpeed, armSide.ToString()))
                     return;
 
-                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via PlayerMovement.ApplyKnockback: impulse={knockbackImpulse}, magnitude={knockbackImpulse.magnitude:F1}");
-                
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via PlayerMovement.ApplyKnockback: impulse={knockbackImpulse}, magnitude={knockbackImpulse.magnitude:F1}");
+
                 // Notify the brain that a dash hit was applied (if in dash mode)
                 if (dashModeKnockback && bossBrain != null)
                 {
                     bossBrain.NotifyDashHitApplied();
-                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Notified brain - dash hit applied");
+                    if (enableDebugLogs)
+                        EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Notified brain - dash hit applied");
                 }
                 return;
             }
-            
+
             // Fallback: try Rigidbody (non-kinematic only)
             var rb = player.GetComponent<Rigidbody>();
             if (rb != null && !rb.isKinematic)
             {
                 rb.AddForce(knockbackImpulse, ForceMode.Impulse);
-                EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via Rigidbody: dir={knockbackDir}, force={force}");
-                
+                if (enableDebugLogs)
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Applied knockback via Rigidbody: dir={knockbackDir}, force={force}");
+
                 // Notify the brain that a dash hit was applied (if in dash mode)
                 if (dashModeKnockback && bossBrain != null)
                 {

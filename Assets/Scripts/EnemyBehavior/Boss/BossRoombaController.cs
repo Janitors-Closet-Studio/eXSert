@@ -9,6 +9,7 @@ using System.Linq;
 using EnemyBehavior.Boss;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Determines which enemy type spawns first when the alarm activates.
@@ -109,10 +110,18 @@ public class BossRoombaController : MonoBehaviour
     [Header("Top-Wander (Player On Top)")]
     [Tooltip("Speed multiplier during top-wander movement.")]
     public float TopWanderSpeedMultiplier = 1.1f;
+    [Tooltip("Optional absolute top-wander speed. If > 0, this value is used directly instead of SpeedMultiplier × current speed.")]
+    public float TopWanderSpeedOverride = 0f;
+    [Tooltip("Minimum absolute movement speed while top-wander is active (prevents getting stuck if top-wander starts during low-speed turn states).")]
+    public float TopWanderMinSpeed = 6f;
     [Tooltip("Random target radius range (meters) for top-wander.")]
     public Vector2 TopWanderRadiusRange = new Vector2(4f, 10f);
     [Tooltip("Time range (seconds) before repicking a new wander target.")]
     public Vector2 TopWanderRepathTimeRange = new Vector2(0.7f, 1.4f);
+
+    [Header("Debug")]
+    [Tooltip("Enable verbose [BossTopWander] logs.")]
+    [SerializeField] private bool enableTopWanderDebugLogs = false;
 
     // Object pools
     private readonly Dictionary<Transform, GameObject> activeDrones = new Dictionary<Transform, GameObject>();
@@ -128,6 +137,7 @@ public class BossRoombaController : MonoBehaviour
     private Coroutine animParamsRoutine;
     private Coroutine topWanderRoutine;
     private Coroutine spawnManagementRoutine;
+    private Coroutine playerRefRetryRoutine;
     private float lastFollowCadence = 0.1f;
 
     // Saved agent settings for top-wander
@@ -138,6 +148,20 @@ public class BossRoombaController : MonoBehaviour
 
     void Awake()
     {
+        // Roomba top-mount design expects stable standing/walking on top.
+        // Disable generic slide-off behavior if present on this boss hierarchy.
+        var slideOffComponents = GetComponentsInChildren<PlayerSlideOffSurface>(true);
+        if (slideOffComponents != null)
+        {
+            foreach (var slideOff in slideOffComponents)
+            {
+                if (slideOff == null)
+                    continue;
+
+                slideOff.SetDisabled(true);
+            }
+        }
+
         if (EnsureKinematicRigidbody)
         {
             var rb = GetComponent<Rigidbody>();
@@ -218,6 +242,8 @@ public class BossRoombaController : MonoBehaviour
     {
         if (animParamsRoutine != null) StopCoroutine(animParamsRoutine);
         animParamsRoutine = StartCoroutine(AnimParamsLoop(0.05f));
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        StartPlayerRefRetryIfNeeded();
         
         alarmActivated = false;
         // Reset alarm on enable (in case of pooling/re-enabling)
@@ -231,6 +257,8 @@ public class BossRoombaController : MonoBehaviour
     {
         if (animParamsRoutine != null) { StopCoroutine(animParamsRoutine); animParamsRoutine = null; }
         if (spawnManagementRoutine != null) { StopCoroutine(spawnManagementRoutine); spawnManagementRoutine = null; }
+        if (playerRefRetryRoutine != null) { StopCoroutine(playerRefRetryRoutine); playerRefRetryRoutine = null; }
+        SceneManager.sceneLoaded -= OnSceneLoaded;
         StopTopWander();
         StopFollowing();
     }
@@ -271,11 +299,67 @@ public class BossRoombaController : MonoBehaviour
     void Start()
     {
         ApplyProfile();
-        player = GameObject.FindWithTag("Player")?.transform;
+        TryCachePlayerReference();
         
         var ca = new EnemyBehavior.Crowd.CrowdAgent() { Agent = agent, Profile = profile };
         if (EnemyBehavior.Crowd.CrowdController.Instance != null)
             EnemyBehavior.Crowd.CrowdController.Instance.Register(ca);
+    }
+
+    private bool TryCachePlayerReference(bool logIfMissing = false)
+    {
+        if (PlayerPresenceManager.IsPlayerPresent && PlayerPresenceManager.PlayerTransform != null)
+        {
+            player = PlayerPresenceManager.PlayerTransform;
+            return true;
+        }
+
+        var playerObj = GameObject.FindWithTag("Player");
+        if (playerObj != null)
+        {
+            player = playerObj.transform;
+            return true;
+        }
+
+        if (logIfMissing)
+        {
+            EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), "[BossRoombaController] Player not found in loaded scenes yet. Retrying...");
+        }
+
+        return false;
+    }
+
+    private IEnumerator RetryPlayerReferenceRoutine()
+    {
+        while (player == null)
+        {
+            if (TryCachePlayerReference())
+            {
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Player resolved after delayed scene load: {player.name}");
+                break;
+            }
+
+            yield return WaitForSecondsCache.Get(0.5f);
+        }
+
+        playerRefRetryRoutine = null;
+    }
+
+    private void StartPlayerRefRetryIfNeeded()
+    {
+        if (player != null || playerRefRetryRoutine != null)
+            return;
+
+        playerRefRetryRoutine = StartCoroutine(RetryPlayerReferenceRoutine());
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (player != null)
+            return;
+
+        TryCachePlayerReference();
+        StartPlayerRefRetryIfNeeded();
     }
 
     void ApplyProfile()
@@ -291,6 +375,12 @@ public class BossRoombaController : MonoBehaviour
 
     public void StartFollowingPlayer(float cadenceSeconds)
     {
+        if (topWanderActive)
+        {
+            TopWanderLog("[BossTopWander] Ignoring StartFollowingPlayer while top-wander is active.");
+            return;
+        }
+
         lastFollowCadence = Mathf.Max(0.02f, cadenceSeconds);
         if (followRoutine != null) StopCoroutine(followRoutine);
         followRoutine = StartCoroutine(FollowLoop(lastFollowCadence));
@@ -321,6 +411,14 @@ public class BossRoombaController : MonoBehaviour
         var wait = WaitForSecondsCache.Get(Mathf.Max(0.02f, cadence));
         while (true)
         {
+            if (player == null)
+            {
+                TryCachePlayerReference();
+                StartPlayerRefRetryIfNeeded();
+                yield return wait;
+                continue;
+            }
+
             if (player != null)
             {
                 Vector3 bossPos = transform.position;
@@ -350,7 +448,28 @@ public class BossRoombaController : MonoBehaviour
 
     public void StartTopWander()
     {
-        if (topWanderActive) return;
+        if (topWanderActive)
+        {
+            StopFollowing();
+            if (agent != null)
+            {
+                agent.isStopped = false;
+                if (!agent.hasPath || (agent.remainingDistance <= 0.05f && !agent.pathPending))
+                {
+                    Vector3 origin = transform.position;
+                    float radius = Random.Range(TopWanderRadiusRange.x, TopWanderRadiusRange.y);
+                    Vector2 dir2D = Random.insideUnitCircle.normalized;
+                    Vector3 candidate = origin + new Vector3(dir2D.x, 0f, dir2D.y) * radius;
+                    if (NavMesh.SamplePosition(candidate, out var hit, 2.0f, NavMesh.AllAreas))
+                        candidate = hit.position;
+
+                    agent.SetDestination(candidate);
+                }
+            }
+
+            TopWanderLog($"[BossTopWander] StartTopWander ignored (already active). isStopped={agent.isStopped} speed={agent.speed:F2} vel={agent.velocity.magnitude:F2}");
+            return;
+        }
         topWanderActive = true;
 
         // Trigger alarm on player mount (if not already activated)
@@ -365,7 +484,15 @@ public class BossRoombaController : MonoBehaviour
 
         agent.autoBraking = false;
         agent.stoppingDistance = 0f;
-        agent.speed = savedSpeed * TopWanderSpeedMultiplier;
+        float topWanderSpeed = TopWanderSpeedOverride > 0f
+            ? TopWanderSpeedOverride
+            : savedSpeed * TopWanderSpeedMultiplier;
+        if (topWanderSpeed < TopWanderMinSpeed)
+            topWanderSpeed = TopWanderMinSpeed;
+        agent.speed = topWanderSpeed;
+        agent.isStopped = false;
+
+        TopWanderLog($"[BossTopWander] START speed={agent.speed:F2} savedSpeed={savedSpeed:F2} minSpeed={TopWanderMinSpeed:F2} autoBraking={agent.autoBraking} stoppingDistance={agent.stoppingDistance:F2}");
 
         StopFollowing();
         if (topWanderRoutine != null) StopCoroutine(topWanderRoutine);
@@ -376,6 +503,8 @@ public class BossRoombaController : MonoBehaviour
     {
         if (!topWanderActive) return;
         topWanderActive = false;
+
+        TopWanderLog($"[BossTopWander] STOP restoringSpeed={savedSpeed:F2} currentVel={agent.velocity.magnitude:F2}");
 
         if (topWanderRoutine != null)
         {
@@ -398,22 +527,40 @@ public class BossRoombaController : MonoBehaviour
             float radius = Random.Range(TopWanderRadiusRange.x, TopWanderRadiusRange.y);
             Vector2 dir2D = Random.insideUnitCircle.normalized;
             Vector3 candidate = origin + new Vector3(dir2D.x, 0f, dir2D.y) * radius;
+            bool sampledNav = false;
             if (NavMesh.SamplePosition(candidate, out var hit, 2.0f, NavMesh.AllAreas))
+            {
                 candidate = hit.position;
+                sampledNav = true;
+            }
 
             agent.isStopped = false;
-            agent.SetDestination(candidate);
+            bool setDestinationOk = agent.SetDestination(candidate);
+
+            TopWanderLog($"[BossTopWander] Repath origin={origin} candidate={candidate} radius={radius:F2} sampledNav={sampledNav} setDestinationOk={setDestinationOk} pathPending={agent.pathPending} hasPath={agent.hasPath} pathStatus={agent.pathStatus} remDist={agent.remainingDistance:F2} speed={agent.speed:F2} vel={agent.velocity.magnitude:F2}");
 
             float timeout = Random.Range(TopWanderRepathTimeRange.x, TopWanderRepathTimeRange.y);
             float t = 0f;
             while (t < timeout)
             {
+                if (t <= 0.001f || t >= timeout - 0.02f)
+                {
+                    TopWanderLog($"[BossTopWander] Tick t={t:F2}/{timeout:F2} pos={transform.position} vel={agent.velocity.magnitude:F2} isStopped={agent.isStopped} hasPath={agent.hasPath} pathPending={agent.pathPending} remDist={agent.remainingDistance:F2}");
+                }
+
                 t += Time.deltaTime;
                 yield return null;
             }
         }
     }
 
+    private void TopWanderLog(string message)
+    {
+        if (!enableTopWanderDebugLogs)
+            return;
+
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), message);
+    }
     public void ActivateAlarm()
     {
         // Don't activate if destroyed
@@ -1430,8 +1577,17 @@ public class BossRoombaController : MonoBehaviour
         }
         else
         {
+            TryCachePlayerReference(logIfMissing: true);
+            if (player != null)
+            {
+                crawler.PlayerTarget = player;
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Late-resolved player and assigned PlayerTarget to {crawler.gameObject.name}");
+            }
+            else
+            {
             EnemyBehaviorDebugLogBools.LogError($"[BossRoombaController] player reference is NULL! Crawlers won't be able to chase.");
             yield break;
+            }
         }
         
         // Handle different starting states - we need to get the crawler into Chase

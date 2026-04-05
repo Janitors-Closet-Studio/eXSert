@@ -87,7 +87,7 @@ public class SettingsManager : Singleton<SettingsManager>
 
         if (playerCameraController != null && playerCameraController.Count > 0)
         {
-            Debug.Log("Updating player camera sensitivity to: " + newSensitivity);
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Updating player camera sensitivity to: " + newSensitivity);
             foreach (var axisController in playerCameraController)
             {
                 if (axisController == null)
@@ -181,7 +181,7 @@ public class SettingsManager : Singleton<SettingsManager>
             return null;
         }
 
-        Debug.Log("Resolved player root: " + player.name);
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Resolved player root: " + player.name);
 
         CameraManager cameraHolder = player.GetComponentInChildren<CameraManager>();
 

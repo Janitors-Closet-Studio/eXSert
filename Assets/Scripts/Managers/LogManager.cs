@@ -40,7 +40,7 @@ public class LogManager : Singleton<LogManager>
 
     protected override void Awake()
     {
-        Debug.Log(unreadLogs.Count);
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, unreadLogs.Count.ToString());
         logMap = CreateLogMap();
 
         base.Awake();

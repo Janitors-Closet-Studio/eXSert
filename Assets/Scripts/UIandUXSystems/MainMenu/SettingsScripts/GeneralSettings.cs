@@ -48,7 +48,7 @@ public class GeneralSettings : MonoBehaviour
     {
         // Load PlayerPrefs for toggles and settings
         float savedSens = PlayerPrefs.GetFloat("masterSens", defaultSens);
-        Debug.Log($"[GeneralSettings] OnEnable: Loaded masterSens from PlayerPrefs: {savedSens}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[GeneralSettings] OnEnable: Loaded masterSens from PlayerPrefs: {savedSens}");
         if (sensSlider != null)
             sensSlider.value = savedSens;
         SettingsManager.Instance.UpdatePlayerCameraSens(savedSens);
@@ -79,7 +79,7 @@ public class GeneralSettings : MonoBehaviour
     {
         while (InputReader.PlayerInput == null)
         {
-            Debug.Log("[GeneralSettings] Waiting for PlayerInput to be initialized...");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "[GeneralSettings] Waiting for PlayerInput to be initialized...");
             yield return null;
         }
         // Subscribe to control scheme changes once PlayerInput is ready
@@ -136,14 +136,14 @@ public class GeneralSettings : MonoBehaviour
             newMin = controllerSensMin;
             newMax = controllerSensMax;
             newDefault = (controllerSensMin + controllerSensMax) / 2f;
-            Debug.Log($"[GeneralSettings] Set range for Gamepad: {controllerSensMin} - {controllerSensMax}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[GeneralSettings] Set range for Gamepad: {controllerSensMin} - {controllerSensMax}");
         }
         else if (schemeName.Contains("keyboard"))
         {
             newMin = kbSensMin;
             newMax = kbSensMax;
             newDefault = (kbSensMin + kbSensMax) / 2f;
-            Debug.Log($"[GeneralSettings] Set range for Keyboard: {kbSensMin} - {kbSensMax}");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[GeneralSettings] Set range for Keyboard: {kbSensMin} - {kbSensMax}");
         }
         else
         {
@@ -153,13 +153,13 @@ public class GeneralSettings : MonoBehaviour
         sensSlider.minValue = newMin;
         sensSlider.maxValue = newMax;
         float savedSens = PlayerPrefs.HasKey("masterSens") ? PlayerPrefs.GetFloat("masterSens") : newDefault;
-        Debug.Log($"[GeneralSettings] ChangeSensivityThresholds: Loaded masterSens from PlayerPrefs: {savedSens}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[GeneralSettings] ChangeSensivityThresholds: Loaded masterSens from PlayerPrefs: {savedSens}");
         float clampedSens = Mathf.Clamp(savedSens, sensSlider.minValue, sensSlider.maxValue);
         sensSlider.value = clampedSens;
         // Force UI refresh
         sensSlider.onValueChanged.Invoke(clampedSens);
         SetSens(clampedSens);
-        Debug.Log($"[GeneralSettings] Scheme: {schemeName}, Set slider to: {clampedSens}, min: {sensSlider.minValue}, max: {sensSlider.maxValue}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[GeneralSettings] Scheme: {schemeName}, Set slider to: {clampedSens}, min: {sensSlider.minValue}, max: {sensSlider.maxValue}");
         defaultSens = newDefault;
     }
     
@@ -169,7 +169,7 @@ public class GeneralSettings : MonoBehaviour
         SettingsManager.Instance.UpdatePlayerCameraSens(sens);
         // Save the actual slider value, not the SettingsManager's field (which may not update immediately)
         PlayerPrefs.SetFloat("masterSens", sens);
-        Debug.Log($"[GeneralSettings] SetSens: Saved masterSens to PlayerPrefs: {sens}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[GeneralSettings] SetSens: Saved masterSens to PlayerPrefs: {sens}");
     }
 
     public void SetVibration(float vibrate)
@@ -189,7 +189,7 @@ public class GeneralSettings : MonoBehaviour
         SettingsManager.Instance.UpdateComboProgressionDisplay(isComboProgressionOn);
         PlayerPrefs.SetInt("masterCombo", isComboProgressionOn ? 1 : 0);
 
-        Debug.Log($"[SetComboProgressionDisplay] displayOn={displayOn}, applied={SettingsManager.Instance.comboProgression}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[SetComboProgressionDisplay] displayOn={displayOn}, applied={SettingsManager.Instance.comboProgression}");
     }
 
     public void ToggleComboProgressionDisplay(bool onOrOff)
@@ -203,7 +203,7 @@ public class GeneralSettings : MonoBehaviour
     public void SetInvertY(bool invertYOn)
     {
         SettingsManager.Instance.UpdatePlayerInvertY(invertYOn);
-        Debug.Log("Invert Y: " + !isInvertYOn);
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Invert Y: " + !isInvertYOn);
 
         if (invertYOn)
         {
@@ -226,13 +226,13 @@ public class GeneralSettings : MonoBehaviour
         SettingsManager.Instance.rumbleStrength = vibrationSlider.value;
         PlayerPrefs.SetFloat("masterVibrateStrength", SettingsManager.Instance.rumbleStrength);
 
-        Debug.Log($"[GeneralApply] isComboProgressionOn={isComboProgressionOn}, SettingsManager.Instance.comboProgression={SettingsManager.Instance.comboProgression}");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[GeneralApply] isComboProgressionOn={isComboProgressionOn}, SettingsManager.Instance.comboProgression={SettingsManager.Instance.comboProgression}");
         PlayerPrefs.SetInt("masterInvertY", (isInvertYOn ? 1 : 0));
         PlayerPrefs.SetInt("masterCombo", (isComboProgressionOn ? 1 : 0));
 
         PlayerPrefs.Save();
 
-        Debug.Log("General settings applied: Sensitivity = " + SettingsManager.Instance.sensitivity + ", Vibration Strength = " + SettingsManager.Instance.rumbleStrength + ", Invert Y = " + isInvertYOn + ", Combo Progression = " + isComboProgressionOn);
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "General settings applied: Sensitivity = " + SettingsManager.Instance.sensitivity + ", Vibration Strength = " + SettingsManager.Instance.rumbleStrength + ", Invert Y = " + isInvertYOn + ", Combo Progression = " + isComboProgressionOn);
     }
 
     //Resets the settings

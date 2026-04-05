@@ -305,7 +305,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
         ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
 
-        Debug.Log("Pause Menu Opened");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, "Pause Menu Opened");
         
         // Switch to UI input - make sure actions remain subscribed
         if (InputReader.PlayerInput != null)

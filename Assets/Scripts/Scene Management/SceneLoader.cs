@@ -52,7 +52,7 @@ public static class SceneLoader
 
     private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"[Scene Loader] Scene loaded callback: '{scene.name}' with mode {mode}. LoadedSceneCount now: {LoadedSceneCount}.");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.SceneLoading, $"[Scene Loader] Scene loaded callback: '{scene.name}' with mode {mode}. LoadedSceneCount now: {LoadedSceneCount}.");
         if (scene.name == PLAYER_SCENE)
         {
             GameObject player = Player.PlayerObject;
@@ -108,7 +108,7 @@ public static class SceneLoader
             return;
 
         RequestLoadingScreenSuppression(EditorBootstrapLoadingScreenOwnerId);
-        Debug.Log($"[Scene Loader][Editor Bootstrap] Suppressing loading screen before scene startup for '{sceneName}'.");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.SceneLoading, $"[Scene Loader][Editor Bootstrap] Suppressing loading screen before scene startup for '{sceneName}'.");
     }
 #endif
 
@@ -411,7 +411,7 @@ public static class SceneLoader
 
         if (isLoaded && !forceReload) return null;
 
-        Debug.Log($"[Scene Loader] Loading player scene '{PLAYER_SCENE}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
+        DebugLogSettingsM.ConditionalLog(DebugLogCategory.SceneLoading, $"[Scene Loader] Loading player scene '{PLAYER_SCENE}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
 
         AsyncOperation operation;
         try
@@ -427,7 +427,7 @@ public static class SceneLoader
         // Adds a completion callback to handle player initialization after the scene is loaded
         operation.completed += _ =>
         {
-            Debug.Log($"[Scene Loader] Player scene '{PLAYER_SCENE}' load completed callback fired. LoadedSceneCount now: {LoadedSceneCount}.");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.SceneLoading, $"[Scene Loader] Player scene '{PLAYER_SCENE}' load completed callback fired. LoadedSceneCount now: {LoadedSceneCount}.");
 
             GameObject player = Player.PlayerObject;
 

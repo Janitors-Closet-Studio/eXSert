@@ -1,5 +1,58 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &492252982151845650
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3198949174785338739}
+  - component: {fileID: 4703054606334555394}
+  m_Layer: 8
+  m_Name: FaceplateCollider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3198949174785338739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 492252982151845650}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 2.211}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8773002588802439141}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4703054606334555394
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 492252982151845650}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1121683285325084451
 GameObject:
   m_ObjectHideFlags: 0
@@ -139,7 +192,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14405f31ed013714892a9fb1f999bc6f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossArmHitbox
-  damage: 1
   bossBrain: {fileID: 2753735861455747003}
   armSide: 1
   colliderSearchRoot: {fileID: 2096385667496298712}
@@ -148,6 +200,7 @@ MonoBehaviour:
   applyPlayerStagger: 0
   playerStaggerDuration: 0.45
   resetPlayerComboOnStagger: 1
+  enableDebugLogs: 1
 --- !u!1 &1424956362356893592
 GameObject:
   m_ObjectHideFlags: 0
@@ -343,14 +396,14 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7006175189509704506}
+  - {fileID: 4350173617004122264}
   - {fileID: 1222562211205233746}
   - {fileID: 8058011296821409572}
   - {fileID: 8574952128632627036}
-  - {fileID: 3982050309592806207}
   - {fileID: 6827231175664723454}
   - {fileID: 9110870473529243030}
   - {fileID: 766420067526550047}
+  - {fileID: 3198949174785338739}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!195 &7631148118547818447
@@ -408,8 +461,8 @@ MonoBehaviour:
   pocketSpawnPoints: []
   dronePrefab: {fileID: 282157131245461279, guid: cb54553a50bce4a478e1450299cc14c3, type: 3}
   crawlerPrefab: {fileID: 2757122947255948302, guid: e1b11366c95442f489e8e074c928f67c, type: 3}
-  maxDrones: 4
-  maxCrawlers: 2
+  maxDrones: 0
+  maxCrawlers: 0
   dronesPerSpawn: 4
   crawlersPerSpawn: 2
   AddFleeSpeedMultiplier: 3
@@ -418,7 +471,7 @@ MonoBehaviour:
   suctionRadius: 5
   suctionStrength: 10
   dashSpeedMultiplier: 5
-  MinStoppingDistance: 2
+  MinStoppingDistance: 3
   CombatDistanceOffset: 0.1
   EnsureKinematicRigidbody: 1
   ManualColliderSetup: 1
@@ -428,8 +481,11 @@ MonoBehaviour:
   ParamIsMoving: IsMoving
   ParamTurn: Turn
   TopWanderSpeedMultiplier: 1.1
+  TopWanderSpeedOverride: 0
+  TopWanderMinSpeed: 10
   TopWanderRadiusRange: {x: 4, y: 10}
-  TopWanderRepathTimeRange: {x: 0.7, y: 1.4}
+  TopWanderRepathTimeRange: {x: 0.7, y: 2}
+  enableTopWanderDebugLogs: 0
   initialPoolSize: 8
 --- !u!114 &2753735861455747003
 MonoBehaviour:
@@ -447,6 +503,7 @@ MonoBehaviour:
 
     Configure
     forms and attack descriptors. Optional animator triggers per phase (Windup/Active/Recovery).'
+  enableDebugLogs: 1
   FightStartDelay: 2
   StartForm: 0
   BasicSwipe:
@@ -525,7 +582,7 @@ MonoBehaviour:
     Id: ArmSweepLeft
     Parryable: 1
     Cooldown: 1.5
-    RangeMin: 0.5
+    RangeMin: 0
     RangeMax: 5
     WindupClipName: 
     ActiveClipName: 
@@ -543,7 +600,7 @@ MonoBehaviour:
     Id: ArmSweepRight
     Parryable: 1
     Cooldown: 1.5
-    RangeMin: 0.5
+    RangeMin: 0
     RangeMax: 5
     WindupClipName: 
     ActiveClipName: 
@@ -737,6 +794,13 @@ MonoBehaviour:
     RequiresArms: 0
     AttackSFX: {fileID: 0}
     SFXVolume: 1
+  DamageBasicSwipe: 10
+  DamageArmSweep: 10
+  DamageDashLunge: 10
+  DamageArmPoke: 10
+  DamageKnockOffSpin: 10
+  DamageCharge: 10
+  DamageVacuum: 2
   ArmsDeployTrigger: Arms_Deploy
   ArmsRetractTrigger: Arms_Retract
   ArmsDeployTimeoutSeconds: 1
@@ -771,17 +835,20 @@ MonoBehaviour:
   FlingForceRange: {x: 800, y: 1200}
   SpinKnockbackForce: 20
   SpinKnockbackRadius: 5
-  KnockbackCooldown: 0.6
-  MeleeKnockbackForce: 2
+  KnockbackCooldown: 0.2
+  MeleeKnockbackForce: 0.5
   MeleeKnockbackUpwardForce: 0.5
-  StaticChargeKnockbackForce: 18
+  StaticChargeKnockbackForce: 15
   StaticChargeKnockbackUpwardForce: 5
+  DashKnockbackForce: 12
+  DashKnockbackUpwardForce: 3
+  KnockbackAttackDirectionWeight: 0.8
   AttackCountForVacuumRange: {x: 8, y: 12}
   VacuumPosition: {fileID: 0}
   ArenaCenterBounds: {fileID: 0}
   ArenaManager: {fileID: 0}
   PlayerManager: {fileID: 0}
-  VacuumSuctionController: {fileID: 8691934828595821662}
+  VacuumSuctionController: {fileID: 0}
   VacuumSuctionDuration: 4
   VacuumPullStrength: 10
   VacuumMaxPullStrength: 18
@@ -800,33 +867,32 @@ MonoBehaviour:
   DashOvershootDistance: 10
   ValidateDashDestination: 1
   DashNavMeshSampleRadius: 2
-  DashKnockbackForce: 25
-  DashKnockbackUpwardForce: 3
-  KnockbackAttackDirectionWeight: 0.8
   EnableAttackLunge: 1
   AttackLungeDistance: 3
   AttackLungeSpeed: 8
   ReturnAfterLunge: 1
   LungeReturnSpeed: 4
-  TopWanderSpeed: 8
+  TopWanderSpeed: 16
   TopWanderAngularSpeed: 90
   _cageBullFormHelp: Settings specific to cage bull form.
-  ChargeApproachSpeedMultiplier: 8
-  StaticChargeSpeedMultiplier: 2
-  TargetedChargeSpeedMultiplier: 10
+  ChargeApproachSpeedMultiplier: 10
+  StaticChargeSpeedMultiplier: 20
+  TargetedChargeSpeedMultiplier: 15
   StaticChargeAngularMultiplier: 8
   TargetedChargeAngularMultiplier: 0.15
   MaxDelayAtChargeStart: 2
   ChargeOvershootDistance: 5
-  ChargeRestDuration: 5
+  ChargeRestDuration: 1
   StaticChargeCountRange: {x: 3, y: 5}
   ChargeArrivalThreshold: 1.5
-  ChargeKnockbackForce: 5
-  ChargeKnockbackUpwardForce: 1
-  ComboApproachDecelerationDistance: 5
+  StaticChargeArrivalThreshold: 0.25
+  ChargeKnockbackForce: 10
+  ChargeKnockbackUpwardForce: 5
+  ComboApproachDecelerationDistance: 3
   ComboDecelerationMinSpeedMultiplier: 0.15
-  ComboPointWaitDuration: 0.3
-  ComboTurnSpeedMultiplier: 1.5
+  ComboPointWaitDuration: 0.16
+  StaticChargeInterSegmentDelay: 0.05
+  ComboTurnSpeedMultiplier: 3
   TargetedChargeTurnSpeedMultiplier: 1
   _baseSpeed: 12
   _baseAngularSpeed: 120
@@ -932,8 +998,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2496222f05312249946afcc55be2cf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossHealth
-  maxHealth: 50
-  currentHealth: 50
+  maxHealth: 500
+  currentHealth: 500
   enablePanelArmor: 1
   damageReductionPerPanel: 0.1
   maxDamageReduction: 0.8
@@ -994,18 +1060,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3fd5f5d6f89d53459ef4695d71ed661, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossPlayerEjector
-  RepulsionOuterRadius: 5
-  RepulsionInnerRadius: 2
-  MaxRepulsionForce: 25
-  MinRepulsionForce: 5
-  OverlapCheckRadius: 3.28
+  RepulsionRadius: 2.9
+  RepulsionForce: 4
   OnTopHeightThreshold: 1.07
-  BelowThreshold: 1
-  EjectionForce: 15
-  EjectionUpwardForce: 5
+  EjectionForce: 5
+  EjectionUpwardForce: 2
+  EjectionCooldown: 0.35
+  TeleportOnEmergencyEject: 1
+  TeleportOverlapRadius: 2.5
   BossCenter: {fileID: 8773002588802439141}
-  ArenaManager: {fileID: 0}
-  PostAttackGracePeriod: 1
 --- !u!114 &200851258585206296
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1370,7 +1433,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14405f31ed013714892a9fb1f999bc6f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossArmHitbox
-  damage: 1
   bossBrain: {fileID: 2753735861455747003}
   armSide: 3
   colliderSearchRoot: {fileID: 0}
@@ -1379,6 +1441,7 @@ MonoBehaviour:
   applyPlayerStagger: 0
   playerStaggerDuration: 0.45
   resetPlayerComboOnStagger: 1
+  enableDebugLogs: 0
 --- !u!64 &8820986701158288917
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1452,7 +1515,7 @@ MeshCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 5918636725447356142, guid: 54e6f08af0997f847ade0e38dff564bc, type: 3}
 --- !u!1 &6019007385589689606
@@ -1793,7 +1856,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14405f31ed013714892a9fb1f999bc6f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossArmHitbox
-  damage: 1
   bossBrain: {fileID: 2753735861455747003}
   armSide: 0
   colliderSearchRoot: {fileID: 1300834901216319587}
@@ -1802,6 +1864,7 @@ MonoBehaviour:
   applyPlayerStagger: 0
   playerStaggerDuration: 0.45
   resetPlayerComboOnStagger: 1
+  enableDebugLogs: 1
 --- !u!1 &8317306986999877945
 GameObject:
   m_ObjectHideFlags: 0
@@ -2005,116 +2068,17 @@ MonoBehaviour:
   requireTopContactForParenting: 1
   topContactMaxVerticalDelta: 1
   verticalClearMargin: 0.3
+  enableDebugLogs: 0
+  enableMountingDiagnostics: 1
+  mountingDiagnosticsInterval: 0.2
+  mountedMovementInputGraceSeconds: 0.2
+  idleAnchorActivationDelay: 0.35
+  movingCarryVelocityMultiplier: 0.65
+  applyExternalCarryWhileMounted: 0
 --- !u!4 &8574952128632627036 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
   m_PrefabInstance: {fileID: 1043077589487962785}
-  m_PrefabAsset: {fileID: 0}
---- !u!1001 &1748372175894142663
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 8773002588802439141}
-    m_Modifications:
-    - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_Convex
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_IsTrigger
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_ProvidesContacts
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6930323592560427987, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_Name
-      value: RoombaBigCollider
-      objectReference: {fileID: 0}
-    - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_Layer
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_TagString
-      value: Boss
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 13.212597
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.0595932
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 12.257669
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.231
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
---- !u!4 &7006175189509704506 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-  m_PrefabInstance: {fileID: 1748372175894142663}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2136045205240841578
 PrefabInstance:
@@ -2331,7 +2295,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14405f31ed013714892a9fb1f999bc6f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBehavior.Boss.BossArmHitbox
-  damage: 1
   bossBrain: {fileID: 2753735861455747003}
   armSide: 2
   colliderSearchRoot: {fileID: 0}
@@ -2340,12 +2303,13 @@ MonoBehaviour:
   applyPlayerStagger: 0
   playerStaggerDuration: 0.45
   resetPlayerComboOnStagger: 1
+  enableDebugLogs: 0
 --- !u!4 &6827231175664723454 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
   m_PrefabInstance: {fileID: 2866165786493235203}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &5636973624603322050
+--- !u!1001 &4983078878411474277
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -2355,7 +2319,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_Convex
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_Enabled
@@ -2363,6 +2327,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7072974478498009679, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
+      propertyPath: m_ProvidesContacts
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6930323592560427987, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
@@ -2371,23 +2339,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_Name
-      value: RoombaTopZone (1)
+      value: RoombaBigCollider
       objectReference: {fileID: 0}
     - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_Layer
-      value: 3
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7201197112724282711, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
+      propertyPath: m_TagString
+      value: Boss
       objectReference: {fileID: 0}
     - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_LocalScale.x
-      value: 4.584905
+      value: 13.212597
       objectReference: {fileID: 0}
     - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.27309105
+      value: 1.0595932
       objectReference: {fileID: 0}
     - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_LocalScale.z
-      value: 4.584905
+      value: 12.257669
       objectReference: {fileID: 0}
     - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2395,7 +2371,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.917
+      value: 0.231
       objectReference: {fileID: 0}
     - target: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2434,10 +2410,10 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
---- !u!4 &3982050309592806207 stripped
+--- !u!4 &4350173617004122264 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8753194536193840637, guid: d1b0799b050bcfb4cb8288a2531c563f, type: 3}
-  m_PrefabInstance: {fileID: 5636973624603322050}
+  m_PrefabInstance: {fileID: 4983078878411474277}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8789593885882143357
 PrefabInstance:
@@ -2715,6 +2691,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 2fd3d9aac96ea314d9903410a542761e, type: 2}
+    - target: {fileID: -4909718398952624124, guid: 54e6f08af0997f847ade0e38dff564bc, type: 3}
+      propertyPath: m_TagString
+      value: Enemy
+      objectReference: {fileID: 0}
     - target: {fileID: -4816227236888060713, guid: 54e6f08af0997f847ade0e38dff564bc, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 0.008628724
@@ -2870,6 +2850,10 @@ PrefabInstance:
     - target: {fileID: -1443518705406408162, guid: 54e6f08af0997f847ade0e38dff564bc, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: -105.00554
+      objectReference: {fileID: 0}
+    - target: {fileID: -1238529057469379662, guid: 54e6f08af0997f847ade0e38dff564bc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.43
       objectReference: {fileID: 0}
     - target: {fileID: -1094665599817994250, guid: 54e6f08af0997f847ade0e38dff564bc, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -3616,7 +3600,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.30969718
+  m_Radius: 0.73
   m_Center: {x: 0.004855573, y: 1.2720222, z: -0.0000005066395}
 --- !u!114 &409087537968579392
 MonoBehaviour:

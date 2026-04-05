@@ -183,7 +183,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     public void LoseHP(float damage)
     {
-        if (isDead || invulnerable || IsTemporarilyInvincible() || damage <= 0f || PlayerMovement.IsTestingOrDebugMode)
+        if (isDead || invulnerable || IsTemporarilyInvincible() || damage <= 0f)
             return;
 
         float previous = currentHealth;

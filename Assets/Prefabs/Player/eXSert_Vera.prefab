@@ -5496,6 +5496,14 @@ MonoBehaviour:
   debugPlungeDamageInitialized: 1
   attackAudioSource: {fileID: 0}
   inputBufferWindow: 0.25
+  groundedAttackGraceSeconds: 0.12
+  groundedAttackProbeDistance: 0.2
+  groundedAttackProbeMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  requireDoubleJumpForAerialAttacks: 1
+  attackLockFailsafeExtraSeconds: 0.35
+  attackLockFailsafeFallbackSeconds: 1.5
   requireFullAnimationPlaybackBeforeNextAttack: 1
   enablePerAttackEndTrim: 1
   sx1EndTrimSeconds: 0.5
@@ -7953,6 +7961,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   testingOrDebugMode: 0
   verboseMovementDebugLogs: 0
+  enableExternalVelocityDebugLogs: 1
   animationController: {fileID: 5311890396266669227}
   attackManager: {fileID: 2445762002116463598}
   _jumpAction: {fileID: 8978839087202845958, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
@@ -8082,6 +8091,16 @@ MonoBehaviour:
   enemyTopSlideProbeDistance: 2.5
   enemyTopSlideFootprintScale: 1.15
   enemyTopSlideFootprintThickness: 0.35
+  enableBossFaceplateUnstick: 1
+  bossFaceplateUnstickSpeed: 7
+  bossFaceplateUnstickProbeRadius: 0.45
+  bossFaceplateStuckSpeedThreshold: 0.25
+  bossFaceplateFallbackProbeRadiusMultiplier: 1.75
+  bossFaceplateForwardProbeOffset: 0.35
+  stabilizeBossFaceplateVerticalDuringAttacks: 1
+  bossFaceplateAttackGroundStickVelocity: -1
+  enableBossFaceplateBounceDebugLogs: 0
+  bossFaceplateBounceDebugLogInterval: 0.08
   invertYAxis: 0
   highFallHeightThreshold: 6
   highFallGroundProbeDistance: 25
