@@ -2535,9 +2535,11 @@ public class PlayerMovement : MonoBehaviour
         }
 
         bool grounded = IsGroundedNow();
+        bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
         bool shouldDefer = !grounded
             || CombatManager.isGuarding
             || CombatManager.isParrying
+            || attackActive
             || isDashing
             || isPlunging
             || plungeLandingPending

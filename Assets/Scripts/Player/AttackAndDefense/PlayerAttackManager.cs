@@ -142,6 +142,50 @@ public class PlayerAttackManager : MonoBehaviour
     [Header("Input Buffering")]
     [SerializeField, Range(0.05f, 0.6f)] private float inputBufferWindow = 0.25f;
 
+    [Header("Attack Spam Prevention")]
+    [SerializeField, Tooltip("When enabled, the next buffered attack can only start after the active attack animation has fully finished.")]
+    private bool requireFullAnimationPlaybackBeforeNextAttack = true;
+
+    [Header("Attack End Trim")]
+    [SerializeField, Tooltip("If enabled, configured attack end-trim values can end attack lockout before the full animation completes.")]
+    private bool enablePerAttackEndTrim = true;
+
+    [Header("Single Target End Trim")]
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from SX1 full animation lockout before next attack can start.")]
+    private float sx1EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from SX2 full animation lockout before next attack can start.")]
+    private float sx2EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from SX3 full animation lockout before next attack can start.")]
+    private float sx3EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from SX4 full animation lockout before next attack can start.")]
+    private float sx4EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from SX5 full animation lockout before next attack can start.")]
+    private float sx5EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AX1 full animation lockout before next attack can start.")]
+    private float ax1EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AX2 full animation lockout before next attack can start.")]
+    private float ax2EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AX3 full animation lockout before next attack can start.")]
+    private float ax3EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AX4 full animation lockout before next attack can start.")]
+    private float ax4EndTrimSeconds = 0f;
+
+    [Header("AOE End Trim")]
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AY1 full animation lockout before next attack can start.")]
+    private float ay1EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AY2 full animation lockout before next attack can start.")]
+    private float ay2EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AY3 full animation lockout before next attack can start.")]
+    private float ay3EndTrimSeconds = 0f;
+
+    [Header("Aerial End Trim")]
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AC_X1 full animation lockout before next attack can start.")]
+    private float acX1EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from AC_X2 full animation lockout before next attack can start.")]
+    private float acX2EndTrimSeconds = 0f;
+    [SerializeField, Range(0f, 1.5f), Tooltip("Seconds trimmed from Plunge full animation lockout before next attack can start.")]
+    private float plungeEndTrimSeconds = 0f;
+
     [Header("Attack Speed")]
     [SerializeField, Range(0.1f, 3f), Tooltip("Global speed multiplier applied to all player attacks.")]
     private float globalAttackSpeedMultiplier = 1f;
@@ -178,6 +222,9 @@ public class PlayerAttackManager : MonoBehaviour
     private AttackButton bufferedAttackButton = AttackButton.None;
     private float bufferedAttackExpiresAt = -1f;
     private float currentAttackSpeedMultiplier = 1f;
+    private float currentAttackEarliestEndTime = -1f;
+    private Coroutine deferredCancelRoutine;
+    private Coroutine earlyTrimCompletionRoutine;
 
     public static event Action<PlayerAttack> OnAttack;
 
@@ -256,11 +303,14 @@ public class PlayerAttackManager : MonoBehaviour
             StopCoroutine(heavyMoveRoutine);
             heavyMoveRoutine = null;
         }
+        StopEarlyTrimCompletionRoutine();
+        StopDeferredCancelRoutine();
         StopGuardAttackFlowRoutine();
         StopSpecialAttackAutoCancelRoutine();
 
         ClearHitbox();
         currentAttackSpeedMultiplier = 1f;
+        currentAttackEarliestEndTime = -1f;
         animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
     }
@@ -317,6 +367,8 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = 1f;
+        currentAttackEarliestEndTime = -1f;
+        StopEarlyTrimCompletionRoutine();
         animationController?.ResetAnimatorSpeed();
         playerMovement?.SuppressLocomotionAnimations(false);
         playerMovement?.ForceLocomotionRefresh();
@@ -455,7 +507,12 @@ public class PlayerAttackManager : MonoBehaviour
     private void BufferAttack(bool lightAttack)
     {
         bufferedAttackButton = lightAttack ? AttackButton.Light : AttackButton.Heavy;
-        bufferedAttackExpiresAt = Time.time + inputBufferWindow;
+
+        float expiresAt = Time.time + inputBufferWindow;
+        if (requireFullAnimationPlaybackBeforeNextAttack && currentAttack != null && currentAttackEarliestEndTime > 0f)
+            expiresAt = Mathf.Max(expiresAt, currentAttackEarliestEndTime + 0.1f);
+
+        bufferedAttackExpiresAt = expiresAt;
     }
 
     private void AttemptAttack(bool lightAttack)
@@ -480,7 +537,8 @@ public class PlayerAttackManager : MonoBehaviour
         }
         else
         {
-            if (playerMovement != null && !playerMovement.CanStartAerialCombat())
+            bool continuingAerialCombo = aerialComboManager != null && aerialComboManager.IsInAerialCombo;
+            if (playerMovement != null && !playerMovement.CanStartAerialCombat() && !continuingAerialCombo)
             {
                 // Prevent "barely off the ground" aerial attacks. Attacks are only allowed
                 // on ground, or when sufficiently high to commit to aerial combat.
@@ -572,6 +630,8 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttack = attackData;
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = ResolveAttackSpeedMultiplier(attackData, attackId);
+        currentAttackEarliestEndTime = ResolveCurrentAttackEarliestEndTime();
+        ScheduleEarlyTrimCompletionIfNeeded();
 
         if (currentAttack != null
             && currentAttack.attackType == AttackType.HeavyAerial
@@ -1078,6 +1138,9 @@ public class PlayerAttackManager : MonoBehaviour
 
     public void HandleAnimationCancelWindow()
     {
+        if (currentAttack == null)
+            return;
+
         StopSpecialAttackAutoCancelRoutine();
         bool needsPlungeRecovery = currentAttack != null
             && currentAttack.attackType == AttackType.HeavyAerial
@@ -1106,6 +1169,11 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void CompleteCancelWindow()
     {
+        if (!CanCompleteCancelWindowNow())
+            return;
+
+        StopEarlyTrimCompletionRoutine();
+        StopDeferredCancelRoutine();
         InputReader.inputBusy = false;
         playerMovement?.SuppressLocomotionAnimations(false);
         playerMovement?.ForceLocomotionRefresh();
@@ -1127,6 +1195,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = 1f;
+        currentAttackEarliestEndTime = -1f;
         animationController?.ResetAnimatorSpeed();
 
         if (TryConsumeBufferedAttack())
@@ -1228,6 +1297,9 @@ public class PlayerAttackManager : MonoBehaviour
             plungeRecoveryRoutine = null;
         }
 
+        StopEarlyTrimCompletionRoutine();
+        StopDeferredCancelRoutine();
+
         ClearBufferedAttack();
         StopGuardAttackFlowRoutine();
         StopSpecialAttackAutoCancelRoutine();
@@ -1236,6 +1308,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
         currentAttackSpeedMultiplier = 1f;
+        currentAttackEarliestEndTime = -1f;
         animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
         playerMovement?.SuppressLocomotionAnimations(false);
@@ -1308,6 +1381,130 @@ public class PlayerAttackManager : MonoBehaviour
             : ResolveAttackSpeedMultiplier(attackData, attackData != null ? attackData.attackId : null);
 
         return Mathf.Max(0f, duration) / speed;
+    }
+
+    private float ResolveCurrentAttackEarliestEndTime()
+    {
+        if (!requireFullAnimationPlaybackBeforeNextAttack || currentAttack == null)
+            return -1f;
+
+        float animationDuration = ScaleDurationForAttack(GetAnimationDurationOrFallback(currentAttack, 0f), currentAttack);
+        if (animationDuration <= 0f)
+            return -1f;
+
+        float attackEndTrim = ResolveAttackEndTrimSeconds(currentAttack);
+        if (attackEndTrim > 0f)
+            animationDuration = Mathf.Max(0f, animationDuration - attackEndTrim);
+
+        return Time.time + animationDuration;
+    }
+
+    private float ResolveAttackEndTrimSeconds(PlayerAttack attackData)
+    {
+        if (attackData == null)
+            return 0f;
+
+        if (!enablePerAttackEndTrim)
+            return 0f;
+
+        string normalized = string.IsNullOrWhiteSpace(attackData.attackId)
+            ? string.Empty
+            : attackData.attackId.Trim().ToUpperInvariant();
+
+        float trim = normalized switch
+        {
+            "SX1" => sx1EndTrimSeconds,
+            "SX2" => sx2EndTrimSeconds,
+            "SX3" => sx3EndTrimSeconds,
+            "SX4" => sx4EndTrimSeconds,
+            "SX5" => sx5EndTrimSeconds,
+            "AX1" => ax1EndTrimSeconds,
+            "AX2" => ax2EndTrimSeconds,
+            "AX3" => ax3EndTrimSeconds,
+            "AX4" => ax4EndTrimSeconds,
+
+            "AY1" => ay1EndTrimSeconds,
+            "AY2" => ay2EndTrimSeconds,
+            "AY3" => ay3EndTrimSeconds,
+
+            "AC_X1" => acX1EndTrimSeconds,
+            "AC_X2" => acX2EndTrimSeconds,
+            "PLUNGE" => plungeEndTrimSeconds,
+            _ => 0f
+        };
+
+        return Mathf.Max(0f, trim);
+    }
+
+    private void ScheduleEarlyTrimCompletionIfNeeded()
+    {
+        StopEarlyTrimCompletionRoutine();
+
+        if (!requireFullAnimationPlaybackBeforeNextAttack || currentAttack == null || currentAttackEarliestEndTime < 0f)
+            return;
+
+        float trimSeconds = ResolveAttackEndTrimSeconds(currentAttack);
+        if (trimSeconds <= 0f)
+            return;
+
+        float delay = Mathf.Max(0f, currentAttackEarliestEndTime - Time.time);
+        earlyTrimCompletionRoutine = StartCoroutine(EarlyTrimCompletionRoutine(delay));
+    }
+
+    private IEnumerator EarlyTrimCompletionRoutine(float delay)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        earlyTrimCompletionRoutine = null;
+
+        if (currentAttack != null)
+            CompleteCancelWindow();
+    }
+
+    private bool CanCompleteCancelWindowNow()
+    {
+        if (!requireFullAnimationPlaybackBeforeNextAttack)
+            return true;
+
+        if (currentAttack == null || currentAttackEarliestEndTime < 0f)
+            return true;
+
+        float remaining = currentAttackEarliestEndTime - Time.time;
+        if (remaining <= 0f)
+            return true;
+
+        if (deferredCancelRoutine == null)
+            deferredCancelRoutine = StartCoroutine(DeferredCancelWindowRoutine(remaining));
+
+        return false;
+    }
+
+    private IEnumerator DeferredCancelWindowRoutine(float delay)
+    {
+        yield return new WaitForSeconds(Mathf.Max(0f, delay));
+        deferredCancelRoutine = null;
+
+        if (currentAttack != null)
+            CompleteCancelWindow();
+    }
+
+    private void StopDeferredCancelRoutine()
+    {
+        if (deferredCancelRoutine == null)
+            return;
+
+        StopCoroutine(deferredCancelRoutine);
+        deferredCancelRoutine = null;
+    }
+
+    private void StopEarlyTrimCompletionRoutine()
+    {
+        if (earlyTrimCompletionRoutine == null)
+            return;
+
+        StopCoroutine(earlyTrimCompletionRoutine);
+        earlyTrimCompletionRoutine = null;
     }
     #endregion
 }
