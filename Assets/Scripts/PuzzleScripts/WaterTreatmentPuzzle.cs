@@ -386,6 +386,8 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
             return;
         }
 
+        isCompleted = false;
+
         int firstUnturnedIndex = -1;
         for (int i = 0; i < waterContainers.Count; i++)
         {
@@ -442,7 +444,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
     public void TriggerCurrentValveFromInspector()
     {
         LogVerbose($"TriggerCurrentValveFromInspector called | currentIndex={currentWaterContainerIndex}");
-        TurnValveOnWaterContainer(currentWaterContainerIndex);
+        //TurnValveOnWaterContainer(currentWaterContainerIndex);
     }
 
     public override void StartPuzzle()
@@ -457,19 +459,24 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
 
     public override void ConsoleInteracted()
     {
+        Debug.Log($"[WaterTreatmentPuzzle:{name}] ConsoleInteracted() (no params) called | currentIndex={currentWaterContainerIndex}");
         LogVerbose($"ConsoleInteracted() called | currentIndex={currentWaterContainerIndex}");
     }
 
     public void ConsoleInteracted(PuzzleInteraction interaction)
     {
+        Debug.Log($"[WaterTreatmentPuzzle:{name}] ENTER ConsoleInteracted(PuzzleInteraction) | interaction: {(interaction != null ? interaction.name : "NULL")}" );
         if (interaction == null)
         {
+            Debug.Log($"[WaterTreatmentPuzzle:{name}] ConsoleInteracted(PuzzleInteraction) called with NULL interaction");
             LogWarningVerbose("ConsoleInteracted(PuzzleInteraction) received null sender; using current index.");
+            PlaySFX(valveTurnFailSFX);
             return;
         }
 
+        Debug.Log($"[WaterTreatmentPuzzle:{name}] ConsoleInteracted(PuzzleInteraction) about to call TurnValveOnWaterContainer with index {interaction.ConsoleIndex}");
         LogVerbose($"ConsoleInteracted(PuzzleInteraction) called | sender={interaction.name} consoleIndex={interaction.ConsoleIndex}");
-       TurnValveOnWaterContainer(interaction.ConsoleIndex);
+        TurnValveOnWaterContainer(interaction.ConsoleIndex);
     }
 
     private void PlaySFX(AudioClip clip)
@@ -488,15 +495,6 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
 
     public void TurnValveOnWaterContainer(int containerIndex)
     {
-        StartCoroutine(PlayStartingSFX());
-
-        SoundManager.Instance.puzzleSource.clip = pipeHumSFX;
-        SoundManager.Instance.puzzleSource.Play();
-        Debug.Log($"{DebugPrefix} TurnValveOnWaterContainer called with index {containerIndex}.");
-
-        Debug.Log($"{DebugPrefix} Attempting to turn valve on water container at index {containerIndex}. Current expected index: {currentWaterContainerIndex}.");
-        LogVerbose($"Before validation | activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled} listCount={(waterContainers == null ? -1 : waterContainers.Count)}");
-        PlaySFX(valveTurnSFX);
 
         if (containerIndex < 0 || containerIndex >= waterContainers.Count)
         {
@@ -527,17 +525,24 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
             return;
         }
 
+        StartCoroutine(PlayStartingSFX());
+
+        SoundManager.Instance.puzzleSource.clip = pipeHumSFX;
+        SoundManager.Instance.puzzleSource.Play();
+        Debug.Log($"{DebugPrefix} TurnValveOnWaterContainer called with index {containerIndex}.");
+
+        Debug.Log($"{DebugPrefix} Attempting to turn valve on water container at index {containerIndex}. Current expected index: {currentWaterContainerIndex}.");
+        LogVerbose($"Before validation | activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled} listCount={(waterContainers == null ? -1 : waterContainers.Count)}");
+        PlaySFX(valveTurnSFX);
+
         LogVerbose($"TurnValveOnWaterContainer accepted | index={containerIndex}");
         UpdateWaterContainerState(containerData);
-        
-        AdvanceToNextValidContainerIndex();
     }
 
     private void UpdateWaterContainerState(WaterContainerData containerData)
     {
         LogVerbose($"UpdateWaterContainerState start | isTurned(before)={containerData.isTurned} currentIndex(before)={currentWaterContainerIndex}");
         containerData.isTurned = true;
-        currentWaterContainerIndex++;
         LogVerbose($"UpdateWaterContainerState progressed | currentIndex(after)={currentWaterContainerIndex}");
 
         StartCoroutine(containerData.FadeLightStateToUnlocked(containerData.lightFadeSpeed));
@@ -627,6 +632,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         SoundManager.Instance.puzzleSource.Stop();
 
         // After the full path finishes, place the keycard at the next valve's start position (if not already at the final destination)
+        AdvanceToNextValidContainerIndex();
         if (currentWaterContainerIndex < waterContainers.Count && waterContainers[currentWaterContainerIndex] != null)
         {
             LogVerbose($"MoveKeycardPath handoff | nextIndex={currentWaterContainerIndex}");
@@ -672,6 +678,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         if (keycardInteraction != null)
         {
             keycardInteraction.SetInteractionEnabled(interactable);
+            isCompleted = true;
         }
     }
 

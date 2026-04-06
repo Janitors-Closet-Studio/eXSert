@@ -19,7 +19,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     // Prevent prompt when player is attacking or dashing
     [Header("Interaction Blocking")]
     [SerializeField] protected bool blockPromptWhenAttackingOrDashing = true;
-    internal bool interactable = true;
+    public bool interactable = true;
 
     [Space(10)]
     [Header("Interaction Animation and ID")]

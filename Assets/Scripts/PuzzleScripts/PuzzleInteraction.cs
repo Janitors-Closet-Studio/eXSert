@@ -50,13 +50,22 @@ public class PuzzleInteraction : UnlockableInteraction
 
     protected override void ExecuteInteraction()
     {
+
         int senderSubscriberCount = ButtonPressedWithSender == null ? 0 : ButtonPressedWithSender.GetInvocationList().Length;
         int basicSubscriberCount = ButtonPressed == null ? 0 : ButtonPressed.GetInvocationList().Length;
-        LogVerbose($"ExecuteInteraction called | senderSubscribers={senderSubscriberCount} basicSubscribers={basicSubscriberCount}");
+        Debug.Log($"[PuzzleInteraction:{name}] ExecuteInteraction called | senderSubscribers={senderSubscriberCount} basicSubscribers={basicSubscriberCount}");
 
-        ButtonPressed?.Invoke();
-        ButtonPressedWithSender?.Invoke(this);
-        LogVerbose("Events invoked.");
+        if (ButtonPressed != null)
+        {
+            Debug.Log($"[PuzzleInteraction:{name}] Invoking ButtonPressed with {basicSubscriberCount} subscribers");
+            ButtonPressed.Invoke();
+        }
+        if (ButtonPressedWithSender != null)
+        {
+            Debug.Log($"[PuzzleInteraction:{name}] Invoking ButtonPressedWithSender with {senderSubscriberCount} subscribers");
+            ButtonPressedWithSender.Invoke(this);
+        }
+        Debug.Log($"[PuzzleInteraction:{name}] Events invoked.");
 
         PlayerAnimationController playerAnimator = GetPlayerAnimator();
         if (playerAnimator != null)
