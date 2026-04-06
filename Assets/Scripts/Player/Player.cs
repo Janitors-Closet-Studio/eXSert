@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using Progression.Checkpoints;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Static class for managing the player.
@@ -11,31 +12,98 @@ public static class Player
     internal static void SetActive(bool active) => IsActive = active;
 
     private static GameObject _playerObject;
-    public static GameObject PlayerObject
-    {
-        get
-        {
-            if (_playerObject != null) return _playerObject;
-
-            if (!SceneAsset.PlayerLoaded) return null; // Player scene not loaded, so player object cannot be found
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-
-            if (playerObj == null) throw new ArgumentNullException("[Player] Player object not found in the scene. Ensure that the player scene contains a GameObject tagged 'Player'.");
-
-            return _playerObject = playerObj.transform.root.gameObject; // Get the root GameObject in case the player is a child of another object
-        }
-    }
+    public static GameObject PlayerObject => TryGetPlayerObject(out GameObject playerObject) ? playerObject : null;
 
     private static CheckpointBehavior currentCheckpoint => CheckpointBehavior.currentCheckpoint;
 
     public static event Action RespawnPlayer;
     public static void TriggerRespawn() => RespawnPlayer?.Invoke();
 
+    public static bool TryGetPlayerObject(out GameObject playerObject)
+    {
+        if (_playerObject != null)
+        {
+            playerObject = _playerObject;
+            return true;
+        }
+
+        if (!SceneAsset.PlayerLoaded)
+        {
+            playerObject = null;
+            return false;
+        }
+
+        playerObject = FindPlayerObjectInLoadedScenes();
+        if (playerObject == null)
+            return false;
+
+        _playerObject = playerObject.transform.root.gameObject;
+        playerObject = _playerObject;
+        return true;
+    }
+
+    internal static void ClearCachedPlayerObject() => _playerObject = null;
+
     public static void SpawnPlayerAtCheckpoint()
     {
-        PlayerMovement move = PlayerObject.GetComponent<PlayerMovement>();
+        if (currentCheckpoint == null)
+        {
+            Debug.LogError("[Player] Cannot spawn at checkpoint because no checkpoint is currently set.");
+            return;
+        }
+
+        if (!TryGetPlayerObject(out GameObject playerObject))
+        {
+            Debug.LogError("[Player] Cannot spawn at checkpoint because the player object could not be found.");
+            return;
+        }
+
+        playerObject.transform.SetParent(null, true);
+
+        PlayerMovement move = playerObject.GetComponent<PlayerMovement>();
+        if (move == null)
+        {
+            Debug.LogError("[Player] Cannot spawn at checkpoint because PlayerMovement is missing from the player root object.");
+            return;
+        }
+
         move.enabled = true;
         move.TrySnapToSoftLock(currentCheckpoint.GetSpawnPosition(), currentCheckpoint.GetSpawnRotation());
-        PlayerObject.SetActive(true);
+        playerObject.SetActive(true);
+    }
+
+    private static GameObject FindPlayerObjectInLoadedScenes()
+    {
+        for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
+        {
+            Scene scene = SceneManager.GetSceneAt(sceneIndex);
+            if (!scene.isLoaded)
+                continue;
+
+            GameObject[] rootObjects = scene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < rootObjects.Length; rootIndex++)
+            {
+                GameObject playerObject = FindPlayerObjectRecursive(rootObjects[rootIndex].transform);
+                if (playerObject != null)
+                    return playerObject;
+            }
+        }
+
+        return null;
+    }
+
+    private static GameObject FindPlayerObjectRecursive(Transform currentTransform)
+    {
+        if (currentTransform.CompareTag("Player"))
+            return currentTransform.gameObject;
+
+        for (int childIndex = 0; childIndex < currentTransform.childCount; childIndex++)
+        {
+            GameObject playerObject = FindPlayerObjectRecursive(currentTransform.GetChild(childIndex));
+            if (playerObject != null)
+                return playerObject;
+        }
+
+        return null;
     }
 }
