@@ -40,6 +40,7 @@ namespace Progression.Encounters
             if (interactPoints == null || interactPoints.Length == 0)
             {
                 Debug.LogError($"[PuzzleEncounter] No {nameof(PuzzleInteraction)} scripts found in child objects in encounter {gameObject.name}.");
+                    Debug.Log($"[PuzzleEncounter] SetupEncounter called for {gameObject.name}. interactPoints count: {(interactPoints != null ? interactPoints.Length : 0)}");
                 return;
             }
 
@@ -48,6 +49,7 @@ namespace Progression.Encounters
                 if (interactPoint == null)
                     continue;
 
+                Debug.Log($"[PuzzleEncounter] {gameObject.name} subscribing to PuzzleInteraction {interactPoint.name} (instanceID: {interactPoint.GetInstanceID()})");
                 if (consoleSelectable != null)
                     interactPoint.ButtonPressedWithSender += consoleSelectable.ConsoleInteracted;
                 else
@@ -87,9 +89,15 @@ namespace Progression.Encounters
                         continue;
 
                     if (consoleSelectable != null)
+                    {
+                        Debug.Log($"[PuzzleEncounter] Unsubscribing ButtonPressedWithSender for {interactPoint.name} from {consoleSelectable.GetType().Name}.ConsoleInteracted");
                         interactPoint.ButtonPressedWithSender -= consoleSelectable.ConsoleInteracted;
+                    }
                     else
+                    {
+                        Debug.Log($"[PuzzleEncounter] Unsubscribing ButtonPressed for {interactPoint.name} from {part.GetType().Name}.ConsoleInteracted");
                         interactPoint.ButtonPressed -= part.ConsoleInteracted;
+                    }
                 }
             }
 
