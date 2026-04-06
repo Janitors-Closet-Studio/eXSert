@@ -343,6 +343,8 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
             return;
         }
 
+        isCompleted = false;
+
         int firstUnturnedIndex = -1;
         for (int i = 0; i < waterContainers.Count; i++)
         {
@@ -399,7 +401,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
     public void TriggerCurrentValveFromInspector()
     {
         LogVerbose($"TriggerCurrentValveFromInspector called | currentIndex={currentWaterContainerIndex}");
-        TurnValveOnWaterContainer(currentWaterContainerIndex);
+        //TurnValveOnWaterContainer(currentWaterContainerIndex);
     }
 
     public override void StartPuzzle()
@@ -422,6 +424,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         if (interaction == null)
         {
             LogWarningVerbose("ConsoleInteracted(PuzzleInteraction) received null sender; using current index.");
+            PlaySFX(valveTurnFailSFX);
             return;
         }
 
@@ -445,15 +448,6 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
 
     public void TurnValveOnWaterContainer(int containerIndex)
     {
-        StartCoroutine(PlayStartingSFX());
-
-        SoundManager.Instance.puzzleSource.clip = pipeHumSFX;
-        SoundManager.Instance.puzzleSource.Play();
-        Debug.Log($"{DebugPrefix} TurnValveOnWaterContainer called with index {containerIndex}.");
-
-        Debug.Log($"{DebugPrefix} Attempting to turn valve on water container at index {containerIndex}. Current expected index: {currentWaterContainerIndex}.");
-        LogVerbose($"Before validation | activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled} listCount={(waterContainers == null ? -1 : waterContainers.Count)}");
-        PlaySFX(valveTurnSFX);
 
         if (containerIndex < 0 || containerIndex >= waterContainers.Count)
         {
@@ -484,17 +478,24 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
             return;
         }
 
+        StartCoroutine(PlayStartingSFX());
+
+        SoundManager.Instance.puzzleSource.clip = pipeHumSFX;
+        SoundManager.Instance.puzzleSource.Play();
+        Debug.Log($"{DebugPrefix} TurnValveOnWaterContainer called with index {containerIndex}.");
+
+        Debug.Log($"{DebugPrefix} Attempting to turn valve on water container at index {containerIndex}. Current expected index: {currentWaterContainerIndex}.");
+        LogVerbose($"Before validation | activeInHierarchy={gameObject.activeInHierarchy} enabled={enabled} listCount={(waterContainers == null ? -1 : waterContainers.Count)}");
+        PlaySFX(valveTurnSFX);
+
         LogVerbose($"TurnValveOnWaterContainer accepted | index={containerIndex}");
         UpdateWaterContainerState(containerData);
-        
-        AdvanceToNextValidContainerIndex();
     }
 
     private void UpdateWaterContainerState(WaterContainerData containerData)
     {
         LogVerbose($"UpdateWaterContainerState start | isTurned(before)={containerData.isTurned} currentIndex(before)={currentWaterContainerIndex}");
         containerData.isTurned = true;
-        currentWaterContainerIndex++;
         LogVerbose($"UpdateWaterContainerState progressed | currentIndex(after)={currentWaterContainerIndex}");
 
         StartCoroutine(containerData.FadeLightBulbColor(
@@ -592,6 +593,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         if (currentWaterContainerIndex < waterContainers.Count && waterContainers[currentWaterContainerIndex] != null)
         {
             LogVerbose($"MoveKeycardPath handoff | nextIndex={currentWaterContainerIndex}");
+            AdvanceToNextValidContainerIndex();
             keycardTransform.localPosition = waterContainers[currentWaterContainerIndex].GetKeycardInitialPos();
             PlaySFX(gotToEndOfPathSFX);
         }
@@ -616,6 +618,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         if (keycardInteraction != null)
         {
             keycardInteraction.SetInteractionEnabled(interactable);
+            isCompleted = true;
         }
     }
 

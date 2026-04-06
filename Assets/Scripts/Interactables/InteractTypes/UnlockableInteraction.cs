@@ -24,7 +24,7 @@ public abstract class UnlockableInteraction : InteractionManager
     protected bool canExecuteInteraction => !needsItem || canUnlock || canExecuteWithoutItem;
 
     [Header("Error SFX")]
-    [SerializeField] private AudioClip errorSFXClip;
+    [SerializeField] internal AudioClip errorSFXClip;
 
     [Header("Events")]
     [Tooltip("Invoked when the interaction successfully executes (i.e., after unlocking conditions are met).")]
