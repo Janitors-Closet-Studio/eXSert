@@ -1,0 +1,990 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2352489292778647552
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6122681481338213232}
+  - component: {fileID: 4425468489443123385}
+  - component: {fileID: 5228120114269111481}
+  - component: {fileID: 2337520022774125132}
+  - component: {fileID: 5510810581196234812}
+  - component: {fileID: 589487392283227667}
+  m_Layer: 0
+  m_Name: Tank_M (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6122681481338213232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2352489292778647552}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.6226329, y: -0.335154, z: -0.3351541, w: 0.622633}
+  m_LocalPosition: {x: -6.745, y: 1.135, z: -2.974}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7111448174505100924}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: -56.586}
+--- !u!33 &4425468489443123385
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2352489292778647552}
+  m_Mesh: {fileID: 6618364922589271930, guid: 91ef592f4d7f7654ca05302c30c813c1, type: 3}
+--- !u!23 &5228120114269111481
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2352489292778647552}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 8989056ed71f01a4aa9decc34472dd6f, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &2337520022774125132
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2352489292778647552}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.53
+  m_Height: 2.39
+  m_Direction: 2
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!65 &5510810581196234812
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2352489292778647552}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.102044, y: 1.7529843, z: 2.2708552}
+  m_Center: {x: 0.000015178238, y: 0.23953381, z: -0.000000028554654}
+--- !u!114 &589487392283227667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2352489292778647552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 783730fa20d4f9b4e9bf2372e82e57ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
+  _showHitbox: 0
+  blockPromptWhenAttackingOrDashing: 1
+  _interactAnimation: {fileID: 0}
+  _interactId: 
+  _interactionSFX: {fileID: 0}
+  _interactionPrompt: Press to Interact
+  _interactInputAction: {fileID: 0}
+  requiredItemID: 
+  lockedInteractionPrompt: LOCKED
+  errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8929990022577938628}
+        m_TargetAssemblyTypeName: WaterTreatmentPuzzle, Assembly-CSharp
+        m_MethodName: TurnValveOnWaterContainer
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 2
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  consoleIndex: 0
+  verboseDebug: 1
+--- !u!1 &6380198800157137255
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3594538828072942662}
+  - component: {fileID: 8827421539480261960}
+  - component: {fileID: 8424866945413063118}
+  m_Layer: 0
+  m_Name: PuzzleEncounter(WaterLab)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3594538828072942662
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6380198800157137255}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -14.14769, y: 22.09999, z: 48.055115}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4751893080151858357}
+  - {fileID: 3961432310535193472}
+  - {fileID: 7111448174505100924}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &8827421539480261960
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6380198800157137255}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8424866945413063118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6380198800157137255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a85345b0357feb44d981694dd8a4be11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.PuzzleEncounter
+  startEnabled: 1
+  SendDebugMessages: 0
+  enableZoneOnComplete: 0
+  encounterToEnable: {fileID: 0}
+  objectiveText: 
+  overridePuzzlePart: {fileID: 0}
+  overrideInteractPoints: []
+--- !u!1 &7408525168894834949
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7200550583367770266}
+  - component: {fileID: 1736518244726948979}
+  - component: {fileID: 3062138896179120191}
+  - component: {fileID: 8481261698154983565}
+  - component: {fileID: 8087343517375775260}
+  - component: {fileID: 8616591572301081862}
+  m_Layer: 0
+  m_Name: Tank_M (2)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7200550583367770266
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7408525168894834949}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.6058448, y: 0.36462575, z: 0.36462584, w: 0.60584503}
+  m_LocalPosition: {x: 6.799, y: 1.13, z: -4.148}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7111448174505100924}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 62.083}
+--- !u!33 &1736518244726948979
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7408525168894834949}
+  m_Mesh: {fileID: 6618364922589271930, guid: 91ef592f4d7f7654ca05302c30c813c1, type: 3}
+--- !u!23 &3062138896179120191
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7408525168894834949}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 8989056ed71f01a4aa9decc34472dd6f, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &8481261698154983565
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7408525168894834949}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.53
+  m_Height: 2.39
+  m_Direction: 2
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!65 &8087343517375775260
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7408525168894834949}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.1020442, y: 1.9348342, z: 2.2708552}
+  m_Center: {x: -0.000030517149, y: 0.33047414, z: 0.000000019696888}
+--- !u!114 &8616591572301081862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7408525168894834949}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 783730fa20d4f9b4e9bf2372e82e57ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
+  _showHitbox: 0
+  blockPromptWhenAttackingOrDashing: 1
+  _interactAnimation: {fileID: 0}
+  _interactId: 
+  _interactionSFX: {fileID: 0}
+  _interactionPrompt: Press to Interact
+  _interactInputAction: {fileID: 0}
+  requiredItemID: 
+  lockedInteractionPrompt: LOCKED
+  errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8929990022577938628}
+        m_TargetAssemblyTypeName: WaterTreatmentPuzzle, Assembly-CSharp
+        m_MethodName: TurnValveOnWaterContainer
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  consoleIndex: 0
+  verboseDebug: 1
+--- !u!1 &7629069481778224675
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4751893080151858357}
+  - component: {fileID: 8929990022577938628}
+  m_Layer: 0
+  m_Name: WaterPuzzle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4751893080151858357
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7629069481778224675}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3594538828072942662}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8929990022577938628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7629069481778224675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a326852a517d74499188f97445d94cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaterTreatmentPuzzle
+  waterContainers:
+  - isTurned: 0
+    waterContainer: {fileID: 7408525168894834949}
+    lightBulb: {fileID: 0}
+    lockedLightBulbColor: {r: 0.6313726, g: 0, b: 0, a: 1}
+    lockedLightBulbEmissionColor: {r: 0.38, g: 0, b: 0, a: 1}
+    unlockedLightBulbColor: {r: 0.11372549, g: 0.78431374, b: 0.078431375, a: 1}
+    unlockedLightBulbEmissionColor: {r: 0, g: 0.13, b: 0.054166675, a: 1}
+    doorLight: {fileID: 0}
+    lockedLightColor: {r: 1, g: 0.11764706, b: 0.11764706, a: 1}
+    unlockedLightColor: {r: 0.26666668, g: 0.6509804, b: 0.34901962, a: 1}
+    lightFadeSpeed: 1
+    keycard: {fileID: 2523537047639468847}
+    keycardMoveSpeed: 1
+    keycardPositions:
+    - initialPos: {x: -8.267, y: -4.193989, z: -1.293}
+      endPos: {x: -6.32, y: -4.193989, z: -5.286}
+      playWaterFilterSFXDuringThisSegment: 1
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 60
+    - initialPos: {x: -5.32, y: -4.757, z: -7.35}
+      endPos: {x: -3.63, y: -4.757, z: -10.204}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 1
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 60
+    - initialPos: {x: -3.19, y: -4.24, z: -11.306}
+      endPos: {x: 1.365, y: -4.24, z: -19.689}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 60
+    - initialPos: {x: 2.034, y: -4.24, z: -20.913}
+      endPos: {x: 8.477, y: -4.24, z: -18.746}
+      playWaterFilterSFXDuringThisSegment: 1
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 1
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 0
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: -20
+  - isTurned: 0
+    waterContainer: {fileID: 6722112387336199364}
+    lightBulb: {fileID: 0}
+    lockedLightBulbColor: {r: 0.6313726, g: 0, b: 0, a: 1}
+    lockedLightBulbEmissionColor: {r: 0.38, g: 0, b: 0, a: 1}
+    unlockedLightBulbColor: {r: 0.11372549, g: 0.78431374, b: 0.078431375, a: 1}
+    unlockedLightBulbEmissionColor: {r: 0, g: 0.13, b: 0.054166675, a: 1}
+    doorLight: {fileID: 0}
+    lockedLightColor: {r: 1, g: 0.11764706, b: 0.11764706, a: 1}
+    unlockedLightColor: {r: 0.26666668, g: 0.6509804, b: 0.34901962, a: 1}
+    lightFadeSpeed: 1
+    keycard: {fileID: 2523537047639468847}
+    keycardMoveSpeed: 1
+    keycardPositions:
+    - initialPos: {x: 18.096, y: -4.0939884, z: -18.533}
+      endPos: {x: 24.607, y: -4.093988, z: -20.58}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 15
+    - initialPos: {x: 24.933, y: -4.093988, z: -20.376}
+      endPos: {x: 25.982, y: -4.093988, z: -17.476}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 1
+      keepPlayingWaterSwishing: 1
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 0
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: -70
+    - initialPos: {x: 26.536, y: -4.143, z: -16.795}
+      endPos: {x: 29.004, y: -4.143, z: -12.537}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 1
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 0
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: -60
+    - initialPos: {x: 29.004, y: -4.143, z: -12.537}
+      endPos: {x: 21.477, y: -4.143, z: -8.189}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 1
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 30
+    - initialPos: {x: 21.415, y: -4.143, z: -7.212}
+      endPos: {x: 23.554, y: -4.143, z: -3.594}
+      playWaterFilterSFXDuringThisSegment: 1
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 115
+  - isTurned: 0
+    waterContainer: {fileID: 2352489292778647552}
+    lightBulb: {fileID: 0}
+    lockedLightBulbColor: {r: 0.6313726, g: 0, b: 0, a: 1}
+    lockedLightBulbEmissionColor: {r: 0.38, g: 0, b: 0, a: 1}
+    unlockedLightBulbColor: {r: 0.11372549, g: 0.78431374, b: 0.078431375, a: 1}
+    unlockedLightBulbEmissionColor: {r: 0, g: 0.13, b: 0.054166675, a: 1}
+    doorLight: {fileID: 0}
+    lockedLightColor: {r: 1, g: 0.11764706, b: 0.11764706, a: 1}
+    unlockedLightColor: {r: 0.26666668, g: 0.6509804, b: 0.34901962, a: 1}
+    lightFadeSpeed: 1
+    keycard: {fileID: 2523537047639468847}
+    keycardMoveSpeed: 1
+    keycardPositions:
+    - initialPos: {x: 23.571, y: -4.143, z: -3.638}
+      endPos: {x: 21.496, y: -4.143, z: -7.105}
+      playWaterFilterSFXDuringThisSegment: 1
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 115
+    - initialPos: {x: 21.006, y: -4.143, z: -7.904}
+      endPos: {x: 29.039, y: -4.143, z: -12.508}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 1
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: 30
+    - initialPos: {x: 29.051, y: -4.093989, z: -12.448}
+      endPos: {x: 30.987, y: -4.093989, z: -9.221}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 1
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 0
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: -60
+    - initialPos: {x: 31.965, y: -7.269, z: -7.535}
+      endPos: {x: 33.096, y: -7.269, z: -5.618}
+      playWaterFilterSFXDuringThisSegment: 0
+      playWaterDrumSFXDuringThisSegment: 0
+      keepPlayingWaterSwishing: 0
+      playWaterExhaustandSuccessSFXAtStartOfThisSegment: 1
+      delayBeforeNextPipe: 2
+      startingDelay: 0
+      properyKeycardRotationForThisPath: -60
+  verboseDebug: 1
+  pipeRadius: 0.08
+  springStrength: 35
+  damping: 9
+  turbulence: 6
+  bounceRestitution: 0.35
+  noiseFrequency: 1.7
+  applyFlowRoll: 0
+  flowRollAmount: 12
+  currentWaterContainerIndex: 0
+  valveTurnSFX: {fileID: 8300000, guid: 64da90b1769fd034b870e6f7eefd6213, type: 3}
+  valveTurnFailSFX: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+  keycardInWaterFilterSFX: {fileID: 8300000, guid: 51f07da475fe9f84c9e42c2fcd1de555, type: 3}
+  keycardInWaterDrumSFX: {fileID: 8300000, guid: 13d779a845de67844ab5becaa41d0b6c, type: 3}
+  keycardInWaterPipeSFX: {fileID: 8300000, guid: 4c8be442e047c3b4e9939d8a9f830602, type: 3}
+  waterExhaustSFX: {fileID: 8300000, guid: 49b97e36af5670d48916c50b4ae7587c, type: 3}
+  filterSuccessSfx: {fileID: 8300000, guid: 257ed460be38aea4e857ed6d695b036f, type: 3}
+  gotToEndOfPathSFX: {fileID: 8300000, guid: 73eb4afd12dd38f428625fd672fae964, type: 3}
+  pipeHumSFX: {fileID: 8300000, guid: dc5011b6797477447912dcf9ef2809d1, type: 3}
+  turnOnPuzzle: {fileID: 8300000, guid: 98f9bd9017366774e81528ce63fc457c, type: 3}
+--- !u!1 &7762203895314269535
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7769357983046529226}
+  - component: {fileID: 6078635717570946963}
+  - component: {fileID: 5878845093272953775}
+  - component: {fileID: 860250620425026163}
+  m_Layer: 0
+  m_Name: Tank_R (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7769357983046529226
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7762203895314269535}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.6739736, y: 0.21391442, z: 0.21391447, w: 0.67397386}
+  m_LocalPosition: {x: -4.1490793, y: 1.135, z: -5.1879935}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7111448174505100924}
+  m_LocalEulerAnglesHint: {x: -89.98, y: 0, z: 35.218}
+--- !u!33 &6078635717570946963
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7762203895314269535}
+  m_Mesh: {fileID: -5441052713159008, guid: 91ef592f4d7f7654ca05302c30c813c1, type: 3}
+--- !u!23 &5878845093272953775
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7762203895314269535}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 8989056ed71f01a4aa9decc34472dd6f, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!136 &860250620425026163
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7762203895314269535}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.53
+  m_Height: 2.39
+  m_Direction: 2
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!1001 &6307022318625641061
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3594538828072942662}
+    m_Modifications:
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 33.096
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -7.269
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -5.618
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.8660254
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_Name
+      value: PuzzleKeyCard
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+--- !u!1 &2523537047639468847 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+  m_PrefabInstance: {fileID: 6307022318625641061}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3961432310535193472 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+  m_PrefabInstance: {fileID: 6307022318625641061}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8508785899467773602
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3594538828072942662}
+    m_Modifications:
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 13.23069
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -8.259991
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -16.890137
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.011183996
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.9999375
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 178.718
+      objectReference: {fileID: 0}
+    - target: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2300890203032341092, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_Name
+      value: WaterFilter
+      objectReference: {fileID: 0}
+    - target: {fileID: 2300890203032341092, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      insertIndex: 3
+      addedObject: {fileID: 6122681481338213232}
+    - targetCorrespondingSourceObject: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      insertIndex: 4
+      addedObject: {fileID: 7200550583367770266}
+    - targetCorrespondingSourceObject: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7769357983046529226}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3124647293153462886, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1733740437331333971}
+    - targetCorrespondingSourceObject: {fileID: 3124647293153462886, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6356456055518847440}
+  m_SourcePrefab: {fileID: 100100000, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+--- !u!1 &6722112387336199364 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3124647293153462886, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+  m_PrefabInstance: {fileID: 8508785899467773602}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &1733740437331333971
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6722112387336199364}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.1020439, y: 1.9244927, z: 2.2708554}
+  m_Center: {x: 8.7487806e-10, y: 0.3252871, z: -7.8709414e-16}
+--- !u!114 &6356456055518847440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6722112387336199364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 783730fa20d4f9b4e9bf2372e82e57ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
+  _showHitbox: 0
+  blockPromptWhenAttackingOrDashing: 1
+  _interactAnimation: {fileID: 0}
+  _interactId: 
+  _interactionSFX: {fileID: 0}
+  _interactionPrompt: Press to Interact
+  _interactInputAction: {fileID: 0}
+  requiredItemID: 
+  lockedInteractionPrompt: LOCKED
+  errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 8929990022577938628}
+        m_TargetAssemblyTypeName: WaterTreatmentPuzzle, Assembly-CSharp
+        m_MethodName: TurnValveOnWaterContainer
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 1
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  consoleIndex: 0
+  verboseDebug: 1
+--- !u!4 &7111448174505100924 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1487797417777238238, guid: 19b0bbdaaa051cc44a31013ed5f12953, type: 3}
+  m_PrefabInstance: {fileID: 8508785899467773602}
+  m_PrefabAsset: {fileID: 0}

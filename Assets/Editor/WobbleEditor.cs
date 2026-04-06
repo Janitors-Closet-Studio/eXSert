@@ -17,7 +17,7 @@ public class WobbleEditor : Editor
         {
             if (Application.isPlaying)
             {
-                wobbleScript.TestFlowWater();
+                wobbleScript.FlowWater();
             }
             else
             {

@@ -186,6 +186,47 @@ public class WaterContainerData
         ApplyBulbMaterialState(meshRenderer, toBaseColor, toEmissionColor);
     }
 
+    public IEnumerator FadeLightStateToUnlocked(float duration)
+    {
+        MeshRenderer meshRenderer = GetLightMeshRenderer();
+
+        if (duration <= 0f)
+        {
+            if (meshRenderer != null)
+                ApplyBulbMaterialState(meshRenderer, unlockedLightBulbColor, unlockedLightBulbEmissionColor);
+
+            if (doorLight != null)
+                doorLight.color = unlockedLightColor;
+
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            if (meshRenderer != null)
+            {
+                Color currentBaseColor = Color.Lerp(lockedLightBulbColor, unlockedLightBulbColor, t);
+                Color currentEmissionColor = Color.Lerp(lockedLightBulbEmissionColor, unlockedLightBulbEmissionColor, t);
+                ApplyBulbMaterialState(meshRenderer, currentBaseColor, currentEmissionColor);
+            }
+
+            if (doorLight != null)
+                doorLight.color = Color.Lerp(lockedLightColor, unlockedLightColor, t);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (meshRenderer != null)
+            ApplyBulbMaterialState(meshRenderer, unlockedLightBulbColor, unlockedLightBulbEmissionColor);
+
+        if (doorLight != null)
+            doorLight.color = unlockedLightColor;
+    }
+
     // Fade colors over time for smooth water container light transitions.
     private IEnumerator FadeColorIntoEachother(Color fromColor, Color toColor, float duration)
     {
@@ -255,6 +296,8 @@ public class KeycardPositions
     public Vector3 initialPos;
     [Tooltip("Local end point for this keycard segment.")]
     public Vector3 endPos;
+    [Tooltip("Pipe liquid effects to trigger when the keycard starts traveling through this segment.")]
+    public List<Wobble> flowPipes = new List<Wobble>();
     [Tooltip("Pause in seconds after this segment before moving to the next one.")]
     public bool playWaterFilterSFXDuringThisSegment = false;
     public bool playWaterDrumSFXDuringThisSegment = false;
@@ -498,13 +541,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         containerData.isTurned = true;
         LogVerbose($"UpdateWaterContainerState progressed | currentIndex(after)={currentWaterContainerIndex}");
 
-        StartCoroutine(containerData.FadeLightBulbColor(
-            containerData.lockedLightBulbColor,
-            containerData.unlockedLightBulbColor,
-            containerData.lockedLightBulbEmissionColor,
-            containerData.unlockedLightBulbEmissionColor,
-            containerData.lightFadeSpeed
-        ));
+        StartCoroutine(containerData.FadeLightStateToUnlocked(containerData.lightFadeSpeed));
 
         if (keycardMovementRoutine != null)
         {
@@ -554,6 +591,7 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
                 }
 
                 LogVerbose($"MoveKeycardPath segment {i} | start={segment.initialPos} end={segment.endPos} delay={segment.delayBeforeNextPipe}");
+                TriggerSegmentFlow(segment, i);
 
                 if (segment.playWaterExhaustandSuccessSFXAtStartOfThisSegment)
                 {
@@ -610,6 +648,24 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
 
         keycardMovementRoutine = null;
         LogVerbose("MoveKeycardPath complete.");
+    }
+
+    private void TriggerSegmentFlow(KeycardPositions segment, int segmentIndex)
+    {
+        if (segment == null || segment.flowPipes == null || segment.flowPipes.Count == 0)
+            return;
+
+        for (int i = 0; i < segment.flowPipes.Count; i++)
+        {
+            Wobble wobble = segment.flowPipes[i];
+            if (wobble == null)
+            {
+                LogWarningVerbose($"MoveKeycardPath segment {segmentIndex} has a missing flow pipe reference at slot {i}.");
+                continue;
+            }
+
+            wobble.FlowWater();
+        }
     }
 
     private void SetKeycardInteractable(bool interactable, WaterContainerData containerData)
