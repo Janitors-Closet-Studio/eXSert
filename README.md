@@ -1,79 +1,94 @@
-# eXSert – Beta Build
-**eXSert** is a third-person character-action prototype set aboard a derelict research airship. Master stance-based combat, aerial launchers, guard-based counters, and fast traversal while fighting through autonomous security drones as the ship gradually opens up around you.
-This **Beta build** represents a significantly expanded and refined version of the original Alpha slice, introducing multiple new playable zones, improved combat pacing, expanded traversal routes, and major visual upgrades across the airship.
+# eXSert - Beta Build README
+
+## Build Overview
+
+This Beta build represents a significantly expanded and refined version of the eXSert Alpha Build.
+
+The entire playable section of the game has been updated with improved combat encounters, clearer player guidance, expanded traversal routes, and major visual upgrades across multiple zones.
+
+Key updates in this build include:
+
+* Fully playable progression from start to final boss encounter
+* Major level design improvements in Crew Quarters, Hangar, and Conservatory
+* Conservatory now fully accessible using the new elevator lift system
+* Large-scale visual updates and environmental polish
+* A showcase version of the final boss arena with a basic boss AI
+* Reworked checkpoint system for smoother progression
+* Improved encounter system for better combat flow and performance
+* Expanded interaction feedback, including audio and camera guidance
+
+This build focuses on improving gameplay clarity, pacing, and overall player experience.
+
+Narrative systems and some advanced boss mechanics are still in development.
+
+## Repository Progress Since March 7, 2026
+
+Local git history shows 509 commits landed after March 7, 2026.
+
+Recent progress areas include:
+
+* Conservatory progression and lift functionality
+* Charging Station art, boss arena setup, and Augur encounter iteration
+* Boss damage, mounting, ejection, and cage match fixes
+* Checkpoint, death handling, and respawn improvements
+* Visual effects attachment and environment polish
+* Interaction, audio, camera guidance, and combat-flow fixes
 
 ---
 
-# Build Overview
+## Installation & Launch
 
-This Beta build features a complete playable progression from the opening elevator sequence to the **Engine Core boss arena**.
+1. Unzip `eXSert Beta Build.zip`
+2. Run `eXSert.exe`
 
-Major updates include:
-* Fully playable progression from **start to final boss encounter**
-* Major level design updates across **Crew Quarters, Hangar, and Conservatory**
-* **Conservatory area unlocked via the new elevator lift system**
-* Large-scale **visual upgrades and environmental polish**
-* A showcase version of the **final boss arena with a basic boss AI**
-* Reworked **checkpoint system** for smoother progression
-* Improved **encounter spawning and combat flow**
-* Expanded **interaction feedback with audio and camera guidance**
-
-This build focuses on improving **gameplay clarity, pacing, and overall player experience**.
-
-Some **narrative systems and advanced boss mechanics are still in development.**
+No additional setup or external dependencies are required.
 
 ---
 
-# Installation & Launch
+## Controls
 
-1. Download and unzip **`eXSert Beta Build.zip`**
-2. Extract the folder anywhere outside `Program Files`
-3. Run **`eXSert.exe`**
+### Gamepad (Xbox / PlayStation Layout)
 
-No additional setup or dependencies are required.
+Move - Left Stick  
+Look - Right Stick
 
----
+Light Attack - X / Square  
+Heavy Attack - Y / Triangle
 
-# Controls
+Jump - A / Cross  
+Dash - Right Trigger
 
-## Gamepad (Xbox / PlayStation Layout)
+Guard/Parry - Right Shoulder
 
-| Action        | Input                         |
-| ------------- | ----------------------------- |
-| Move          | Left Stick                    |
-| Look          | Right Stick                   |
-| Light Attack  | X / Square                    |
-| Heavy Attack  | Y / Triangle                  |
-| Jump          | A / Cross                     |
-| Dash          | Right Trigger                 |
-| Guard / Parry | Right Shoulder                |
-| Lock-On       | Right Stick Press or D-Pad Up |
-| Switch Target | D-Pad Left / Right            |
-| Interact      | B / Circle                    |
-| Pause         | Start / Options               |
+Lock-On - Right Stick Press or D-Pad Up  
+Switch Target - D-Pad Left / Right
+
+Interact - B / Circle  
+Pause - Start / Options
 
 ---
 
-## Keyboard & Mouse
+### Keyboard & Mouse
 
-| Action        | Input              |
-| ------------- | ------------------ |
-| Move          | WASD               |
-| Look          | Mouse              |
-| Light Attack  | Left Mouse Button  |
-| Heavy Attack  | Right Mouse Button |
-| Jump          | Space              |
-| Dash          | Left Shift         |
-| Guard / Parry | E                  |
-| Lock-On       | C                  |
-| Interact      | F                  |
-| Pause         | Escape             |
+Move - WASD  
+Look - Mouse
+
+Light Attack - Left Mouse Button  
+Heavy Attack - Right Mouse Button
+
+Jump - Space  
+Dash - Left Shift
+
+Guard/Parry - E
+
+Lock-On - C  
+Interact - F
+
+Pause - Escape
 
 ---
 
-# Level Progression
-
-The Beta build progresses through several sections of the airship:
+## Level Order
 
 1. Elevator
 2. Cargo Bay
@@ -83,162 +98,136 @@ The Beta build progresses through several sections of the airship:
 6. Conservatory
 7. Engine Core (Final Boss)
 
-Each zone introduces new **combat encounters, traversal paths, and environmental mechanics** leading toward the final boss arena.
+---
+
+## Gameplay Flow
+
+Players will progress through multiple zones of the airship while clearing combat encounters and unlocking traversal paths.
+
+Each zone introduces new combat encounters and environmental routes that lead toward the final boss arena.
+
+The final boss room has been prepared for demonstration and includes a basic boss AI that actively pursues the player.
 
 ---
 
-# Gameplay Flow
+## Major Mechanics
 
-Players explore multiple sections of the airship while clearing combat encounters and unlocking traversal routes.
+### Combo System
 
-The game alternates between:
+Attacks can chain into multi-stage combos. Finisher attacks deal increased damage and help control groups of enemies.
 
-* **Combat arenas**
-* **Traversal segments**
-* **Environmental progression puzzles**
-
-The final area features a **demonstration version of the boss encounter**, including a **basic AI that actively pursues the player**.
-
----
-
-# Major Mechanics
-
-## Combo System
-
-Attacks chain into multi-stage combos.
-Finishers deal increased damage and help control groups of enemies.
-
-## Aerial Combat
+### Aerial Combat
 
 Enemies can be launched into the air and followed with aerial attacks before finishing with plunge strikes.
 
-## Guard & Parry
+### Guard & Parry
 
-Guarding slows movement but increases combat control.
+Guarding slows movement but increases combat control.  
+Parrying enemy attacks during a short timing window stuns enemies.
 
-Successful **parries within a short timing window stun enemies**, allowing powerful follow-ups.
+### Dash / Air Dash
 
-## Dash & Air Dash
+High-speed ground and aerial mobility allow players to reposition quickly and extend combos.
 
-Fast ground and aerial mobility allow players to reposition quickly and extend combo chains.
+### Traversal & Platforming
 
-## Traversal & Platforming
-
-Scaffolding, catwalks, vertical routes, and lift systems are integrated into combat arenas and exploration paths.
-
----
-
-# Updated Interaction System
-
-The interaction system has been significantly improved.
-
-Players now receive:
-
-* **Audio feedback** when attempting unavailable interactions
-* **Camera guidance** when activating important objectives
-* Clearer prompts when progressing through level mechanics
-
-These improvements help guide players through complex environments while maintaining immersion.
+Vertical routes, scaffolding, catwalks, and lift systems are integrated into combat arenas and exploration paths.
 
 ---
 
-# Checkpoint System
+## Updated Interaction System
 
-The checkpoint system has been redesigned to improve gameplay flow.
+Interactions have been significantly improved.
 
-Updates include:
+Players will now receive proper audio feedback when attempting interactions that are unavailable.
 
-* More reliable respawn points
-* Faster scene recovery after death
-* Improved synchronization between encounters and progression triggers
-
-These improvements allow smoother progression between combat encounters and level sections.
+Certain interactions will also trigger camera transitions, providing clearer visual guidance toward important objectives or progression routes.
 
 ---
 
-# Conservatory Progression Guide
+## Checkpoint System
 
-Progression through **Crew Quarters and Conservatory** now follows a structured encounter and keycard sequence.
+The checkpoint system has been fully redesigned.
 
-### Initial Progression
+Checkpoints now provide more reliable respawn points and smoother progression between encounters.
 
-1. Enter **Room 1** (first room on the left)
-2. Defeat all enemies
-3. Collect the **Key** dropped by the encounter
-4. Exit through the opposite door and move toward **Room 2**
+Combat encounters and level triggers have also been optimized for better loading performance and gameplay feedback.
 
-### Lower Level Access
+---
 
-5. On the right side of the area, locate a **gap in the fence**
-6. Follow the **descending ramp**
-7. Navigate down through the **second floor toward the first floor**
+## Conservatory Progression Guide
+
+Progression in Crew Quarters now follows a structured encounter and keycard sequence.
+
+1. Enter Room 1 (first room on the left) and defeat all enemies.
+2. Collect the Key dropped by the encounter.
+3. Exit through the opposite door and move toward Room 2.
+4. On the right side of the area, find a gap in the fence leading to a ramp downward.
+5. Use the ramp to descend to the lower floors.
+6. Navigate the second floor and locate the opening that leads to the first floor.
 
 While progressing downward:
 
-* Enemy encounters must be cleared
-* Enemies drop a **Key Card required to activate the lift system**
+* Players must defeat enemy groups along the path.
+* These enemies will drop a Key Card required to activate the lift system in Room 2.
 
-### Lift System
+Using the lift system allows players to ascend the structure.
 
-Activating the lift system allows players to return upward through the structure.
+Players may choose to continue exploring upward toward the third floor.
 
-Players may continue exploring toward the **third floor**.
+After clearing the encounters on the third floor:
 
-### Final Key Sequence
+* Enemies will drop a Key required to activate the third room lift.
+* Inside the third room, defeating the enemies will reward the player with a Golden Key.
 
-After clearing the third floor encounters:
+The Golden Key unlocks a console on the third floor.
 
-* Enemies drop a **Key** to activate the third room lift
-* Defeating enemies inside the room grants the **Golden Key**
-
-The **Golden Key unlocks a console** on the third floor.
-
-Activating this console opens a **maintenance hatch leading to the Engine Core**, where the final boss encounter takes place.
+Interacting with this console allows players to open the maintenance hatch, which leads down to the Engine Core, where the final boss encounter takes place.
 
 ---
 
-# Known Issues (Beta)
+## Known Bugs
 
 The following issues are currently known in the Beta build.
 
-## Gameplay & Progression
+### Gameplay / Progression
 
-* Starting a new game, returning to menu, then starting another may lock the game
-* Interacting during dash may break player movement
-* Lock-on movement occasionally behaves inconsistently
+* Entering a New Game, returning to Main Menu, then attempting to start another New Game may lock the game.
+* Interaction during dash may break player movement and cause dash to become locked after restarting.
+* Player movement during attacks can behave inconsistently when lock-on is active.
 
-## UI & Settings
+### UI / Settings
 
-* Audio sliders may not update visually
-* Settings changes in the main menu may not save correctly
-* Objective UI updates inconsistently
-* Brightness slider currently nonfunctional
-* Combo Progression Manager toggle issue
-* Motion blur cannot currently be disabled
+* Audio sliders sometimes do not update visually in the Settings Menu.
+* All settings changed in the Main Menu may not save properly.
+* Objective UI does not update correctly.
+* Brightness slider currently does not function.
+* Combo Progression Manager fail to toggle correctly.
+* Motion blur cannot currently be disabled in the settings.
 
-## Controls & Input
+### Controls / Input
 
-* Interaction feedback occasionally updates slowly
+* Interaction feedback occasionally updates slowly.
 
-## Audio
+### Audio
 
-* Elevator audio may play during the opening cutscene
-* Double jump sound effect volume is currently too quiet
+* Elevator audio may play during the initial cutscene.
+* Double jump SFX volume is currently too quiet.
 
-## Environment & Level Issues
+### Environment / Level Issues
 
-* Key cards may occasionally spawn floating
-* Missing NavMesh in Crew Quarters may cause enemies to not chase the player
-* Missing enemy zone in Hangar may prevent enemies from pursuing
-* Hangar key ID assignment may occasionally fail
-* Small collision gap between magnet and cargo in Cargo Bay
-* Player may float slightly in Cargo Bay due to collider issues
+* Card keys may occasionally spawn floating.
+* Missing NavMesh in Crew Quarters causes enemies to not chase after player.
+* Missing enemy zone in Hangar causes enemies to not chase after player.
+* Hangar key ID assignment may fail, allowing players to interact with consoles before acquiring proper keycard.
+* Small collision gap between magnet and cargo in Cargo Bay.
+* Player may slightly float in Cargo Bay due to collider issues.
 
 These issues are currently under investigation and will be addressed in future builds.
 
 ---
 
-# Removed Debug Shortcuts
+## Removed Debug Shortcuts
 
 Debug shortcuts used during Alpha testing have been removed.
 
@@ -247,39 +236,29 @@ The following features are no longer available:
 * Scene Load Shortcuts
 * Cargo Bay Progression Cheat
 
-All progression paths now function through **normal gameplay flow.**
+All encounter systems and progression paths are now fully functional within the intended gameplay flow.
 
 ---
 
-# Build Info
+## Build Info
 
-Engine: **Unity 6000.2.15f2**
-Platform: **Windows 10 / 11 (DX11, URP)**
-Milestone: **Beta**
-Last Update: **March 8, 2026**
-
----
-
-# AI Disclosure
-
-During development of the **eXSert Beta Build**, Janitor's Closet Studio used:
-
-* **GitHub Copilot** to assist with debugging compiler errors and refactoring during development.
-* **ChatGPT** to help summarize known bug lists and restructure README documentation.
-
-All gameplay systems, assets, and design work were created by **Janitor's Closet Studio's artists, designers, and engineers.**
+Engine: Unity 6000.2.15f2  
+Platform: Windows 10 / 11 (DX11, URP)  
+Milestone: Beta  
+Last Update: March 8th, 2026
 
 ---
 
-Thank you for participating in the **eXSert Beta Playtest**.
+## AI Disclosure
 
-Your feedback helps us refine:
+During the production of eXSert Beta Build, Janitor's Closet Studio utilized GitHub Copilot in debugging and iterating compiler errors during building, and ChatGPT to summarize the known bug lists and quickly iterate the current README document to reflect the updated state of the build compared to previous submissions.
 
-* Combat feel
-* Encounter pacing
-* Level clarity
-* Overall gameplay quality
+All assets and scripts are created by Janitor's Closet Studio's artists, composers, and engineers.
 
-Please submit bug reports and gameplay feedback through the **Google Form provided in the Discord server.**
+---
 
-If you'd like, I can also show you **3 small README tweaks that make GitHub repos look much more professional** (they're used in a lot of AAA studio public repos).
+Thank you for participating in the eXSert Beta playtest.
+
+Your feedback helps us refine combat feel, encounter pacing, level clarity, and overall gameplay quality.
+
+Please submit bug reports and gameplay feedback through the Google Form provided in the Discord server.
