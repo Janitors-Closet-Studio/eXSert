@@ -411,6 +411,12 @@ public static class SceneLoader
 
         if (isLoaded && !forceReload) return null;
 
+        if (isLoaded && forceReload)
+        {
+            Debug.LogWarning("[Scene Loader] LoadPlayerScene(forceReload: true) is not supported by the async overload. Use LoadPlayerSceneCoroutine for player-scene recovery flows.");
+            return null;
+        }
+
         DebugLogSettingsM.ConditionalLog(DebugLogCategory.SceneLoading, $"[Scene Loader] Loading player scene '{PLAYER_SCENE}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
 
         AsyncOperation operation;
@@ -444,7 +450,7 @@ public static class SceneLoader
     /// <summary>
     /// Coroutine variant for loading the player scene. Yields until player scene load completes and performs the same initialization.
     /// </summary>
-    public static IEnumerator LoadPlayerSceneCoroutine(bool forceReload = false, bool characterStartInactive = true)
+    public static IEnumerator LoadPlayerSceneCoroutine(bool forceReload = false, bool characterStartInactive = true, bool spawnAtCheckpoint = true)
     {
         SceneAsset playerSceneAsset = (SceneAsset)PLAYER_SCENE;
 
@@ -461,7 +467,25 @@ public static class SceneLoader
             isLoaded = false;
         }
 
-        if (!isLoaded || forceReload)
+        if (isLoaded && forceReload)
+        {
+            Scene loadedPlayerScene = SceneManager.GetSceneByName(PLAYER_SCENE);
+            if (loadedPlayerScene.IsValid() && loadedPlayerScene.isLoaded)
+            {
+                AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(loadedPlayerScene);
+                if (unloadOperation == null)
+                {
+                    Debug.LogError($"[Scene Loader] Failed to start unload for '{PLAYER_SCENE}' during force reload.");
+                    yield break;
+                }
+
+                yield return unloadOperation;
+                Player.ClearCachedPlayerObject();
+                isLoaded = false;
+            }
+        }
+
+        if (!isLoaded)
         {
             Debug.Log($"[Scene Loader] Coroutine loading player scene '{PLAYER_SCENE}' with forceReload={forceReload}. Current loaded scenes: {LoadedSceneCount}.");
 
@@ -492,7 +516,35 @@ public static class SceneLoader
         {
             if (characterStartInactive) player.SetActive(false);
             
-            Player.SpawnPlayerAtCheckpoint();
+            if (spawnAtCheckpoint)
+                Player.SpawnPlayerAtCheckpoint();
+        }
+    }
+
+    public static IEnumerator EnsurePlayerObjectAvailableCoroutine(bool characterStartInactive = true)
+    {
+        if (Player.TryGetPlayerObject(out GameObject playerObject))
+        {
+            if (characterStartInactive)
+                playerObject.SetActive(false);
+
+            yield break;
+        }
+
+        Scene loadedPlayerScene = SceneManager.GetSceneByName(PLAYER_SCENE);
+        if (loadedPlayerScene.IsValid() && loadedPlayerScene.isLoaded)
+        {
+            Debug.LogWarning("[Scene Loader] Player scene is loaded but the player object is missing. Reloading the player scene to recover the player instance.");
+            yield return LoadPlayerSceneCoroutine(forceReload: true, characterStartInactive: characterStartInactive, spawnAtCheckpoint: false);
+        }
+        else
+        {
+            yield return LoadPlayerSceneCoroutine(characterStartInactive: characterStartInactive, spawnAtCheckpoint: false);
+        }
+
+        if (!Player.TryGetPlayerObject(out _))
+        {
+            Debug.LogError("[Scene Loader] Player recovery failed. Player scene finished loading but no player object was found.");
         }
     }
 
