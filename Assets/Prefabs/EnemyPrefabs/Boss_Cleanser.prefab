@@ -3551,7 +3551,7 @@ MonoBehaviour:
   - {fileID: 4412961963119750697}
   - {fileID: 7627187811119907345}
   wingHitboxCollider: {fileID: 4556099291330448411}
-  spinDashHitboxCollider: {fileID: 0}
+  spinDashHitboxCollider: {fileID: 2666766764649170388}
   spinDashHitboxRearmDelay: 0.08
   paramMoveSpeed: MoveSpeed
   paramIsMoving: IsMoving
@@ -6691,6 +6691,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7697223856285727030}
+  - component: {fileID: 2666766764649170388}
   m_Layer: 8
   m_Name: Cleanser_Spine_Jnt
   m_TagString: Untagged
@@ -6714,6 +6715,29 @@ Transform:
   - {fileID: 8795221550275930648}
   m_Father: {fileID: 2348639748037503220}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &2666766764649170388
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9220811064003887405}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 1
+  m_Height: 2.77
+  m_Direction: 1
+  m_Center: {x: 0, y: -0.12, z: 0}
 --- !u!1001 &7159414263877924267
 PrefabInstance:
   m_ObjectHideFlags: 0

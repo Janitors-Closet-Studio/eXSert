@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using Utilities.Combat;
 using Managers.TimeLord; // For pause event handling
@@ -394,6 +395,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool jumpFullMovementEventReceived;
         private Collider runtimeFloatingAerialAssistCollider;
         private float nextGapCloseDashAllowedTime;
+        [SerializeField, Min(0.1f)] private float playerRefRetryIntervalSeconds = 0.5f;
+        private Coroutine playerRefRetryCoroutine;
 
         #region IQueuedAttacker Implementation
         
@@ -609,6 +612,7 @@ namespace EnemyBehavior.Boss.Cleanser
             ApplyMovementSettings();
             InitializeHealthBar();
             CachePlayerReference();
+            BeginRetryingPlayerReferenceIfNeeded();
             InitializeAttackDescriptors();
             EnsurePlayerSlideOffSurface();
 
@@ -691,6 +695,9 @@ namespace EnemyBehavior.Boss.Cleanser
             // Subscribe to pause events for audio handling
             PauseCoordinator.OnPaused += OnGamePaused;
             PauseCoordinator.OnResumed += OnGameResumed;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+
+            BeginRetryingPlayerReferenceIfNeeded();
             
             if (mainLoopCoroutine != null)
                 StopCoroutine(mainLoopCoroutine);
@@ -704,6 +711,13 @@ namespace EnemyBehavior.Boss.Cleanser
             // Unsubscribe from pause events
             PauseCoordinator.OnPaused -= OnGamePaused;
             PauseCoordinator.OnResumed -= OnGameResumed;
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
+            if (playerRefRetryCoroutine != null)
+            {
+                StopCoroutine(playerRefRetryCoroutine);
+                playerRefRetryCoroutine = null;
+            }
             
             if (mainLoopCoroutine != null)
             {
@@ -727,6 +741,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void Update()
         {
+            if (player == null)
+                BeginRetryingPlayerReferenceIfNeeded();
+
             UpdateAnimatorParameters();
             UpdateHealthBar();
             
@@ -736,6 +753,40 @@ namespace EnemyBehavior.Boss.Cleanser
                 UpdateAggressionBasedSpeed();
                 UpdatePlayerGuardingAggression();
             }
+        }
+
+        private IEnumerator RetryCachePlayerReferenceRoutine()
+        {
+            float retryInterval = Mathf.Max(0.1f, playerRefRetryIntervalSeconds);
+
+            while (!isDefeated && player == null)
+            {
+                CachePlayerReference();
+
+                if (player != null)
+                    break;
+
+                yield return WaitForSecondsCache.Get(retryInterval);
+            }
+
+            playerRefRetryCoroutine = null;
+        }
+
+        private void BeginRetryingPlayerReferenceIfNeeded()
+        {
+            if (player != null || playerRefRetryCoroutine != null || !isActiveAndEnabled)
+                return;
+
+            playerRefRetryCoroutine = StartCoroutine(RetryCachePlayerReferenceRoutine());
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (player != null)
+                return;
+
+            CachePlayerReference();
+            BeginRetryingPlayerReferenceIfNeeded();
         }
         
         /// <summary>
