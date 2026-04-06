@@ -664,6 +664,9 @@ namespace EnemyBehavior.Boss
             
             // Cache player reference - search hierarchy for PlayerMovement
             CachePlayerReference();
+
+            if (PlayerManager == null)
+                PlayerManager = BossScenePlayerManager.Instance ?? FindObjectOfType<BossScenePlayerManager>();
             
             // Cache original agent settings EARLY, before any modifications
             CacheAgentSettings();
@@ -4691,13 +4694,16 @@ namespace EnemyBehavior.Boss
             }
             
             // Release player back to DontDestroyOnLoad
+            if (PlayerManager == null)
+                PlayerManager = BossScenePlayerManager.Instance ?? FindObjectOfType<BossScenePlayerManager>();
+
             if (PlayerManager != null)
             {
                 PlayerManager.OnBossDefeated();
             }
             else
             {
-                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] PlayerManager not assigned! Player will not be released to DontDestroyOnLoad.");
+                EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaBrain), "[BossRoombaBrain] PlayerManager could not be found! Player will not be returned to PlayerScene.");
             }
             
             // Unregister from attack queue
