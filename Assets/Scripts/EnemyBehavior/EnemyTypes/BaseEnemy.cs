@@ -559,15 +559,58 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         externalHelperRoots.Remove(helper);
     }
 
+    public void CleanupExternalHelpersForDeath()
+    {
+        CleanupExternalHelpers();
+    }
+
+    public void RestoreExternalHelpersAfterReset()
+    {
+        RestoreExternalHelpers();
+    }
+
     private void CleanupExternalHelpers()
     {
-        foreach (var helper in externalHelperRoots)
+        for (int i = externalHelperRoots.Count - 1; i >= 0; i--)
         {
+            var helper = externalHelperRoots[i];
+
+            if (helper == null)
+            {
+                externalHelperRoots.RemoveAt(i);
+                continue;
+            }
+
+            bool belongsToPooledRoot = helper.transform.root == transform.root;
+            if (belongsToPooledRoot)
+            {
+                helper.SetActive(false);
+                continue;
+            }
+
             if (helper != null)
                 Destroy(helper);
-        }
 
-        externalHelperRoots.Clear();
+            externalHelperRoots.RemoveAt(i);
+        }
+    }
+
+    private void RestoreExternalHelpers()
+    {
+        for (int i = externalHelperRoots.Count - 1; i >= 0; i--)
+        {
+            var helper = externalHelperRoots[i];
+            if (helper == null)
+            {
+                externalHelperRoots.RemoveAt(i);
+                continue;
+            }
+
+            if (helper.transform.root == transform.root && !helper.activeSelf)
+            {
+                helper.SetActive(true);
+            }
+        }
     }
 
 
@@ -1481,6 +1524,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         // Fire the spawn event for encounter tracking
         InvokeOnSpawn();
 
+        RestoreExternalHelpers();
+
         gameObject.SetActive(true);
         
         // Derived classes can override to play spawn animations, enable AI, etc.
@@ -1499,6 +1544,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     {
         // Restore health to max
         currentHealth = maxHealth;
+
+        RestoreExternalHelpers();
         
         // Clear death and low health flags
         deathSequenceTriggered = false;

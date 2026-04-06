@@ -900,6 +900,37 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   isStepping: 0
+--- !u!1 &6346918176180913201
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7968680399449463570}
+  m_Layer: 8
+  m_Name: ExplosionTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7968680399449463570
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6346918176180913201}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.1, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5751955931125845077}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6490094028500599715
 GameObject:
   m_ObjectHideFlags: 0
@@ -2402,6 +2433,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -1085341173257131196, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1197649947736831404}
+    - targetCorrespondingSourceObject: {fileID: -1085341173257131196, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7968680399449463570}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: -1
@@ -2421,6 +2455,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4030866488839890718}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2169871762913352338}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6896124201392192136}
   m_SourcePrefab: {fileID: 100100000, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
 --- !u!4 &268807182746175270 stripped
 Transform:
@@ -2729,6 +2769,51 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &2169871762913352338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3738677446788979264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fe2524a362c374390a2a12274f243d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDeathVfxController
+  enemyCoreOverride: {fileID: 8074827969295146023}
+  vfxEntries:
+  - prefab: {fileID: 2706563569258749630, guid: b36ecd158a34aba49848b903c9b66575, type: 3}
+    anchor: {fileID: 7968680399449463570}
+    positionOffset: {x: 0, y: 0, z: 0}
+    rotationOffset: {x: 0, y: 0, z: 90}
+    scaleMultiplier: {x: 0.5, y: 0.3, z: 0.5}
+    followAnchorAfterSpawn: 0
+    restartParticleSystems: 0
+    restartVisualEffects: 0
+    lifetime: 0
+--- !u!114 &6896124201392192136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3738677446788979264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efbb8a2575bb7fa44abb97d506063f1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDeathSoundConfig
+  enemyCoreOverride: {fileID: 8074827969295146023}
+  deathSound: {fileID: 8300000, guid: 813f7b39e0cc2ee4fb5fe61999893058, type: 3}
+  volume: 0.8
+  pitch: 1
+  playbackMode: 0
+  customAudioSource: {fileID: 0}
+  soundAnchor: {fileID: 0}
+  detachedSpatialBlend: 1
+  detachedMinDistance: 1
+  detachedMaxDistance: 25
 --- !u!4 &4082974826009936122 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d9cdcb53e3bb9cb469929c025e3cdbe8, type: 3}
@@ -2894,7 +2979,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1659047810783782773, guid: 06ba784c75808e04a943549bac3f15f7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.000000052154064
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1659047810783782773, guid: 06ba784c75808e04a943549bac3f15f7, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2914,7 +2999,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1659047810783782773, guid: 06ba784c75808e04a943549bac3f15f7, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.09
+      value: -0.1
       objectReference: {fileID: 0}
     - target: {fileID: 1659047810783782773, guid: 06ba784c75808e04a943549bac3f15f7, type: 3}
       propertyPath: m_AnchoredPosition.y

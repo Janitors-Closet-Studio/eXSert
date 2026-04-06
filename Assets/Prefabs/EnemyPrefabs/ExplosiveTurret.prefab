@@ -31,6 +31,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 9116645942203580927}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6880446659835894068
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3148572458537625449}
+  m_Layer: 8
+  m_Name: ExplosionTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3148572458537625449
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6880446659835894068}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.096, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8165814940253182434}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &416814567562910474
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -908,6 +939,9 @@ PrefabInstance:
     m_RemovedGameObjects:
     - {fileID: -6554126680443083230, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
     m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3148572458537625449}
     - targetCorrespondingSourceObject: {fileID: -1822167259749058407, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       insertIndex: 0
       addedObject: {fileID: 1110479649470914759}
@@ -924,6 +958,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7288010346531664217}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8144645242592694}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3136076612337225272}
   m_SourcePrefab: {fileID: 100100000, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
 --- !u!4 &1183928389919852176 stripped
 Transform:
@@ -1011,7 +1051,7 @@ MonoBehaviour:
   isAttackBoxActive: 0
   hasFiredLowHealth: 0
   externalHelperRoots:
-  - {fileID: 0}
+  - {fileID: 651257736222647899}
   - {fileID: 2638648365043514651}
   idleStateName: Idle
   locomotionStateName: Locomotion
@@ -1091,6 +1131,51 @@ CapsuleCollider:
   m_Height: 2.5
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &8144645242592694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8798096061373481816}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efbb8a2575bb7fa44abb97d506063f1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDeathSoundConfig
+  enemyCoreOverride: {fileID: 8315034985916432300}
+  deathSound: {fileID: 8300000, guid: 813f7b39e0cc2ee4fb5fe61999893058, type: 3}
+  volume: 0.8
+  pitch: 1
+  playbackMode: 0
+  customAudioSource: {fileID: 0}
+  soundAnchor: {fileID: 0}
+  detachedSpatialBlend: 1
+  detachedMinDistance: 1
+  detachedMaxDistance: 25
+--- !u!114 &3136076612337225272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8798096061373481816}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fe2524a362c374390a2a12274f243d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDeathVfxController
+  enemyCoreOverride: {fileID: 8315034985916432300}
+  vfxEntries:
+  - prefab: {fileID: 2706563569258749630, guid: b36ecd158a34aba49848b903c9b66575, type: 3}
+    anchor: {fileID: 3148572458537625449}
+    positionOffset: {x: 0, y: 0, z: 0}
+    rotationOffset: {x: 0, y: 0, z: 0}
+    scaleMultiplier: {x: 0, y: 0, z: 0}
+    followAnchorAfterSpawn: 0
+    restartParticleSystems: 0
+    restartVisualEffects: 0
+    lifetime: 0
 --- !u!4 &9116645942203580927 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
