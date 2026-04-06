@@ -45,6 +45,15 @@ namespace EnemyBehavior.Boss
 
         private void Awake()
         {
+            if (!IsHostedInBossScene())
+            {
+                Log(
+                    $"Disabling manager in scene '{gameObject.scene.name}' because it only manages player transfer for '{BossSceneName}'."
+                );
+                enabled = false;
+                return;
+            }
+
             if (Instance != null && Instance != this)
             {
                 Log(
@@ -86,6 +95,14 @@ namespace EnemyBehavior.Boss
         /// </summary>
         public void ClaimPlayer()
         {
+            if (!IsHostedInBossScene())
+            {
+                Log(
+                    $"Ignoring ClaimPlayer from scene '{gameObject.scene.name}'. Player transfer is only valid for '{BossSceneName}'."
+                );
+                return;
+            }
+
             if (playerClaimed)
             {
                 Log("Player already claimed for this scene.");
@@ -366,6 +383,13 @@ namespace EnemyBehavior.Boss
             }
 
             return false;
+        }
+
+        private bool IsHostedInBossScene()
+        {
+            Scene ownerScene = gameObject.scene;
+            return ownerScene.IsValid()
+                && string.Equals(ownerScene.name, BossSceneName, System.StringComparison.Ordinal);
         }
 
         #region Public API for Boss Brain
