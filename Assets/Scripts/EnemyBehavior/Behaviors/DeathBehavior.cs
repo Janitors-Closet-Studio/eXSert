@@ -54,6 +54,10 @@ namespace Behaviors
             // Death animation/sequence is now complete - fire the OnDeath event
             enemy.OnDeathSequenceComplete();
 
+            // Hide authored helper roots that live under the pooled enemy root,
+            // and clean up any runtime helpers that were registered externally.
+            enemy.CleanupExternalHelpersForDeath();
+
             // Hide health bar but don't destroy it (can be re-enabled on reset)
             if (enemy.healthBarInstance != null)
             {
