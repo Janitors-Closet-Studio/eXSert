@@ -239,7 +239,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.20781612, y: 0.28574133, z: 0.14551713}
+  m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0.000121534154, y: -0.011360608, z: 0.07138181}
 --- !u!114 &7622018774058524696
 MonoBehaviour:
@@ -254,6 +254,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NavigationEntryInteraction
   _showHitbox: 1
+  blockPromptWhenAttackingOrDashing: 1
+  interactable: 1
   _interactAnimation: {fileID: 0}
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 5311eee9c9986724c91de6aa7dde1649, type: 3}
