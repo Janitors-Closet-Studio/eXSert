@@ -80,6 +80,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Health")]
         [SerializeField] private float maxHealth = 2000f;
         [SerializeField] private float currentHealth = 2000f;
+        [Tooltip("Small epsilon used to treat near-zero HP as dead (prevents float precision edge cases).")]
+        [SerializeField, Min(0f)] private float healthZeroEpsilon = 0.01f;
         
         [Header("Health Bar UI")]
         [Tooltip("Reference to the boss health bar script on the canvas.")]
@@ -149,6 +151,8 @@ namespace EnemyBehavior.Boss.Cleanser
         public int MinCombosBetweenUltimates = 3;
         [Tooltip("If true, ultimate triggers by health threshold. If false, triggers by combos since last ultimate.")]
         public bool UltimateTriggeredByHealth = true;
+        [Tooltip("If true, Cleanser ignores incoming damage while executing ultimate so the sequence cannot be instantly interrupted.")]
+        [SerializeField] private bool invulnerableDuringUltimate = true;
 
         [Header("Floating Aerial Target Assist")]
         [Tooltip("Optional collider used as aerial target-assist proxy while Cleanser is in ultimate floating phase. If empty, a runtime sphere trigger is created.")]
@@ -272,6 +276,10 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Delay before re-enabling SpinDash hitbox after a successful hit, preventing per-frame damage ticks.")]
         [SerializeField] private float spinDashHitboxRearmDelay = 0.08f;
 
+        [Header("Diagnostics")]
+        [Tooltip("If true, emits critical Cleanser diagnostics with direct Debug.Log calls (not gated by debug category toggles).")]
+        [SerializeField] private bool forceCriticalDiagnostics = true;
+
         [Header("Animator Parameters")]
         [Tooltip("Animator float parameter for movement speed magnitude.")]
         [SerializeField] private string paramMoveSpeed = "MoveSpeed";
@@ -337,11 +345,13 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isDefeated;
         private bool isStunned;
         private bool isExecutingUltimate;
+        private bool isInUltimatePreSweepPhase;
         private bool isExecutingAttack;
         private bool isInUltimateHoverPhase;
         private bool ultimateCanceledByAerial;
         private int combosSinceUltimate;
         private bool hasUsedUltimate;
+        private bool pendingUltimateByHealth;
         private float ultimateHoverPauseTimer;
         private Coroutine mainLoopCoroutine;
         private Coroutine currentAttackCoroutine;
@@ -397,6 +407,19 @@ namespace EnemyBehavior.Boss.Cleanser
         private float nextGapCloseDashAllowedTime;
         [SerializeField, Min(0.1f)] private float playerRefRetryIntervalSeconds = 0.5f;
         private Coroutine playerRefRetryCoroutine;
+        private float lastUltimateDiagnosticLogTime = -999f;
+
+        private void LogCriticalDiagnostic(string message, bool warning = false)
+        {
+            if (!forceCriticalDiagnostics)
+                return;
+
+            string final = $"[Cleanser][CRITICAL-DIAG] {message}";
+            if (warning)
+                Debug.LogWarning(final, this);
+            else
+                Debug.Log(final, this);
+        }
 
         #region IQueuedAttacker Implementation
         
@@ -453,6 +476,18 @@ namespace EnemyBehavior.Boss.Cleanser
             
             // Invulnerable in dummy mode
             if (betaDummyMode) return;
+
+            if (isExecutingUltimate && invulnerableDuringUltimate && isInUltimatePreSweepPhase)
+            {
+                // Keep aerial-cancel signal processing during hover even when damage is ignored.
+                if (isInUltimateHoverPhase && damage > 0f)
+                {
+                    OnAerialHitReceived();
+                }
+
+                LogCriticalDiagnostic($"LoseHP ignored during ultimate. damage={damage:F2}");
+                return;
+            }
             
             float finalDamage = damage;
             if (isDamageReductionActive)
@@ -469,6 +504,33 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             currentHealth -= finalDamage;
+            LogCriticalDiagnostic($"LoseHP called. damage={damage:F2}, finalDamage={finalDamage:F2}, currentHealth={currentHealth:F2}/{maxHealth:F2}, isExecutingUltimate={isExecutingUltimate}, hasUsedUltimate={hasUsedUltimate}, pendingUltimateByHealth={pendingUltimateByHealth}");
+
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(
+                nameof(CleanserBrain),
+                $"[Cleanser] LoseHP applied. damage={damage:F2}, finalDamage={finalDamage:F2}, currentHealth={currentHealth:F2}/{maxHealth:F2}, isExecutingUltimate={isExecutingUltimate}, hasUsedUltimate={hasUsedUltimate}, pendingUltimateByHealth={pendingUltimateByHealth}");
+#endif
+
+            if (!isDefeated
+                && !isExecutingUltimate
+                && UltimateTriggeredByHealth
+                && !hasUsedUltimate
+                && maxHealth > Mathf.Epsilon)
+            {
+                float healthPercent = currentHealth / maxHealth;
+                if (healthPercent <= UltimateHealthThreshold)
+                {
+                    pendingUltimateByHealth = true;
+                    LogCriticalDiagnostic($"Health threshold crossed. pendingUltimateByHealth=true, healthPercent={healthPercent:P1}, threshold={UltimateHealthThreshold:P1}, hasUsedUltimate={hasUsedUltimate}");
+                    TryStartUltimateFromHealthThreshold();
+#if UNITY_EDITOR
+                    EnemyBehaviorDebugLogBools.Log(
+                        nameof(CleanserBrain),
+                        $"[Cleanser] Ultimate pending by health threshold. healthPercent={healthPercent:P1}, threshold={UltimateHealthThreshold:P1}, hasUsedUltimate={hasUsedUltimate}");
+#endif
+                }
+            }
 
             if (comboSystem != null
                 && comboSystem.IsComboStartLocked
@@ -501,11 +563,38 @@ namespace EnemyBehavior.Boss.Cleanser
                 aggressionSystem.OnPlayerHitsBoss();
             }
             
-            if (currentHealth <= 0f)
+            if (currentHealth <= Mathf.Max(0f, healthZeroEpsilon))
             {
                 currentHealth = 0f;
+                pendingUltimateByHealth = false;
+                LogCriticalDiagnostic($"Death threshold reached. currentHealth={currentHealth:F2}, epsilon={healthZeroEpsilon:F3}. Calling OnDefeated().", true);
+#if UNITY_EDITOR
+                EnemyBehaviorDebugLogBools.Log(
+                    nameof(CleanserBrain),
+                    $"[Cleanser] Death threshold reached. healthZeroEpsilon={healthZeroEpsilon:F3}, triggering OnDefeated().");
+#endif
                 OnDefeated();
             }
+        }
+
+        private void TryStartUltimateFromHealthThreshold()
+        {
+            if (!pendingUltimateByHealth
+                || isDefeated
+                || isExecutingUltimate
+                || isStunned
+                || !UltimateTriggeredByHealth
+                || hasUsedUltimate)
+                return;
+
+            if (player == null)
+            {
+                LogCriticalDiagnostic("Ultimate pending but player is null; waiting for main loop.", true);
+                return;
+            }
+
+            LogCriticalDiagnostic("Starting ultimate immediately from health-threshold hit.", true);
+            StartCoroutine(ExecuteUltimateAttack());
         }
         
         #endregion
@@ -815,6 +904,9 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (agent == null) return;
 
+            if (isDefeated)
+                return;
+
             if (animator != null && !string.IsNullOrEmpty(paramIsPlayerHere))
             {
                 animator.SetBool(paramIsPlayerHere, player != null);
@@ -1108,16 +1200,16 @@ namespace EnemyBehavior.Boss.Cleanser
                     yield return null;
                 }
 
+                if (ShouldTriggerUltimate())
+                {
+                    yield return ExecuteUltimateAttack();
+                    continue;
+                }
+
                 // Check if aggression system is countering
                 if (aggressionSystem != null && aggressionSystem.IsCountering)
                 {
                     yield return null;
-                    continue;
-                }
-                
-                if (ShouldTriggerUltimate())
-                {
-                    yield return ExecuteUltimateAttack();
                     continue;
                 }
 
@@ -1674,6 +1766,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private bool ShouldUseGapCloseDash(float distanceToPlayer, bool isComboReposition)
         {
+            if (isExecutingUltimate)
+                return false;
+
             if (GapCloseDashSettings == null)
                 return false;
 
@@ -3300,17 +3395,67 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool ShouldTriggerUltimate()
         {
             if (isExecutingUltimate || isStunned)
+            {
+                LogUltimateTriggerDiagnostics("Blocked by state (isExecutingUltimate/isStunned)");
                 return false;
+            }
+
+            // Prevent consuming/starting ultimate before the player reference exists
+            // (important for additive scene load order).
+            if (player == null)
+            {
+                LogUltimateTriggerDiagnostics("Blocked: player reference is null");
+                return false;
+            }
+
+            if (pendingUltimateByHealth)
+            {
+                LogUltimateTriggerDiagnostics("Triggering: pendingUltimateByHealth=true", true);
+                return true;
+            }
                 
             if (UltimateTriggeredByHealth)
             {
                 float healthPercent = currentHealth / maxHealth;
-                return healthPercent <= UltimateHealthThreshold && !hasUsedUltimate;
+                bool shouldTrigger = healthPercent <= UltimateHealthThreshold && !hasUsedUltimate;
+                if (shouldTrigger)
+                {
+                    LogUltimateTriggerDiagnostics($"Triggering by health. healthPercent={healthPercent:P1}, threshold={UltimateHealthThreshold:P1}, hasUsedUltimate={hasUsedUltimate}", true);
+                }
+                else
+                {
+                    LogUltimateTriggerDiagnostics($"Not triggering by health. healthPercent={healthPercent:P1}, threshold={UltimateHealthThreshold:P1}, hasUsedUltimate={hasUsedUltimate}");
+                }
+
+                return shouldTrigger;
             }
             else
             {
-                return combosSinceUltimate >= Mathf.Max(1, MinCombosBetweenUltimates);
+                bool shouldTrigger = combosSinceUltimate >= Mathf.Max(1, MinCombosBetweenUltimates);
+                if (shouldTrigger)
+                {
+                    LogUltimateTriggerDiagnostics($"Triggering by combos. combosSinceUltimate={combosSinceUltimate}, min={Mathf.Max(1, MinCombosBetweenUltimates)}", true);
+                }
+                else
+                {
+                    LogUltimateTriggerDiagnostics($"Not triggering by combos. combosSinceUltimate={combosSinceUltimate}, min={Mathf.Max(1, MinCombosBetweenUltimates)}");
+                }
+
+                return shouldTrigger;
             }
+        }
+
+        private void LogUltimateTriggerDiagnostics(string message, bool force = false)
+        {
+            if (!force && Time.time - lastUltimateDiagnosticLogTime < 0.5f)
+                return;
+
+            lastUltimateDiagnosticLogTime = Time.time;
+            LogCriticalDiagnostic($"UltimateCheck: {message}");
+
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser][UltimateCheck] {message}");
+#endif
         }
 
 #if UNITY_EDITOR
@@ -3334,37 +3479,41 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ExecuteUltimateAttack()
         {
+            if (UltimateSettings == null)
+                yield break;
+
             ApplyAnimationSpeedMultiplier(UltimateSettings.AnimationSpeedMultiplier);
 
             isExecutingUltimate = true;
+            isInUltimatePreSweepPhase = true;
             hasUsedUltimate = true;
+            pendingUltimateByHealth = false;
             combosSinceUltimate = 0;
             waitingForUltimateLowSweepEvent = false;
             waitingForUltimateMidSweepEvent = false;
-            
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] ULTIMATE: Double Maximum Sweep initiated!");
 #endif
 
             PlaySFX(UltimateSettings.InitiateSFX);
 
-            if (DoubleSweepPositions.Count > 0)
+            Transform sweepPos = GetRandomValidDoubleSweepPosition();
+            if (sweepPos != null)
             {
                 TriggerAnimation(UltimateSettings.JumpFullTrigger);
                 yield return WaitForJumpFullMovementEventOrFallback();
-                Transform sweepPos = DoubleSweepPositions[Random.Range(0, DoubleSweepPositions.Count)];
                 yield return JumpToPosition(
                     sweepPos.position,
                     Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration),
                     true,
                     Mathf.Max(0f, UltimateSettings.JumpFullArcApexHeight));
             }
-            
+
             Vector3 arenaCenter = ultimateArenaCenterPoint != null
                 ? ultimateArenaCenterPoint.position
                 : (player != null ? player.position : transform.position + transform.forward * 10f);
             yield return FaceTarget(arenaCenter, 0.3f);
-            
+
             // Double-sweep animation plays once; both sweep events/fallbacks are handled during that single playback.
             pendingUltimateSweepTargetPos = arenaCenter;
             waitingForUltimateLowSweepEvent = CanSpawnUltimateSweep(UltimateSettings.LowSweepProjectile);
@@ -3374,6 +3523,9 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return WaitForUltimateSweepEventsOrFallback();
             yield return WaitForAnimationStateToFinish(UltimateSettings.UltimateTrigger, 2f);
 
+            // Double sweep has completed; disable ultimate invulnerability for remaining phases.
+            isInUltimatePreSweepPhase = false;
+
             // After double sweep completes, jump to arena center before entering hover ascent.
             TriggerAnimation(UltimateSettings.JumpFullTrigger);
             yield return WaitForJumpFullMovementEventOrFallback();
@@ -3382,7 +3534,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration),
                 true,
                 Mathf.Max(0f, UltimateSettings.JumpFullArcApexHeight));
-            
+
             float hoverBaseY = (ultimateArenaCenterPoint != null ? ultimateArenaCenterPoint.position.y : arenaCenter.y) + UltimateSettings.HoverHeightOffset;
             Vector3 floatPos = new Vector3(arenaCenter.x, hoverBaseY, arenaCenter.z);
             TriggerJumpArcBaseAnimation();
@@ -3390,7 +3542,7 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return JumpToPosition(floatPos, 0.8f, false);
             TriggerAnimation(UltimateSettings.JumpArcHoldTrigger);
             SetFloatingAerialAssistActive(true);
-            
+
             if (platformController != null)
             {
                 platformController.OrbitCenter = transform;
@@ -3403,7 +3555,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     UltimateSettings.FloatingPlatformPrefabSecondary);
                 platformController.RaisePlatforms();
             }
-            
+
             if (UltimateSettings.PlayCutsceneOnFirstUse)
             {
                 float cutsceneElapsed = 0f;
@@ -3415,20 +3567,20 @@ namespace EnemyBehavior.Boss.Cleanser
                 }
                 UltimateSettings.PlayCutsceneOnFirstUse = false;
             }
-            
+
             yield return ExecuteUltimateHoverPhase(hoverBaseY);
             SetFloatingAerialAssistActive(false);
             bool canceled = ultimateCanceledByAerial;
-            
+
             if (platformController != null)
             {
                 platformController.LowerPlatforms(canceled);
             }
-            
+
             if (!canceled)
             {
                 yield return ExecuteMassiveStrike();
-                
+
                 // Notify aggression system that ultimate completed
                 if (aggressionSystem != null)
                 {
@@ -3446,7 +3598,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 }
 
                 yield return ExecuteCanceledUltimateCrashDown();
-                
+
                 yield return ApplyStun(AerialFinisherStunDuration);
             }
 
@@ -3454,7 +3606,7 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 TryRestoreAgentToNavMesh(transform.position, 6f);
             }
-            
+
             // Reset spare stockpile/lodged state after ultimate.
             if (dualWieldSystem != null)
             {
@@ -3470,7 +3622,25 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             ResetAnimationSpeed();
+            isInUltimatePreSweepPhase = false;
             isExecutingUltimate = false;
+        }
+
+        private Transform GetRandomValidDoubleSweepPosition()
+        {
+            if (DoubleSweepPositions == null || DoubleSweepPositions.Count == 0)
+                return null;
+
+            int count = DoubleSweepPositions.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Transform candidate = DoubleSweepPositions[Random.Range(0, count)];
+                if (candidate != null)
+                    return candidate;
+            }
+
+            Debug.LogWarning("[Cleanser] Ultimate DoubleSweepPositions are configured but all entries are null. Falling back to arena/player center.", this);
+            return null;
         }
 
         private IEnumerator WaitForUltimateSweepEventsOrFallback()
@@ -4888,8 +5058,17 @@ namespace EnemyBehavior.Boss.Cleanser
         private void OnDefeated()
         {
             if (isDefeated) return;
+
+            LogCriticalDiagnostic($"OnDefeated entered. currentHealth={currentHealth:F2}, isExecutingUltimate={isExecutingUltimate}, isExecutingAttack={isExecutingAttack}, hasUsedUltimate={hasUsedUltimate}", true);
+
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(
+                nameof(CleanserBrain),
+                $"[Cleanser] OnDefeated() called. currentHealth={currentHealth:F2}, isExecutingUltimate={isExecutingUltimate}, isExecutingAttack={isExecutingAttack}, hasUsedUltimate={hasUsedUltimate}");
+#endif
             
             isDefeated = true;
+            isInUltimatePreSweepPhase = false;
             
             if (mainLoopCoroutine != null)
             {
@@ -4914,6 +5093,10 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             TriggerAnimation(triggerDeath);
+            LogCriticalDiagnostic($"Death trigger sent. triggerDeath='{triggerDeath}', animatorPresent={animator != null}, animControllerPresent={animController != null}", true);
+#if UNITY_EDITOR
+            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death trigger sent. triggerDeath='{triggerDeath}'");
+#endif
             ResetAnimationSpeed();
             EndWhirlwindDamagePhase();
             aggressionSystem?.SetAggressionProcessingPaused(false);
