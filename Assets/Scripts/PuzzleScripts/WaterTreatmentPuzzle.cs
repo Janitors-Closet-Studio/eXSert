@@ -459,20 +459,24 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
 
     public override void ConsoleInteracted()
     {
+        Debug.Log($"[WaterTreatmentPuzzle:{name}] ConsoleInteracted() (no params) called | currentIndex={currentWaterContainerIndex}");
         LogVerbose($"ConsoleInteracted() called | currentIndex={currentWaterContainerIndex}");
     }
 
     public void ConsoleInteracted(PuzzleInteraction interaction)
     {
+        Debug.Log($"[WaterTreatmentPuzzle:{name}] ENTER ConsoleInteracted(PuzzleInteraction) | interaction: {(interaction != null ? interaction.name : "NULL")}" );
         if (interaction == null)
         {
+            Debug.Log($"[WaterTreatmentPuzzle:{name}] ConsoleInteracted(PuzzleInteraction) called with NULL interaction");
             LogWarningVerbose("ConsoleInteracted(PuzzleInteraction) received null sender; using current index.");
             PlaySFX(valveTurnFailSFX);
             return;
         }
 
+        Debug.Log($"[WaterTreatmentPuzzle:{name}] ConsoleInteracted(PuzzleInteraction) about to call TurnValveOnWaterContainer with index {interaction.ConsoleIndex}");
         LogVerbose($"ConsoleInteracted(PuzzleInteraction) called | sender={interaction.name} consoleIndex={interaction.ConsoleIndex}");
-       TurnValveOnWaterContainer(interaction.ConsoleIndex);
+        TurnValveOnWaterContainer(interaction.ConsoleIndex);
     }
 
     private void PlaySFX(AudioClip clip)
@@ -628,10 +632,10 @@ public class WaterTreatmentPuzzle : PuzzlePart, IConsoleSelectable
         SoundManager.Instance.puzzleSource.Stop();
 
         // After the full path finishes, place the keycard at the next valve's start position (if not already at the final destination)
+        AdvanceToNextValidContainerIndex();
         if (currentWaterContainerIndex < waterContainers.Count && waterContainers[currentWaterContainerIndex] != null)
         {
             LogVerbose($"MoveKeycardPath handoff | nextIndex={currentWaterContainerIndex}");
-            AdvanceToNextValidContainerIndex();
             keycardTransform.localPosition = waterContainers[currentWaterContainerIndex].GetKeycardInitialPos();
             PlaySFX(gotToEndOfPathSFX);
         }
