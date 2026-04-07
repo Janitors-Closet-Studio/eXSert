@@ -123,15 +123,16 @@ public class MenuListManager : MonoBehaviour
 
             if(menuToAdd.tag != "LogUI" && menuToAdd.tag != "DiaryUI")
                 SetAsLastSibling(menuToAdd);
-            
-            // Select the first selectable in the new menu
+
+            // Select the first selectable in the new menu, but avoid if a slider is currently selected
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            bool sliderSelected = selected != null && selected.GetComponentInParent<Slider>() != null;
             Selectable firstSelectable = menuToAdd.GetComponent<Selectable>();
             if (firstSelectable == null)
             {
                 firstSelectable = menuToAdd.GetComponentInChildren<Selectable>();
             }
-            
-            if (firstSelectable != null)
+            if (firstSelectable != null && !sliderSelected && !(firstSelectable is Slider))
             {
                 SetSelected(firstSelectable);
             }
@@ -299,6 +300,12 @@ public class MenuListManager : MonoBehaviour
         if (selectable == null)
             return;
 
+        // Avoid forcibly setting selection if a slider is currently selected or if the intended selection is a slider
+        GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        bool sliderSelected = selected != null && selected.GetComponentInParent<Slider>() != null;
+        if (sliderSelected || selectable is Slider)
+            return;
+
         if (EventSystem.current != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
@@ -320,8 +327,16 @@ public class MenuListManager : MonoBehaviour
     // Overload for UnityEvent<float> sources like Slider.onValueChanged.
     public void SwapBetweenMenus(float _)
     {
-        if (ShouldIgnoreMenuSwap())
+        EventSystem currentEventSystem = EventSystem.current;
+        if (currentEventSystem == null)
             return;
+
+        GameObject selected = currentEventSystem.currentSelectedGameObject;
+        // Only set selection if not editing a slider value
+        if (selected == null || selected.GetComponentInParent<Slider>() == null)
+        {
+            currentEventSystem.SetSelectedGameObject(menusToManage.Count > 0 ? menusToManage[0] : null);
+        }
 
         if (menusToManage.Count >= 5)
             GoBackToPreviousMenu();

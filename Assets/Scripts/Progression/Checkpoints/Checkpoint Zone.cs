@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using UI.Loading;
 using UIandUXSystems.HUD;
 using UnityEngine;
@@ -29,6 +30,9 @@ namespace Progression.Checkpoints
             "SceneAsset that owns this checkpoint. Assign explicitly for additive-scene save/load routing."
         )]
         private SceneAsset checkpointSceneAsset;
+
+        [SerializeField] private bool isActCheckpoint = false;
+        private bool updatedActsForCheckpoint = false; 
 
         [Header("Player Refresh")]
         [SerializeField]
@@ -203,12 +207,73 @@ namespace Progression.Checkpoints
             }
         }
 
+        private void UpdateAvailableActs()
+        {
+            ActsManager manager = ActsManager.Instance;
+
+            if (manager == null)
+            {
+                Debug.LogError("Cannot update available acts because ActsManager instance is missing.");
+                return;
+            }
+
+            if (currentCheckpoint && CheckSceneActDictForValidName())
+            {
+                manager.MarkActCompleted(MatchSceneActToRoadMap());
+                updatedActsForCheckpoint = true;
+            }
+        }
+
+        private bool CheckSceneActDictForValidName()
+        {
+            ActsManager manager = ActsManager.Instance;
+
+            if (manager == null)
+            {
+                Debug.LogError("Cannot check act scene dict because ActsManager instance is missing.");
+                return false;
+            }
+
+            if (!manager.actSceneMap.ContainsValue(checkpointName))
+            {
+                Debug.LogError($"Checkpoint scene '{CheckpointSceneAsset.SceneName}' is not registered in ActsManager.actSceneMap. Please ensure all checkpoint scenes are correctly mapped to their respective acts.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private int MatchSceneActToRoadMap()
+        {
+            if (!CheckSceneActDictForValidName())
+                return -1;
+
+            ActsManager manager = ActsManager.Instance;
+
+            int actNumber = manager.actSceneMap.FirstOrDefault(kv => kv.Value == checkpointName).Key;
+            Debug.Log($"[Checkpoint] MatchSceneActToRoadMap: checkpointName='{checkpointName}', actNumber={actNumber}");
+
+            if (actNumber < 0 || actNumber > 4)
+            {
+                Debug.LogError($"Invalid act number {actNumber} for checkpoint scene '{CheckpointSceneAsset.SceneName}'. Act number must be between 0 and 4.");
+                return -1;
+            }
+
+            return actNumber;
+        }
+
         private void TriggerCheckpoint()
         {
             if (currentCheckpoint == this)
                 return; // Already the current checkpoint, no need to update
 
             currentCheckpoint = this;
+
+            Debug.Log($"Checkpoint triggered: {this}");
+
+            if (isActCheckpoint && !updatedActsForCheckpoint)
+                UpdateAvailableActs();
+            
             RestorePlayerHealthIfConfigured();
             OnCheckpointTriggered?.Invoke(this);
 

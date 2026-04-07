@@ -2494,6 +2494,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
+--- !u!114 &887774005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 541337468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70c4008b2f05f874a88c58cda9b558c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SliderDragWatcher
 --- !u!1 &891868595
 GameObject:
   m_ObjectHideFlags: 0
@@ -3982,6 +3994,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 360202563}
     m_Modifications:
     - target: {fileID: 228408016709944615, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 228408016709944615, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
       objectReference: {fileID: 1041919914}
@@ -4457,6 +4473,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8995860718366625010, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1223060382}
+    - targetCorrespondingSourceObject: {fileID: 882421992433953847, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 887774005}
   m_SourcePrefab: {fileID: 100100000, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
 --- !u!224 &1223060378 stripped
 RectTransform:
