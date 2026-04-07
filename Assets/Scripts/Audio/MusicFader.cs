@@ -12,6 +12,5 @@ public class MusicFader : MonoBehaviour
             return;
 
         SoundManager.Instance.FadeOutMusic(fadeDuration);
-        SoundManager.Instance.PauseAllMusic(true);
     }
 }
