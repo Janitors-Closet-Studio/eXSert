@@ -1,9 +1,11 @@
+    // ...existing code...
 /*
 Written by Brandon Wahl
 
 Handles data persistence and ensures data is properly saved and loaded
 
 */
+
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -12,6 +14,7 @@ using UnityEngine.SceneManagement;
 using System.IO;
 using Singletons;
 using Progression.Checkpoints;
+    
 
 public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
@@ -63,6 +66,11 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    public static string GetSelectedProfileId()
+    {
+        return selectedProfileId;
     }
 
     // When a scene is loaded, the function below is called

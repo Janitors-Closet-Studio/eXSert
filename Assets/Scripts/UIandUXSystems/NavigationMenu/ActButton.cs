@@ -15,22 +15,19 @@ public class ActButton : MonoBehaviour
 
     public void OnActButtonClick()
     {
-        bool matchKey = false;
+        // Get the current profileId
+        string profileId = DataPersistenceManager.GetSelectedProfileId();
+        if (string.IsNullOrEmpty(profileId))
+            profileId = "default";
 
-        foreach(int i in ActsManager.Instance.actCompletionMap.Keys)
-        {
-            
-            if(i == actNumber)
-            {
-                matchKey = true;
-            }
-        }
+        // Check if this act is completed for the current profile
+        bool isCompleted = ActsManager.Instance.GetFarthestUnlockedActName(profileId) != null;
+        // Optionally, check for exact act number completion:
+        // bool isCompleted = ActsManager.Instance.IsActCompleted(profileId, actNumber);
 
-        if(matchKey)
+        if (isCompleted)
         {
-            bool isCompleted = ActsManager.Instance.actCompletionMap[actNumber];
-            if(isCompleted)
-                TeleportPlayerToAct();
+            TeleportPlayerToAct();
         }
     }
 

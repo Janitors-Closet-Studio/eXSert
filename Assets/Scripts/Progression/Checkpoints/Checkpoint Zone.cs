@@ -219,7 +219,15 @@ namespace Progression.Checkpoints
 
             if (currentCheckpoint && CheckSceneActDictForValidName())
             {
-                manager.MarkActCompleted(MatchSceneActToRoadMap());
+                // Get the current profileId from DataPersistenceManager if available
+                string profileId = "default";
+                if (DataPersistenceManager.Instance != null)
+                {
+                    var getIdMethod = DataPersistenceManager.Instance.GetType().GetMethod("GetSelectedProfileId");
+                    if (getIdMethod != null)
+                        profileId = (string)getIdMethod.Invoke(DataPersistenceManager.Instance, null);
+                }
+                manager.MarkActCompleted(profileId, MatchSceneActToRoadMap());
                 updatedActsForCheckpoint = true;
             }
         }
