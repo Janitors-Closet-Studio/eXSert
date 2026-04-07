@@ -9,6 +9,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 {
     // FixedUpdate movement reverted; coroutine will handle movement
 
+    public static bool ElevatorMenuActive { get; private set; }
+
     [Header("Failsafe")]
     [SerializeField, Tooltip("Automatically recalls the lift to floor one when the player is stranded near the base of the shaft.")]
     private bool enableGroundRecallFailsafe = true;
@@ -254,11 +256,13 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     public override void StartPuzzle()
     {
         EnterElevatorLiftMenu();
+        ElevatorMenuActive = true;
     }
 
     public override void EndPuzzle()
     {
         ReturnToGameplay();
+        ElevatorMenuActive = false;
     }
 
     public override void ConsoleInteracted()
@@ -419,6 +423,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             return;
 
         HideElevatorUI();
+        ElevatorMenuActive = true;
 
         string scheme = InputReader.activeControlScheme;
         if (string.IsNullOrEmpty(scheme) && InputReader.PlayerInput != null)
@@ -493,6 +498,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             return;
 
         Debug.Log("Returning to gameplay from elevator menu.");
+        ElevatorMenuActive = false;
         RestoreGameplayState();
     }
 
