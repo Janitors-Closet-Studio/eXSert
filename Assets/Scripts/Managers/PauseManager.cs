@@ -56,6 +56,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private float ignorePauseUntilTime;
     private float ignoreBackUntilTime;
 
+    // Music muffling state
+    private bool musicIsMuffled = false;
+    private float? originalMusicVolume = null;
+
     protected override void Awake()
     {
         base.Awake();
@@ -455,6 +459,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             settingsMenuContainer.SetActive(showSettings);
 
         bool showHUD = !(showPause || showNavigation || showSettings);
+
+        if(CranePuzzle.IsCranePuzzleActive || ElevatorLift.ElevatorMenuActive)
+            return;
+
         SetHUDVisible(showHUD);
     }
 
@@ -491,28 +499,46 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void MufffleMusicForMenu(bool shouldMuffle)
     {
-        if(SoundManager.Instance == null || SoundManager.Instance.levelMusicSource == null)
+        if (SoundManager.Instance == null || SoundManager.Instance.levelMusicSource == null)
             return;
 
-        var lowPassFilter = SoundManager.Instance.levelMusicSource.GetComponent<AudioLowPassFilter>();
-        var oldCutoff = lowPassFilter != null ? lowPassFilter.cutoffFrequency : 22000f;
+        var musicSource = SoundManager.Instance.levelMusicSource;
+        var lowPassFilter = musicSource.GetComponent<AudioLowPassFilter>();
 
-
+        const float defaultCutoff = 22000f;
         if (shouldMuffle)
         {
+            if (musicIsMuffled)
+            {
+                Debug.Log("[PauseManager] Music already muffled, skipping.");
+                return;
+            }
             Debug.Log("Muffling music for menu");
-            SoundManager.Instance.levelMusicSource.volume *= 0.5f; // Muffle music
+            if (originalMusicVolume == null)
+                originalMusicVolume = musicSource.volume;
+            musicSource.volume = musicSource.volume * 0.5f;
             if (lowPassFilter != null)
-                lowPassFilter.cutoffFrequency = 500f; // Apply low-pass filter
+                lowPassFilter.cutoffFrequency = 500f;
             else
                 Debug.LogWarning("No AudioLowPassFilter found on level music source. Music will be muffled by volume reduction only.");
+            musicIsMuffled = true;
         }
         else
         {
+            if (!musicIsMuffled)
+            {
+                Debug.Log("[PauseManager] Music not muffled, skipping restore.");
+                return;
+            }
             Debug.Log("Restoring music after menu");
-            SoundManager.Instance.levelMusicSource.volume /= 0.5f; // Restore music volume
+            if (originalMusicVolume != null)
+                musicSource.volume = originalMusicVolume.Value;
+            else
+                musicSource.volume = 1f; // fallback
             if (lowPassFilter != null)
-                lowPassFilter.cutoffFrequency = oldCutoff; // Revert low-pass filter
+                lowPassFilter.cutoffFrequency = defaultCutoff;
+            musicIsMuffled = false;
+            originalMusicVolume = null;
         }
     }
 
