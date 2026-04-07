@@ -38,6 +38,10 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     private float maxDropDistance = 20f;
     [SerializeField, Tooltip("Speed at which the magnet drops.")]
     private float dropSpeed = 5f;
+    [SerializeField, Tooltip("Layers treated as valid drop surfaces. Defaults to DropLocation when not set.")]
+    private LayerMask dropSurfaceMask;
+    [SerializeField, Tooltip("Allowed vertical gap between the cargo bottom and the active drop zone before release.")]
+    private float dropSurfaceThreshold = 0.05f;
 
     [Header("Magnet Indicator")]
     [SerializeField] private bool showMagnetIndicator = true;
@@ -284,13 +288,11 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     // Returns the World Position where the magnet should move to align with the target object
     private Vector3 CalculateMagnetTargetWorldPos(Vector3 targetWorldPos)
     {
-        if (targetObject == null)
+        if (targetObject == null || magnetExtender == null)
             return targetWorldPos;
 
-        // Local pos of target object
-        Vector3 objectLocalPos = targetObject.transform.localPosition;
-        // Offset of object relative to magnet in magnet's local space
-        Vector3 objectWorldOffset = magnetExtender.transform.TransformVector(objectLocalPos);
+        Vector3 targetAnchorWorldPos = GetTargetAlignmentWorldPos();
+        Vector3 objectWorldOffset = targetAnchorWorldPos - magnetExtender.transform.position;
         return targetWorldPos - objectWorldOffset;
     }
 
@@ -338,17 +340,42 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
 
         Collider targetCollider = targetObject != null ? targetObject.GetComponentInChildren<Collider>() : null;
-        Collider activeDropZoneCollider = activeTargetDropZone != null ? activeTargetDropZone.GetComponent<Collider>() : null;
+        Collider activeDropZoneCollider = activeTargetDropZone != null ? activeTargetDropZone.GetComponentInChildren<Collider>() : null;
 
 
         // Offset to adjust for mesh/collider mismatch (tweak as needed)
         float crateBottomOffset = 0.5f; // Set negative if collider is above mesh, positive if below
-        int obstacleMask = LayerMask.GetMask("Ground");
+        int obstacleMask = GetDropSurfaceMask();
 
         // Lower magnet until collision or max distance reached
         while (droppedDistance < maxDropDistance && !reachedDropTarget)
         {
             float step = dropSpeed * Time.deltaTime;
+            bool hasExplicitDropZone = targetCollider != null && activeDropZoneCollider != null;
+
+            if (TryGetDropStep(targetCollider, activeDropZoneCollider, crateBottomOffset, step, out float adjustedStep, out bool shouldRelease))
+            {
+                if (adjustedStep > 0f)
+                {
+                    magnetExtender.transform.localPosition += Vector3.down * adjustedStep;
+                    droppedDistance += adjustedStep;
+                }
+
+                reachedDropTarget = shouldRelease;
+                if (shouldRelease)
+                {
+                    Debug.Log("[CraneDrop] Active drop zone reached based on collider bounds.");
+                    break;
+                }
+            }
+
+            if (hasExplicitDropZone)
+            {
+                magnetExtender.transform.localPosition += Vector3.down * step;
+                droppedDistance += step;
+                yield return null;
+                continue;
+            }
 
             // --- Vertical raycast from magnet tip to prevent clipping ---
             Vector3 magnetTip = magnetExtender.transform.position;
@@ -356,8 +383,9 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
             RaycastHit verticalHit;
             if (Physics.Raycast(magnetTip, Vector3.down, out verticalHit, raycastLength, obstacleMask, QueryTriggerInteraction.Ignore))
             {
-                Debug.Log($"[CraneDrop] Magnet vertical ray hit: {verticalHit.collider.name} at {verticalHit.point.y:F3}, stopping extension.");
-                reachedDropTarget = true;
+                bool hitActiveDropZone = IsDropZoneMatch(verticalHit.collider, activeDropZoneCollider);
+                Debug.Log($"[CraneDrop] Magnet vertical ray hit: {verticalHit.collider.name} at {verticalHit.point.y:F3}, active zone match: {hitActiveDropZone}.");
+                reachedDropTarget = hitActiveDropZone;
                 break;
             }
 
@@ -371,13 +399,14 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
                 Vector3 rayOrigin = new Vector3(bounds.center.x, bounds.min.y + crateBottomOffset, bounds.center.z);
                 float rayLength = 0.2f; // slightly more than threshold
                 RaycastHit hit;
-                if (Physics.Raycast(rayOrigin, Vector3.down, out hit, rayLength, LayerMask.GetMask("Ground"), QueryTriggerInteraction.Ignore))
+                if (Physics.Raycast(rayOrigin, Vector3.down, out hit, rayLength, obstacleMask, QueryTriggerInteraction.Ignore))
                 {
-                    float distanceToGround = rayOrigin.y - hit.point.y;
-                    Debug.Log($"[CraneDrop] Raycast hit: {hit.collider.name}, Crate bottom: {rayOrigin.y:F3}, Ground: {hit.point.y:F3}, Distance: {distanceToGround:F3}");
-                    if (distanceToGround <= 0.05f)
+                    float distanceToSurface = rayOrigin.y - hit.point.y;
+                    bool hitActiveDropZone = IsDropZoneMatch(hit.collider, activeDropZoneCollider);
+                    Debug.Log($"[CraneDrop] Raycast hit: {hit.collider.name}, Crate bottom: {rayOrigin.y:F3}, Surface: {hit.point.y:F3}, Distance: {distanceToSurface:F3}, Active zone match: {hitActiveDropZone}");
+                    if (distanceToSurface <= 0.05f && hitActiveDropZone)
                     {
-                        Debug.Log("[CraneDrop] Stopping drop: crate reached ground threshold.");
+                        Debug.Log("[CraneDrop] Stopping drop: crate reached drop surface threshold.");
                         reachedDropTarget = true;
                         break;
                     }
@@ -429,7 +458,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
                 yield break;
             }
 
-            Vector3 targetWorldPos = activeTargetDropZone.transform.position;
+            Vector3 targetWorldPos = GetActiveDropZoneAlignmentWorldPos();
             Vector3 magnetTargetWorldPos = CalculateMagnetTargetWorldPos(targetWorldPos);
 
             yield return StartCoroutine(MoveCraneToMagnetTarget(magnetTargetWorldPos));
@@ -726,6 +755,104 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
             }
         }
         return layers.Count > 0 ? string.Join(", ", layers) : "None";
+    }
+
+    private int GetDropSurfaceMask()
+    {
+        if (dropSurfaceMask.value != 0)
+            return dropSurfaceMask.value;
+
+        int fallbackMask = LayerMask.GetMask("DropLocation");
+        if (fallbackMask != 0)
+            return fallbackMask;
+
+        return LayerMask.GetMask("Ground");
+    }
+
+    private Vector3 GetTargetAlignmentWorldPos()
+    {
+        if (targetObject == null)
+            return Vector3.zero;
+
+        Collider targetCollider = targetObject.GetComponentInChildren<Collider>();
+        if (targetCollider != null)
+            return targetCollider.bounds.center;
+
+        return targetObject.transform.position;
+    }
+
+    private Vector3 GetActiveDropZoneAlignmentWorldPos()
+    {
+        if (activeTargetDropZone == null)
+            return Vector3.zero;
+
+        Collider dropZoneCollider = activeTargetDropZone.GetComponentInChildren<Collider>();
+        if (dropZoneCollider != null)
+            return dropZoneCollider.bounds.center;
+
+        return activeTargetDropZone.transform.position;
+    }
+
+    private bool TryGetDropStep(Collider targetCollider, Collider activeDropZoneCollider, float crateBottomOffset, float requestedStep, out float adjustedStep, out bool shouldRelease)
+    {
+        adjustedStep = requestedStep;
+        shouldRelease = false;
+
+        if (targetCollider == null || activeDropZoneCollider == null)
+            return false;
+
+        Bounds targetBounds = targetCollider.bounds;
+        Bounds dropZoneBounds = activeDropZoneCollider.bounds;
+        if (!DoBoundsOverlapHorizontally(targetBounds, dropZoneBounds))
+            return false;
+
+        float targetBottomY = targetBounds.min.y + crateBottomOffset;
+        float dropZoneTopY = dropZoneBounds.max.y;
+        float gapToSurface = targetBottomY - dropZoneTopY;
+
+        if (gapToSurface <= dropSurfaceThreshold)
+        {
+            adjustedStep = 0f;
+            shouldRelease = true;
+            return true;
+        }
+
+        float maxSafeStep = Mathf.Max(0f, gapToSurface - dropSurfaceThreshold);
+        if (maxSafeStep < requestedStep)
+        {
+            adjustedStep = maxSafeStep;
+            shouldRelease = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool DoBoundsOverlapHorizontally(Bounds a, Bounds b)
+    {
+        bool overlapX = a.max.x >= b.min.x && a.min.x <= b.max.x;
+        bool overlapZ = a.max.z >= b.min.z && a.min.z <= b.max.z;
+        return overlapX && overlapZ;
+    }
+
+    private bool IsDropZoneMatch(Collider hitCollider, Collider expectedDropZoneCollider)
+    {
+        if (hitCollider == null || activeTargetDropZone == null)
+            return false;
+
+        if (expectedDropZoneCollider != null)
+        {
+            return hitCollider == expectedDropZoneCollider
+                || hitCollider.transform.IsChildOf(expectedDropZoneCollider.transform)
+                || expectedDropZoneCollider.transform.IsChildOf(hitCollider.transform)
+                || hitCollider.transform.root == expectedDropZoneCollider.transform.root;
+        }
+
+        Transform expectedTransform = activeTargetDropZone.transform;
+        return hitCollider.transform == expectedTransform
+            || hitCollider.transform.IsChildOf(expectedTransform)
+            || expectedTransform.IsChildOf(hitCollider.transform)
+            || hitCollider.transform.root == expectedTransform.root;
     }
 
     private void EnsureMagnetIndicator()
