@@ -264,12 +264,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Load Game
-
-'
-      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 2
@@ -454,6 +448,12 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Load Game
+
+'
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -467,10 +467,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Quit
-      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -606,6 +602,10 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Quit
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1237,6 +1237,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24d05e8dcf3f2264b897fe8f025325ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SelectFirstOnLoad
+  firstSelectedObject: {fileID: 0}
 --- !u!1 &379325509
 GameObject:
   m_ObjectHideFlags: 0
@@ -2974,10 +2975,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Credits
-      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 0
@@ -3098,6 +3095,10 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Credits
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3202,12 +3203,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
-      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -3372,6 +3367,12 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3497,7 +3498,6 @@ MonoBehaviour:
   - {fileID: 1223060379}
   firstMenuToOpen: {fileID: 1041919910}
   canvas: {fileID: 360202559}
-  numberOfMenusBeforeAutoSwap: 5
 --- !u!114 &1041919915
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4453,7 +4453,10 @@ PrefabInstance:
     - {fileID: 1734163470805505515, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8995860718366625010, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1223060382}
   m_SourcePrefab: {fileID: 100100000, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
 --- !u!224 &1223060378 stripped
 RectTransform:
@@ -4475,6 +4478,19 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8173967944021420439, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
   m_PrefabInstance: {fileID: 1223060377}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1223060382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1168463133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 137561ac38a227c41934a937939c5e19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StrictFrameLimiter
+  targetFPS: 0
 --- !u!224 &1238553474 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 941127491092943184, guid: 19bccafaa791be849859fb18885c1021, type: 3}
@@ -5891,12 +5907,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
-      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
       value: 1
@@ -6060,6 +6070,12 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

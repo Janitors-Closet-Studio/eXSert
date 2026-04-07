@@ -343,7 +343,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
         // Offset to adjust for mesh/collider mismatch (tweak as needed)
         float crateBottomOffset = 0.5f; // Set negative if collider is above mesh, positive if below
-        int obstacleMask = LayerMask.GetMask("Default", "Ground");
+        int obstacleMask = LayerMask.GetMask("Ground");
 
         // Lower magnet until collision or max distance reached
         while (droppedDistance < maxDropDistance && !reachedDropTarget)

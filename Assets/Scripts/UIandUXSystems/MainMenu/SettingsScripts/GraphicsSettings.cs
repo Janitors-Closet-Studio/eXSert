@@ -57,6 +57,8 @@ public class GraphicsSettings : MonoBehaviour
 
     void Awake()
     {
+        QualitySettings.vSyncCount = 0;
+
         FindGlobalVolume();
 
         // Load PlayerPrefs for toggles and settings
@@ -92,6 +94,16 @@ public class GraphicsSettings : MonoBehaviour
     {
         if (_applyAction != null && _applyAction.action != null)
             _applyAction.action.performed -= ctx => GraphicsApply();
+
+        SaveCurrentFPSSetting();
+    }
+    // Ensures FPS is saved/applied even if menu is closed without Apply
+    public void SaveCurrentFPSSetting()
+    {
+        PlayerPrefs.SetInt("masterFPS", fpsLevel);
+        PlayerPrefs.Save();
+        Application.targetFrameRate = fpsLevel;
+        Debug.Log($"[GraphicsSettings] SaveCurrentFPSSetting: fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
     }
 
     private void FindGlobalVolume()
@@ -201,8 +213,7 @@ public class GraphicsSettings : MonoBehaviour
 
     public void SetFPS(int framerate)
     {
-        QualitySettings.vSyncCount = 0;
-
+        fpsLevel = framerate;
         if (framerate == 60)
         {
             fpsText.text = "60";
@@ -218,6 +229,8 @@ public class GraphicsSettings : MonoBehaviour
             fpsText.text = "Unlimited";
             Application.targetFrameRate = -1;
         }
+        FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(framerate);
+        Debug.Log($"[GraphicsSettings] SetFPS called: framerate={framerate}, fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
     }
 
     //Applies graphic settings
