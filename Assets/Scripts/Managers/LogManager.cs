@@ -37,6 +37,12 @@ public class LogManager : Singleton<LogManager>
 #pragma warning restore CS0414
     }
 
+    public void ResetAllLogs(){
+        foreach (Logs log in logMap.Values)
+        {
+            log.info.isFound = false;
+        }
+    }
 
     protected override void Awake()
     {

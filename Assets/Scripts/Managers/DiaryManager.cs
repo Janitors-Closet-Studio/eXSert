@@ -33,6 +33,14 @@ public class DiaryManager : Singleton<DiaryManager>
 
     }
 
+    public void ResetAllDiaries()
+    {
+        foreach (Diaries diary in diaryMap.Values)
+        {
+            diary.info.isFound = false;
+        }
+    }
+
     private void Start()
     {
         foreach(Diaries diary in diaryMap.Values)

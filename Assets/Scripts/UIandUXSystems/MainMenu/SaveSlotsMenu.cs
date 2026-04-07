@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
 public class SaveSlotsMenu : Menu
 {
@@ -20,10 +21,15 @@ public class SaveSlotsMenu : Menu
     [SerializeField] private Button backButton;
     [SerializeField] private Button playButton;
 
+    [SerializeField] private Button loadButton;
+    private bool isInLoadMenu = false;
+
     [SerializeField] internal SaveSlots currentSaveSlotSelected = null;
 
     [SerializeField, Tooltip("The first level to be loaded when a player starts a new game")]
     private SceneAsset firstLevel;
+
+    [SerializeField] private TextMeshProUGUI actText;
     #endregion
 
     private SaveSlots[] saveSlots;
@@ -56,7 +62,15 @@ public class SaveSlotsMenu : Menu
             if (playButton == null)
                 playButton = FindButtonByNameContains(buttons, "play");
         }
+        EnsureTheCorrectSaveSlotText();
+
     }
+
+    public void GoingToLoadMenu(bool loadMenu)
+    {
+        isInLoadMenu = loadMenu;
+    }
+    
 
     private static Button FindButtonByNameContains(Button[] buttons, string token)
     {
@@ -80,6 +94,14 @@ public class SaveSlotsMenu : Menu
     public void OnSaveSlotClicked()
     {
         EnsureReferences();
+
+        // Show farthest act unlocked for this profile in actText
+        string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
+        if (!string.IsNullOrWhiteSpace(selectedProfileId) && actText != null)
+        {
+            string farthestAct = GetFarthestUnlockedActName(selectedProfileId);
+            actText.text = string.IsNullOrEmpty(farthestAct) ? "No Act Unlocked" : farthestAct;
+        }
 
         if (hasStartedSceneTransition) return;
         hasStartedSceneTransition = true;
@@ -134,7 +156,7 @@ public class SaveSlotsMenu : Menu
             return;
         }
 
-        string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
+        selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
         if (string.IsNullOrWhiteSpace(selectedProfileId))
         {
             RestoreMenuButtons();
@@ -148,6 +170,17 @@ public class SaveSlotsMenu : Menu
 
         if (isLoadingGame) LoadGame();
         else StartNewGame();
+    }
+
+    // Helper to get the farthest unlocked act name for a profile
+    private string GetFarthestUnlockedActName(string profileId)
+    {
+        var actManager = FindAnyObjectByType<ActsManager>();
+        if (actManager != null)
+        {
+            return actManager.GetFarthestUnlockedActName(profileId);
+        }
+        return null;
     }
 
     
@@ -170,6 +203,8 @@ public class SaveSlotsMenu : Menu
         // Potentially consider adding the ability to reset progress here
 
         SceneLoader.LoadIntoGame(firstLevel, newGame: true);
+        LogManager.Instance.ResetAllLogs();
+        DiaryManager.Instance.ResetAllDiaries();
     }
 
     private void LoadGame()
@@ -251,12 +286,38 @@ public class SaveSlotsMenu : Menu
 
         if (playButton != null)
             playButton.interactable = true;
+
+        // Ensure load button state is always correct after restoring menu buttons
+        TurnOffLoadButtonIfNoData();
     }
 
     private void ResetTransientMenuState()
     {
         hasStartedSceneTransition = false;
         RestoreMenuButtons();
+    }
+
+    public void TurnOffLoadButtonIfNoData()
+    {
+        int loadableSlots = 0;
+        if (DataPersistenceManager.Instance != null)
+        {
+            Dictionary<string, GameData> profiles = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+            foreach (var kvp in profiles)
+            {
+                if (kvp.Value != null)
+                {
+                    loadableSlots++;
+                }
+            }
+        }
+
+        Debug.Log($"[TurnOffLoadButtonIfNoData] Called. Loadable slots: {loadableSlots}. loadButton assigned: {loadButton != null}");
+        if (loadButton != null)
+        {
+            loadButton.interactable = loadableSlots > 0;
+            Debug.Log($"[TurnOffLoadButtonIfNoData] loadButton.interactable set to {loadButton.interactable}");
+        }
     }
 
     /// <summary>
@@ -274,8 +335,32 @@ public class SaveSlotsMenu : Menu
             return;
 
 
+
         // Delete save file for this slot
         DataPersistenceManager.DeleteProfile(profileId);
+
+        // After deletion, update all slot interactability in load menu
+        if (isInLoadMenu)
+        {
+            // Get latest profile data
+            Dictionary<string, GameData> profiles = DataPersistenceManager.Instance != null
+                ? DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>()
+                : new Dictionary<string, GameData>();
+
+            if (saveSlots != null)
+            {
+                foreach (var slot in saveSlots)
+                {
+                    if (slot == null) continue;
+                    GameData data = null;
+                    profiles.TryGetValue(slot.GetProfileId(), out data);
+                    slot.SetData(data); // This will update both visuals and interactability
+                    slot.SetInteractable(data != null); // Redundant but ensures interactability
+                }
+            }
+
+            RestoreMenuButtons();
+        }
 
         bool hasAnyLoadableProfile = false;
         if (DataPersistenceManager.Instance != null)
@@ -294,6 +379,7 @@ public class SaveSlotsMenu : Menu
         // Refresh displayed slots
         currentSaveSlotSelected = null;
         ActivateMenu(hasAnyLoadableProfile ? isLoadingGame : false);
+        TurnOffLoadButtonIfNoData();
     }
 
     //When the back button is click it activates the main menu again
@@ -306,6 +392,31 @@ public class SaveSlotsMenu : Menu
             mainMenu.ActivateMenu();
 
         this.DeactivateMenu();
+    }
+
+    private void EnsureTheCorrectSaveSlotText()
+    {
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.Instance != null
+            ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
+            : new Dictionary<string, GameData>();
+
+        // Always update slot data and interactability for both load and new game
+        foreach (SaveSlots saveSlot in saveSlots)
+        {
+            if (saveSlot == null) continue;
+            GameData profileData = null;
+            profilesGameData.TryGetValue(saveSlot.GetProfileId(), out profileData);
+            saveSlot.SetData(profileData); // This will update the slot's text (e.g., 'no data')
+            // Interactability: only disable in load menu if no data, otherwise always interactable
+            if (profileData == null && isLoadingGame)
+            {
+                saveSlot.SetInteractable(false);
+            }
+            else
+            {
+                saveSlot.SetInteractable(true);
+            }
+        }
     }
 
     //Activates the main menu when called
@@ -336,22 +447,7 @@ public class SaveSlotsMenu : Menu
                 continue;
         }
 
-        //Disables and enables interactability of save slots depending if there is data attached to the profile Id
-        foreach (SaveSlots saveSlot in saveSlots)
-        {
-            if (saveSlot == null) continue;
-            GameData profileData = null;
-            profilesGameData.TryGetValue(saveSlot.GetProfileId(), out profileData);
-            saveSlot.SetData(profileData);
-            if (profileData == null && isLoadingGame)
-            {
-                saveSlot.SetInteractable(false);
-            }
-            else
-            {
-                saveSlot.SetInteractable(true);
-            }
-        }
+        
 
         // Ensure a default selection exists so Play works even if user doesn't click a slot first
         if (currentSaveSlotSelected == null)
@@ -376,6 +472,8 @@ public class SaveSlotsMenu : Menu
             }
             currentSaveSlotSelected = defaultSlot;
         }
+
+        TurnOffLoadButtonIfNoData();
     }
 
     //Makes it so when clicking buttons other buttons are noninteractable so no errors occur
