@@ -54,6 +54,25 @@ public class ActsManager : Singleton<ActsManager>
         }
     }
 
+    public void LoadSelectedScene(string sceneName)
+    {
+
+        // Get the string value of the currently selected dropdown option
+        string selectedSceneName = sceneName;
+
+        // SceneAsset appears to support explicit casting from a string based on SceneLoader's usage
+        SceneAsset sceneAsset = (SceneAsset)selectedSceneName;
+
+        if (sceneAsset == null)
+        {
+            Debug.LogError($"[D Menu UI] Could not find a valid SceneAsset for '{selectedSceneName}'.");
+            return;
+        }
+
+        // Load the selected scene using SceneLoader
+        SceneLoader.LoadIntoGame(sceneAsset);
+    }
+
     private void ActivateActButtons()
     {
         for (int i = 0; i < actsButton.Length; i++)

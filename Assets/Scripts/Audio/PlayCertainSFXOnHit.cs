@@ -10,8 +10,5 @@ public class PlayCertainSFXOnHit : MonoBehaviour
         GlassHit
     }
 
-    public SFXToPlay GetWhichSFXToPlay()
-    {
-        
-    }
+    
 }
