@@ -162,7 +162,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     [Header("SFX")]
     [SerializeField, Tooltip("Audio clip to play when the enemy is hit.")]
     private AudioClip[] hitSFX;
-    
+    [SerializeField, Tooltip("Audio clip to play when the enemy dies.")]
+    private AudioClip deathSFX;
     
     [Header("Movement SFX")]
     [SerializeField, Tooltip("Audio clip to loop while the enemy is moving.")]
@@ -1477,6 +1478,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
                 
                 // Disable colliders immediately to prevent lock-on targeting during death
                 DisableCollidersForDeath();
+                PlaySFXOnHit();
+                SoundManager.Instance.sfxSource.PlayOneShot(deathSFX);
                 
                 // NOTE: OnDeath event is now fired AFTER death animation completes
                 // See DeathBehavior.OnDeathSequenceComplete() or DeathFallbackRoutine()
