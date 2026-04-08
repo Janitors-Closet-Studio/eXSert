@@ -20,7 +20,7 @@ public class SaveSlots : MonoBehaviour
 
     [SerializeField] private SaveSlotsMenu saveSlotsMenu;
 
-    private void Awake()
+    private void Start()
     {
         saveSlotButton = this.GetComponent<Button>();
     }

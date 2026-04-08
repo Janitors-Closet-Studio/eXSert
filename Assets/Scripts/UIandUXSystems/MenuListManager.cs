@@ -95,19 +95,7 @@ public class MenuListManager : MonoBehaviour
             }
         }
 
-        if (menusToManage.Count > 0)
-        {
-            GameObject currentTop = menusToManage[0];
-            if (currentTop != null)
-            {
-                bool sameParent = menuToAdd.transform.parent == currentTop.transform.parent;
-                bool keepCurrentTop = currentTop == firstMenuToOpen || currentTop == canvas;
-                if (sameParent && !keepCurrentTop)
-                {
-                    RemoveCurrentTopForSiblingSwitch();
-                }
-            }
-        }
+    
 
         if (menusToManage.Contains(menuToAdd))
             menusToManage.Remove(menuToAdd);

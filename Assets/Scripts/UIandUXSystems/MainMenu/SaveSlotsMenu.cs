@@ -498,6 +498,18 @@ public class SaveSlotsMenu : Menu
     {
         this.gameObject.SetActive(false);
     }
+
+    // Call this when activating the menu as a load menu
+    public void ActivateAsLoadMenu()
+    {
+        ActivateMenu(true);
+    }
+
+    // Call this when activating the menu as a new game menu
+    public void ActivateAsNewGameMenu()
+    {
+        ActivateMenu(false);
+    }
 }
 
 
