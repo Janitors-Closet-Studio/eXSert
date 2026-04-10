@@ -3,13 +3,18 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using System.Collections;
-
+using UnityEngine.EventSystems;
 /// <summary>
 /// Mirrors a working slider's value onto a visual-only slider and exposes optional controller input.
 /// Attach this to the interactive slider (the one receiving pointer/controller events).
 /// </summary>
 [RequireComponent(typeof(Slider))]
-public class SliderValueProxy : MonoBehaviour
+
+
+public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler
+       
+    // When the pointer enters the slider, select it for controller input
+   
 {
     [Header("Visual Slider (Optional)")]
     [SerializeField, Tooltip("Slider that visually mirrors the real slider's value.")]
@@ -65,6 +70,25 @@ public class SliderValueProxy : MonoBehaviour
         UnsubscribeInput(decreaseAction, OnDecreaseStarted, OnDecreaseCanceled);
         StopRepeat(ref increaseRepeatRoutine);
         StopRepeat(ref decreaseRepeatRoutine);
+    }
+
+
+    // When the slider is clicked, select it for controller input
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(gameObject);
+        }
+    }
+
+     // When the pointer enters the slider, select it for controller input
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(gameObject);
+            }
     }
 
     private void SyncVisualSlider(float value)
@@ -154,6 +178,13 @@ public class SliderValueProxy : MonoBehaviour
     {
         if (sourceSlider == null)
             return;
+
+        // Only allow controller input if this slider is currently selected
+        if (UnityEngine.EventSystems.EventSystem.current == null ||
+            UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != sourceSlider.gameObject)
+        {
+            return;
+        }
 
         float range = sourceSlider.maxValue - sourceSlider.minValue;
         float stepSize = range * controllerStepNormalized;

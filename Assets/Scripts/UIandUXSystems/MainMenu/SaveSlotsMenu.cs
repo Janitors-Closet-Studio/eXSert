@@ -198,6 +198,16 @@ public class SaveSlotsMenu : Menu
 
     private void StartNewGame()
     {
+        // Always set the selected profile ID to the current slot before starting a new game
+        if (currentSaveSlotSelected != null)
+        {
+            string selectedProfileId = currentSaveSlotSelected.GetProfileId();
+            if (!string.IsNullOrWhiteSpace(selectedProfileId))
+            {
+                DataPersistenceManager.ChangeSelectedProfileId(selectedProfileId);
+            }
+        }
+
         DataPersistenceManager.NewGame();
 
         // Potentially consider adding the ability to reset progress here
