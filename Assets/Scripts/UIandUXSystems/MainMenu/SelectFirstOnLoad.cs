@@ -1,13 +1,25 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class SelectFirstOnLoad : MonoBehaviour
+    
 {
     public GameObject firstSelectedObject; // Optional: assign in inspector for specific selection
 
-    private void Start()
+    private void OnEnable()
     {
-        SelectFirstButton();
+        // Start coroutine to select for several frames after UI is fully active
+        StartCoroutine(SelectForMultipleFrames(5));
+    }
+
+    private IEnumerator SelectForMultipleFrames(int frames)
+    {
+        for (int i = 0; i < frames; i++)
+        {
+            yield return null;
+            SelectFirstButton();
+        }
     }
 
 
@@ -27,6 +39,13 @@ public class SelectFirstOnLoad : MonoBehaviour
         return UnityEngine.EventSystems.EventSystem.current;
     }
 
+    private IEnumerator SelectFirstButtonNextFrame()
+    {
+        // Wait one frame to ensure all UI elements are initialized
+        yield return null;
+        SelectFirstButton();
+    }
+
     private void SelectFirstButton()
     {
         EventSystem eventSystem = FindEventSystem();
@@ -38,6 +57,12 @@ public class SelectFirstOnLoad : MonoBehaviour
         if (current != null && current.activeInHierarchy)
         {
             // Something is already selected and active, do nothing
+            return;
+        }
+
+        if (current == firstSelectedObject)
+        {
+            // Already selected the desired object, do nothing
             return;
         }
 

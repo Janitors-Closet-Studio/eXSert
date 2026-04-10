@@ -54,6 +54,7 @@ public class FadeMenus : MonoBehaviour
                 canvasGroup.alpha = Mathf.Clamp01(elapsed / duration);
                 yield return null;
             }
+            canvasGroup.alpha = 1f; // Ensure fully visible at end
         }
         else
         {
@@ -65,9 +66,8 @@ public class FadeMenus : MonoBehaviour
                 canvasGroup.alpha = 1f - Mathf.Clamp01(elapsed / duration);
                 yield return null;
             }
-
-            canvasGroup.alpha = 1f;
-            menu.SetActive(false);
+            canvasGroup.alpha = 0f; // Ensure fully transparent at end
+            menu.SetActive(false); // Only deactivate after fade-out completes
         }
         
     }
