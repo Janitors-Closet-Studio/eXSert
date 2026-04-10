@@ -201,20 +201,6 @@ public class MenuListManager : MonoBehaviour
         backGuardActive = false;
     }
 
-    // If the new menu shares a parent with the current top menu, we fade out the current top menu and remove it from the list so that the new menu can take its place without both being active at the same time. This prevents issues with multiple open menus sharing the same parent and causing input problems or visual clutter.
-    private void RemoveCurrentTopForSiblingSwitch()
-    {
-        if (menusToManage.Count == 0)
-            return;
-
-        GameObject currentTop = menusToManage[0];
-        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
-
-        if (currentTop != null && !menusToBlock.Contains(currentTop))
-            fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
-
-        menusToManage.RemoveAt(0);
-    }
 
     private void EnsureSelectionForMenu(GameObject menu)
     {
@@ -262,7 +248,7 @@ public class MenuListManager : MonoBehaviour
         if (EventSystem.current != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
-            EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+            SelectionDebugger.SetSelected(selectable.gameObject);
         }
 
         selectable.Select();
@@ -339,7 +325,7 @@ public class MenuListManager : MonoBehaviour
         if (selectable != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
-            EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+            SelectionDebugger.SetSelected(selectable.gameObject);
             selectable.Select();
         }
     }
