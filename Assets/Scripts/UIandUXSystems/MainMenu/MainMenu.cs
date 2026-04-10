@@ -34,9 +34,8 @@ public class MainMenu : Menu
         if (quitButton != null) quitButton.onClick.RemoveListener(OnQuitGameClicked);
     }
 
-    protected override void OnEnable()
+    protected void OnEnable()
     {
-        base.OnEnable();
 
         if (backButtonInputAction != null && backButtonInputAction.action != null)
         {

@@ -238,7 +238,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             menuListManager.GoBackToPreviousMenu();
         }
 
-        menuListManager.SelectFirstSelectOnBack(menuListManager.menusToManage[0]);
     }
 
     /// <summary>

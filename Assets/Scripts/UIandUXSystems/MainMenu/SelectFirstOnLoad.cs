@@ -10,18 +10,6 @@ public class SelectFirstOnLoad : MonoBehaviour
         SelectFirstButton();
     }
 
-    private void OnEnable()
-    {
-        // Use coroutine to delay selection by one frame for UI stability
-        StartCoroutine(SelectFirstButtonNextFrame());
-        
-    }
-
-    private System.Collections.IEnumerator SelectFirstButtonNextFrame()
-        {
-            yield return null; // Wait one frame
-            SelectFirstButton();
-        }
 
     // Allow other scripts to force selection (e.g., after returning to menu)
     public void ReselectFirstButton()
@@ -44,16 +32,23 @@ public class SelectFirstOnLoad : MonoBehaviour
         EventSystem eventSystem = FindEventSystem();
         if (eventSystem == null)
             return;
-        eventSystem.SetSelectedGameObject(null); // Clear any existing selection
+
+        // Only set selection if nothing is currently selected or the selection is inactive
+        var current = eventSystem.currentSelectedGameObject;
+        if (current != null && current.activeInHierarchy)
+        {
+            // Something is already selected and active, do nothing
+            return;
+        }
 
         GameObject toSelect = null;
-        if (eventSystem.firstSelectedGameObject != null && eventSystem.firstSelectedGameObject.activeInHierarchy && firstSelectedObject == null)
-        {
-            toSelect = eventSystem.firstSelectedGameObject;
-        }
-        else if (firstSelectedObject != null && firstSelectedObject.activeInHierarchy)
+        if (firstSelectedObject != null && firstSelectedObject.activeInHierarchy)
         {
             toSelect = firstSelectedObject;
+        }
+        else if (eventSystem.firstSelectedGameObject != null && eventSystem.firstSelectedGameObject.activeInHierarchy)
+        {
+            toSelect = eventSystem.firstSelectedGameObject;
         }
         else
         {
