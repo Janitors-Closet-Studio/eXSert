@@ -1,3 +1,5 @@
+        
+    
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
@@ -15,10 +17,14 @@ public class MenuListManager : MonoBehaviour
     [SerializeField] private GameObject firstMenuToOpen;
     [SerializeField] private GameObject canvas;
 
+
     // Tracks the last selected element before opening each menu (acts as a stack)
-    private readonly List<Selectable> selectionHistory = new List<Selectable>();
+    public List<Selectable> selectionHistory = new List<Selectable>();
     private readonly WaitForSecondsRealtime controlsPollInterval = new WaitForSecondsRealtime(0.1f);
 
+    // Guard flag to prevent double back
+    private bool backGuardActive = false;
+    private float backGuardCooldown = 0.15f; // seconds
     
 
     private void Start()
@@ -71,60 +77,42 @@ public class MenuListManager : MonoBehaviour
     public void AddToMenuList(GameObject menuToAdd)
     {
         if (menuToAdd == null)
-        {
             return;
+
+        // Only update selection history on explicit button press
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+        {
+            Selectable selected = EventSystem.current.currentSelectedGameObject.GetComponent<Selectable>();
+            if (selected != null && (selectionHistory.Count == 0 || selectionHistory[0] != selected))
+            {
+                selectionHistory.Insert(0, selected);
+            }
         }
 
         EnsureHierarchyIsActive(menuToAdd);
-
         RemoveOtherOpenSettingPageMenu(menuToAdd);
-
-        // If this menu is already at the top, do nothing to prevent flashing
-        if (menusToManage.Count > 0 && menusToManage[0] == menuToAdd)
-        {
-            return;
-        }
-
-        // Remember what was selected before opening this menu
-        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
-        {
-            Selectable previousSelection = EventSystem.current.currentSelectedGameObject.GetComponent<Selectable>();
-            if (previousSelection != null)
-            {
-                selectionHistory.Insert(0, previousSelection);
-            }
-        }
-
-    
 
         if (menusToManage.Contains(menuToAdd))
             menusToManage.Remove(menuToAdd);
-        
-        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
 
+        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
         if (!menusToManage.Contains(menuToAdd))
         {
             menusToManage.Insert(0, menuToAdd);
-
             if(menuToAdd != firstMenuToOpen && menuToAdd != canvas && !menusToBlock.Contains(menuToAdd))
                 fadeMenus.FadeMenuSafe(menuToAdd, fadeMenus.fadeDuration, true);
-
             if(menuToAdd.tag != "LogUI" && menuToAdd.tag != "DiaryUI")
                 SetAsLastSibling(menuToAdd);
-
-            // Select the first selectable in the new menu, but avoid if a slider is currently selected
-            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-            bool sliderSelected = selected != null && selected.GetComponentInParent<Slider>() != null;
-            Selectable firstSelectable = menuToAdd.GetComponent<Selectable>();
-            if (firstSelectable == null)
-            {
-                firstSelectable = menuToAdd.GetComponentInChildren<Selectable>();
-            }
-            if (firstSelectable != null && !sliderSelected && !(firstSelectable is Slider))
-            {
-                SetSelected(firstSelectable);
-            }
         }
+
+        // Always run selection logic, even if already at top
+        GameObject selectedObj = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        bool sliderSelected = selectedObj != null && selectedObj.GetComponentInParent<Slider>() != null;
+        Selectable firstSelectable = menuToAdd.GetComponent<Selectable>();
+        if (firstSelectable == null)
+            firstSelectable = menuToAdd.GetComponentInChildren<Selectable>();
+        if (firstSelectable != null && !sliderSelected)
+            SetSelected(firstSelectable);
 
         DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, "Menu added to list. Current menus in list: " + menusToManage.Count);
     }
@@ -179,57 +167,40 @@ public class MenuListManager : MonoBehaviour
         }
     }
 
-    public void SelectFirstSelectOnBack(GameObject menuToAdd)
-    {
-        if (menuToAdd == null)
-            return;
-
-        Selectable target = GetValidSelectionFromHistory(menuToAdd);
-        if (target == null)
-            target = GetFirstValidSelectable(menuToAdd);
-
-        if (target != null)
-            SetSelected(target);
-    }
 
     public void GoBackToPreviousMenu()
     {
+        if (backGuardActive)
+            return;
+        StartCoroutine(BackGuardCooldown());
+
         if (menusToManage.Count <= 2)
             return;
 
         GameObject currentTop = menusToManage[0];
-
         FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
         if (currentTop != null && !menusToBlock.Contains(currentTop))
             fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
 
         menusToManage.RemoveAt(0);
-        
 
-        if (menusToManage.Count > 0)
+        // On back, pop and select the first selectable in the history
+        if (selectionHistory.Count > 0)
         {
-            GameObject newTop = menusToManage[0];
-            if (newTop != null)
-            {
-                SelectFirstSelectOnBack(newTop);
-            }
+            Selectable toSelect = selectionHistory[0];
+            selectionHistory.RemoveAt(0);
+            if (toSelect != null && toSelect.IsInteractable() && toSelect.gameObject.activeInHierarchy)
+                SetSelected(toSelect);
         }
     }
 
-    // If the new menu shares a parent with the current top menu, we fade out the current top menu and remove it from the list so that the new menu can take its place without both being active at the same time. This prevents issues with multiple open menus sharing the same parent and causing input problems or visual clutter.
-    private void RemoveCurrentTopForSiblingSwitch()
+    private IEnumerator BackGuardCooldown()
     {
-        if (menusToManage.Count == 0)
-            return;
-
-        GameObject currentTop = menusToManage[0];
-        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
-
-        if (currentTop != null && !menusToBlock.Contains(currentTop))
-            fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
-
-        menusToManage.RemoveAt(0);
+        backGuardActive = true;
+        yield return new WaitForSecondsRealtime(backGuardCooldown);
+        backGuardActive = false;
     }
+
 
     private void EnsureSelectionForMenu(GameObject menu)
     {
@@ -248,20 +219,6 @@ public class MenuListManager : MonoBehaviour
         Selectable fallback = GetFirstValidSelectable(menu);
         if (fallback != null)
             SetSelected(fallback);
-    }
-
-    private Selectable GetValidSelectionFromHistory(GameObject targetMenu)
-    {
-        if (selectionHistory.Count == 0)
-            return null;
-
-        Selectable remembered = selectionHistory[0];
-        selectionHistory.RemoveAt(0);
-
-        if (remembered == null || !remembered.IsInteractable() || !remembered.gameObject.activeInHierarchy)
-            return null;
-
-        return remembered.transform.IsChildOf(targetMenu.transform) ? remembered : null;
     }
 
     private static Selectable GetFirstValidSelectable(GameObject root)
@@ -288,16 +245,10 @@ public class MenuListManager : MonoBehaviour
         if (selectable == null)
             return;
 
-        // Avoid forcibly setting selection if a slider is currently selected or if the intended selection is a slider
-        GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-        bool sliderSelected = selected != null && selected.GetComponentInParent<Slider>() != null;
-        if (sliderSelected || selectable is Slider)
-            return;
-
         if (EventSystem.current != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
-            EventSystem.current.SetSelectedGameObject(selectable.gameObject);
+            SelectionDebugger.SetSelected(selectable.gameObject);
         }
 
         selectable.Select();
@@ -315,15 +266,19 @@ public class MenuListManager : MonoBehaviour
     // Overload for UnityEvent<float> sources like Slider.onValueChanged.
     public void SwapBetweenMenus(float _)
     {
+        // Prevent menu stack changes when a slider is selected
+        if (ShouldIgnoreMenuSwap())
+            return;
+
         EventSystem currentEventSystem = EventSystem.current;
         if (currentEventSystem == null)
             return;
 
         GameObject selected = currentEventSystem.currentSelectedGameObject;
         // Only set selection if not editing a slider value
-        if (selected == null || selected.GetComponentInParent<Slider>() == null)
+        if ((selected == null || selected.GetComponentInParent<Slider>() == null) && menusToManage.Count > 0)
         {
-            currentEventSystem.SetSelectedGameObject(menusToManage.Count > 0 ? menusToManage[0] : null);
+            SetSelectedToFirstSelectable(menusToManage[0]);
         }
 
         if (menusToManage.Count >= 5)
@@ -357,6 +312,22 @@ public class MenuListManager : MonoBehaviour
     private bool IsProtectedMenu(GameObject menu)
     {
         return menu != null && (menu == canvas || menu == firstMenuToOpen);
+    }
+
+    // sets selection to a valid Selectable (self or first child), or does nothing if none found
+    public static void SetSelectedToFirstSelectable(GameObject target)
+    {
+        if (target == null || EventSystem.current == null)
+            return;
+        Selectable selectable = target.GetComponent<Selectable>();
+        if (selectable == null)
+            selectable = target.GetComponentInChildren<Selectable>(true);
+        if (selectable != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+            SelectionDebugger.SetSelected(selectable.gameObject);
+            selectable.Select();
+        }
     }
 
 }

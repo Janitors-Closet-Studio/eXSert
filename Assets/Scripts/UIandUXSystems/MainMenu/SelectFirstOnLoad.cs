@@ -1,27 +1,27 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class SelectFirstOnLoad : MonoBehaviour
+    
 {
     public GameObject firstSelectedObject; // Optional: assign in inspector for specific selection
 
-    private void Start()
-    {
-        SelectFirstButton();
-    }
-
     private void OnEnable()
     {
-        // Use coroutine to delay selection by one frame for UI stability
-        StartCoroutine(SelectFirstButtonNextFrame());
-        
+        // Start coroutine to select for several frames after UI is fully active
+        StartCoroutine(SelectForMultipleFrames(5));
     }
 
-    private System.Collections.IEnumerator SelectFirstButtonNextFrame()
+    private IEnumerator SelectForMultipleFrames(int frames)
+    {
+        for (int i = 0; i < frames; i++)
         {
-            yield return null; // Wait one frame
+            yield return null;
             SelectFirstButton();
         }
+    }
+
 
     // Allow other scripts to force selection (e.g., after returning to menu)
     public void ReselectFirstButton()
@@ -39,21 +39,41 @@ public class SelectFirstOnLoad : MonoBehaviour
         return UnityEngine.EventSystems.EventSystem.current;
     }
 
+    private IEnumerator SelectFirstButtonNextFrame()
+    {
+        // Wait one frame to ensure all UI elements are initialized
+        yield return null;
+        SelectFirstButton();
+    }
+
     private void SelectFirstButton()
     {
         EventSystem eventSystem = FindEventSystem();
         if (eventSystem == null)
             return;
-        eventSystem.SetSelectedGameObject(null); // Clear any existing selection
+
+        // Only set selection if nothing is currently selected or the selection is inactive
+        var current = eventSystem.currentSelectedGameObject;
+        if (current != null && current.activeInHierarchy)
+        {
+            // Something is already selected and active, do nothing
+            return;
+        }
+
+        if (current == firstSelectedObject)
+        {
+            // Already selected the desired object, do nothing
+            return;
+        }
 
         GameObject toSelect = null;
-        if (eventSystem.firstSelectedGameObject != null && eventSystem.firstSelectedGameObject.activeInHierarchy && firstSelectedObject == null)
-        {
-            toSelect = eventSystem.firstSelectedGameObject;
-        }
-        else if (firstSelectedObject != null && firstSelectedObject.activeInHierarchy)
+        if (firstSelectedObject != null && firstSelectedObject.activeInHierarchy)
         {
             toSelect = firstSelectedObject;
+        }
+        else if (eventSystem.firstSelectedGameObject != null && eventSystem.firstSelectedGameObject.activeInHierarchy)
+        {
+            toSelect = eventSystem.firstSelectedGameObject;
         }
         else
         {

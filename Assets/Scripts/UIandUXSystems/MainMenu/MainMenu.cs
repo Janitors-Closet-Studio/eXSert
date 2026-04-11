@@ -6,7 +6,7 @@ using UnityEngine.UI;
 /// Main menu controller. Handles New Game, Load Game, and Quit buttons.
 /// Updated to work with new SceneLoader and CheckpointSystem.
 /// </summary>
-public class MainMenu : Menu
+public class MainMenu : MonoBehaviour
 {
     [Header("Menu Navigation")]
     [SerializeField] private SaveSlotsMenu saveSlotsMenu;
@@ -34,9 +34,8 @@ public class MainMenu : Menu
         if (quitButton != null) quitButton.onClick.RemoveListener(OnQuitGameClicked);
     }
 
-    protected override void OnEnable()
+    protected void OnEnable()
     {
-        base.OnEnable();
 
         if (backButtonInputAction != null && backButtonInputAction.action != null)
         {
@@ -64,7 +63,7 @@ public class MainMenu : Menu
     public void OnLoadGameClicked()
     {
         saveSlotsMenu.ActivateMenu(true);
-        this.DeactivateMenu();
+
     }
 
     /// <summary>
@@ -74,7 +73,7 @@ public class MainMenu : Menu
     public void OnNewGameClicked()
     {
         saveSlotsMenu.ActivateMenu(false);
-        this.DeactivateMenu();
+
     }
 
     /// <summary>

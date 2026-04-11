@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
 
-public class SaveSlotsMenu : Menu
+public class SaveSlotsMenu : MonoBehaviour
 {
     #region Inspector References
     [Header("Menu Navigation")]
@@ -198,6 +198,16 @@ public class SaveSlotsMenu : Menu
 
     private void StartNewGame()
     {
+        // Always set the selected profile ID to the current slot before starting a new game
+        if (currentSaveSlotSelected != null)
+        {
+            string selectedProfileId = currentSaveSlotSelected.GetProfileId();
+            if (!string.IsNullOrWhiteSpace(selectedProfileId))
+            {
+                DataPersistenceManager.ChangeSelectedProfileId(selectedProfileId);
+            }
+        }
+
         DataPersistenceManager.NewGame();
 
         // Potentially consider adding the ability to reset progress here
@@ -388,9 +398,6 @@ public class SaveSlotsMenu : Menu
         EnsureReferences();
         ResetTransientMenuState();
 
-        if (mainMenu != null)
-            mainMenu.ActivateMenu();
-
         this.DeactivateMenu();
     }
 
@@ -427,8 +434,6 @@ public class SaveSlotsMenu : Menu
         this.gameObject.SetActive(true);
 
         this.isLoadingGame = isLoadingGame;
-
-        GameObject firstSelected = backButton != null ? backButton.gameObject : null;
 
         Dictionary<string, GameData> profilesGameData = DataPersistenceManager.Instance != null
             ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
