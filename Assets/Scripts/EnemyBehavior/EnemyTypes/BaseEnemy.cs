@@ -1475,6 +1475,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             if (!deathSequenceTriggered)
             {
                 deathSequenceTriggered = true;
+                InvokeOnDeathStarted();
                 
                 // Disable colliders immediately to prevent lock-on targeting during death
                 DisableCollidersForDeath();
