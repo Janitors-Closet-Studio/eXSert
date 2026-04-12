@@ -3,6 +3,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
+using Unity.AI.Navigation;
+using Unity.VisualScripting;
 
 [RequireComponent(typeof(BoxCollider))]
 public class ElevatorLift : PuzzlePart, IConsoleSelectable
@@ -522,6 +524,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         PauseManager.Instance?.SetGameplayHUDVisible(true);
         InteractionUI.Instance?.HideInteractPrompt();
         menuActive = false;
+
+        StartCoroutine(ReturnToFirstFloorAfterDelay(10f));
     }
 
     private void TurnOffAllButtons()
@@ -531,6 +535,12 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             if (button != null)
                 button.SetActive(false);
         }
+    }
+
+    private IEnumerator ReturnToFirstFloorAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        TryTriggerGroundRecallFailsafe();
     }
 
     private void MoveToFirstFloor(InputAction.CallbackContext context)
@@ -635,6 +645,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
 
         isMoving = true;
+
         Vector3 targetPosition = desiredLiftPosition[targetFloor];
         float moveSpeed = liftSpeed; // units per second
         CharacterController playerCC = carryPlayerWithLift ? ReturnPlayerCC() : null;
