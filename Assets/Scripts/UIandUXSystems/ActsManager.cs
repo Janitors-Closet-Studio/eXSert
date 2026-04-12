@@ -131,7 +131,7 @@ public class ActsManager : Singleton<ActsManager>
         }
 
         // Load the selected scene using SceneLoader
-        SceneLoader.LoadIntoGame(sceneAsset);
+        SceneLoader.LoadCoroutine(sceneAsset, true, true);
     }
 
 }
