@@ -6,8 +6,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Behaviors;
 using UnityEngine;
-#pragma warning disable CS0414
 using UnityEngine.AI;
+#pragma warning disable CS0414
 
 public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IProjectileShooter
 {
@@ -26,6 +26,8 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
     [Tooltip("Muzzle transform used as the spawn position and forward direction when firing.")]
     [SerializeField] protected Transform firePoint;
+    [Tooltip("If true, projectile travel stays flat to the ground even if the fire point or target has vertical offset.")]
+    [SerializeField] private bool keepProjectileTrajectoryFlat = true;
 
     [Tooltip("If true, only rotate around Y to face the target (keeps turret upright).")]
     [SerializeField] private bool rotateYawOnly = true;
@@ -62,14 +64,18 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
     [SerializeField] private Color telegraphColor = new Color(1f, 0.15f, 0.15f, 1f);
     [Tooltip("Line width for the telegraph.")]
     [SerializeField] private float telegraphWidth = 0.03f;
-    [Tooltip("How far the telegraph line extends from the fire point.")]
-    [SerializeField] private float telegraphDistance = 12f;
-    [Tooltip("Flicker speed (cycles per second).")]
-    [SerializeField] private float telegraphFlickerSpeed = 8f;
-    [Tooltip("Flicker strength (0 = steady, 1 = max flicker).")]
-    [SerializeField, Range(0f, 1f)] private float telegraphFlickerStrength = 0.5f;
-    [Tooltip("Seconds the line stays hidden right after a shot.")]
-    [SerializeField] private float telegraphHideAfterShot = 0.6f;
+    [Tooltip("World-space length of each telegraph dash.")]
+    [SerializeField] private float telegraphDashLength = 0.35f;
+    [Tooltip("How quickly the telegraph dash pattern scrolls forward.")]
+    [SerializeField] private float telegraphDashScrollSpeed = 1.5f;
+    [Tooltip("Minimum blink rate while the turret is winding up a shot.")]
+    [SerializeField] private float telegraphBlinkMinRate = 0.75f;
+    [Tooltip("Maximum blink rate near the end of the telegraph window.")]
+    [SerializeField] private float telegraphBlinkMaxRate = 4.0f;
+    [Tooltip("Seconds after firing that the telegraph stays hidden to communicate cooldown.")]
+    [SerializeField] private float telegraphHideAfterShot = 0.35f;
+    [Tooltip("Seconds before the shot where the telegraph line disappears and the muzzle warning VFX takes over.")]
+    [SerializeField] private float telegraphHideBeforeShot = 0.5f;
 
     [Header("Detection Hysteresis")]
     [Tooltip("Enter Attack when player is within detectionRange + this.")]
@@ -91,10 +97,11 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
     private Coroutine attackLoop;
     private Coroutine detectLoop;
     private Coroutine animationRestoreRoutine;
-    private Coroutine telegraphHideRoutine;
     private float telegraphCycleStartTime = -1e9f;
+    private float nextShotTime = -1e9f;
 
     private IEnemyStateBehavior<EnemyState, EnemyTrigger> deathBehavior;
+    private static Texture2D telegraphDashTexture;
 
     // Cache own colliders to ignore self-collision on fired projectiles
     private Collider[] ownColliders;
@@ -110,6 +117,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
     private bool isTargetEngaged;
     private LineRenderer telegraphLine;
+    private Material telegraphLineMaterial;
 
     // IProjectileShooter implementation
     public GameObject ProjectilePrefab => projectilePrefab;
@@ -211,9 +219,9 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             {
                 /* SetEnemyColor(attackColor); */
                 isTargetEngaged = true;
-                PlayAttackAnim();
+                BeginAttackTelegraphCycle(Time.time);
                 StartAttackLoop();
-                SetTelegraphVisible(showTelegraphLine);
+                SetTelegraphVisible(false);
             })
             .OnExit(() =>
             {
@@ -347,12 +355,6 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             StopCoroutine(attackLoop);
             attackLoop = null;
         }
-
-        if (telegraphHideRoutine != null)
-        {
-            StopCoroutine(telegraphHideRoutine);
-            telegraphHideRoutine = null;
-        }
     }
 
     protected virtual IEnumerator GetAttackLoopRoutine()
@@ -390,11 +392,30 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
                 continue;
             }
 
-            // Fire on cooldown using a persistent timestamp (prevents edge rapid-fire)
-            if (Time.time - lastShotTime >= fireCooldown)
+            if (nextShotTime <= -1e8f)
+                BeginAttackTelegraphCycle(Time.time);
+
+            float elapsedSinceCycleStart = Mathf.Max(0f, Time.time - telegraphCycleStartTime);
+            float timeToShot = nextShotTime - Time.time;
+            float hideLead = Mathf.Max(0f, telegraphHideBeforeShot);
+            float hideAfterShot = Mathf.Max(0f, telegraphHideAfterShot);
+            bool shouldShowTelegraph =
+                showTelegraphLine &&
+                elapsedSinceCycleStart >= hideAfterShot &&
+                timeToShot > hideLead;
+
+            if (shouldShowTelegraph)
+            {
+                SetTelegraphVisible(true);
+            }
+            else if (telegraphLine != null && telegraphLine.enabled)
+            {
+                SetTelegraphVisible(false);
+            }
+
+            if (Time.time >= nextShotTime)
             {
                 FireProjectile(player);
-                lastShotTime = Time.time;
             }
 
             yield return null;
@@ -405,8 +426,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
     {
         if (ProjectilePrefab == null || FirePoint == null || target == null) return;
 
-        Vector3 targetPos = target.position + Vector3.up * aimYOffset;
-        Vector3 dir = (targetPos - FirePoint.position).normalized;
+        Vector3 dir = GetProjectileDirection(FirePoint.position, target.position + Vector3.up * aimYOffset, FirePoint.forward);
 
         var proj = GetPooledProjectile();
 
@@ -445,10 +465,15 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
     {
         PlayAttackAnim();
         lastShotTime = Time.time;
-        telegraphCycleStartTime = Time.time;
         PlayGunfireSfx();
-        if (showTelegraphLine)
-            HideTelegraphTemporarily(telegraphHideAfterShot);
+        BeginAttackTelegraphCycle(Time.time);
+    }
+
+    private void BeginAttackTelegraphCycle(float startTime)
+    {
+        telegraphCycleStartTime = startTime;
+        nextShotTime = startTime + Mathf.Max(0.01f, fireCooldown);
+        SetTelegraphVisible(false);
     }
 
     private void PlayGunfireSfx()
@@ -533,9 +558,20 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         telegraphLine.positionCount = 2;
         telegraphLine.startWidth = Mathf.Max(0.001f, telegraphWidth);
         telegraphLine.endWidth = Mathf.Max(0.001f, telegraphWidth);
-        telegraphLine.material = new Material(Shader.Find("Sprites/Default"));
-        telegraphLine.startColor = telegraphColor;
-        telegraphLine.endColor = telegraphColor;
+        Shader telegraphShader = Shader.Find("Legacy Shaders/Particles/Alpha Blended");
+        if (telegraphShader == null)
+            telegraphShader = Shader.Find("Particles/Standard Unlit");
+        if (telegraphShader == null)
+            telegraphShader = Shader.Find("Unlit/Transparent");
+        if (telegraphShader == null)
+            telegraphShader = Shader.Find("Sprites/Default");
+
+        telegraphLineMaterial = new Material(telegraphShader);
+        telegraphLine.material = telegraphLineMaterial;
+        telegraphLine.textureMode = LineTextureMode.Tile;
+        telegraphLine.alignment = LineAlignment.View;
+        ApplyTelegraphTexture(GetOrCreateTelegraphDashTexture());
+        ApplyTelegraphColor(telegraphColor);
         telegraphLine.enabled = false;
     }
 
@@ -544,32 +580,10 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         if (telegraphLine == null)
             return;
 
-        telegraphLine.enabled = visible;
-        if (visible)
-            telegraphCycleStartTime = Time.time;
-    }
-
-    private void HideTelegraphTemporarily(float duration)
-    {
-        if (telegraphLine == null)
+        if (telegraphLine.enabled == visible)
             return;
 
-        if (telegraphHideRoutine != null)
-            StopCoroutine(telegraphHideRoutine);
-
-        telegraphHideRoutine = StartCoroutine(HideTelegraphRoutine(duration));
-    }
-
-    private IEnumerator HideTelegraphRoutine(float duration)
-    {
-        SetTelegraphVisible(false);
-        if (duration > 0f)
-            yield return WaitForSecondsCache.Get(duration);
-
-        if (enemyAI != null && enemyAI.State.Equals(EnemyState.Attack))
-            SetTelegraphVisible(showTelegraphLine);
-
-        telegraphHideRoutine = null;
+        telegraphLine.enabled = visible;
     }
 
     private void UpdateTelegraphLine()
@@ -584,12 +598,10 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         if (player != null)
         {
             Vector3 targetPos = player.position + Vector3.up * aimYOffset;
-            Vector3 toTarget = targetPos - start;
-            if (toTarget.sqrMagnitude > 0.0001f)
-                dir = toTarget.normalized;
+            dir = GetProjectileDirection(start, targetPos, origin.forward);
         }
 
-        if (rotateYawOnly)
+        if (rotateYawOnly && !keepProjectileTrajectoryFlat)
         {
             dir.y = 0f;
             if (dir.sqrMagnitude <= 0.0001f)
@@ -599,45 +611,130 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         }
 
         Vector3 end;
-        if (Physics.Raycast(start, dir, out var hit, Mathf.Infinity, ~0, QueryTriggerInteraction.Ignore))
+        float attackRange = GetTelegraphRange();
+        if (Physics.Raycast(start, dir, out var hit, attackRange, ~0, QueryTriggerInteraction.Ignore))
         {
             end = hit.point;
         }
         else
         {
-            float fallbackDistance = GetEffectiveDetectionRange();
-            end = start + dir * fallbackDistance;
+            end = start + dir * attackRange;
         }
 
         telegraphLine.SetPosition(0, start);
         telegraphLine.SetPosition(1, end);
-
-        float flickerSpeed = Mathf.Max(0f, telegraphFlickerSpeed);
-        float strength = Mathf.Clamp01(telegraphFlickerStrength);
-        float flicker = 1f;
-        if (fireCooldown > 0f)
+        if (telegraphLineMaterial != null)
         {
-            float timeSinceLastShot = Time.time - lastShotTime;
-            float timeToShot = fireCooldown - timeSinceLastShot;
-            const float noFlickerWindow = 0.5f;
-
-            if (timeToShot > noFlickerWindow)
-            {
-                float rampDuration = Mathf.Max(0.01f, fireCooldown - noFlickerWindow);
-                float progress = Mathf.Clamp01(timeSinceLastShot / rampDuration);
-                flickerSpeed = Mathf.Lerp(1f, 5f, progress);
-                float flickerTime = Mathf.Max(0f, Time.time - telegraphCycleStartTime);
-                flicker = flickerSpeed > 0f
-                    ? (Mathf.Sin(flickerTime * flickerSpeed * Mathf.PI * 2f) * 0.5f + 0.5f)
-                    : 1f;
-            }
+            float dashLength = Mathf.Max(0.05f, telegraphDashLength);
+            float scrollSpeed = Mathf.Max(0f, telegraphDashScrollSpeed);
+            float repeatsPerWorldUnit = 1f / dashLength;
+            Vector2 scale = new Vector2(repeatsPerWorldUnit, 1f);
+            Vector2 offset = new Vector2(-Time.time * scrollSpeed * repeatsPerWorldUnit, 0f);
+            ApplyTelegraphTextureTransform(scale, offset);
         }
-        float alpha = Mathf.Lerp(1f - strength, 1f, flicker) * telegraphColor.a;
+
+        float alpha = telegraphColor.a;
+        float hideAfterShot = Mathf.Max(0f, telegraphHideAfterShot);
+        float hideBeforeShot = Mathf.Max(0f, telegraphHideBeforeShot);
+        float visibleWindow = Mathf.Max(0.01f, fireCooldown - hideAfterShot - hideBeforeShot);
+        float elapsed = Mathf.Max(0f, Time.time - telegraphCycleStartTime);
+        float blinkElapsed = Mathf.Max(0f, elapsed - hideAfterShot);
+        float blinkProgress = Mathf.Clamp01(blinkElapsed / visibleWindow);
+        float blinkRate = Mathf.Lerp(
+            Mathf.Max(0.1f, telegraphBlinkMinRate),
+            Mathf.Max(telegraphBlinkMinRate, telegraphBlinkMaxRate),
+            blinkProgress * blinkProgress
+        );
+        float phase = Mathf.Repeat(blinkElapsed * blinkRate, 1f);
+        alpha = phase < 0.5f ? telegraphColor.a : 0f;
+
         Color c = new Color(telegraphColor.r, telegraphColor.g, telegraphColor.b, alpha);
-        telegraphLine.startColor = c;
-        telegraphLine.endColor = c;
+        ApplyTelegraphColor(c);
         telegraphLine.startWidth = Mathf.Max(0.001f, telegraphWidth);
         telegraphLine.endWidth = Mathf.Max(0.001f, telegraphWidth);
+    }
+
+    private void ApplyTelegraphColor(Color color)
+    {
+        if (telegraphLine != null)
+        {
+            telegraphLine.startColor = color;
+            telegraphLine.endColor = color;
+        }
+
+        if (telegraphLineMaterial == null)
+            return;
+
+        if (telegraphLineMaterial.HasProperty("_Color"))
+            telegraphLineMaterial.SetColor("_Color", color);
+
+        if (telegraphLineMaterial.HasProperty("_BaseColor"))
+            telegraphLineMaterial.SetColor("_BaseColor", color);
+
+        if (telegraphLineMaterial.HasProperty("_TintColor"))
+            telegraphLineMaterial.SetColor("_TintColor", color);
+    }
+
+    private void ApplyTelegraphTexture(Texture texture)
+    {
+        if (telegraphLineMaterial == null)
+            return;
+
+        telegraphLineMaterial.mainTexture = texture;
+
+        if (telegraphLineMaterial.HasProperty("_MainTex"))
+            telegraphLineMaterial.SetTexture("_MainTex", texture);
+
+        if (telegraphLineMaterial.HasProperty("_BaseMap"))
+            telegraphLineMaterial.SetTexture("_BaseMap", texture);
+    }
+
+    private void ApplyTelegraphTextureTransform(Vector2 scale, Vector2 offset)
+    {
+        if (telegraphLineMaterial == null)
+            return;
+
+        if (telegraphLineMaterial.HasProperty("_MainTex"))
+        {
+            telegraphLineMaterial.SetTextureScale("_MainTex", scale);
+            telegraphLineMaterial.SetTextureOffset("_MainTex", offset);
+        }
+
+        if (telegraphLineMaterial.HasProperty("_BaseMap"))
+        {
+            telegraphLineMaterial.SetTextureScale("_BaseMap", scale);
+            telegraphLineMaterial.SetTextureOffset("_BaseMap", offset);
+        }
+    }
+
+    private static Texture2D GetOrCreateTelegraphDashTexture()
+    {
+        if (telegraphDashTexture != null)
+            return telegraphDashTexture;
+
+        const int width = 64;
+        telegraphDashTexture = new Texture2D(width, 1, TextureFormat.RGBA32, false)
+        {
+            name = "TurretTelegraphDash",
+            wrapMode = TextureWrapMode.Repeat,
+            filterMode = FilterMode.Point
+        };
+
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        Color solid = Color.white;
+        for (int x = 0; x < width; x++)
+        {
+            float normalized = x / (float)(width - 1);
+            telegraphDashTexture.SetPixel(x, 0, normalized < 0.58f ? solid : clear);
+        }
+
+        telegraphDashTexture.Apply(false, true);
+        return telegraphDashTexture;
+    }
+
+    private float GetTelegraphRange()
+    {
+        return Mathf.Max(0f, GetEffectiveDetectionRange() + Mathf.Max(0f, enterBuffer));
     }
 
     private new void OnDisable()
@@ -703,6 +800,26 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         Quaternion targetRot = Quaternion.LookRotation(aimDir.normalized);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, turnSpeed * Time.deltaTime);
         return true;
+    }
+
+    private Vector3 GetProjectileDirection(Vector3 origin, Vector3 targetPosition, Vector3 fallbackForward)
+    {
+        Vector3 direction = targetPosition - origin;
+
+        if (keepProjectileTrajectoryFlat || rotateYawOnly)
+            direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.0001f)
+            return direction.normalized;
+
+        Vector3 fallback = fallbackForward;
+        if (keepProjectileTrajectoryFlat || rotateYawOnly)
+            fallback.y = 0f;
+
+        if (fallback.sqrMagnitude > 0.0001f)
+            return fallback.normalized;
+
+        return transform.forward;
     }
 
     private bool IsTargetWithinYawLimits(Vector3 targetPosition)
