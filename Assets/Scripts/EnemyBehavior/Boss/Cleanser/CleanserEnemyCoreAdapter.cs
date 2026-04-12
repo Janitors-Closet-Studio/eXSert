@@ -24,7 +24,10 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             bool aliveNow = isAlive;
             if (wasAlive && !aliveNow)
+            {
+                InvokeOnDeathStarted();
                 InvokeOnDeath();
+            }
 
             wasAlive = aliveNow;
         }
