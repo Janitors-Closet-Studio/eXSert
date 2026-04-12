@@ -329,7 +329,10 @@ namespace EnemyBehavior.Boss
         {
             bool aliveNow = isAlive;
             if (wasAlive && !aliveNow)
+            {
+                InvokeOnDeathStarted();
                 InvokeOnDeath();
+            }
 
             wasAlive = aliveNow;
         }
@@ -340,6 +343,7 @@ namespace EnemyBehavior.Boss
                 return;
 
             wasAlive = false;
+            InvokeOnDeathStarted();
             InvokeOnDeath();
         }
 
