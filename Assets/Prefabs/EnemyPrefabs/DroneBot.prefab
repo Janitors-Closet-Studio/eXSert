@@ -62,6 +62,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3544665226248895718}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6030406750470888511
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6985459063107937295}
+  m_Layer: 0
+  m_Name: SparkTarget2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6985459063107937295
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6030406750470888511}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.421, y: 1.162, z: -0.427}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 621985785902187941}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6547781090955036995
 GameObject:
   m_ObjectHideFlags: 0
@@ -123,6 +154,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4357102445390796850}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7488399640977774346
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4817469539728284877}
+  m_Layer: 0
+  m_Name: SparkTarget1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4817469539728284877
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7488399640977774346}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.491, y: 1.162, z: 0.222}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 621985785902187941}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &524907587996463312
 PrefabInstance:
@@ -681,6 +743,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 87c9d8cab7647524d98ad7921b83a701, type: 3}
       insertIndex: -1
       addedObject: {fileID: 9019657501908231781}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 87c9d8cab7647524d98ad7921b83a701, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4817469539728284877}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 87c9d8cab7647524d98ad7921b83a701, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6985459063107937295}
     - targetCorrespondingSourceObject: {fileID: -7760558148602894977, guid: 87c9d8cab7647524d98ad7921b83a701, type: 3}
       insertIndex: 0
       addedObject: {fileID: 2580384018325354736}
@@ -860,7 +928,7 @@ MonoBehaviour:
   velocityFacingThreshold: 0.2
   hitStaggerDuration: 0.5
   applyPhysicsCollapseOnAnyDeath: 1
-  deathCollapseDownwardVelocity: 10
+  deathCollapseDownwardVelocity: 0.5
   deathCollapseRadialForce: 5
   aerialHitDisplacementLockDuration: 0.15
   aerialHitDisplacementDuration: 0.12
@@ -959,6 +1027,26 @@ MonoBehaviour:
     rotationOffset: {x: 0, y: 0, z: 0}
     scaleMultiplier: {x: 0, y: 0, z: 0}
     attachToAnchor: 0
+    triggerPhase: 0
+    repeatVisualEffects: 0
+    repeatDelayRange: {x: 0, y: 0}
+    spawnDelay: 0
+  - effectObject: {fileID: 7008246420637607676, guid: 3b6e4d00bcf399a4eb13ae88c8c4c819, type: 3}
+    anchor: {fileID: 4817469539728284877}
+    positionOffset: {x: 0, y: 0, z: 0}
+    rotationOffset: {x: 0, y: 0, z: -72}
+    scaleMultiplier: {x: 0, y: 0, z: 0}
+    attachToAnchor: 1
+    triggerPhase: 0
+    repeatVisualEffects: 0
+    repeatDelayRange: {x: 0, y: 0}
+    spawnDelay: 0
+  - effectObject: {fileID: 7008246420637607676, guid: 3b6e4d00bcf399a4eb13ae88c8c4c819, type: 3}
+    anchor: {fileID: 6985459063107937295}
+    positionOffset: {x: 0, y: 0, z: 0}
+    rotationOffset: {x: 0, y: 0, z: 17}
+    scaleMultiplier: {x: 0, y: 0, z: 0}
+    attachToAnchor: 1
     triggerPhase: 0
     repeatVisualEffects: 0
     repeatDelayRange: {x: 0, y: 0}
