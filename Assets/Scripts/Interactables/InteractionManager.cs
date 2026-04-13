@@ -216,6 +216,12 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         // Only set isPlayerNearby if the collider belongs to the player character
         if (other.transform.root.CompareTag("Player"))
         {
+            if (!interactable)
+            {
+                Debug.Log($"Player entered interaction zone of {gameObject.name}, but it's not interactable.");
+                return;
+            }
+
             Debug.Log($"[InteractionManager] Player entered interaction zone of {gameObject.name}. Setting isPlayerNearby true.");
             isPlayerNearby = true;
 
