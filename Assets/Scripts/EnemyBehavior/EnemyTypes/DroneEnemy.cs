@@ -165,9 +165,32 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     private float aerialHitDisplacementDuration = 0.12f;
 
     private Queue<GameObject> projectilePool;
+    private DroneCluster fallbackSoloCluster;
 
     public float HoverHeight => hoverHeight;
     public DroneCluster Cluster { get; set; }
+
+    public void EnsureOperationalCluster()
+    {
+        if (Cluster != null && Cluster.drones != null && Cluster.drones.Count > 0)
+            return;
+
+        if (fallbackSoloCluster == null)
+            fallbackSoloCluster = GetComponent<DroneCluster>() ?? gameObject.AddComponent<DroneCluster>();
+
+        fallbackSoloCluster.drones.Clear();
+        fallbackSoloCluster.drones.Add(this);
+
+        if (fallbackSoloCluster.target == null)
+        {
+            var targetObject = new GameObject($"{name}_Target");
+            targetObject.transform.SetParent(fallbackSoloCluster.transform, false);
+            targetObject.transform.position = transform.position;
+            fallbackSoloCluster.target = targetObject.transform;
+        }
+
+        Cluster = fallbackSoloCluster;
+    }
 
     /// <summary>
     /// Returns true if this drone is the leader of its cluster.
@@ -271,6 +294,10 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     protected override void Awake()
     {
         base.Awake();
+        EnsureOperationalCluster();
+        CacheRenderers();
+        ApplyRendererVisibility(s_disableRenderers);
+
         agent = GetComponent<NavMeshAgent>();
         agent.updateRotation = false;
         agent.updateUpAxis = false;
@@ -300,6 +327,7 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
 
     private new void Start()
     {
+        EnsureOperationalCluster();
         InitializeStateMachine(DroneState.Idle);
         ConfigureStateMachine();
 
@@ -318,9 +346,8 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
 
 
         EnsureHealthBarBinding();
-
-        // Cache renderer references for memory leak diagnostic toggling
-        _cachedRenderers = GetComponentsInChildren<Renderer>();
+    CacheRenderers();
+    ApplyRendererVisibility(s_disableRenderers);
 
         // NOTE: Don't call StartIdleTimer() here - idleBehavior.OnEnter() handles it
         // and only starts the timer when there are multiple zones
@@ -357,7 +384,18 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     public override void Spawn()
     {
         RestoreFromPlungePhysicsCollapse();
+        EnsureOperationalCluster();
+
+        if (currentZone == null)
+            currentZone = FindNearestZone(transform.position);
+
         base.Spawn();
+
+        if (IsClusterLeader())
+            idleBehavior?.OnEnter(this);
+
+        CacheRenderers();
+        ApplyRendererVisibility(s_disableRenderers);
     }
 
     public override void ResetEnemy()
@@ -561,14 +599,28 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
         // Toggle Renderer components
         if (s_disableRenderers != _lastRendererDisableState)
         {
-            _lastRendererDisableState = s_disableRenderers;
-            if (_cachedRenderers != null)
-            {
-                foreach (var r in _cachedRenderers)
-                {
-                    if (r != null) r.enabled = !s_disableRenderers;
-                }
-            }
+            ApplyRendererVisibility(s_disableRenderers);
+        }
+    }
+
+    private void CacheRenderers()
+    {
+        if (_cachedRenderers == null || _cachedRenderers.Length == 0)
+            _cachedRenderers = GetComponentsInChildren<Renderer>(true);
+    }
+
+    private void ApplyRendererVisibility(bool disableRenderers)
+    {
+        CacheRenderers();
+        _lastRendererDisableState = disableRenderers;
+
+        if (_cachedRenderers == null)
+            return;
+
+        foreach (Renderer renderer in _cachedRenderers)
+        {
+            if (renderer != null)
+                renderer.enabled = !disableRenderers;
         }
     }
 
@@ -979,6 +1031,8 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     private new void OnEnable()
     {
         InitializeProjectilePool();
+        CacheRenderers();
+        ApplyRendererVisibility(s_disableRenderers);
     }
 
     private new void OnDisable()

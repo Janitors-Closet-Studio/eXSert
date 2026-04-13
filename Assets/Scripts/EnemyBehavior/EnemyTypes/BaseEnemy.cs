@@ -827,6 +827,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
     }
 
+    protected string HitAnimationStateName => hitStateName;
+
     protected virtual void PlayDieAnim()
     {
         if (!TrySetTrigger(dieTriggerName))
@@ -884,6 +886,11 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         return AnimatorHasState(animator, stateName, layerIndex);
     }
 
+    protected bool HasAnimatorState(Animator target, string stateName, int layerIndex = 0)
+    {
+        return AnimatorHasState(target, stateName, layerIndex);
+    }
+
     private bool AnimatorHasState(Animator target, string stateName, int layerIndex = 0)
     {
         if (target == null || string.IsNullOrEmpty(stateName))
@@ -897,6 +904,11 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private void PlayState(string stateName)
     {
         PlayStateOn(animator, stateName);
+    }
+
+    protected void ForcePlayStateOn(Animator target, string stateName)
+    {
+        PlayStateOn(target, stateName);
     }
 
     private void PlayStateOn(Animator target, string stateName)

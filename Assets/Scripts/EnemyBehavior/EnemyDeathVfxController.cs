@@ -119,7 +119,7 @@ public sealed class EnemyDeathVfxController : MonoBehaviour
     private void OnDisable()
     {
         Unsubscribe();
-        ResetAllManagedVfx();
+        ResetManagedVfxForOwnerDisable();
     }
 
     private void OnDestroy()
@@ -453,6 +453,63 @@ public sealed class EnemyDeathVfxController : MonoBehaviour
         }
 
         if (vfxEntries == null)
+            return;
+
+        for (int i = 0; i < vfxEntries.Length; i++)
+        {
+            GameObject effectObject = vfxEntries[i].EffectObject;
+            if (!ShouldUseAttachedInstance(effectObject))
+                continue;
+
+            StopInstance(effectObject);
+        }
+    }
+
+    private void ResetManagedVfxForOwnerDisable()
+    {
+        for (int i = activeInstances.Count - 1; i >= 0; i--)
+        {
+            SpawnedVfxHandle handle = activeInstances[i];
+            if (handle == null)
+            {
+                activeInstances.RemoveAt(i);
+                continue;
+            }
+
+            bool preserveDetachedDeathCompletedVfx =
+                hasPlayedDeathCompletedThisLife &&
+                !handle.IsAttachedInstance &&
+                handle.Phase == VfxTriggerPhase.DeathCompleted;
+
+            if (preserveDetachedDeathCompletedVfx)
+                continue;
+
+            handle.StopRequested = true;
+
+            if (handle.ReplayCoroutine != null)
+            {
+                EnsureCoroutineRunner().StopCoroutine(handle.ReplayCoroutine);
+                handle.ReplayCoroutine = null;
+            }
+
+            if (handle.CleanupCoroutine != null)
+            {
+                EnsureCoroutineRunner().StopCoroutine(handle.CleanupCoroutine);
+                handle.CleanupCoroutine = null;
+            }
+
+            if (handle.Instance != null)
+            {
+                if (handle.IsAttachedInstance)
+                    StopInstance(handle.Instance);
+                else
+                    Destroy(handle.Instance);
+            }
+
+            activeInstances.RemoveAt(i);
+        }
+
+        if (hasPlayedDeathCompletedThisLife || vfxEntries == null)
             return;
 
         for (int i = 0; i < vfxEntries.Length; i++)

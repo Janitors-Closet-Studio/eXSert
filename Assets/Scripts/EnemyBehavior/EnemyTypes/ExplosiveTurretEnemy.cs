@@ -18,6 +18,10 @@ public class ExplosiveTurretEnemy : BaseTurretEnemy
 	[SerializeField] private AnimationClip popupAnimation;
 	[Tooltip("Fallback duration if popup animation clip is not assigned.")]
 	[SerializeField] private float popupFallbackDuration = 0.75f;
+	[Tooltip("Optional hit animation clip used to keep the hit reaction active before attack resumes.")]
+	[SerializeField] private AnimationClip hitAnimation;
+	[Tooltip("Fallback duration if the hit animation clip is not assigned.")]
+	[SerializeField] private float hitFallbackDuration = 0.35f;
 
 	private bool popupStarted;
 	private bool popupComplete;
@@ -50,10 +54,32 @@ public class ExplosiveTurretEnemy : BaseTurretEnemy
 		PlayAttackAnimOn(boxAnimator);
 	}
 
+	protected override bool ShouldHideTelegraphBeforeShot()
+	{
+		return false;
+	}
+
+	protected override bool ShouldUseSolidTelegraphBeforeShot()
+	{
+		return true;
+	}
+
 	protected override void PlayHitAnim()
 	{
-		base.PlayHitAnim();
-		PlayHitAnimOn(boxAnimator);
+		if (HasAnimatorState(animator, HitAnimationStateName))
+			ForcePlayStateOn(animator, HitAnimationStateName);
+		else
+			base.PlayHitAnim();
+
+		if (HasAnimatorState(boxAnimator, HitAnimationStateName))
+			ForcePlayStateOn(boxAnimator, HitAnimationStateName);
+		else
+			PlayHitAnimOn(boxAnimator);
+	}
+
+	protected override float GetHitAnimationRecoveryDelay()
+	{
+		return hitAnimation != null ? hitAnimation.length : Mathf.Max(0f, hitFallbackDuration);
 	}
 
 	protected override void PlayDieAnim()

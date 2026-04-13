@@ -104,6 +104,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
     private IEnemyStateBehavior<EnemyState, EnemyTrigger> deathBehavior;
     private static Texture2D telegraphDashTexture;
+    private static Texture2D telegraphSolidTexture;
 
     // Cache own colliders to ignore self-collision on fired projectiles
     private Collider[] ownColliders;
@@ -364,6 +365,27 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         return AttackLoop();
     }
 
+    protected virtual bool ShouldHideTelegraphBeforeShot()
+    {
+        return true;
+    }
+
+    protected virtual bool ShouldUseSolidTelegraphBeforeShot()
+    {
+        return false;
+    }
+
+    protected virtual float GetHitAnimationRecoveryDelay()
+    {
+        return hitAnimationRecoveryDelay;
+    }
+
+    protected virtual void RestoreAttackVisualAfterHit()
+    {
+        HideAttackIndicator();
+        RequestIdlePose(force: true);
+    }
+
     private IEnumerator AttackLoop()
     {
         while (enemyAI.State.Equals(EnemyState.Attack))
@@ -401,10 +423,11 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             float timeToShot = nextShotTime - Time.time;
             float hideLead = Mathf.Max(0f, telegraphHideBeforeShot);
             float hideAfterShot = Mathf.Max(0f, telegraphHideAfterShot);
+            bool hideBeforeShot = ShouldHideTelegraphBeforeShot();
             bool shouldShowTelegraph =
                 showTelegraphLine &&
                 elapsedSinceCycleStart >= hideAfterShot &&
-                timeToShot > hideLead;
+                (!hideBeforeShot || timeToShot > hideLead);
 
             if (shouldShowTelegraph)
             {
@@ -625,30 +648,48 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
         telegraphLine.SetPosition(0, start);
         telegraphLine.SetPosition(1, end);
+
+        float hideBeforeShot = Mathf.Max(0f, telegraphHideBeforeShot);
+        bool useSolidPreShotTelegraph =
+            ShouldUseSolidTelegraphBeforeShot() &&
+            nextShotTime < 1e8f &&
+            nextShotTime - Time.time <= hideBeforeShot;
+
         if (telegraphLineMaterial != null)
         {
-            float dashLength = Mathf.Max(0.05f, telegraphDashLength);
-            float scrollSpeed = Mathf.Max(0f, telegraphDashScrollSpeed);
-            float repeatsPerWorldUnit = 1f / dashLength;
-            Vector2 scale = new Vector2(repeatsPerWorldUnit, 1f);
-            Vector2 offset = new Vector2(-Time.time * scrollSpeed * repeatsPerWorldUnit, 0f);
-            ApplyTelegraphTextureTransform(scale, offset);
+            if (useSolidPreShotTelegraph)
+            {
+                ApplyTelegraphTexture(GetOrCreateTelegraphSolidTexture());
+                ApplyTelegraphTextureTransform(Vector2.one, Vector2.zero);
+            }
+            else
+            {
+                ApplyTelegraphTexture(GetOrCreateTelegraphDashTexture());
+                float dashLength = Mathf.Max(0.05f, telegraphDashLength);
+                float scrollSpeed = Mathf.Max(0f, telegraphDashScrollSpeed);
+                float repeatsPerWorldUnit = 1f / dashLength;
+                Vector2 scale = new Vector2(repeatsPerWorldUnit, 1f);
+                Vector2 offset = new Vector2(-Time.time * scrollSpeed * repeatsPerWorldUnit, 0f);
+                ApplyTelegraphTextureTransform(scale, offset);
+            }
         }
 
         float alpha = telegraphColor.a;
         float hideAfterShot = Mathf.Max(0f, telegraphHideAfterShot);
-        float hideBeforeShot = Mathf.Max(0f, telegraphHideBeforeShot);
         float visibleWindow = Mathf.Max(0.01f, fireCooldown - hideAfterShot - hideBeforeShot);
         float elapsed = Mathf.Max(0f, Time.time - telegraphCycleStartTime);
         float blinkElapsed = Mathf.Max(0f, elapsed - hideAfterShot);
         float blinkProgress = Mathf.Clamp01(blinkElapsed / visibleWindow);
-        float blinkRate = Mathf.Lerp(
-            Mathf.Max(0.1f, telegraphBlinkMinRate),
-            Mathf.Max(telegraphBlinkMinRate, telegraphBlinkMaxRate),
-            blinkProgress * blinkProgress
-        );
-        float phase = Mathf.Repeat(blinkElapsed * blinkRate, 1f);
-        alpha = phase < 0.5f ? telegraphColor.a : 0f;
+        if (!useSolidPreShotTelegraph)
+        {
+            float blinkRate = Mathf.Lerp(
+                Mathf.Max(0.1f, telegraphBlinkMinRate),
+                Mathf.Max(telegraphBlinkMinRate, telegraphBlinkMaxRate),
+                blinkProgress * blinkProgress
+            );
+            float phase = Mathf.Repeat(blinkElapsed * blinkRate, 1f);
+            alpha = phase < 0.5f ? telegraphColor.a : 0f;
+        }
 
         Color c = new Color(telegraphColor.r, telegraphColor.g, telegraphColor.b, alpha);
         ApplyTelegraphColor(c);
@@ -732,6 +773,23 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
         telegraphDashTexture.Apply(false, true);
         return telegraphDashTexture;
+    }
+
+    private static Texture2D GetOrCreateTelegraphSolidTexture()
+    {
+        if (telegraphSolidTexture != null)
+            return telegraphSolidTexture;
+
+        telegraphSolidTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+        {
+            name = "TurretTelegraphSolid",
+            wrapMode = TextureWrapMode.Repeat,
+            filterMode = FilterMode.Point
+        };
+
+        telegraphSolidTexture.SetPixel(0, 0, Color.white);
+        telegraphSolidTexture.Apply(false, true);
+        return telegraphSolidTexture;
     }
 
     private float GetTelegraphRange()
@@ -854,8 +912,9 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
     private IEnumerator RestoreAnimationAfterHit()
     {
-        if (hitAnimationRecoveryDelay > 0f)
-            yield return WaitForSecondsCache.Get(hitAnimationRecoveryDelay);
+        float recoveryDelay = Mathf.Max(0f, GetHitAnimationRecoveryDelay());
+        if (recoveryDelay > 0f)
+            yield return WaitForSecondsCache.Get(recoveryDelay);
 
         if (enemyAI == null)
             yield break;
@@ -863,7 +922,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         switch (enemyAI.State)
         {
             case EnemyState.Attack:
-                PlayAttackAnim();
+                RestoreAttackVisualAfterHit();
                 break;
             case EnemyState.Death:
                 PlayDieAnim();
