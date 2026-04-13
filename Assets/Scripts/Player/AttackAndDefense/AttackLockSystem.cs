@@ -11,6 +11,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using EnemyBehavior.Boss;
 using Unity.Cinemachine;
 using UnityEngine;
 using Utilities.Combat.Attacks;
@@ -754,7 +755,12 @@ public class AttackLockSystem : MonoBehaviour
         if (target == null)
             return null;
 
-        return target.GetComponentInChildren<ReticleController>(true);
+        ReticleController reticle = target.GetComponentInChildren<ReticleController>(true);
+        if (reticle != null)
+            return reticle;
+
+        BaseEnemyCore enemyCore = ResolveEnemyCore(target);
+        return enemyCore != null ? enemyCore.GetComponentInChildren<ReticleController>(true) : null;
     }
 
     private static BaseEnemyCore ResolveEnemyCore(Transform target)
@@ -763,6 +769,14 @@ public class AttackLockSystem : MonoBehaviour
             return null;
 
         return target.GetComponentInParent<BaseEnemyCore>();
+    }
+
+    private static BossRoombaBrain ResolveBossRoomba(Transform target)
+    {
+        if (target == null)
+            return null;
+
+        return target.GetComponentInParent<BossRoombaBrain>();
     }
 
     private void SubscribeToCurrentTargetDeath()
@@ -1425,7 +1439,13 @@ public class AttackLockSystem : MonoBehaviour
         {
             BaseEnemyCore enemyCore = t.GetComponentInParent<BaseEnemyCore>();
             if (enemyCore != null)
+            {
+                BossRoombaBrain bossBrain = enemyCore.GetComponentInParent<BossRoombaBrain>();
+                if (bossBrain != null)
+                    return bossBrain.PlayerLockTargetTransform;
+
                 return enemyCore.transform;
+            }
         }
 
         Transform original = t;
@@ -1582,7 +1602,7 @@ public class AttackLockSystem : MonoBehaviour
         }
 
         // Check if the enemy is still alive (not dying)
-        BaseEnemyCore enemy = target.GetComponent<BaseEnemyCore>();
+        BaseEnemyCore enemy = ResolveEnemyCore(target);
         if (enemy != null && !enemy.isAlive)
         {
             reason = "Target enemy is dead.";
@@ -1595,6 +1615,15 @@ public class AttackLockSystem : MonoBehaviour
         {
             reason = $"Target out of range. distance={Mathf.Sqrt(sqrDistance):0.##}, max={effectiveMaxDistance:0.##}";
             return false;
+        }
+
+        // For Roomba hard lock, keep lock stable by distance/alive checks only.
+        // LOS checks against child colliders can be noisy due large animated appendages/adds.
+        BossRoombaBrain bossRoomba = ResolveBossRoomba(target);
+        if (bossRoomba != null)
+        {
+            reason = "Valid (Roomba range/alive check).";
+            return true;
         }
 
         bool hasLos = HasLockOnLineOfSight(target, out string losReason);
@@ -1676,6 +1705,18 @@ public class AttackLockSystem : MonoBehaviour
     private bool TryGetLockOnTargetPoint(Transform target, out Vector3 targetPoint)
     {
         targetPoint = target.position;
+        BossRoombaBrain bossRoomba = ResolveBossRoomba(target);
+        if (bossRoomba != null)
+        {
+            Transform lockPoint = bossRoomba.PlayerLockTargetTransform;
+            if (lockPoint != null)
+            {
+                Collider lockCollider = lockPoint.GetComponent<Collider>();
+                targetPoint = lockCollider != null ? lockCollider.bounds.center : lockPoint.position;
+                return true;
+            }
+        }
+
         BaseEnemyCore enemyCore = ResolveEnemyCore(target);
         if (enemyCore == null)
             return true;

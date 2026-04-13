@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Utilities.Combat.Attacks;
+using EnemyBehavior.Boss;
 
 [RequireComponent(typeof(BoxCollider))]
 public class HitboxDamageManager : MonoBehaviour, IAttackSystem
@@ -308,7 +309,7 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         }
         
         // One hit per activation: Check if this enemy was already hit during current activation
-        int enemyId = healthComp.GetInstanceID();
+        int enemyId = ResolveDamageTargetId(healthComp);
         // Debug.Log($"{weaponName} checking enemy ID {enemyId} ({healthComp.name}) - HashSet currently has {hitThisActivation.Count} entries");
 
         if (IsSingleTargetAttackType(currentAttackType))
@@ -550,7 +551,7 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             boxCollider.bounds.extents,
             transform.rotation,
             Physics.AllLayers,
-            QueryTriggerInteraction.Ignore);
+            QueryTriggerInteraction.Collide);
 
         int closestId = 0;
         float closestSqr = float.MaxValue;
@@ -579,11 +580,27 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             if (sqr < closestSqr)
             {
                 closestSqr = sqr;
-                closestId = healthComp.GetInstanceID();
+                closestId = ResolveDamageTargetId(healthComp);
             }
         }
 
         return closestId;
+    }
+
+    private static int ResolveDamageTargetId(Component healthComponent)
+    {
+        if (healthComponent == null)
+            return 0;
+
+        BossRoombaBrain boss = healthComponent.GetComponentInParent<BossRoombaBrain>();
+        if (boss != null)
+            return boss.GetInstanceID();
+
+        BaseEnemyCore core = healthComponent.GetComponentInParent<BaseEnemyCore>();
+        if (core != null)
+            return core.GetInstanceID();
+
+        return healthComponent.GetInstanceID();
     }
     
 

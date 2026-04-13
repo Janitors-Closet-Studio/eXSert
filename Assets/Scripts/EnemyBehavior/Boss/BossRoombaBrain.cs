@@ -238,6 +238,8 @@ namespace EnemyBehavior.Boss
 
         [Header("Top Zone/Spin")]
         public bool RequirePlayerOnTopForSpin = true;
+        [SerializeField, Tooltip("Optional lock-on target point used by player targeting/soft-lock distance checks. Assign a center/body pivot to avoid using arm-extents.")]
+        private Transform playerLockTargetTransform;
         [Tooltip("Min/Max number of pokes before knock-off spin")]
         public Vector2Int PokeCountRange = new Vector2Int(3, 6);
         public float SpinAfterLastPokeDelay = 0.75f;
@@ -3264,7 +3266,7 @@ namespace EnemyBehavior.Boss
             // Hide the original skinned mesh (can't detach from skeleton)
             panel.panelVisualMesh.SetActive(false);
             
-            StartCoroutine(HandleDetachedPanelLifecycle(fallingPanel, rb, panel.destroyedPanelLifetime));
+            TrackDetachedPanelForCleanup(fallingPanel, rb, panel.destroyedPanelLifetime);
             
             PushAction($"Panel {panel.panelVisualMesh.name} baked and detached (skinned mesh)");
         }
@@ -3309,7 +3311,7 @@ namespace EnemyBehavior.Boss
             rb.AddForce(breakDirection.normalized * panel.breakOffForce, ForceMode.Impulse);
             rb.AddTorque(Random.insideUnitSphere * panel.breakOffForce * 0.5f, ForceMode.Impulse);
 
-            StartCoroutine(HandleDetachedPanelLifecycle(panel.panelVisualMesh, rb, panel.destroyedPanelLifetime));
+            TrackDetachedPanelForCleanup(panel.panelVisualMesh, rb, panel.destroyedPanelLifetime);
             
             PushAction($"Panel {panel.panelVisualMesh.name} detached (static mesh)");
         }
@@ -4662,6 +4664,7 @@ namespace EnemyBehavior.Boss
             armsRetractRoutine = null;
             debugVacuumCoroutine = null;
             debugTestCoroutine = null;
+            RestartDetachedPanelCleanupFailsafe();
             
             // Stop movement and disable agent
             if (agent != null)
@@ -4739,6 +4742,7 @@ namespace EnemyBehavior.Boss
         
         private bool isDefeated = false;
         private GameObject activeRoombaDeathSinkVfx;
+        private readonly List<(GameObject panelObject, Rigidbody panelBody, float fallbackLifetime)> detachedPanelCleanupTargets = new();
         
         /// <summary>
         /// Coroutine that handles the death cleanup after a delay.
@@ -4852,12 +4856,52 @@ namespace EnemyBehavior.Boss
 
             if (panelObject != null)
                 Destroy(panelObject);
+
+            RemoveDetachedPanelCleanupTarget(panelObject);
         }
-        
+
+        private void TrackDetachedPanelForCleanup(GameObject panelObject, Rigidbody panelBody, float fallbackLifetime)
+        {
+            if (panelObject == null)
+                return;
+
+            RemoveDetachedPanelCleanupTarget(panelObject);
+            detachedPanelCleanupTargets.Add((panelObject, panelBody, fallbackLifetime));
+            StartCoroutine(HandleDetachedPanelLifecycle(panelObject, panelBody, fallbackLifetime));
+        }
+
+        private void RestartDetachedPanelCleanupFailsafe()
+        {
+            for (int i = detachedPanelCleanupTargets.Count - 1; i >= 0; i--)
+            {
+                var entry = detachedPanelCleanupTargets[i];
+                if (entry.panelObject == null)
+                {
+                    detachedPanelCleanupTargets.RemoveAt(i);
+                    continue;
+                }
+
+                StartCoroutine(HandleDetachedPanelLifecycle(entry.panelObject, entry.panelBody, entry.fallbackLifetime));
+            }
+        }
+
+        private void RemoveDetachedPanelCleanupTarget(GameObject panelObject)
+        {
+            if (panelObject == null || detachedPanelCleanupTargets.Count == 0)
+                return;
+
+            for (int i = detachedPanelCleanupTargets.Count - 1; i >= 0; i--)
+            {
+                if (detachedPanelCleanupTargets[i].panelObject == panelObject)
+                    detachedPanelCleanupTargets.RemoveAt(i);
+            }
+        }
+
         /// <summary>
         /// Check if the boss is defeated (for external queries).
         /// </summary>
         public bool IsDefeated => isDefeated;
+        public Transform PlayerLockTargetTransform => playerLockTargetTransform != null ? playerLockTargetTransform : transform;
 
         public void OnArmsDeployComplete()
         {
