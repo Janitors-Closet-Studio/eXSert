@@ -13,8 +13,6 @@ public class InteractionUI : Singleton<InteractionUI>
     // Tracks which interactable is currently responsible for the prompt
     public MonoBehaviour currentInteractable;
 
-    [SerializeField] private ObjectiveText objectiveText;
-
     [Header("Global Interaction UI")]
     public TMP_Text _interactText;
     public Image _interactIcon;
@@ -232,12 +230,14 @@ public class InteractionUI : Singleton<InteractionUI>
         yield return StartCoroutine(FadeOutUI(fadeDuration));
     }
 
+    /*
     public void AddCollectableToFindToObjective(string collectableName = "")
     {
         string nameToAdd = string.IsNullOrEmpty(collectableName) ? _collectText.text : collectableName;
         if (!string.IsNullOrWhiteSpace(nameToAdd) && !collectablesToFind.Contains(nameToAdd))
         {
-            objectiveText.SetText("Find the " + nameToAdd);
+            string objectiveTextString = "Find the " + string.Join(", ", collectablesToFind) + (collectablesToFind.Count > 0 ? ", " : "") + nameToAdd;
+            ObjectiveManager.AddSubObjective(objectiveTextString);
             collectablesToFind.Add(nameToAdd);
         }
     }
@@ -262,7 +262,5 @@ public class InteractionUI : Singleton<InteractionUI>
             objectiveText.SetText("Find the " + string.Join(", ", collectablesToFind));
         }
     }
-
-   
-
+    */
 }

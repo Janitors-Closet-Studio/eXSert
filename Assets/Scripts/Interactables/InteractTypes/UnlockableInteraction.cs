@@ -81,7 +81,13 @@ public abstract class UnlockableInteraction : InteractionManager
             Debug.Log($"[UnlockableInteraction] Playing error SFX: {errorSFXClip.name} on sfxSource from {gameObject.name}");
             SoundManager.Instance.sfxSource.PlayOneShot(errorSFXClip);
             RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.2f);
-            InteractionUI.Instance.AddCollectableToFindToObjective(requiredItemID);
+
+            // Sub Objective Stuff
+            string objectiveMessage = $"Find {requiredItemID}";
+
+            ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
+
+            // Notice stuff
             InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemID} is required to use this machine.", 0.5f, 2f);
         }
         else

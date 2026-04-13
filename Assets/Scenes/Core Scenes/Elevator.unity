@@ -31148,21 +31148,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 036c1dad016953549b09467788e6d428, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialHandler
-  initialMessage:
-    type: 0
-    message: Pick up the log in front of you
-  singleTargetFightMessage:
-    type: 0
-    message: Use your light attacks to deal high damage to a single target
-  aoeTargetFightMessage:
-    type: 0
-    message: Use your heavy attacks to deal damage to many targets
-  correctButtonPressedMessage:
-    type: 0
-    message: Great! Now defeat the rest of the enemies!
-  tutorialCompleteMessage:
-    type: 0
-    message: Pick up the keycard to open the elevator door
+  initialMessage: Pick Up the Log
+  singleTargetFightMessage: Press blank to single punch
+  aoeTargetFightMessage: Press blank to aoe punch
+  correctButtonPressedMessage: Great!
+  tutorialCompleteMessage: Tutorial Complete, please leave
   tutorialEntry: {fileID: 1288089984}
   singleTargetFight: {fileID: 871761656}
   aoeTargetFight: {fileID: 1744050381}

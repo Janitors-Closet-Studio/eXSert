@@ -41,9 +41,9 @@ namespace Progression.Encounters
         public bool isCleanedUp { get; private set; } = true;
 
         // Event to update the objective text in the HUD, passing the new objective string as a parameter
-        public event System.Action<HUDMessage> UpdateObjective;
+        public event Action<string> UpdateObjective;
         protected void InvokeUpdateObjective(string newObjective) => 
-            UpdateObjective?.Invoke(new(HUDMessageType.Objective, newObjective));
+            UpdateObjective?.Invoke(newObjective);
 
         protected override void Start()
         {
