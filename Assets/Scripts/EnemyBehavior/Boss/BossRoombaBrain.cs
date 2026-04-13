@@ -212,6 +212,10 @@ namespace EnemyBehavior.Boss
         private GameObject roombaDeathVfxPrefab;
         [SerializeField, Tooltip("Optional VFX prefab attached while Roomba sinks into the ground.")]
         private GameObject roombaDeathSinkVfxPrefab;
+        [SerializeField, Tooltip("Wait for adds to complete flee/despawn before destroying the boss object.")]
+        private bool waitForAddsCleanupOnDeath = false;
+        [SerializeField, Range(0f, 20f), Tooltip("Maximum seconds to wait for adds to cleanup before forcing despawn.")]
+        private float addsCleanupWaitTimeout = 10f;
 
         [Header("Attack Indicator VFX")]
         [Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
@@ -4756,8 +4760,15 @@ namespace EnemyBehavior.Boss
 
             yield return WaitForSecondsCache.Get(deathDelay);
 
+            if (waitForAddsCleanupOnDeath)
+                yield return WaitForAddsCleanupOrForceDespawn();
+
             if (sinkRoombaIntoGroundOnDeath)
                 yield return SinkRoombaBodyRoutine();
+
+            // Final failsafe so no adds remain if any failed to finish flee before boss teardown.
+            if (ctrl != null && ctrl.HasAnyActiveAdds())
+                ctrl.DespawnAllActiveAdds();
             
             // Log final state
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Death sequence complete - destroying boss");
@@ -4795,6 +4806,27 @@ namespace EnemyBehavior.Boss
                 Destroy(activeRoombaDeathSinkVfx);
                 activeRoombaDeathSinkVfx = null;
             }
+        }
+
+        private IEnumerator WaitForAddsCleanupOrForceDespawn()
+        {
+            if (ctrl == null)
+                yield break;
+
+            float timeout = Mathf.Max(0f, addsCleanupWaitTimeout);
+            float elapsed = 0f;
+
+            while (elapsed < timeout)
+            {
+                if (!ctrl.HasAnyActiveAdds())
+                    yield break;
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            // Failsafe: force cleanup so adds cannot remain after boss death.
+            ctrl.DespawnAllActiveAdds();
         }
 
         private IEnumerator HandleDetachedPanelLifecycle(GameObject panelObject, Rigidbody panelBody, float fallbackLifetime)

@@ -1458,6 +1458,7 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 accumulatedAway = Vector3.zero;
         contributing = 0;
+        bool attackInProgress = attackManager != null && attackManager.IsAttackInProgress;
 
         for (int i = 0; i < hitCount; i++)
         {
@@ -1470,6 +1471,11 @@ public class PlayerMovement : MonoBehaviour
 
             BossRoombaBrain boss = hit.GetComponentInParent<BossRoombaBrain>();
             if (boss == null)
+                continue;
+
+            // When attacking, ignore Roomba arm hitbox colliders so attack movement
+            // isn't pushed outward by extended arm geometry.
+            if (attackInProgress && hit.GetComponentInParent<BossArmHitbox>() != null)
                 continue;
 
             Vector3 closest = GetSafeColliderClosestPoint(hit, probeCenter);
