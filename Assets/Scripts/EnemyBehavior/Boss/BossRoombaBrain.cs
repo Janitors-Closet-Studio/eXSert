@@ -201,6 +201,18 @@ namespace EnemyBehavior.Boss
         [SerializeField, Range(0.1f, 8f), Tooltip("How far panels sink before being destroyed.")]
         private float detachedPanelSinkDistance = 2.25f;
 
+        [Header("Death Cleanup")]
+        [SerializeField, Tooltip("When enabled, the Roomba body sinks into the ground before being destroyed after defeat.")]
+        private bool sinkRoombaIntoGroundOnDeath = true;
+        [SerializeField, Range(0.05f, 5f), Tooltip("How fast the Roomba sinks downward after death.")]
+        private float roombaDeathSinkSpeed = 0.9f;
+        [SerializeField, Range(0.1f, 12f), Tooltip("How far the Roomba sinks before final destroy.")]
+        private float roombaDeathSinkDistance = 3.5f;
+        [SerializeField, Tooltip("Optional VFX spawned once when Roomba death begins.")]
+        private GameObject roombaDeathVfxPrefab;
+        [SerializeField, Tooltip("Optional VFX prefab attached while Roomba sinks into the ground.")]
+        private GameObject roombaDeathSinkVfxPrefab;
+
         [Header("Attack Indicator VFX")]
         [Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
         [SerializeField] private GameObject attackIndicatorPrefab;
@@ -4726,6 +4738,7 @@ namespace EnemyBehavior.Boss
         }
         
         private bool isDefeated = false;
+        private GameObject activeRoombaDeathSinkVfx;
         
         /// <summary>
         /// Coroutine that handles the death cleanup after a delay.
@@ -4738,12 +4751,46 @@ namespace EnemyBehavior.Boss
                 deathDelay = Mathf.Max(deathDelay, health.HideHealthBarDelayAfterDefeat + 0.05f);
 
             yield return WaitForSecondsCache.Get(deathDelay);
+
+            if (sinkRoombaIntoGroundOnDeath)
+                yield return SinkRoombaBodyRoutine();
             
             // Log final state
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Death sequence complete - destroying boss");
             
             // Destroy the boss GameObject
             Destroy(gameObject);
+        }
+
+        private IEnumerator SinkRoombaBodyRoutine()
+        {
+            Collider[] colliders = GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = false;
+            }
+
+            if (roombaDeathSinkVfxPrefab != null && activeRoombaDeathSinkVfx == null)
+            {
+                activeRoombaDeathSinkVfx = Instantiate(roombaDeathSinkVfxPrefab, transform.position, transform.rotation, transform);
+            }
+
+            Vector3 startPos = transform.position;
+            float sinkDistance = Mathf.Max(0.1f, roombaDeathSinkDistance);
+            float sinkSpeed = Mathf.Max(0.05f, roombaDeathSinkSpeed);
+
+            while (Vector3.Distance(startPos, transform.position) < sinkDistance)
+            {
+                transform.position += Vector3.down * (sinkSpeed * Time.deltaTime);
+                yield return null;
+            }
+
+            if (activeRoombaDeathSinkVfx != null)
+            {
+                Destroy(activeRoombaDeathSinkVfx);
+                activeRoombaDeathSinkVfx = null;
+            }
         }
 
         private IEnumerator HandleDetachedPanelLifecycle(GameObject panelObject, Rigidbody panelBody, float fallbackLifetime)

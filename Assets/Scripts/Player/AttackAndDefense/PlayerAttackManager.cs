@@ -118,6 +118,8 @@ public class PlayerAttackManager : MonoBehaviour
     private float crawlerAttackForwardMoveBlockDistance = 1.6f;
     [SerializeField, Range(0f, 2f), Tooltip("Extra vertical tolerance for crawler proximity checks (crawler bodies sit lower to the ground).")]
     private float crawlerForwardMoveVerticalTolerance = 0.9f;
+    [SerializeField, Tooltip("Enable verbose logs for crawler-specific forward move blocking checks.")]
+    private bool debugCrawlerForwardMoveBlock = false;
 
     [Header("Debug")]
     [SerializeField, Tooltip("When enabled, logs plunge hitbox damage (base x multiplier) when the hitbox spawns, even if no enemy is hit.")]
@@ -781,13 +783,19 @@ public class PlayerAttackManager : MonoBehaviour
         if (threshold <= 0f)
             return false;
 
-        Vector3 origin = transform.position + Vector3.up * 0.5f;
+        Vector3 origin = transform.position + Vector3.up * 0.35f;
+        if (characterController != null)
+        {
+            Bounds bounds = characterController.bounds;
+            origin = new Vector3(bounds.center.x, bounds.min.y + Mathf.Max(0.15f, bounds.extents.y * 0.35f), bounds.center.z);
+        }
+
         int hitCount = Physics.OverlapSphereNonAlloc(
             origin,
             crawlerThreshold,
             forwardMoveBlockHits,
             Physics.AllLayers,
-            QueryTriggerInteraction.Ignore);
+            QueryTriggerInteraction.Collide);
 
         Vector3 playerForward = transform.forward;
         playerForward.y = 0f;
@@ -802,6 +810,13 @@ public class PlayerAttackManager : MonoBehaviour
             if (col == null)
                 continue;
 
+            if (col.isTrigger && col is SphereCollider)
+            {
+                if (debugCrawlerForwardMoveBlock)
+                    Debug.Log($"[PlayerAttackManager][CrawlerBlock] Ignored trigger sphere '{col.name}' (likely detection volume).");
+                continue;
+            }
+
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
             if (enemy == null || !enemy.isAlive)
                 continue;
@@ -810,6 +825,12 @@ public class PlayerAttackManager : MonoBehaviour
             bool isCrawler = enemy.GetComponentInParent<BaseCrawlerEnemy>() != null;
             if (isCrawler)
                 effectiveThreshold = Mathf.Max(threshold, Mathf.Max(0f, crawlerAttackForwardMoveBlockDistance));
+            else if (col.isTrigger)
+            {
+                if (debugCrawlerForwardMoveBlock)
+                    Debug.Log($"[PlayerAttackManager][CrawlerBlock] Ignored non-crawler trigger collider '{col.name}'.");
+                continue;
+            }
 
             Vector3 closestPoint = col.ClosestPoint(transform.position);
             float verticalDelta = Mathf.Abs(closestPoint.y - transform.position.y);
@@ -826,7 +847,14 @@ public class PlayerAttackManager : MonoBehaviour
             Vector3 planarToCollider = closestPoint - transform.position;
             planarToCollider.y = 0f;
             if (planarToCollider.sqrMagnitude > effectiveThreshold * effectiveThreshold)
+            {
+                if (debugCrawlerForwardMoveBlock && isCrawler)
+                {
+                    float planarDistance = Mathf.Sqrt(planarToCollider.sqrMagnitude);
+                    Debug.Log($"[PlayerAttackManager][CrawlerBlock] Skipped crawler '{enemy.name}' distance={planarDistance:0.##} > threshold={effectiveThreshold:0.##}.");
+                }
                 continue;
+            }
 
             Vector3 toEnemy = enemy.transform.position - transform.position;
             toEnemy.y = 0f;
@@ -835,8 +863,18 @@ public class PlayerAttackManager : MonoBehaviour
 
             float angle = Vector3.Angle(playerForward, toEnemy.normalized);
             if (angle <= attackForwardMoveBlockAngle)
+            {
+                if (debugCrawlerForwardMoveBlock)
+                {
+                    float planarDistance = Mathf.Sqrt(planarToCollider.sqrMagnitude);
+                    Debug.Log($"[PlayerAttackManager][CrawlerBlock] BLOCKED by '{enemy.name}' crawler={isCrawler} planarDist={planarDistance:0.##} threshold={effectiveThreshold:0.##} verticalDelta={verticalDelta:0.##} angle={angle:0.##}.");
+                }
                 return true;
+            }
         }
+
+        if (debugCrawlerForwardMoveBlock)
+            Debug.Log($"[PlayerAttackManager][CrawlerBlock] No blocker found. hitCount={hitCount} baseThreshold={threshold:0.##} crawlerThreshold={crawlerThreshold:0.##}.");
 
         return false;
     }

@@ -48,6 +48,10 @@ public class AttackLockSystem : MonoBehaviour
     private bool debugLockOn = true;
 
     [SerializeField]
+    [Tooltip("Enable verbose logs for close-range turn assist fallback selection.")]
+    private bool debugCloseRangeTurnAssist = false;
+
+    [SerializeField]
     [CriticalReference]
     [Tooltip("Reference to the player GameObject (used as the search origin).")]
     private GameObject player;
@@ -580,8 +584,6 @@ public class AttackLockSystem : MonoBehaviour
         if (target == null)
             return;
 
-        MarkSoftLockAttackFacingTarget(target);
-
         Vector3 direction = GetFlatDirection(target.position);
         if (direction.sqrMagnitude < 0.001f)
             return;
@@ -597,9 +599,13 @@ public class AttackLockSystem : MonoBehaviour
 
         if (closeRangeTurnAssistOnly)
         {
+            softLockAttackFacingTarget = null;
+            softLockAttackFacingExpireTime = -1f;
             StartSoftLockRotate(desiredRotation);
             return;
         }
+
+        MarkSoftLockAttackFacingTarget(target);
 
         if (!allowPositionNudge)
         {
@@ -968,6 +974,7 @@ public class AttackLockSystem : MonoBehaviour
         Collider[] hits = GetEnemyHits(radius);
         Transform closest = null;
         float smallestDistance = float.MaxValue;
+        float sqrRadius = Mathf.Max(0f, radius) * Mathf.Max(0f, radius);
 
         foreach (Collider hit in hits)
         {
@@ -984,6 +991,9 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (sqrDistance > sqrRadius)
+                continue;
+
             if (sqrDistance < smallestDistance)
             {
                 smallestDistance = sqrDistance;
@@ -1052,6 +1062,7 @@ public class AttackLockSystem : MonoBehaviour
         Collider[] hits = GetEnemyHits(radius);
         Transform closest = null;
         float smallestDistance = float.MaxValue;
+        float sqrRadius = Mathf.Max(0f, radius) * Mathf.Max(0f, radius);
         float bestViewportScore = float.MaxValue;
         Camera screenCamera = null;
         bool canScoreViewport = prioritizeCenterOfViewForSoftLock && TryGetScreenCamera(out screenCamera);
@@ -1089,6 +1100,9 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (sqrDistance > sqrRadius)
+                continue;
+
             float viewportScore = float.MaxValue;
             bool isCenteredInView = false;
             if (canScoreViewport)
@@ -1722,6 +1736,14 @@ public class AttackLockSystem : MonoBehaviour
             return;
 
         Debug.Log($"[AttackLockSystem][Debug] {message}");
+    }
+
+    private void LogCloseRangeAssist(string message)
+    {
+        if (!debugCloseRangeTurnAssist)
+            return;
+
+        Debug.Log($"[AttackLockSystem][CloseRangeAssist] {message}");
     }
 
     private Vector3 GetFlatDirection(Vector3 targetPosition)

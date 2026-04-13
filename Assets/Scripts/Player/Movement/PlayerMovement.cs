@@ -67,6 +67,7 @@ public class PlayerMovement : MonoBehaviour
     public event Action DashPerformed;
     public event Action AirDashPerformed;
     public bool HasPerformedDoubleJumpSinceGrounded { get; private set; }
+    public bool IsPlunging => isPlunging;
 
     [Header("Input")]
     [SerializeField] private InputActionReference _jumpAction;
@@ -1088,6 +1089,9 @@ public class PlayerMovement : MonoBehaviour
             if (enemy == null || !enemy.isAlive)
                 continue;
 
+            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+                continue;
+
             int enemyId = enemy.GetInstanceID();
             bool alreadyProcessed = false;
             for (int j = 0; j < processedCount; j++)
@@ -1161,6 +1165,9 @@ public class PlayerMovement : MonoBehaviour
 
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
             if (enemy == null || !enemy.isAlive)
+                continue;
+
+            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
                 continue;
 
             int enemyId = enemy.GetInstanceID();
