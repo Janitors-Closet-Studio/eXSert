@@ -15,7 +15,7 @@ MonoBehaviour:
   singleSceneMode: 0
   dialogNoProbeVolumeInSetShown: 0
   settings:
-    m_Version: 0
+    m_Version: 1
     dilationSettings:
       enableDilation: 0
       dilationDistance: 0
@@ -27,15 +27,16 @@ MonoBehaviour:
       validityThreshold: 0.25
       outOfGeoOffset: 0
       searchMultiplier: 0
-      rayOriginBias: 0
+      rayOriginBias: -0.001
       collisionMask:
         serializedVersion: 2
-        m_Bits: 0
+        m_Bits: 4294967291
   m_SceneGUIDs:
   - 96c183df0af2ebb488f959d80c380311
   - 30991b1cf38df634ab4bc514e635ad71
   obsoleteScenesToNotBake: []
-  m_LightingScenarios: []
+  m_LightingScenarios:
+  - Default
   cellDescs:
     m_Keys: 0000000009000000030000000c000000010000000a000000040000000d000000
     m_Values:
