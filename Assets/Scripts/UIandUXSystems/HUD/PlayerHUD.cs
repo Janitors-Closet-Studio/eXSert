@@ -15,6 +15,11 @@ namespace UIandUXSystems.HUD
         Objective,
 
         /// <summary>
+        /// Represents a secondary goal or target. Will be listed underneath the main objective.
+        /// </summary>
+        SubObjective,
+
+        /// <summary>
         /// Represents a notification or message intended to inform users of important events or information.
         /// </summary>
         /// <remarks>
@@ -58,11 +63,37 @@ namespace UIandUXSystems.HUD
 
         public static void NewMessage(HUDMessage message)
         {
-            if (HUDHandlers.TryGetValue(message.type, out var handler))
-                handler.SetText(message.message);
-            else
+            switch (message.type)
             {
-                Debug.LogWarning($"[Player HUD] No HUD handler found for {message.type}");
+                case HUDMessageType.Objective:
+                    if (HUDHandlers.TryGetValue(message.type, out var handler))
+                    {
+                        handler.SetText(message.message);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"No HUD handler registered for {message.type}. Cannot display message: {message.message}");
+                    }
+                    break;
+
+                case HUDMessageType.SubObjective:
+                    
+
+                case HUDMessageType.Notice:
+                    if (HUDHandlers.TryGetValue(HUDMessageType.Notice, out var noticeHandler))
+                    {
+                        noticeHandler.SetText(message.message);
+                        // Example: fade out after 3 seconds
+                        noticeHandler.FadeOutText(3f);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"No HUD handler registered for Notice messages. Cannot display notice: {message.message}");
+                    }
+                    break;
+                default:
+                    Debug.LogWarning($"Unhandled HUD message type: {message.type}. Message: {message.message}");
+                    break;
             }
         }
     }
