@@ -4,16 +4,31 @@ using System;
 [Serializable]
 public class Objective
 {
-    public string ID; // A key unique to the message to help identify it
+    public string DisplayText;
+
+    public Objective(string text)
+    {
+        DisplayText = text;
+    }
+
+    public override string ToString() => DisplayText;
+}
+
+[Serializable]
+public class SubObjective
+{
+    public string ID;
     public string DisplayText;
     public bool IsCompleted;
 
-    public Objective(string id, string text)
+    public SubObjective(string id, string text)
     {
         ID = id;
         DisplayText = text;
         IsCompleted = false;
     }
+
+    public override string ToString() => DisplayText;
 }
 
 [Serializable]

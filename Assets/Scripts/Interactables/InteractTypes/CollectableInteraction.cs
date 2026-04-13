@@ -33,7 +33,9 @@ public abstract class CollectableInteraction : InteractionManager
         AfterExecuteInteraction();
         
         InteractionUI.Instance.OnCollectedItem(collectID, bottomFlavorText, uiFadeDuration, uiDisplayDuration);
-        InteractionUI.Instance.RemoveCollectableToFindFromObjective(collectID);
+        
+        // InteractionUI.Instance.RemoveCollectableToFindFromObjective(collectID);
+        
         StartCoroutine(DeactivateInteractableCoroutine(this));
     }
     protected abstract void ExecuteInteraction();

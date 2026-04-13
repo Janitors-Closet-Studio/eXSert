@@ -11,16 +11,16 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
     private float completionFadeDuration = 2f;
     #endregion
     public static event Action<Objective> OnObjectiveChanged;
-    public static event Action<List<Objective>> OnSubObjectivesUpdated;
+    public static event Action<List<SubObjective>> OnSubObjectivesUpdated;
     public static event Action<Notice> OnNoticeQueued;
 
     private static Objective currentObjective;
-    private static readonly List<Objective> subObjectives = new();
+    private static readonly List<SubObjective> subObjectives = new();
     private static readonly Queue<Notice> noticeList = new();
 
-    public static void SetMainObjective(string id, string text)
+    public static void SetMainObjective(string text)
     {
-        currentObjective = new Objective(id, text);
+        currentObjective = new Objective(text);
         OnObjectiveChanged?.Invoke(currentObjective);
     }
 
@@ -39,8 +39,12 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
 
     // --- Sub Objectives ---
 
-
-    public void AddSubObjective(string id, string text)
+    /// <summary>
+    /// Adds a new sub-objective to the list and notifies listeners. If an objective with the same ID already exists, it will not be added again.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="text"></param>
+    public static void AddSubObjective(string id, string text)
     {
         if (subObjectives.Exists(obj => obj.ID == id))
         {
@@ -48,12 +52,16 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
             return;
         }
 
-        var newSubObjective = new Objective(id, text);
+        var newSubObjective = new SubObjective(id, text);
         subObjectives.Add(newSubObjective);
         OnSubObjectivesUpdated?.Invoke(subObjectives);
     }
 
-    public void CompleteSubObjective(string id)
+    /// <summary>
+    /// Sets the sub-objective with the given ID as completed, then starts a coroutine to remove it after a delay. If no sub-objective with the given ID is found, a warning is logged and no action is taken.
+    /// </summary>
+    /// <param name="id"></param>
+    public static void CompleteSubObjective(string id)
     {
         var subObjective = subObjectives.Find(obj => obj.ID == id);
         if (subObjective == null)
@@ -65,11 +73,11 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
         subObjective.IsCompleted = true;
         OnSubObjectivesUpdated?.Invoke(subObjectives);
 
-        StartCoroutine(RemoveAfterDelay());
+        Instance.StartCoroutine(RemoveAfterDelay());
 
         IEnumerator RemoveAfterDelay()
         {
-            yield return new WaitForSeconds(completionFadeDuration);
+            yield return new WaitForSeconds(Instance.completionFadeDuration);
             subObjectives.Remove(subObjective);
             OnSubObjectivesUpdated?.Invoke(subObjectives);
         }

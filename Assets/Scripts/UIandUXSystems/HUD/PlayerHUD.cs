@@ -46,7 +46,10 @@ namespace UIandUXSystems.HUD
     
     public static class PlayerHUD
     {
+        private static readonly ObjectiveManager objectiveManager = ObjectiveManager.Instance;
+
         private static readonly Dictionary<HUDMessageType, HUDTextHandler> HUDHandlers = new();
+        public static SubobjectiveHandler subObjectiveHandler { get; private set; }
 
         internal static void RegisterHUDHandler(HUDTextHandler handler)
         {
@@ -59,6 +62,11 @@ namespace UIandUXSystems.HUD
             {
                 HUDHandlers.Add(handler.HUDIdentifier, handler);
             }
+        }
+
+        internal static void RegisterSubObjectiveHandler(SubobjectiveHandler handler)
+        {
+            subObjectiveHandler = handler;
         }
 
         public static void NewMessage(HUDMessage message)
@@ -77,7 +85,7 @@ namespace UIandUXSystems.HUD
                     break;
 
                 case HUDMessageType.SubObjective:
-                    
+                    break;
 
                 case HUDMessageType.Notice:
                     if (HUDHandlers.TryGetValue(HUDMessageType.Notice, out var noticeHandler))

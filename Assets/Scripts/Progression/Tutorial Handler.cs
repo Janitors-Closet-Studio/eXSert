@@ -16,11 +16,11 @@ public class TutorialHandler : MonoBehaviour
 {
     #region Inspector Setup
     [Header("Objective Messages")]
-    [SerializeField] private HUDMessage initialMessage;
-    [SerializeField] private HUDMessage singleTargetFightMessage;
-    [SerializeField] private HUDMessage aoeTargetFightMessage;
-    [SerializeField] private HUDMessage correctButtonPressedMessage;
-    [SerializeField] private HUDMessage tutorialCompleteMessage;
+    [SerializeField, TextArea] private string initialMessage;
+    [SerializeField, TextArea] private string singleTargetFightMessage;
+    [SerializeField, TextArea] private string aoeTargetFightMessage;
+    [SerializeField, TextArea] private string correctButtonPressedMessage;
+    [SerializeField, TextArea] private string tutorialCompleteMessage;
 
     [Header("Tutorial Progression References")]
     [SerializeField, CriticalReference] 
@@ -50,7 +50,8 @@ public class TutorialHandler : MonoBehaviour
     private void Start()
     {
         keycardToEnable.SetActive(false); // Ensures the keycard is disabled at the start of the tutorial
-        PlayerHUD.NewMessage(initialMessage);
+        
+        ObjectiveManager.SetMainObjective(initialMessage); // Displays the initial tutorial message to the player
     }
 
     private void OnEnable()
@@ -102,11 +103,11 @@ public class TutorialHandler : MonoBehaviour
     }
 
     #region Combat Tutorial Handlers
-    private void StartCombatTutorial(CombatEncounter fight, HUDMessage message)
+    private void StartCombatTutorial(CombatEncounter fight, string message)
     {
         Debug.Log($"[TutorialHandler] Starting combat tutorial for encounter {fight.name}. Displaying message and enabling fight zone.");
         correctButtonPressed = false; // Resets the button press requirement for this part of the tutorial
-        PlayerHUD.NewMessage(message); // Displays the appropriate message for the current fight
+        ObjectiveManager.SetMainObjective(message); // Displays the appropriate message for the current fight
         fight.EnableZone(); // Enables the fight zone
     }
 
@@ -130,7 +131,7 @@ public class TutorialHandler : MonoBehaviour
 
         Debug.Log($"[TutorialHandler] Player performed attack of type {type}. Updating Progress...");
 
-        PlayerHUD.NewMessage(correctButtonPressedMessage);
+        ObjectiveManager.SetMainObjective(correctButtonPressedMessage);
         
         correctButtonPressed = true; // Updates tutorial progress
 
@@ -172,7 +173,7 @@ public class TutorialHandler : MonoBehaviour
 
         keycardToEnable.SetActive(true); // Enables the keycard to allow progression to the next scene
 
-        PlayerHUD.NewMessage(tutorialCompleteMessage); // Displays the tutorial complete message
+        ObjectiveManager.SetMainObjective(tutorialCompleteMessage); // Displays the tutorial complete message
 
         SceneLoader.Load(nextScene, loadScreen: false); // Loads the next scene for the player
     }
