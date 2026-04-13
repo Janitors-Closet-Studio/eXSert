@@ -610,6 +610,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 previousKeyboardInput = Vector2.zero;
 
     private GroundMoveState moveState = GroundMoveState.Walk;
+    private bool shouldRestoreSprintAfterDash;
     private bool keyboardWalkToggleActive;
     private float CurrentSpeed => moveState switch
     {
@@ -1667,6 +1668,8 @@ public class PlayerMovement : MonoBehaviour
         if (!dashAllowed)
             return;
 
+        shouldRestoreSprintAfterDash = grounded && moveState == GroundMoveState.Sprint;
+
         DashPerformed?.Invoke();
 
         if (InputReader.inputBusy)
@@ -1720,10 +1723,16 @@ public class PlayerMovement : MonoBehaviour
                 },
                 onComplete: () =>
                 {
-                    if (InputReader.MoveInput.sqrMagnitude > 0.1f)
+                    if (shouldRestoreSprintAfterDash && IsGroundedNow())
+                    {
+                        TrySetMoveState(GroundMoveState.Sprint, force: true);
+                    }
+                    else if (InputReader.MoveInput.sqrMagnitude > 0.1f)
                         TrySetMoveState(GroundMoveState.Sprint, force: true);
                     else
                         ResetMoveState();
+
+                    shouldRestoreSprintAfterDash = false;
                 }));
         if(!isAirDash)
             PlaySFX(dashSFX, priority: 2);

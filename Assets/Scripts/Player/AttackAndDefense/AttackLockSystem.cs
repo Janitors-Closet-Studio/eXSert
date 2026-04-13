@@ -81,6 +81,9 @@ public class AttackLockSystem : MonoBehaviour
     [Tooltip("Inside this radius the soft lock stops moving the player and only rotates them toward the target.")]
     private float softLockNoMoveRadius = 1.15f;
 
+    [SerializeField, Range(0f, 3f), Tooltip("Extra close-range radius used to rotate toward a nearby enemy even if they're outside the normal forward soft-lock cone.")]
+    private float closeRangeTurnAssistRadius = 1.1f;
+
     [SerializeField, Range(0.05f, 0.4f)]
     [Tooltip("Duration of the soft lock movement blend.")]
     private float softLockMoveDuration = 0.12f;
@@ -571,6 +574,9 @@ public class AttackLockSystem : MonoBehaviour
     {
         // Only target enemies within the player's forward-facing cone
         Transform target = FindNearestEnemyInPlayerCone(softLockRadius, includeDrones);
+        bool hadConeTarget = target != null;
+        if (!hadConeTarget)
+            target = FindNearestEnemy(Mathf.Max(0f, closeRangeTurnAssistRadius));
         if (target == null)
             return;
 
@@ -582,16 +588,26 @@ public class AttackLockSystem : MonoBehaviour
 
         Quaternion desiredRotation = Quaternion.LookRotation(direction);
 
+        float planarDistanceToTarget = Vector3.Distance(
+            new Vector3(target.position.x, playerTransform.position.y, target.position.z),
+            playerTransform.position);
+
+        bool closeRangeTurnAssistOnly = planarDistanceToTarget <= Mathf.Max(0f, closeRangeTurnAssistRadius)
+            && !hadConeTarget;
+
+        if (closeRangeTurnAssistOnly)
+        {
+            StartSoftLockRotate(desiredRotation);
+            return;
+        }
+
         if (!allowPositionNudge)
         {
             StartSoftLockRotate(desiredRotation);
             return;
         }
 
-        float planarDistance = Vector3.Distance(
-            new Vector3(target.position.x, playerTransform.position.y, target.position.z),
-            playerTransform.position
-        );
+        float planarDistance = planarDistanceToTarget;
 
         if (planarDistance <= softLockNoMoveRadius)
         {

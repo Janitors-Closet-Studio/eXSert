@@ -182,6 +182,24 @@ namespace EnemyBehavior.Boss
         public AudioClip VacuumSuctionSFX;
         [Tooltip("Master volume for all boss SFX (0-1).")]
         [Range(0f, 1f)] public float MasterSFXVolume = 1.0f;
+        [Range(0f, 1f)] public float ArmsDeploySFXVolume = 1f;
+        [Range(0f, 1f)] public float ArmsRetractSFXVolume = 1f;
+        [Range(0f, 1f)] public float HornsRaiseSFXVolume = 1f;
+        [Range(0f, 1f)] public float HornsLowerSFXVolume = 1f;
+        [Range(0f, 1f)] public float StunSFXVolume = 1f;
+        [Range(0f, 1f)] public float DamagedSFXVolume = 1f;
+        [Range(0f, 1f)] public float PanelBreakSFXVolume = 0.75f;
+        [Range(0f, 1f)] public float VacuumSuctionSFXVolume = 1f;
+
+        [Header("Panel Cleanup")]
+        [SerializeField, Range(0.01f, 2f), Tooltip("Max rigidbody velocity considered settled before detached panels start sinking.")]
+        private float detachedPanelSettleVelocityThreshold = 0.12f;
+        [SerializeField, Range(0f, 3f), Tooltip("How long detached panels must stay below settle velocity before colliders are disabled and sinking starts.")]
+        private float detachedPanelSettleTime = 0.35f;
+        [SerializeField, Range(0.1f, 10f), Tooltip("Speed panels sink downward once settled.")]
+        private float detachedPanelSinkSpeed = 1.6f;
+        [SerializeField, Range(0.1f, 8f), Tooltip("How far panels sink before being destroyed.")]
+        private float detachedPanelSinkDistance = 2.25f;
 
         [Header("Attack Indicator VFX")]
         [Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
@@ -1720,6 +1738,7 @@ namespace EnemyBehavior.Boss
             }
 
             // Start the suction
+            PlaySFX(VacuumSuctionSFX, VacuumSuctionSFXVolume);
             VacuumSuctionController.StartSuction(duration);
         }
 
@@ -3030,7 +3049,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(TriggerStunWindup))
             {
                 animator.SetTrigger(TriggerStunWindup);
-                PlaySFX(StunSFX); // Stun SFX
+                PlaySFX(StunSFX, StunSFXVolume);
                 PushAction($"Stun animation: Windup triggered");
             }
 
@@ -3161,7 +3180,7 @@ namespace EnemyBehavior.Boss
             PushAction($"Side panel {panelIndex} DESTROYED! Zone now vulnerable (x{panel.vulnerabilityMultiplier} damage)");
 
             // Play panel break SFX
-            PlaySFX(PanelBreakSFX);
+            PlaySFX(PanelBreakSFX, PanelBreakSFXVolume);
 
             if (panel.panelVisualMesh == null)
             {
@@ -3233,11 +3252,7 @@ namespace EnemyBehavior.Boss
             // Hide the original skinned mesh (can't detach from skeleton)
             panel.panelVisualMesh.SetActive(false);
             
-            // Schedule cleanup of the falling panel
-            if (panel.destroyedPanelLifetime > 0)
-            {
-                Destroy(fallingPanel, panel.destroyedPanelLifetime);
-            }
+            StartCoroutine(HandleDetachedPanelLifecycle(fallingPanel, rb, panel.destroyedPanelLifetime));
             
             PushAction($"Panel {panel.panelVisualMesh.name} baked and detached (skinned mesh)");
         }
@@ -3282,11 +3297,7 @@ namespace EnemyBehavior.Boss
             rb.AddForce(breakDirection.normalized * panel.breakOffForce, ForceMode.Impulse);
             rb.AddTorque(Random.insideUnitSphere * panel.breakOffForce * 0.5f, ForceMode.Impulse);
 
-            // Schedule cleanup
-            if (panel.destroyedPanelLifetime > 0)
-            {
-                Destroy(panel.panelVisualMesh, panel.destroyedPanelLifetime);
-            }
+            StartCoroutine(HandleDetachedPanelLifecycle(panel.panelVisualMesh, rb, panel.destroyedPanelLifetime));
             
             PushAction($"Panel {panel.panelVisualMesh.name} detached (static mesh)");
         }
@@ -3305,7 +3316,7 @@ namespace EnemyBehavior.Boss
             if (animator == null) return;
             
             // Play damaged SFX
-            PlaySFX(DamagedSFX);
+            PlaySFX(DamagedSFX, DamagedSFXVolume);
             
             int roll = Random.Range(0, 3);
             switch (roll)
@@ -4244,7 +4255,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(ArmsDeployTrigger)) 
             {
                 animator.SetTrigger(ArmsDeployTrigger);
-                PlaySFX(ArmsDeploySFX); // Arms deploy SFX
+                PlaySFX(ArmsDeploySFX, ArmsDeploySFXVolume);
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{ArmsDeployTrigger}' SET");
 #endif
@@ -4292,7 +4303,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(ArmsRetractTrigger)) 
             {
                 animator.SetTrigger(ArmsRetractTrigger);
-                PlaySFX(ArmsRetractSFX); // Arms retract SFX
+                PlaySFX(ArmsRetractSFX, ArmsRetractSFXVolume);
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{ArmsRetractTrigger}' SET");
 #endif
@@ -4399,7 +4410,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(HornsRaiseTrigger)) 
             {
                 animator.SetTrigger(HornsRaiseTrigger);
-                PlaySFX(HornsRaiseSFX); // Horns raise SFX
+                PlaySFX(HornsRaiseSFX, HornsRaiseSFXVolume);
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{HornsRaiseTrigger}' SET");
 #endif
@@ -4453,7 +4464,7 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(HornsLowerTrigger)) 
             {
                 animator.SetTrigger(HornsLowerTrigger);
-                PlaySFX(HornsLowerSFX); // Horns lower SFX
+                PlaySFX(HornsLowerSFX, HornsLowerSFXVolume);
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Animator trigger '{HornsLowerTrigger}' SET");
 #endif
@@ -4653,6 +4664,7 @@ namespace EnemyBehavior.Boss
                 ctrl.StopFollowing();
                 ctrl.StopTopWander();
                 ctrl.DeactivateAlarm();
+                ctrl.OrderAddsToFleeToSpawnPoints();
             }
             
             // Lower walls if raised
@@ -4720,14 +4732,79 @@ namespace EnemyBehavior.Boss
         /// </summary>
         private IEnumerator DeathCleanupSequence()
         {
-            // Wait for death animation to play (adjust as needed)
-            yield return WaitForSecondsCache.Get(3f);
+            float deathDelay = 3f;
+            var health = GetComponent<BossHealth>();
+            if (health != null)
+                deathDelay = Mathf.Max(deathDelay, health.HideHealthBarDelayAfterDefeat + 0.05f);
+
+            yield return WaitForSecondsCache.Get(deathDelay);
             
             // Log final state
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Death sequence complete - destroying boss");
             
             // Destroy the boss GameObject
             Destroy(gameObject);
+        }
+
+        private IEnumerator HandleDetachedPanelLifecycle(GameObject panelObject, Rigidbody panelBody, float fallbackLifetime)
+        {
+            if (panelObject == null)
+                yield break;
+
+            float settleTimer = 0f;
+            float timeout = Mathf.Max(0.5f, fallbackLifetime > 0f ? fallbackLifetime : 8f);
+            float elapsed = 0f;
+
+            while (panelObject != null && elapsed < timeout)
+            {
+                elapsed += Time.deltaTime;
+
+                bool settled = panelBody == null
+                    || panelBody.linearVelocity.magnitude <= detachedPanelSettleVelocityThreshold;
+
+                if (settled)
+                {
+                    settleTimer += Time.deltaTime;
+                    if (settleTimer >= detachedPanelSettleTime)
+                        break;
+                }
+                else
+                {
+                    settleTimer = 0f;
+                }
+
+                yield return null;
+            }
+
+            if (panelObject == null)
+                yield break;
+
+            Collider[] colliders = panelObject.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = false;
+            }
+
+            if (panelBody != null)
+            {
+                panelBody.isKinematic = true;
+                panelBody.linearVelocity = Vector3.zero;
+                panelBody.angularVelocity = Vector3.zero;
+            }
+
+            Vector3 startPos = panelObject.transform.position;
+            float sinkDistance = Mathf.Max(0.1f, detachedPanelSinkDistance);
+            float sinkSpeed = Mathf.Max(0.05f, detachedPanelSinkSpeed);
+
+            while (panelObject != null && Vector3.Distance(startPos, panelObject.transform.position) < sinkDistance)
+            {
+                panelObject.transform.position += Vector3.down * (sinkSpeed * Time.deltaTime);
+                yield return null;
+            }
+
+            if (panelObject != null)
+                Destroy(panelObject);
         }
         
         /// <summary>

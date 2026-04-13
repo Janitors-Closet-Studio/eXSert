@@ -114,6 +114,10 @@ public class PlayerAttackManager : MonoBehaviour
     private float attackForwardMoveBlockDistance = 1.25f;
     [SerializeField, Range(0f, 180f), Tooltip("Front cone angle used for attack forward-move blocking.")]
     private float attackForwardMoveBlockAngle = 80f;
+    [SerializeField, Range(0f, 5f), Tooltip("Distance threshold to block attack forward movement specifically against crawlers.")]
+    private float crawlerAttackForwardMoveBlockDistance = 1.6f;
+    [SerializeField, Range(0f, 2f), Tooltip("Extra vertical tolerance for crawler proximity checks (crawler bodies sit lower to the ground).")]
+    private float crawlerForwardMoveVerticalTolerance = 0.9f;
 
     [Header("Debug")]
     [SerializeField, Tooltip("When enabled, logs plunge hitbox damage (base x multiplier) when the hitbox spawns, even if no enemy is hit.")]
@@ -625,7 +629,7 @@ public class PlayerAttackManager : MonoBehaviour
         }
 
         return lightAttack
-            ? aerialComboManager.RequestAerialLightAttack()
+            ? aerialComboManager.RequestAerialLightAttackWithPlungeFallback()
             : aerialComboManager.RequestAerialHeavyAttack();
     }
 
@@ -773,13 +777,14 @@ public class PlayerAttackManager : MonoBehaviour
             return false;
 
         float threshold = Mathf.Max(0f, attackForwardMoveBlockDistance);
+        float crawlerThreshold = Mathf.Max(threshold, Mathf.Max(0f, crawlerAttackForwardMoveBlockDistance));
         if (threshold <= 0f)
             return false;
 
         Vector3 origin = transform.position + Vector3.up * 0.5f;
         int hitCount = Physics.OverlapSphereNonAlloc(
             origin,
-            threshold,
+            crawlerThreshold,
             forwardMoveBlockHits,
             Physics.AllLayers,
             QueryTriggerInteraction.Ignore);
@@ -799,6 +804,28 @@ public class PlayerAttackManager : MonoBehaviour
 
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
             if (enemy == null || !enemy.isAlive)
+                continue;
+
+            float effectiveThreshold = threshold;
+            bool isCrawler = enemy.GetComponentInParent<BaseCrawlerEnemy>() != null;
+            if (isCrawler)
+                effectiveThreshold = Mathf.Max(threshold, Mathf.Max(0f, crawlerAttackForwardMoveBlockDistance));
+
+            Vector3 closestPoint = col.ClosestPoint(transform.position);
+            float verticalDelta = Mathf.Abs(closestPoint.y - transform.position.y);
+            if (isCrawler)
+            {
+                if (verticalDelta > Mathf.Max(0.05f, crawlerForwardMoveVerticalTolerance))
+                    continue;
+            }
+            else if (verticalDelta > 1.25f)
+            {
+                continue;
+            }
+
+            Vector3 planarToCollider = closestPoint - transform.position;
+            planarToCollider.y = 0f;
+            if (planarToCollider.sqrMagnitude > effectiveThreshold * effectiveThreshold)
                 continue;
 
             Vector3 toEnemy = enemy.transform.position - transform.position;

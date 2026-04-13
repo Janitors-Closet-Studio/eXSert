@@ -5492,6 +5492,8 @@ MonoBehaviour:
   blockAttackForwardMoveDuringSoftLockMotion: 1
   attackForwardMoveBlockDistance: 1.25
   attackForwardMoveBlockAngle: 150
+  crawlerAttackForwardMoveBlockDistance: 1.6
+  crawlerForwardMoveVerticalTolerance: 0.9
   debugPlungeDamage: 1
   debugPlungeDamageInitialized: 1
   attackAudioSource: {fileID: 0}
@@ -5666,6 +5668,7 @@ MonoBehaviour:
   softLockMoveDistance: 0.75
   softLockStopBuffer: 0.5
   softLockNoMoveRadius: 1.5
+  closeRangeTurnAssistRadius: 1.6
   softLockMoveDuration: 0.1
   softLockRotateOnlyDuration: 0.1
   allowInstantSoftLockSnap: 0

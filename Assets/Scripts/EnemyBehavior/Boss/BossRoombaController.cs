@@ -1140,40 +1140,36 @@ public class BossRoombaController : MonoBehaviour
     public void OnCageMatchStart()
     {
         EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] OnCageMatchStart - despawning ALL active adds for 1v1 cage match");
-        
+        DespawnAllActiveAdds();
+    }
+
+    public void DespawnAllActiveAdds()
+    {
         int despawnedDrones = 0;
         int despawnedCrawlers = 0;
-        
-        // Despawn ALL active drones
+
         foreach (var kvp in activeDrones)
         {
-            if (kvp.Value != null && kvp.Value.activeInHierarchy)
-            {
-                // Return to pool
-                kvp.Value.SetActive(false);
-                dronePool.Enqueue(kvp.Value);
-                despawnedDrones++;
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned drone for cage match: {kvp.Value.name}");
-            }
+            if (kvp.Value == null || !kvp.Value.activeInHierarchy)
+                continue;
+
+            kvp.Value.SetActive(false);
+            dronePool.Enqueue(kvp.Value);
+            despawnedDrones++;
         }
-        
-        // Despawn ALL active crawlers
+
         foreach (var kvp in activeCrawlers)
         {
-            if (kvp.Value != null && kvp.Value.activeInHierarchy)
-            {
-                // Return to pool
-                kvp.Value.SetActive(false);
-                crawlerPool.Enqueue(kvp.Value);
-                despawnedCrawlers++;
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned crawler for cage match: {kvp.Value.name}");
-            }
+            if (kvp.Value == null || !kvp.Value.activeInHierarchy)
+                continue;
+
+            kvp.Value.SetActive(false);
+            crawlerPool.Enqueue(kvp.Value);
+            despawnedCrawlers++;
         }
-        
-        // Clear fleeing tracking since all adds are despawned
+
         fleeingAdds.Clear();
-        
-        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Cage match started - despawned {despawnedDrones} drones and {despawnedCrawlers} crawlers");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned adds: drones={despawnedDrones}, crawlers={despawnedCrawlers}");
     }
     
     /// <summary>

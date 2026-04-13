@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using Utilities.Combat;
 
 [RequireComponent(typeof(BoxCollider))]
 public abstract class InteractionManager : MonoBehaviour, IInteractable
@@ -185,7 +186,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         }
 
         // Don't allow interactions while player is in combat
-        if (_combatIdleController != null && _combatIdleController.IsInCombat)
+        if (CombatManager.isInCombat)
             return;
 
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using Managers.TimeLord;
 
 internal class DMenuUIImplementation : MonoBehaviour
 {
@@ -63,6 +64,11 @@ internal class DMenuUIImplementation : MonoBehaviour
         }
 
         // Load the selected scene using SceneLoader
+        InputReader.inputBusy = false;
+        PauseCoordinator.ReleaseTimeScale("DebugMenu");
+        if (InputReader.PlayerInput != null)
+            InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+
         SceneLoader.LoadIntoGame(sceneAsset);
     }
 }
