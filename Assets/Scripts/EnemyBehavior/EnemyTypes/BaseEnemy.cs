@@ -936,6 +936,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     public virtual void Attack()
     {
         if (!useAnimationEventAttacks) return;
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
         if (isParryStunned || suppressAnimationEventDamageUntilAttackEnds) return;
         
         EnableAttackHitbox();
@@ -967,6 +968,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     /// </summary>
     protected virtual void DealDamageOnAnimationEvent()
     {
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
+
         if (animEventDamageDealtThisAttack) return;
 
         Vector3 boxCenter = transform.position + transform.forward * attackBoxDistance;
@@ -1778,6 +1781,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
 
     protected virtual void OnTriggerEnter(Collider other)
     {
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
         if (enemyAI == null) return;
         
         // Skip if not Player layer (avoid checking enemy-to-enemy collisions)
@@ -1803,6 +1807,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     // Simplify OnTriggerStay
     protected virtual void OnTriggerStay(Collider other)
     {
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
         if (enemyAI == null) return;
 
         if (!other.CompareTag("Player")) return;

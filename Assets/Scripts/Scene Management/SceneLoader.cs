@@ -52,6 +52,7 @@ public static class SceneLoader
 
     private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        InputReader.inputBusy = false;
         DebugLogSettingsM.ConditionalLog(DebugLogCategory.SceneLoading, $"[Scene Loader] Scene loaded callback: '{scene.name}' with mode {mode}. LoadedSceneCount now: {LoadedSceneCount}.");
         if (scene.name == PLAYER_SCENE)
         {

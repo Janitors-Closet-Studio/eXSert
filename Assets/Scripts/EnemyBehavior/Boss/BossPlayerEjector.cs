@@ -237,6 +237,12 @@ namespace EnemyBehavior.Boss
             if (bossBrain != null && bossBrain.IsPlayerMountedOnTop)
                 return true;
 
+            if (playerMovement != null && playerMovement.IsPlunging && BossCenter != null && player != null)
+            {
+                if (player.position.y >= BossCenter.position.y)
+                    return true;
+            }
+
             if (player == null || BossCenter == null)
                 return false;
 

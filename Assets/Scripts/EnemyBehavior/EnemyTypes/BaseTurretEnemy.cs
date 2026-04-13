@@ -50,6 +50,8 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
     [SerializeField] private float muzzleForwardOffset = 0.1f;
     [Tooltip("Sound effect played on each shot.")]
     [SerializeField] private AudioClip gunfireSfx;
+    [Tooltip("Volume multiplier for turret gunfire SFX.")]
+    [SerializeField, Range(0f, 1f)] private float gunfireSfxVolume = 0.7f;
     [Tooltip("Optional AudioSource to play gunfire SFX. If empty, will use one on this object or create one.")]
     private AudioSource gunfireSource;
 
@@ -504,7 +506,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         if (gunfireSfx == null || gunfireSource == null)
             return;
 
-        gunfireSource.PlayOneShot(gunfireSfx);
+        gunfireSource.PlayOneShot(gunfireSfx, gunfireSfxVolume);
     }
 
     // Permanently ignore collisions between this turret's colliders and this projectile's colliders
