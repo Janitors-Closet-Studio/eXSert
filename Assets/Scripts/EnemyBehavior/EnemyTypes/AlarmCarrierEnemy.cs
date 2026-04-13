@@ -261,6 +261,7 @@ public class AlarmCarrierEnemy : BaseEnemy<AlarmCarrierState, AlarmCarrierTrigge
 
         enemyAI.Configure(AlarmCarrierState.Death)
             .OnEntry(() => {
+                PlayDieAnim();
                 deathBehavior?.OnEnter(this);
                 // Stop flee coroutine on death
                 if (alarmCountdownCoroutine != null)
