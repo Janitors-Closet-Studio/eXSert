@@ -21,7 +21,7 @@ public abstract class UnlockableInteraction : InteractionManager
     protected bool needsItem => !string.IsNullOrEmpty(requiredItemID);
     protected bool canUnlock => InternalPlayerInventory.Instance != null && InternalPlayerInventory.Instance.HasItem(requiredItemID);
     protected bool canExecuteWithoutItem => IsUnlockedWithoutRequiredItem();
-    protected bool canExecuteInteraction => !needsItem || canUnlock || canExecuteWithoutItem;
+    internal bool canExecuteInteraction = false;
 
     [Header("Error SFX")]
     [SerializeField] internal AudioClip errorSFXClip;
@@ -37,6 +37,9 @@ public abstract class UnlockableInteraction : InteractionManager
         // Normalize required item ID
         if (needsItem)
             requiredItemID = requiredItemID.Trim().ToLowerInvariant();
+
+        if (needsItem)
+            canExecuteInteraction = false;
     }
 
     /// <summary>
@@ -110,6 +113,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if (!canExecuteInteraction)
         {
             FailedInteract();
+            Debug.Log($"[UnlockableInteraction] Interaction failed on {gameObject.name} due to unmet conditions.");
             return;
         }
 
