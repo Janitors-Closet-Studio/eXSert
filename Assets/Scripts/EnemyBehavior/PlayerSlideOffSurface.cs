@@ -17,6 +17,7 @@ public class PlayerSlideOffSurface : MonoBehaviour
     [SerializeField] private bool disabled = false;
     
     private Collider[] enemyColliders;
+    private bool ignoreForRoombaBoss;
     private Transform playerTransform;
     private Rigidbody playerRigidbody;
     private CharacterController playerCharacterController;
@@ -25,11 +26,14 @@ public class PlayerSlideOffSurface : MonoBehaviour
     {
         // Cache all colliders on this enemy
         enemyColliders = GetComponentsInChildren<Collider>();
+
+        // Roomba boss should allow close/on-top interaction without slide-off push.
+        ignoreForRoombaBoss = GetComponentInParent<EnemyBehavior.Boss.BossRoombaBrain>() != null;
     }
     
     private void OnCollisionStay(Collision collision)
     {
-        if (disabled) return;
+        if (disabled || ignoreForRoombaBoss) return;
         
         // Check if it's the player
         if (!collision.gameObject.CompareTag("Player")) return;

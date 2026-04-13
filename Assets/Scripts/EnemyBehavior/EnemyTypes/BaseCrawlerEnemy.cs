@@ -389,7 +389,11 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
 
         // Death: Final state
         enemyAI.Configure(CrawlerEnemyState.Death)
-            .OnEntry(() => deathBehavior?.OnEnter(this))
+            .OnEntry(() =>
+            {
+                PlayDieAnim();
+                deathBehavior?.OnEnter(this);
+            })
             .OnExit(() => deathBehavior?.OnExit(this))
             .Ignore(CrawlerEnemyTrigger.LowHealth)
             .Ignore(CrawlerEnemyTrigger.Die)
@@ -494,6 +498,7 @@ public class BaseCrawlerEnemy : BaseEnemy<CrawlerEnemyState, CrawlerEnemyTrigger
                 fleeBehavior?.OnEnter(this);
                 break;
             case CrawlerEnemyState.Death:
+                PlayDieAnim();
                 deathBehavior?.OnEnter(this);
                 break;
         }

@@ -23,10 +23,10 @@ RenderSettings:
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
-  m_AmbientIntensity: 3.97
+  m_AmbientIntensity: 1
   m_AmbientMode: 0
-  m_SubtractiveShadowColor: {r: 1, g: 1, b: 1, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 8d7f6fdcdd2fc6444928c7f54c9b21e3, type: 2}
+  m_SubtractiveShadowColor: {r: 0.57254905, g: 0.74709314, b: 1, a: 1}
+  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -35,7 +35,7 @@ RenderSettings:
   m_DefaultReflectionMode: 0
   m_DefaultReflectionResolution: 128
   m_ReflectionBounces: 1
-  m_ReflectionIntensity: 0
+  m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
   m_UseRadianceAmbientProbe: 0
@@ -93,8 +93,8 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 0}
-  m_LightingSettings: {fileID: 0}
+  m_LightingDataAsset: {fileID: 112000002, guid: 84c61e4fdcb4a7345bde6c61ce3a908a, type: 2}
+  m_LightingSettings: {fileID: 4890085278179872738, guid: 970cd711d25b30e4f8095f6cae9d5721, type: 2}
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -4020,7 +4020,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &118556613
 Transform:
@@ -10134,6 +10134,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: WoodenCrate_New (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 6251113269399343286, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 6740686646384462348, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
       propertyPath: m_LocalScale.y
       value: 0.009999999
@@ -11464,7 +11468,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &334870693
 Transform:
@@ -18228,7 +18232,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &535554523
 Transform:
   m_ObjectHideFlags: 0
@@ -21725,6 +21729,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: WoodenCrate_New
       objectReference: {fileID: 0}
+    - target: {fileID: 6251113269399343286, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 6740686646384462348, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
       propertyPath: m_LocalScale.y
       value: 0.009999999
@@ -23804,6 +23812,82 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 962fd702d24d9c54fb10cab0fdb270bc, type: 3}
   m_PrefabInstance: {fileID: 734006403}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &739710154
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 739710156}
+  - component: {fileID: 739710155}
+  m_Layer: 0
+  m_Name: Adaptive Probe Volume
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &739710155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739710154}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cded085d155cde949b60f67a11dbc3bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolume
+  mode: 1
+  size: {x: 24.569696, y: 11.487587, z: 24.569696}
+  overrideRendererFilters: 0
+  minRendererVolumeSize: 0.1
+  objectLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  lowestSubdivLevelOverride: 0
+  highestSubdivLevelOverride: 3
+  overridesSubdivLevels: 1
+  mightNeedRebaking: 0
+  cachedTransform:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0.48665047
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: -2.5601168
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0.27999973
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  cachedHashCode: -141911820
+  fillEmptySpaces: 1
+  version: 2
+  globalVolume: 0
+--- !u!4 &739710156
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739710154}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.48665047, y: 2.5601168, z: -0.27999973}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &739747119
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -25260,6 +25344,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: WoodenCrate_New (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 6251113269399343286, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 6740686646384462348, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
       propertyPath: m_LocalScale.y
       value: 0.009999999
@@ -25521,6 +25609,56 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 778344928}
   m_Mesh: {fileID: 8337855423543158018, guid: bf66e91bfda28514397a686af1c89870, type: 3}
+--- !u!1 &778987498
+GameObject:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 778987500}
+  - component: {fileID: 778987499}
+  m_Layer: 0
+  m_Name: ProbeVolumePerSceneData
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &778987499
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 778987498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a83d2f7ae04ab6f4f99b0d85377be998, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolumePerSceneData
+  serializedBakingSet: {fileID: 11400000, guid: a912f8884cf62dc4b97b791009a1c1ef, type: 2}
+  sceneGUID: 30991b1cf38df634ab4bc514e635ad71
+  obsoleteAsset: {fileID: 0}
+  obsoleteCellSharedDataAsset: {fileID: 0}
+  obsoleteCellSupportDataAsset: {fileID: 0}
+  obsoleteSerializedScenarios: []
+--- !u!4 &778987500
+Transform:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 778987498}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &779878084
 GameObject:
   m_ObjectHideFlags: 0
@@ -32433,7 +32571,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &948275747
 Transform:
@@ -32701,6 +32839,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 1386d933d441302419757e8ceaa2669e, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -32803,7 +32945,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &958376156
 Transform:
@@ -33728,7 +33870,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 11
   m_Type: 2
-  m_Color: {r: 0.9496855, g: 0.13438933, b: 0.13438933, a: 1}
+  m_Color: {r: 1, g: 0, b: 0, a: 1}
   m_Intensity: 22.9
   m_Range: 12.72
   m_SpotAngle: 89.41277
@@ -33992,7 +34134,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &1034832236
 Transform:
@@ -40402,6 +40544,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: WoodenCrate_New (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 6251113269399343286, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 6740686646384462348, guid: 718705330ae8b964881a635c4d867fbc, type: 3}
       propertyPath: m_LocalScale.y
       value: 0.009999999
@@ -41583,9 +41729,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3153064851660578496, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 3744882089859573523, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_Name
       value: Tutorial Log
+      objectReference: {fileID: 0}
+    - target: {fileID: 3744882089859573523, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: 4660671860925423099, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_Size.x
@@ -41610,6 +41764,10 @@ PrefabInstance:
     - target: {fileID: 4660671860925423099, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_Center.z
       value: 0.42873663
+      objectReference: {fileID: 0}
+    - target: {fileID: 7595601498576949995, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: collectID
@@ -49022,6 +49180,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: connectors
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: e1eb7d224736a2f48992117f5ad14e1c, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -50483,7 +50645,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &1537995719
 Transform:
@@ -51739,7 +51901,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!23 &1574300088
 MeshRenderer:
@@ -56593,6 +56755,71 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b0af277bd7e48da4c88755d11ea10de5, type: 3}
   m_PrefabInstance: {fileID: 1739418736}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1741494696
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1741494698}
+  - component: {fileID: 1741494697}
+  m_Layer: 0
+  m_Name: Reflection Probe
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!215 &1741494697
+ReflectionProbe:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1741494696}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Type: 0
+  m_Mode: 0
+  m_RefreshMode: 0
+  m_TimeSlicingMode: 0
+  m_Resolution: 128
+  m_UpdateFrequency: 0
+  m_BoxSize: {x: 20.193556, y: 9.580005, z: 20.23462}
+  m_BoxOffset: {x: -0.44078732, y: 0.20999765, z: -0.31959534}
+  m_NearClip: 0.3
+  m_FarClip: 1000
+  m_ShadowDistance: 100
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IntensityMultiplier: 1
+  m_BlendDistance: 1
+  m_HDR: 1
+  m_BoxProjection: 0
+  m_RenderDynamicObjects: 0
+  m_UseOcclusionCulling: 1
+  m_Importance: 1
+  m_CustomBakedTexture: {fileID: 0}
+--- !u!4 &1741494698
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1741494696}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1744050380 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3400058836635240288, guid: efc588e010d594a4c94830813166a9e0, type: 3}
@@ -60115,7 +60342,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &1847211555
 Transform:
@@ -64010,7 +64237,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &2007988553
 Transform:
@@ -66451,6 +66678,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Container_low
       objectReference: {fileID: 0}
+    - target: {fileID: 1842980680630612844, guid: 24dfe058bf31c0f419fe6e1dbef78c54, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -68448,3 +68679,6 @@ SceneRoots:
   - {fileID: 1822240846}
   - {fileID: 9017540021125526058}
   - {fileID: 1288089983}
+  - {fileID: 739710156}
+  - {fileID: 778987500}
+  - {fileID: 1741494698}

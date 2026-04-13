@@ -6,6 +6,11 @@ using UnityEngine;
 using System.Collections;
 using Behaviors;
 using System.Linq;
+using System;
+using System.Collections.Generic;
+using UnityEngine.Serialization;
+using UnityEngine.VFX;
+using UnityEngine.VFX.Utility;
 
 public enum BombAttackBehavior
 {
@@ -38,6 +43,47 @@ public enum BombTriggers
 
 public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpawnable
 {
+    private const string ExplodingAnimationStateName = "Exploding";
+
+    [Serializable]
+    private struct CountdownVfxEntry
+    {
+        [SerializeField, FormerlySerializedAs("prefab")]
+        private GameObject effectObject;
+
+        [SerializeField]
+        private Transform anchor;
+
+        [SerializeField]
+        private Vector3 positionOffset;
+
+        [SerializeField]
+        private Vector3 rotationOffset;
+
+        [SerializeField]
+        private Vector3 scaleMultiplier;
+
+        [SerializeField]
+        private bool attachToAnchor;
+
+        [SerializeField, Tooltip("Seconds to wait after countdown starts before this VFX appears.")]
+        private float spawnDelay;
+
+        public GameObject EffectObject => effectObject;
+        public Transform Anchor => anchor;
+        public Vector3 PositionOffset => positionOffset;
+        public Vector3 RotationOffset => rotationOffset;
+        public Vector3 ScaleMultiplier => scaleMultiplier == Vector3.zero ? Vector3.one : scaleMultiplier;
+        public bool AttachToAnchor => attachToAnchor;
+        public float SpawnDelay => Mathf.Max(0f, spawnDelay);
+    }
+
+    private sealed class ActiveCountdownVfxHandle
+    {
+        public GameObject Instance;
+        public bool IsAttachedInstance;
+    }
+
     [Header("Bomb Bot Settings")]
     [SerializeField, Tooltip("Radius at which the bomb bot will trigger its explosion when the player enters.")]
     private float triggerRadius = 1.5f;
@@ -105,6 +151,10 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     [SerializeField, Tooltip("How long the explosion visual remains after detonation.")]
     private float explosionVisualDuration = 0.5f;
 
+    [Header("Countdown Heat VFX")]
+    [SerializeField, Tooltip("Effects that spawn while the bomb bot is heating up during countdown. Each entry can have its own anchor and delay.")]
+    private CountdownVfxEntry[] countdownVfxEntries = Array.Empty<CountdownVfxEntry>();
+
     // Spawn context
     private bool spawnedByAlarm = false;
     private AlarmCarrierEnemy alarmSource;
@@ -115,6 +165,10 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     private bool isExploding = false;
     private Coroutine attackRoutine;
     private Coroutine debugPreviewCoroutine;
+    private IEnemyStateBehavior<BombStates, BombTriggers> deathBehavior;
+    private readonly List<Coroutine> countdownVfxDelayCoroutines = new();
+    private readonly List<ActiveCountdownVfxHandle> activeCountdownVfx = new();
+    private readonly Dictionary<Transform, Vector3> countdownVfxBaseScales = new();
 
     [HideInInspector]
     public GameObject originalPrefab;
@@ -124,6 +178,8 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     protected override void Awake()
     {
         base.Awake();
+        handleLowHealth = false;
+        deathBehavior = new DeathBehavior<BombStates, BombTriggers>();
 
         // Ensure a trigger SphereCollider exists for explosion/contact detection
         var trigger = GetComponent<SphereCollider>();
@@ -134,7 +190,7 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
 
         if (randomizeBehavior)
         {
-            attackBehavior = (BombAttackBehavior)Random.Range(0, System.Enum.GetValues(typeof(BombAttackBehavior)).Length);
+            attackBehavior = (BombAttackBehavior)UnityEngine.Random.Range(0, System.Enum.GetValues(typeof(BombAttackBehavior)).Length);
         }
         InitializeStateMachine(BombStates.Idle);
         ConfigureStateMachine();
@@ -273,11 +329,21 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     protected override void ConfigureStateMachine()
     {
         enemyAI.Configure(BombStates.Idle)
+            .OnEntry(() =>
+            {
+                StopCountdownHeatVfx();
+                PlayIdleAnim();
+            })
             .Permit(BombTriggers.SeePlayer, BombStates.Approaching)
             .Permit(BombTriggers.Die, BombStates.Death);
 
         enemyAI.Configure(BombStates.Approaching)
-            .OnEntry(StartApproach)
+            .OnEntry(() =>
+            {
+                StopCountdownHeatVfx();
+                PlayIdleAnim();
+                StartApproach();
+            })
             .PermitIf(BombTriggers.InAttackRange, BombStates.Attacking, () => canExplode)
             .IgnoreIf(BombTriggers.InAttackRange, () => !canExplode)
             .Permit(BombTriggers.LosePlayer, BombStates.Idle)
@@ -292,7 +358,12 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             .Permit(BombTriggers.ReturnToPocket, BombStates.Returning);
 
         enemyAI.Configure(BombStates.Returning)
-            .OnEntry(StartReturnToPocket)
+            .OnEntry(() =>
+            {
+                StopCountdownHeatVfx();
+                PlayIdleAnim();
+                StartReturnToPocket();
+            })
             .Permit(BombTriggers.Die, BombStates.Death)
             .Permit(BombTriggers.SeePlayer, BombStates.Approaching);
 
@@ -302,7 +373,20 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             .Ignore(BombTriggers.Explode);
 
         enemyAI.Configure(BombStates.Death)
-            .OnEntry(() => Destroy(gameObject))
+            .OnEntry(() =>
+            {
+                IsAttacking = false;
+                if (attackRoutine != null)
+                {
+                    StopCoroutine(attackRoutine);
+                    attackRoutine = null;
+                }
+
+                CancelDebugPreview();
+                StopExplosionVfx();
+                PlayExplodingAnim();
+                deathBehavior?.OnEnter(this);
+            })
             .Ignore(BombTriggers.Die)
             .Ignore(BombTriggers.Explode)
             .Ignore(BombTriggers.SeePlayer);
@@ -343,9 +427,23 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
 
         if (attackRoutine != null)
             StopCoroutine(attackRoutine);
+
+        PlayExplodingAnim();
+        StartCountdownHeatVfx();
         ShowCountdownWarningVfx();
         EnemyBehaviorDebugLogBools.Log(nameof(BombCarrierEnemy), $"BombCarrierEnemy using attackBehavior: {attackBehavior}");
         attackRoutine = StartCoroutine(AttackBehaviorRoutine());
+    }
+
+    private void PlayExplodingAnim()
+    {
+        if (HasAnimatorState(animator, ExplodingAnimationStateName))
+        {
+            ForcePlayStateOn(animator, ExplodingAnimationStateName);
+            return;
+        }
+
+        PlayAttackAnim();
     }
 
     private void ShowCountdownWarningVfx()
@@ -363,6 +461,158 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             main.startLifetime = new ParticleSystem.MinMaxCurve(countdownDuration);
             particleSystem.Play(true);
         }
+    }
+
+    private void StartCountdownHeatVfx()
+    {
+        StopCountdownHeatVfx();
+
+        if (countdownVfxEntries == null || countdownVfxEntries.Length == 0)
+            return;
+
+        for (int i = 0; i < countdownVfxEntries.Length; i++)
+        {
+            CountdownVfxEntry entry = countdownVfxEntries[i];
+            if (entry.EffectObject == null)
+                continue;
+
+            Transform anchor = entry.Anchor != null ? entry.Anchor : transform;
+            if (anchor == null)
+                continue;
+
+            if (entry.SpawnDelay <= 0f)
+            {
+                SpawnCountdownVfxEntry(entry, anchor);
+                continue;
+            }
+
+            Coroutine delayRoutine = StartCoroutine(SpawnCountdownVfxAfterDelay(entry, anchor));
+            countdownVfxDelayCoroutines.Add(delayRoutine);
+        }
+    }
+
+    private IEnumerator SpawnCountdownVfxAfterDelay(CountdownVfxEntry entry, Transform anchor)
+    {
+        yield return WaitForSecondsCache.Get(entry.SpawnDelay);
+
+        if (!IsAttacking || isExploding)
+            yield break;
+
+        if (anchor == null || entry.EffectObject == null)
+            yield break;
+
+        SpawnCountdownVfxEntry(entry, anchor);
+    }
+
+    private void SpawnCountdownVfxEntry(CountdownVfxEntry entry, Transform anchor)
+    {
+        if (entry.EffectObject == null || anchor == null)
+            return;
+
+        if (ShouldUseAttachedCountdownInstance(entry.EffectObject))
+        {
+            ActivateAttachedCountdownInstance(entry, anchor);
+            return;
+        }
+
+        Vector3 spawnPosition = anchor.TransformPoint(entry.PositionOffset);
+        Quaternion spawnRotation = anchor.rotation * Quaternion.Euler(entry.RotationOffset);
+        GameObject instance = Instantiate(entry.EffectObject, spawnPosition, spawnRotation);
+        ApplyConfiguredCountdownScale(instance.transform, entry.ScaleMultiplier);
+
+        if (entry.AttachToAnchor)
+            instance.transform.SetParent(anchor, worldPositionStays: true);
+
+        if (!instance.activeSelf)
+            instance.SetActive(true);
+
+        RefreshVfxPropertyBinders(instance);
+        ReplayInstanceNow(instance);
+        activeCountdownVfx.Add(new ActiveCountdownVfxHandle { Instance = instance });
+    }
+
+    private bool ShouldUseAttachedCountdownInstance(GameObject effectObject)
+    {
+        return effectObject != null && effectObject.scene.IsValid() && effectObject.transform.IsChildOf(transform);
+    }
+
+    private void ActivateAttachedCountdownInstance(CountdownVfxEntry entry, Transform anchor)
+    {
+        GameObject instance = entry.EffectObject;
+        if (instance == null)
+            return;
+
+        if (entry.AttachToAnchor && anchor != null && instance.transform.parent != anchor)
+            instance.transform.SetParent(anchor, worldPositionStays: true);
+
+        instance.transform.localPosition = entry.PositionOffset;
+        instance.transform.localRotation = Quaternion.Euler(entry.RotationOffset);
+        ApplyConfiguredCountdownScale(instance.transform, entry.ScaleMultiplier);
+
+        if (!instance.activeSelf)
+            instance.SetActive(true);
+
+        RefreshVfxPropertyBinders(instance);
+        ReplayInstanceNow(instance);
+
+        for (int i = 0; i < activeCountdownVfx.Count; i++)
+        {
+            if (activeCountdownVfx[i]?.Instance == instance)
+                return;
+        }
+
+        activeCountdownVfx.Add(new ActiveCountdownVfxHandle { Instance = instance, IsAttachedInstance = true });
+    }
+
+    private void StopCountdownHeatVfx()
+    {
+        for (int i = 0; i < countdownVfxDelayCoroutines.Count; i++)
+        {
+            Coroutine pending = countdownVfxDelayCoroutines[i];
+            if (pending != null)
+                StopCoroutine(pending);
+        }
+        countdownVfxDelayCoroutines.Clear();
+
+        for (int i = activeCountdownVfx.Count - 1; i >= 0; i--)
+        {
+            ActiveCountdownVfxHandle handle = activeCountdownVfx[i];
+            if (handle?.Instance == null)
+            {
+                activeCountdownVfx.RemoveAt(i);
+                continue;
+            }
+
+            if (handle.IsAttachedInstance)
+                StopInstance(handle.Instance);
+            else
+                Destroy(handle.Instance);
+
+            activeCountdownVfx.RemoveAt(i);
+        }
+        if (countdownVfxEntries == null)
+            return;
+
+        for (int i = 0; i < countdownVfxEntries.Length; i++)
+        {
+            GameObject effectObject = countdownVfxEntries[i].EffectObject;
+            if (ShouldUseAttachedCountdownInstance(effectObject))
+                StopInstance(effectObject);
+        }
+    }
+
+    private void ApplyConfiguredCountdownScale(Transform target, Vector3 scaleMultiplier)
+    {
+        if (target == null)
+            return;
+
+        if (!countdownVfxBaseScales.TryGetValue(target, out Vector3 baseScale))
+        {
+            baseScale = target.localScale;
+            countdownVfxBaseScales[target] = baseScale;
+        }
+
+        target.localScale = Vector3.Scale(baseScale, scaleMultiplier);
     }
 
     private IEnumerator AttackBehaviorRoutine()
@@ -446,7 +696,7 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
                 {
                     agent.isStopped = true;
                     // Wait for a random delay before leaping
-                    float delay = Random.Range(stopBeforeLeapDelayRange.x, stopBeforeLeapDelayRange.y);
+                    float delay = UnityEngine.Random.Range(stopBeforeLeapDelayRange.x, stopBeforeLeapDelayRange.y);
                     yield return WaitForSecondsCache.Get(delay);
 
                     Vector3 leapDir = (PlayerTarget.position - transform.position).normalized;
@@ -523,6 +773,9 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     {
         if (isExploding) return;
         isExploding = true;
+        IsAttacking = false;
+
+        StopCountdownHeatVfx();
 
         HideAttackIndicator();
 
@@ -582,6 +835,7 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
 
         HideAttackIndicator();
 
+        StopCountdownHeatVfx();
         StopExplosionVfx();
     }
 
@@ -671,10 +925,13 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
 
     public override void CheckHealthThreshold()
     {
-        // Bomb bots do not use low health logic, so do nothing.
+        base.CheckHealthThreshold();
     }
     private void StartReturnToPocket()
     {
+        IsAttacking = false;
+        StopCountdownHeatVfx();
+
         if (attackRoutine != null)
             StopCoroutine(attackRoutine);
         attackRoutine = StartCoroutine(ReturnToPocketRoutine());
@@ -702,6 +959,7 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     protected override void OnDestroy()
     {
         CancelDebugPreview();
+        StopCountdownHeatVfx();
 
         if (Pocket != null)
         {
@@ -757,6 +1015,107 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
                 agent.SetDestination(PlayerTarget.position);
 
             yield return null;
+        }
+    }
+
+    private static void ReplayInstanceNow(GameObject instance)
+    {
+        RestartParticleSystems(instance);
+        RestartVisualEffects(instance);
+    }
+
+    private static void StopInstance(GameObject instance)
+    {
+        if (instance == null)
+            return;
+
+        var visualEffects = instance.GetComponentsInChildren<VisualEffect>(true);
+        for (int i = 0; i < visualEffects.Length; i++)
+        {
+            VisualEffect visualEffect = visualEffects[i];
+            if (visualEffect == null)
+                continue;
+
+            visualEffect.Stop();
+        }
+
+        var particleSystems = instance.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particleSystem.Clear(true);
+        }
+
+        instance.SetActive(false);
+    }
+
+    private static void RefreshVfxPropertyBinders(GameObject instance)
+    {
+        if (instance == null)
+            return;
+
+        var binders = instance.GetComponentsInChildren<VFXPropertyBinder>(true);
+        for (int i = 0; i < binders.Length; i++)
+        {
+            VFXPropertyBinder binder = binders[i];
+            if (binder == null)
+                continue;
+
+            bool wasEnabled = binder.enabled;
+            binder.enabled = false;
+            binder.enabled = wasEnabled;
+
+            if (!wasEnabled)
+                binder.enabled = true;
+        }
+    }
+
+    private static void RestartParticleSystems(GameObject instance)
+    {
+        if (instance == null)
+            return;
+
+        var particleSystems = instance.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < particleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = particleSystems[i];
+            if (particleSystem == null)
+                continue;
+
+            if (!particleSystem.gameObject.activeSelf)
+                particleSystem.gameObject.SetActive(true);
+
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            particleSystem.Clear(true);
+            particleSystem.Play(true);
+        }
+    }
+
+    private static void RestartVisualEffects(GameObject instance)
+    {
+        if (instance == null)
+            return;
+
+        var visualEffects = instance.GetComponentsInChildren<VisualEffect>(true);
+        for (int i = 0; i < visualEffects.Length; i++)
+        {
+            VisualEffect visualEffect = visualEffects[i];
+            if (visualEffect == null)
+                continue;
+
+            if (!visualEffect.gameObject.activeSelf)
+                visualEffect.gameObject.SetActive(true);
+
+            if (!visualEffect.enabled)
+                visualEffect.enabled = true;
+
+            visualEffect.Stop();
+            visualEffect.Reinit();
+            visualEffect.Play();
         }
     }
 

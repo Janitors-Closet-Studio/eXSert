@@ -261,6 +261,26 @@ public class BossRoombaController : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
         StopTopWander();
         StopFollowing();
+
+        // Failsafe: if the boss object is being disabled/destroyed, ensure adds do not linger in-scene.
+        DespawnAllActiveAdds();
+    }
+
+    public bool HasAnyActiveAdds()
+    {
+        foreach (var kvp in activeDrones)
+        {
+            if (kvp.Value != null && kvp.Value.activeInHierarchy)
+                return true;
+        }
+
+        foreach (var kvp in activeCrawlers)
+        {
+            if (kvp.Value != null && kvp.Value.activeInHierarchy)
+                return true;
+        }
+
+        return false;
     }
 
     private IEnumerator AnimParamsLoop(float cadence)
@@ -877,6 +897,12 @@ public class BossRoombaController : MonoBehaviour
                         dronesFleeing++;
                         EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Drone {drone.name} fleeing to spawn point at {nearestSpawn.position} (speed: {droneAgent.speed})");
                     }
+                    else
+                    {
+                        StartCoroutine(FallbackReturnAndDespawn(drone, nearestSpawn.position, true));
+                        dronesFleeing++;
+                        EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Drone {drone.name} has no valid NavMeshAgent; using fallback return/despawn.");
+                    }
                 }
                 else
                 {
@@ -981,6 +1007,8 @@ public class BossRoombaController : MonoBehaviour
                     else
                     {
                         EnemyBehaviorDebugLogBools.LogWarning(nameof(BossRoombaController), $"[BossRoombaController] Crawler {crawlerObj.name} has no valid NavMeshAgent (crawlerEnemy: {crawlerEnemy != null}, agent: {crawlerAgent}, enabled: {crawlerAgent?.enabled}, onNavMesh: {crawlerAgent?.isOnNavMesh})");
+                        StartCoroutine(FallbackReturnAndDespawn(crawlerObj, nearestSpawn.position, false));
+                        crawlersFleeing++;
                     }
                 }
                 else
@@ -1050,6 +1078,10 @@ public class BossRoombaController : MonoBehaviour
         }
         
         if (add == null || !add.activeInHierarchy) yield break;
+
+        // Failsafe: snap to destination on timeout/stall so adds still "return" before despawn.
+        if (Vector3.Distance(add.transform.position, destination) > AddFleeArrivalThreshold)
+            add.transform.position = destination;
         
         // Stop the agent
         if (addAgent != null && addAgent.enabled)
@@ -1077,6 +1109,28 @@ public class BossRoombaController : MonoBehaviour
         {
             crawlerPool.Enqueue(add);
         }
+    }
+
+    private IEnumerator FallbackReturnAndDespawn(GameObject add, Vector3 destination, bool isDrone)
+    {
+        if (add == null || !add.activeInHierarchy)
+            yield break;
+
+        fleeingAdds.Add(add);
+        add.transform.position = destination;
+
+        yield return WaitForSecondsCache.Get(AddFleeDestroyDelay);
+
+        if (add == null || !add.activeInHierarchy)
+            yield break;
+
+        fleeingAdds.Remove(add);
+        add.SetActive(false);
+
+        if (isDrone)
+            dronePool.Enqueue(add);
+        else
+            crawlerPool.Enqueue(add);
     }
     
     /// <summary>
@@ -1140,40 +1194,50 @@ public class BossRoombaController : MonoBehaviour
     public void OnCageMatchStart()
     {
         EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] OnCageMatchStart - despawning ALL active adds for 1v1 cage match");
-        
+        DespawnAllActiveAdds();
+    }
+
+    public void DespawnAllActiveAdds()
+    {
         int despawnedDrones = 0;
         int despawnedCrawlers = 0;
-        
-        // Despawn ALL active drones
+
         foreach (var kvp in activeDrones)
         {
-            if (kvp.Value != null && kvp.Value.activeInHierarchy)
-            {
-                // Return to pool
-                kvp.Value.SetActive(false);
-                dronePool.Enqueue(kvp.Value);
-                despawnedDrones++;
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned drone for cage match: {kvp.Value.name}");
-            }
+            if (kvp.Value == null || !kvp.Value.activeInHierarchy)
+                continue;
+
+            Transform[] droneTargets = (droneSpawnPoints != null && droneSpawnPoints.Length > 0)
+                ? droneSpawnPoints
+                : pocketSpawnPoints;
+            Transform nearestSpawn = FindNearestSpawnPoint(kvp.Value.transform.position, droneTargets);
+            if (nearestSpawn != null)
+                kvp.Value.transform.position = nearestSpawn.position;
+
+            kvp.Value.SetActive(false);
+            dronePool.Enqueue(kvp.Value);
+            despawnedDrones++;
         }
-        
-        // Despawn ALL active crawlers
+
         foreach (var kvp in activeCrawlers)
         {
-            if (kvp.Value != null && kvp.Value.activeInHierarchy)
-            {
-                // Return to pool
-                kvp.Value.SetActive(false);
-                crawlerPool.Enqueue(kvp.Value);
-                despawnedCrawlers++;
-                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned crawler for cage match: {kvp.Value.name}");
-            }
+            if (kvp.Value == null || !kvp.Value.activeInHierarchy)
+                continue;
+
+            Transform[] crawlerTargets = (crawlerSpawnPoints != null && crawlerSpawnPoints.Length > 0)
+                ? crawlerSpawnPoints
+                : pocketSpawnPoints;
+            Transform nearestSpawn = FindNearestSpawnPoint(kvp.Value.transform.position, crawlerTargets);
+            if (nearestSpawn != null)
+                kvp.Value.transform.position = nearestSpawn.position;
+
+            kvp.Value.SetActive(false);
+            crawlerPool.Enqueue(kvp.Value);
+            despawnedCrawlers++;
         }
-        
-        // Clear fleeing tracking since all adds are despawned
+
         fleeingAdds.Clear();
-        
-        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Cage match started - despawned {despawnedDrones} drones and {despawnedCrawlers} crawlers");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), $"[BossRoombaController] Despawned adds: drones={despawnedDrones}, crawlers={despawnedCrawlers}");
     }
     
     /// <summary>

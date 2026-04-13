@@ -143,6 +143,23 @@ public class AerialComboManager : MonoBehaviour
         return attackData;
     }
 
+    public PlayerAttack RequestAerialLightAttackWithPlungeFallback()
+    {
+        PlayerAttack lightAttack = RequestAerialLightAttack();
+        if (lightAttack != null)
+            return lightAttack;
+
+        if (aerialFastCount < MAX_AERIAL_FAST_ATTACKS)
+            return null;
+
+        if (hasUsedAerialHeavy)
+            return null;
+
+        return CanPerformAerialHeavyAttack()
+            ? RequestAerialHeavyAttack()
+            : null;
+    }
+
     [System.Obsolete("Use RequestAerialLightAttack to get PlayerAttack data directly.")]
     public string RequestAerialFastAttack()
     {

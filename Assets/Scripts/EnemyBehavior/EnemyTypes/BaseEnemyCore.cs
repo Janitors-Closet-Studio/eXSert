@@ -8,10 +8,12 @@ using UnityEngine;
 
 public abstract class BaseEnemyCore : MonoBehaviour, IHealthSystem
 {
+    public event System.Action<BaseEnemyCore> OnDeathStarted;
     public event System.Action<BaseEnemyCore> OnDeath;
     public event System.Action<BaseEnemyCore> OnSpawn;
     public event System.Action<BaseEnemyCore> OnReset;
 
+    protected void InvokeOnDeathStarted() => OnDeathStarted?.Invoke(this);
     protected void InvokeOnDeath() => OnDeath?.Invoke(this);
     protected void InvokeOnSpawn() => OnSpawn?.Invoke(this);
     protected void InvokeOnReset() => OnReset?.Invoke(this);

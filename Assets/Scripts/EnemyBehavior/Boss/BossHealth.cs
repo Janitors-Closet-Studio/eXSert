@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 
 namespace EnemyBehavior.Boss
 {
@@ -49,14 +50,19 @@ namespace EnemyBehavior.Boss
         [Header("UI")]
         [SerializeField, Tooltip("Reference to the boss health bar script on the canvas")]
         private HealthBar healthBar;
+        [SerializeField, Tooltip("Optional root UI object containing boss health bar + title text. If null, falls back to health bar object.")]
+        private GameObject bossHealthUiRoot;
         [SerializeField, Tooltip("How quickly the health bar animates to the current value")]
         private float healthBarLerpSpeed = 8f;
+        [SerializeField, Tooltip("Seconds after boss defeat before hiding the boss health bar UI.")]
+        private float hideHealthBarDelayAfterDefeat = 2f;
         
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs = true;
 
         private bool isDefeated = false;
         private float displayedHealth;
+        public float HideHealthBarDelayAfterDefeat => Mathf.Max(0f, hideHealthBarDelayAfterDefeat);
 
         public event Action BossDefeated;
 
@@ -79,6 +85,13 @@ namespace EnemyBehavior.Boss
         
         private void InitializeHealthBar()
         {
+            if (bossHealthUiRoot == null && healthBar != null)
+            {
+                bossHealthUiRoot = healthBar.transform.parent != null
+                    ? healthBar.transform.parent.gameObject
+                    : healthBar.gameObject;
+            }
+
             if (healthBar != null)
             {
                 healthBar.SetHealth(currentHealth, maxHealth);
@@ -231,10 +244,11 @@ namespace EnemyBehavior.Boss
         {
             isDefeated = true;
             Log("Boss defeated!");
-            
+            StartCoroutine(HideHealthBarAfterDefeatRoutine());
+
             PlayDefeatSFX();
             BossDefeated?.Invoke();
-            
+
             if (brain != null)
             {
                 brain.OnBossDefeated();
@@ -243,6 +257,18 @@ namespace EnemyBehavior.Boss
             {
                 EnemyBehaviorDebugLogBools.LogError("[BossHealth] BossRoombaBrain reference is missing!");
             }
+        }
+
+        private IEnumerator HideHealthBarAfterDefeatRoutine()
+        {
+            float delay = Mathf.Max(0f, hideHealthBarDelayAfterDefeat);
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+
+            if (bossHealthUiRoot != null)
+                bossHealthUiRoot.SetActive(false);
+            else if (healthBar != null)
+                healthBar.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -329,7 +355,10 @@ namespace EnemyBehavior.Boss
         {
             bool aliveNow = isAlive;
             if (wasAlive && !aliveNow)
+            {
+                InvokeOnDeathStarted();
                 InvokeOnDeath();
+            }
 
             wasAlive = aliveNow;
         }
@@ -340,6 +369,7 @@ namespace EnemyBehavior.Boss
                 return;
 
             wasAlive = false;
+            InvokeOnDeathStarted();
             InvokeOnDeath();
         }
 

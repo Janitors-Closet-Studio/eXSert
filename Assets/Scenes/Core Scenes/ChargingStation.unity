@@ -11659,6 +11659,59 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0.2, z: 0}
   m_TimeToStationary: 0.5
+--- !u!1 &333368910
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 333368911}
+  - component: {fileID: 333368912}
+  m_Layer: 8
+  m_Name: RoombaCenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &333368911
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 333368910}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1556584614}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &333368912
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 333368910}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 2.32
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!43 &338316055
 Mesh:
   m_ObjectHideFlags: 0
@@ -83852,6 +83905,14 @@ PrefabInstance:
       propertyPath: ArenaCenterBounds
       value: 
       objectReference: {fileID: 1966718067}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: roombaDeathSinkSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: playerLockTargetTransform
+      value: 
+      objectReference: {fileID: 333368911}
     - target: {fileID: 3308009278746904747, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_Name
       value: Boss_Augur
@@ -83920,9 +83981,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: RepulsionRadius
+      value: 2.8
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 8773002588802439141, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      insertIndex: 0
+      addedObject: {fileID: 333368911}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
 --- !u!114 &4051711074320609378 stripped

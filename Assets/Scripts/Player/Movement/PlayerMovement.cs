@@ -67,6 +67,7 @@ public class PlayerMovement : MonoBehaviour
     public event Action DashPerformed;
     public event Action AirDashPerformed;
     public bool HasPerformedDoubleJumpSinceGrounded { get; private set; }
+    public bool IsPlunging => isPlunging;
 
     [Header("Input")]
     [SerializeField] private InputActionReference _jumpAction;
@@ -610,6 +611,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 previousKeyboardInput = Vector2.zero;
 
     private GroundMoveState moveState = GroundMoveState.Walk;
+    private bool shouldRestoreSprintAfterDash;
     private bool keyboardWalkToggleActive;
     private float CurrentSpeed => moveState switch
     {
@@ -1087,6 +1089,9 @@ public class PlayerMovement : MonoBehaviour
             if (enemy == null || !enemy.isAlive)
                 continue;
 
+            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+                continue;
+
             int enemyId = enemy.GetInstanceID();
             bool alreadyProcessed = false;
             for (int j = 0; j < processedCount; j++)
@@ -1160,6 +1165,9 @@ public class PlayerMovement : MonoBehaviour
 
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
             if (enemy == null || !enemy.isAlive)
+                continue;
+
+            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
                 continue;
 
             int enemyId = enemy.GetInstanceID();
@@ -1450,6 +1458,7 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 accumulatedAway = Vector3.zero;
         contributing = 0;
+        bool attackInProgress = attackManager != null && attackManager.IsAttackInProgress;
 
         for (int i = 0; i < hitCount; i++)
         {
@@ -1462,6 +1471,11 @@ public class PlayerMovement : MonoBehaviour
 
             BossRoombaBrain boss = hit.GetComponentInParent<BossRoombaBrain>();
             if (boss == null)
+                continue;
+
+            // When attacking, ignore Roomba arm hitbox colliders so attack movement
+            // isn't pushed outward by extended arm geometry.
+            if (attackInProgress && hit.GetComponentInParent<BossArmHitbox>() != null)
                 continue;
 
             Vector3 closest = GetSafeColliderClosestPoint(hit, probeCenter);
@@ -1667,6 +1681,8 @@ public class PlayerMovement : MonoBehaviour
         if (!dashAllowed)
             return;
 
+        shouldRestoreSprintAfterDash = grounded && moveState == GroundMoveState.Sprint;
+
         DashPerformed?.Invoke();
 
         if (InputReader.inputBusy)
@@ -1720,10 +1736,16 @@ public class PlayerMovement : MonoBehaviour
                 },
                 onComplete: () =>
                 {
-                    if (InputReader.MoveInput.sqrMagnitude > 0.1f)
+                    if (shouldRestoreSprintAfterDash && IsGroundedNow())
+                    {
+                        TrySetMoveState(GroundMoveState.Sprint, force: true);
+                    }
+                    else if (InputReader.MoveInput.sqrMagnitude > 0.1f)
                         TrySetMoveState(GroundMoveState.Sprint, force: true);
                     else
                         ResetMoveState();
+
+                    shouldRestoreSprintAfterDash = false;
                 }));
         if(!isAirDash)
             PlaySFX(dashSFX, priority: 2);
