@@ -52,6 +52,7 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
             return;
         }
 
+        Debug.Log($"[Objective Manager] Adding sub-objective with ID '{id}' and text: {text}");
         var newSubObjective = new SubObjective(id, text);
         subObjectives.Add(newSubObjective);
         OnSubObjectivesUpdated?.Invoke(subObjectives);
@@ -70,6 +71,7 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
             return;
         }
 
+        Debug.Log($"[Objective Manager] Completing sub-objective with ID '{id}'");
         subObjective.IsCompleted = true;
         OnSubObjectivesUpdated?.Invoke(subObjectives);
 
