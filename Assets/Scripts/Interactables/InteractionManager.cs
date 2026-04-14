@@ -317,11 +317,34 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             return;
 
         InteractionUI interactionUI = GetInteractionUIIfAvailable();
-        if (interactionUI == null || interactionUI.currentInteractable != this)
+        if (interactionUI == null)
             return;
 
         if (IsPlayerBusyForInteraction())
-            interactionUI.HideInteractPrompt();
+        {
+            if (interactionUI.currentInteractable == this)
+                interactionUI.HideInteractPrompt();
+            return;
+        }
+
+        if (!interactable || !isPlayerNearby)
+            return;
+
+        if (interactionUI.currentInteractable != null && interactionUI.currentInteractable != this)
+            return;
+
+        SwapBasedOnInputMethod();
+        interactionUI.currentInteractable = this;
+
+        if (interactionUI._interactText != null)
+        {
+            interactionUI._interactText.gameObject.SetActive(true);
+            if (interactionUI._interactText.transform.parent != null)
+                interactionUI._interactText.transform.parent.gameObject.SetActive(true);
+        }
+
+        if (interactionUI._interactIcon != null)
+            interactionUI._interactIcon.gameObject.SetActive(true);
     }
 
     private void OnDrawGizmos()
