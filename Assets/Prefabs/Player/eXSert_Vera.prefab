@@ -3835,7 +3835,7 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-  CustomBlends: {fileID: 0}
+  CustomBlends: {fileID: 11400000, guid: 8ac88fa498abdc546891079b53df46ce, type: 2}
 --- !u!1 &1635823517529199888
 GameObject:
   m_ObjectHideFlags: 0
@@ -8166,7 +8166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30407f1e0f298a84faa3f1c362d5725d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLifeBoxDetector
-  killPlayerWhenOutOfLifeBox: 1
+  killPlayerWhenOutOfLifeBox: 0
   checkInterval: 0.5
   lifeBoxes: []
 --- !u!114 &7363011459679065324
@@ -17354,7 +17354,7 @@ MonoBehaviour:
   animationController: {fileID: 5311890396266669227}
   characterController: {fileID: 2289477533837267770}
   playerMovement: {fileID: 6150044602222399215}
-  combatDuration: 10
+  combatDuration: 3
   movementThreshold: 0.02
 --- !u!114 &8069822390347909149
 MonoBehaviour:

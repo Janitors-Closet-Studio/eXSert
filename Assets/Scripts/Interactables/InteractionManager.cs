@@ -6,8 +6,6 @@ using Utilities.Combat;
 
 [RequireComponent(typeof(BoxCollider))]
 public abstract class InteractionManager : MonoBehaviour, IInteractable
-    
-
 {
     // IInteractable implementation
     public string interactId { get => _interactId; set => _interactId = value; }
@@ -34,8 +32,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [SerializeField, CriticalReference] internal InputActionReference _interactInputAction;
 
     private PlayerCombatIdleController _combatIdleController;
-    // Track input block owner for interaction
-    private string _interactionInputBlockOwnerId;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
     {
@@ -103,12 +99,15 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     private void CachePlayerCombatController()
     {
+        if (_combatIdleController != null && _combatIdleController.isActiveAndEnabled)
+            return;
+
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+            _combatIdleController = player.GetComponentInChildren<PlayerCombatIdleController>(true);
+
         if (_combatIdleController == null)
-        {
-            var player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
-                _combatIdleController = player.GetComponentInChildren<PlayerCombatIdleController>();
-        }
+            _combatIdleController = FindFirstObjectByType<PlayerCombatIdleController>();
     }
 
     public void DeactivateInteractable(MonoBehaviour interactable)
@@ -162,6 +161,15 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     private void OnInteract(InputAction.CallbackContext context)
     {
+        var interactionUI = GetInteractionUIIfAvailable();
+        bool isCurrentInteractable = interactionUI != null && interactionUI.currentInteractable == this;
+
+        if (interactionUI != null && interactionUI.currentInteractable != null && !isCurrentInteractable)
+            return;
+
+        if (!isCurrentInteractable && !isPlayerNearby)
+            return;
+
         OnInteractButtonPressed();
     }
 
@@ -185,12 +193,33 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             return;
         }
 
-        // Don't allow interactions while player is in combat
-        if (CombatManager.isInCombat)
+        if (IsPlayerBusyForInteraction())
+        {
+            if (interactionUI != null && interactionUI.currentInteractable == this)
+                interactionUI.HideInteractPrompt();
             return;
+        }
 
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         Interact();
+    }
+
+    private bool IsPlayerBusyForInteraction()
+    {
+        CachePlayerCombatController();
+
+        if (PlayerMovement.isDashingFlag || CombatManager.isGuarding)
+            return true;
+
+        if (_combatIdleController != null && _combatIdleController.IsInCombat)
+            return true;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+            return false;
+
+        PlayerAttackManager attackManager = player.GetComponentInChildren<PlayerAttackManager>();
+        return attackManager != null && attackManager.IsAttackInProgress;
     }
 
     protected abstract void Interact();
@@ -226,9 +255,12 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             Debug.Log($"[InteractionManager] Player entered interaction zone of {gameObject.name}. Setting isPlayerNearby true.");
             isPlayerNearby = true;
 
+            CachePlayerCombatController();
+
             // Block prompt if attacking or dashing
             bool isAttacking = false;
             bool isDashing = false;
+            bool isInCombatMode = _combatIdleController != null && _combatIdleController.IsInCombat;
             // Try to get PlayerCombatIdleController and PlayerMovement
             var player = other.transform.root.gameObject;
             var combatController = player.GetComponentInChildren<PlayerAttackManager>();
@@ -242,9 +274,9 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                 isDashing = PlayerMovement.isDashingFlag;
             }
 
-            if (blockPromptWhenAttackingOrDashing && (isAttacking || isDashing))
+            if (blockPromptWhenAttackingOrDashing && (isAttacking || isDashing || isInCombatMode))
             {
-                Debug.Log($"[InteractionManager] Blocking prompt because player is attacking: {isAttacking} or dashing: {isDashing}");
+                Debug.Log($"[InteractionManager] Blocking prompt because player is attacking: {isAttacking}, dashing: {isDashing}, or in combat mode: {isInCombatMode}");
                 return;
             }
 
@@ -277,6 +309,19 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                 interactionUI.HideInteractPrompt();
             }
         }
+    }
+
+    protected virtual void OnTriggerStay(Collider other)
+    {
+        if (!other.transform.root.CompareTag("Player"))
+            return;
+
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI == null || interactionUI.currentInteractable != this)
+            return;
+
+        if (IsPlayerBusyForInteraction())
+            interactionUI.HideInteractPrompt();
     }
 
     private void OnDrawGizmos()
