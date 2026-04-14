@@ -189,9 +189,9 @@ namespace Progression.Checkpoints
                     forceReload: true,
                     loadScreen: false
                 );
-                yield return SceneLoader.EnsurePlayerObjectAvailableCoroutine(
-                    characterStartInactive: false
-                );
+              //  yield return SceneLoader.EnsurePlayerObjectAvailableCoroutine(
+              //      characterStartInactive: false
+               // );
                 MovePlayerToCheckpoint();
             }
 
