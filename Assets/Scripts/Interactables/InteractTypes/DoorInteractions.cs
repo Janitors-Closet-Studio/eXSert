@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
 using Unity.Cinemachine;
+using UnityEngine.Serialization;
 
 public class DoorInteractions : UnlockableInteraction
 {
@@ -20,11 +21,23 @@ public class DoorInteractions : UnlockableInteraction
     [SerializeField] private bool onlyInteractableOnce = false;
 
     [Header("Camera")]
-    [SerializeField] private bool usePuzzleCameraOnInteraction = false;
-    [SerializeField, Tooltip("Optional Cinemachine camera to use for the puzzle interaction.")]
-    private CinemachineCamera puzzleCinemachineCamera;
-    [SerializeField, Min(0f)] private float puzzleCameraDurationSeconds = 2f;
-    [SerializeField, Min(0f)] private float puzzleCameraFailsafeSeconds = 7f;
+    [FormerlySerializedAs("usePuzzleCameraOnInteraction")]
+    [SerializeField] private bool useSpecialTransition = false;
+    [FormerlySerializedAs("puzzleCinemachineCamera")]
+    [SerializeField, Tooltip("Optional Cinemachine camera to use for the special transition.")]
+    private CinemachineCamera specialTransitionCamera;
+    [FormerlySerializedAs("puzzleCameraDurationSeconds")]
+    [SerializeField, Min(0f)] private float specialTransitionPanDurationSeconds = 2f;
+    [FormerlySerializedAs("puzzleCameraFailsafeSeconds")]
+    [SerializeField, Min(0f)] private float specialTransitionFailsafeSeconds = 7f;
+    [SerializeField, Min(0f)] private float specialTransitionFadeDurationSeconds = 0.35f;
+    [SerializeField, Min(0f)] private float specialTransitionRevealDurationSeconds = 0.5f;
+    [SerializeField, Min(0f)] private float specialTransitionBlackHoldSeconds = 0.08f;
+    [SerializeField, Min(0f)] private float specialTransitionReturnBlackHoldSeconds = 0.2f;
+    [SerializeField, Tooltip("Optional start pose for the special transition camera. If omitted, the camera's current transform is used.")]
+    private Transform specialTransitionStartPose;
+    [SerializeField, Tooltip("Optional end pose for the special transition camera pan.")]
+    private Transform specialTransitionEndPose;
 
     private Coroutine puzzleCameraRoutine;
     private Coroutine puzzleCameraFailsafeRoutine;
@@ -33,6 +46,9 @@ public class DoorInteractions : UnlockableInteraction
     private int puzzleCameraSessionId;
     private bool isPuzzleCameraActive;
     private bool hasInteracted;
+    private Vector3 cachedSpecialTransitionCameraPosition;
+    private Quaternion cachedSpecialTransitionCameraRotation;
+    private string specialTransitionInputBlockToken;
 
     protected override void OnDisable()
     {
@@ -145,23 +161,30 @@ public class DoorInteractions : UnlockableInteraction
         if (onlyInteractableOnce && hasInteracted)
             return;
 
-        if (usePuzzleCameraOnInteraction)
-            BeginTemporaryPuzzleCamera();
+        if (useSpecialTransition)
+        {
+            BeginSpecialTransition();
+            return;
+        }
+
+        ExecuteAssignedDoorInteractions();
+    }
+
+    private void ExecuteAssignedDoorInteractions()
+    {
+        RefreshExecutionState();
 
         if (doorHandlers != null)
         {
             foreach (DoorHandler doorHandler in doorHandlers)
             {
-                if (!doorHandler.isActiveAndEnabled)
+                if (doorHandler == null || !doorHandler.isActiveAndEnabled)
                     continue;
 
-                if (doorHandler != null)
-                {
-                    if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
-                        doorHandler.UnlockDoor();
+                if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
+                    doorHandler.UnlockDoor();
 
-                    doorHandler.Interact();
-                }
+                doorHandler.Interact();
             }
         }
     }
@@ -193,11 +216,12 @@ public class DoorInteractions : UnlockableInteraction
         interactionPromptRoutine = null;
     }
 
-    private void BeginTemporaryPuzzleCamera()
+    private void BeginSpecialTransition()
     {
-        if (puzzleCinemachineCamera == null)
+        if (specialTransitionCamera == null)
         {
-            Debug.LogWarning("[DoorInteractions] 'Use puzzle camera on interaction' is enabled but no puzzle camera is assigned.");
+            Debug.LogWarning("[DoorInteractions] 'Use Special Transition' is enabled but no special transition camera is assigned.");
+            ExecuteAssignedDoorInteractions();
             return;
         }
 
@@ -217,25 +241,52 @@ public class DoorInteractions : UnlockableInteraction
             puzzleCameraFailsafeRoutine = null;
         }
 
-        puzzleCameraRoutine = StartCoroutine(PuzzleCameraRoutine(puzzleCameraSessionId));
+        puzzleCameraRoutine = StartCoroutine(SpecialTransitionRoutine(puzzleCameraSessionId));
 
-        float failsafeDuration = Mathf.Max(0f, puzzleCameraFailsafeSeconds);
+        float failsafeDuration = Mathf.Max(0f, specialTransitionFailsafeSeconds);
         if (failsafeDuration > 0f)
             puzzleCameraFailsafeRoutine = StartCoroutine(PuzzleCameraFailsafeRoutine(puzzleCameraSessionId, failsafeDuration));
     }
 
-    private IEnumerator PuzzleCameraRoutine(int sessionId)
+    private IEnumerator SpecialTransitionRoutine(int sessionId)
     {
-        cachedPuzzleCameraPriority = puzzleCinemachineCamera.Priority;
-        isPuzzleCameraActive = true;
-        puzzleCinemachineCamera.Priority = 21;
+        cachedPuzzleCameraPriority = specialTransitionCamera.Priority;
+        cachedSpecialTransitionCameraPosition = specialTransitionCamera.transform.position;
+        cachedSpecialTransitionCameraRotation = specialTransitionCamera.transform.rotation;
 
-        float duration = Mathf.Max(0f, puzzleCameraDurationSeconds);
+        ApplySpecialTransitionPose(specialTransitionStartPose);
+
+        specialTransitionInputBlockToken = InputReader.RequestGameplayInputBlock();
+
+        yield return ScreenFadeOverlay.Instance.FadeTo(1f, specialTransitionFadeDurationSeconds);
+
+        isPuzzleCameraActive = true;
+        specialTransitionCamera.Priority = 21;
+
+        ExecuteAssignedDoorInteractions();
+
+        yield return null;
+
+        float blackHoldDuration = Mathf.Max(0f, specialTransitionBlackHoldSeconds);
+        if (blackHoldDuration > 0f)
+            yield return new WaitForSecondsRealtime(blackHoldDuration);
+
+        yield return ScreenFadeOverlay.Instance.FadeTo(0f, specialTransitionRevealDurationSeconds);
+
+        float duration = Mathf.Max(0f, specialTransitionPanDurationSeconds);
         if (duration > 0f)
-            yield return new WaitForSeconds(duration);
+            yield return PanSpecialTransitionCamera(duration);
+
+        yield return ScreenFadeOverlay.Instance.FadeTo(1f, specialTransitionFadeDurationSeconds);
 
         puzzleCameraRoutine = null;
         RestorePuzzleCameraState(sessionId, triggeredByFailsafe: false);
+
+        float returnBlackHoldDuration = Mathf.Max(0f, specialTransitionReturnBlackHoldSeconds);
+        if (returnBlackHoldDuration > 0f)
+            yield return new WaitForSecondsRealtime(returnBlackHoldDuration);
+
+        yield return ScreenFadeOverlay.Instance.FadeTo(0f, specialTransitionRevealDurationSeconds);
     }
 
     private IEnumerator PuzzleCameraFailsafeRoutine(int sessionId, float failsafeDuration)
@@ -247,7 +298,7 @@ public class DoorInteractions : UnlockableInteraction
         if (!isPuzzleCameraActive || sessionId != puzzleCameraSessionId)
             yield break;
 
-        Debug.LogWarning("[DoorInteractions] Puzzle camera failsafe triggered. Restoring camera and allowing interaction retry if needed.");
+        Debug.LogWarning("[DoorInteractions] Special transition failsafe triggered. Restoring camera and allowing interaction retry if needed.");
         RestorePuzzleCameraState(sessionId, triggeredByFailsafe: true);
     }
 
@@ -279,10 +330,55 @@ public class DoorInteractions : UnlockableInteraction
         if (!isPuzzleCameraActive)
             return;
 
-        if (puzzleCinemachineCamera != null)
-            puzzleCinemachineCamera.Priority = cachedPuzzleCameraPriority;
+        if (specialTransitionCamera != null)
+        {
+            specialTransitionCamera.Priority = cachedPuzzleCameraPriority;
+            specialTransitionCamera.transform.SetPositionAndRotation(cachedSpecialTransitionCameraPosition, cachedSpecialTransitionCameraRotation);
+        }
+
+        if (!string.IsNullOrWhiteSpace(specialTransitionInputBlockToken))
+        {
+            InputReader.ReleaseGameplayInputBlock(specialTransitionInputBlockToken);
+            specialTransitionInputBlockToken = null;
+        }
+
+        ScreenFadeOverlay.Instance.SetImmediate(0f);
 
         isPuzzleCameraActive = false;
+    }
+
+    private IEnumerator PanSpecialTransitionCamera(float durationSeconds)
+    {
+        Vector3 startPosition = specialTransitionCamera.transform.position;
+        Quaternion startRotation = specialTransitionCamera.transform.rotation;
+
+        Vector3 endPosition = specialTransitionEndPose != null
+            ? specialTransitionEndPose.position
+            : startPosition;
+        Quaternion endRotation = specialTransitionEndPose != null
+            ? specialTransitionEndPose.rotation
+            : startRotation;
+
+        float elapsed = 0f;
+        while (elapsed < durationSeconds)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / durationSeconds);
+            specialTransitionCamera.transform.SetPositionAndRotation(
+                Vector3.Lerp(startPosition, endPosition, t),
+                Quaternion.Slerp(startRotation, endRotation, t));
+            yield return null;
+        }
+
+        specialTransitionCamera.transform.SetPositionAndRotation(endPosition, endRotation);
+    }
+
+    private void ApplySpecialTransitionPose(Transform pose)
+    {
+        if (specialTransitionCamera == null || pose == null)
+            return;
+
+        specialTransitionCamera.transform.SetPositionAndRotation(pose.position, pose.rotation);
     }
 
     private void TryRearmOneTimeInteraction()

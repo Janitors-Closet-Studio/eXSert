@@ -53,10 +53,17 @@ public abstract class UnlockableInteraction : InteractionManager
         return false;
     }
 
+    protected void RefreshExecutionState()
+    {
+        canExecuteInteraction = !needsItem || canUnlock || canExecuteWithoutItem;
+    }
+
 
     protected override void OnTriggerEnter(Collider other)
     {
         base.OnTriggerEnter(other);
+
+        RefreshExecutionState();
 
         if (!other.transform.root.CompareTag("Player"))
             return;
@@ -76,8 +83,11 @@ public abstract class UnlockableInteraction : InteractionManager
     {
         Debug.Log($"[UnlockableInteraction] Failed interaction attempt on {gameObject.name}. needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}");
 
+        if (!needsItem)
+            return;
+
         bool playerAlreadyHasRequiredItem = InternalPlayerInventory.Instance != null
-            && InternalPlayerInventory.Instance.collectedInteractables.Contains(requiredItemID);
+            && InternalPlayerInventory.Instance.HasItem(requiredItemID);
 
         if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null && InteractionUI.Instance != null && !playerAlreadyHasRequiredItem)
         {
@@ -101,10 +111,11 @@ public abstract class UnlockableInteraction : InteractionManager
 
     protected override void Interact()    
     {
+        RefreshExecutionState();
         
         Debug.Log($"[UnlockableInteraction] Interact called on {gameObject.name}.\n needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}, canExecuteInteraction: {canExecuteInteraction}, requiredItemID: '{requiredItemID}', playerHasItem: {(InternalPlayerInventory.Instance != null ? InternalPlayerInventory.Instance.HasItem(requiredItemID) : (bool?)null)}");
         // Defensive null checks
-        if (needsItem && InternalPlayerInventory.Instance == null)
+        if (needsItem && InternalPlayerInventory.Instance == null && !canExecuteWithoutItem)
         {
             Debug.LogWarning("[UnlockableInteraction] InternalPlayerInventory.Instance is null. Cannot check for required item.");
             return;
