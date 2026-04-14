@@ -768,5 +768,10 @@ public enum KeybindAction
     BackToGameplay = 20,
     FloorOne = 21,
     FloorTwo = 22,
-    FloorThree = 23
+    FloorThree = 23,
+
+    // Credits Page
+
+    PreviousPage = 24,
+    NextPage = 25
 }
