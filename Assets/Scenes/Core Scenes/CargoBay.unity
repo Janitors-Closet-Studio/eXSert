@@ -44174,10 +44174,24 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 1574532791}
   onlyInteractableOnce: 1
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
-  puzzleCameraFailsafeSeconds: 7
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!1001 &1959554127
 PrefabInstance:
   m_ObjectHideFlags: 0
