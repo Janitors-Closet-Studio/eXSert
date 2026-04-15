@@ -35,8 +35,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: Library
-          key: Library-Main-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-Main-
+          key: Library-Main-${{ runner.os }}-Unity6000.2.15f1-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-Main-${{ runner.os }}-Unity6000.2.15f1-
+            Library-Main-${{ runner.os }}-
 
       - name: Install video codec dependencies
         run: |
