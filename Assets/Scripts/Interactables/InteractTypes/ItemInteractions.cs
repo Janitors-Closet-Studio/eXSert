@@ -35,7 +35,10 @@ public class ItemInteractions : CollectableInteraction
             BeginTemporaryPuzzleCamera();
 
         InternalPlayerInventory.Instance.AddCollectible(this.interactId);
-        ObjectiveManager.CompleteSubObjective(this.interactId);
+        if (ObjectiveManager.SubObjectives.Exists(so => so.ID == this.interactId))
+        {
+            ObjectiveManager.CompleteSubObjective(this.interactId);
+        }
     }
 
     protected override void AfterExecuteInteraction()

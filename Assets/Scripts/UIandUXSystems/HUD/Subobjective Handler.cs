@@ -40,8 +40,8 @@ public class SubobjectiveHandler : MonoBehaviour
     private void AddSubobjective(string subobjectiveText)
     {
         GameObject newSubobjective = Instantiate(objectivePrefab, transform);
-        
         newSubobjective.GetComponentInChildren<TextMeshProUGUI>().text = subobjectiveText;
+        activeSubobjectives.Add(newSubobjective);
     }
 
     private void ClearSubobjectives()

@@ -254,12 +254,12 @@ public class MenuListManager : MonoBehaviour
         selectable.Select();
     }
 
-    public void SwapBetweenMenus()
+    public void SwapBetweenMenus(int numberOfMenusToGoBack)
     {
         if (ShouldIgnoreMenuSwap())
             return;
 
-        if (menusToManage.Count >= 5)
+        if (menusToManage.Count >= numberOfMenusToGoBack)
             GoBackToPreviousMenu();
     }
 
