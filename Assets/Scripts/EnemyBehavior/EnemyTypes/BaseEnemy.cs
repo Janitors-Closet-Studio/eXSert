@@ -827,6 +827,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
     }
 
+    protected string HitAnimationStateName => hitStateName;
+
     protected virtual void PlayDieAnim()
     {
         if (!TrySetTrigger(dieTriggerName))
@@ -884,6 +886,11 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         return AnimatorHasState(animator, stateName, layerIndex);
     }
 
+    protected bool HasAnimatorState(Animator target, string stateName, int layerIndex = 0)
+    {
+        return AnimatorHasState(target, stateName, layerIndex);
+    }
+
     private bool AnimatorHasState(Animator target, string stateName, int layerIndex = 0)
     {
         if (target == null || string.IsNullOrEmpty(stateName))
@@ -897,6 +904,11 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private void PlayState(string stateName)
     {
         PlayStateOn(animator, stateName);
+    }
+
+    protected void ForcePlayStateOn(Animator target, string stateName)
+    {
+        PlayStateOn(target, stateName);
     }
 
     private void PlayStateOn(Animator target, string stateName)
@@ -924,6 +936,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     public virtual void Attack()
     {
         if (!useAnimationEventAttacks) return;
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
         if (isParryStunned || suppressAnimationEventDamageUntilAttackEnds) return;
         
         EnableAttackHitbox();
@@ -955,6 +968,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     /// </summary>
     protected virtual void DealDamageOnAnimationEvent()
     {
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
+
         if (animEventDamageDealtThisAttack) return;
 
         Vector3 boxCenter = transform.position + transform.forward * attackBoxDistance;
@@ -1766,6 +1781,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
 
     protected virtual void OnTriggerEnter(Collider other)
     {
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
         if (enemyAI == null) return;
         
         // Skip if not Player layer (avoid checking enemy-to-enemy collisions)
@@ -1791,6 +1807,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     // Simplify OnTriggerStay
     protected virtual void OnTriggerStay(Collider other)
     {
+        if (deathSequenceTriggered || currentHealth <= 0f) return;
         if (enemyAI == null) return;
 
         if (!other.CompareTag("Player")) return;

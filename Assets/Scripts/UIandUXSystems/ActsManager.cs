@@ -10,7 +10,16 @@ public class ActsManager : Singleton<ActsManager>
 
     // Per-profile act completion: profileId -> (actNumber -> completed)
     private Dictionary<string, Dictionary<int, bool>> profileActCompletionMap = new Dictionary<string, Dictionary<int, bool>>();
+    private PauseManager pauseManager;
 
+    private void Start()
+    {
+        // Try to find PauseManager if not assigned
+        if (pauseManager == null)
+        {
+            pauseManager = PauseManager.Instance;
+        }
+    }
     internal Dictionary<int, string> actSceneMap = new Dictionary<int, string>()
     {
         { 0, "Elevator" },
@@ -117,21 +126,30 @@ public class ActsManager : Singleton<ActsManager>
 
     public void LoadSelectedScene(string sceneName)
     {
+        Debug.Log($"[ActsManager] Loading selected scene '{sceneName}' from ActsManager (using checkpoint respawn)...");
 
-        // Get the string value of the currently selected dropdown option
-        string selectedSceneName = sceneName;
+        PrepareForSceneLoad(resumeImmediately: false);
 
-        // SceneAsset appears to support explicit casting from a string based on SceneLoader's usage
-        SceneAsset sceneAsset = (SceneAsset)selectedSceneName;
+        // Use the checkpoint system to reload the scene and respawn items, matching checkpoint reload behavior
+        Player.TriggerRespawn();
+    }
 
-        if (sceneAsset == null)
+    private void PrepareForSceneLoad(bool resumeImmediately)
+    {
+        if (pauseManager == null)
+            pauseManager = PauseManager.Instance;
+
+        if (pauseManager != null)
         {
-            Debug.LogError($"[D Menu UI] Could not find a valid SceneAsset for '{selectedSceneName}'.");
-            return;
+            if (resumeImmediately)
+                pauseManager.ResumeGame();
+            else
+                pauseManager.HideMenusForSceneTransition();
         }
-
-        // Load the selected scene using SceneLoader
-        SceneLoader.LoadIntoGame(sceneAsset);
+        else if (resumeImmediately)
+        {
+            Time.timeScale = 1f;
+        }
     }
 
 }

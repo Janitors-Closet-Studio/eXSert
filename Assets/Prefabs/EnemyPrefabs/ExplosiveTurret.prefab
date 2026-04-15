@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4989810280027784666
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4126218529174512536}
+  m_Layer: 0
+  m_Name: SparkAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4126218529174512536
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4989810280027784666}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7000127, y: -0.6979994, z: -0.099911764, w: -0.11312333}
+  m_LocalPosition: {x: 0.006490633, y: 0.18900223, z: -0.05515167}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 9116645942203580927}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6879542695671227874
 GameObject:
   m_ObjectHideFlags: 0
@@ -25,7 +56,7 @@ Transform:
   m_GameObject: {fileID: 6879542695671227874}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7000127, y: -0.6979994, z: -0.099911764, w: -0.11312333}
-  m_LocalPosition: {x: 0.006, y: -0.008, z: -0.411}
+  m_LocalPosition: {x: -0.0049, y: -0.0054, z: -0.2703}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -56,11 +87,42 @@ Transform:
   m_GameObject: {fileID: 6880446659835894068}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.096, z: 0}
+  m_LocalPosition: {x: 0, y: 0.116, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8165814940253182434}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8197126557331995890
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4580006334512071700}
+  m_Layer: 8
+  m_Name: HpBarAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4580006334512071700
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8197126557331995890}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7000127, y: -0.6979994, z: -0.099911764, w: -0.11312333}
+  m_LocalPosition: {x: 0.39, y: 0, z: 0.122}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 9116645942203580927}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &416814567562910474
 PrefabInstance:
@@ -433,15 +495,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.385944
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.00000047683716
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.732872
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalRotation.w
@@ -787,6 +849,18 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.039
+      objectReference: {fileID: 0}
+    - target: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.015
+      objectReference: {fileID: 0}
+    - target: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.105
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       propertyPath: m_Name
       value: EXPTurretV2_Gun
@@ -948,6 +1022,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6014760702953166162}
+    - targetCorrespondingSourceObject: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4580006334512071700}
+    - targetCorrespondingSourceObject: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4126218529174512536}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       insertIndex: -1
@@ -1035,15 +1115,15 @@ MonoBehaviour:
   canBeParried: 0
   parryStunDuration: 0.75
   useAnimationEventAttacks: 0
-  attackIndicatorPrefab: {fileID: 0}
-  attackIndicatorAnchor: {fileID: 0}
+  attackIndicatorPrefab: {fileID: 2410380359812193648, guid: 009249633ccd6c647a4115844853392d, type: 3}
+  attackIndicatorAnchor: {fileID: 6014760702953166162}
   attackIndicatorOffset: {x: 0, y: 0, z: 0}
   attackIndicatorLeadTime: 0.5
   attackIndicatorDuration: 0
   attackIndicatorFollowsEnemy: 1
   attackIndicatorScale: 1
   healthBarPrefab: {fileID: 5126943973119965438, guid: ba84b42810b4ba14b8c277e64607a584, type: 3}
-  healthBarAnchor: {fileID: 0}
+  healthBarAnchor: {fileID: 4580006334512071700}
   healthBarInstance: {fileID: 0}
   attackCollider: {fileID: 0}
   detectionColliderOverride: {fileID: 0}
@@ -1084,6 +1164,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 2499624202759768534, guid: 47a09bde03f77704a92b4a7d45cd169e, type: 3}
   projectileSpeed: 25
   firePoint: {fileID: 6014760702953166162}
+  keepProjectileTrajectoryFlat: 1
   rotateYawOnly: 1
   aimYOffset: 1
   clampYaw: 1
@@ -1094,11 +1175,13 @@ MonoBehaviour:
   projectilePoolSize: 16
   showTelegraphLine: 1
   telegraphColor: {r: 1, g: 0.15, b: 0.15, a: 1}
-  telegraphWidth: 0.03
-  telegraphDistance: 12
-  telegraphFlickerSpeed: 8
-  telegraphFlickerStrength: 0.5
-  telegraphHideAfterShot: 0.6
+  telegraphWidth: 0.02
+  telegraphDashLength: 0.5
+  telegraphDashScrollSpeed: 1.5
+  telegraphBlinkMinRate: 0.75
+  telegraphBlinkMaxRate: 4
+  telegraphHideAfterShot: 1
+  telegraphHideBeforeShot: 0.5
   enterBuffer: 0
   exitBuffer: 0.5
   enterSustain: 0.15
@@ -1109,6 +1192,8 @@ MonoBehaviour:
   popupStateName: Popup
   popupAnimation: {fileID: 771474328594229211, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
   popupFallbackDuration: 0.75
+  hitAnimation: {fileID: 0}
+  hitFallbackDuration: 0.35
 --- !u!136 &7288010346531664217
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1168,15 +1253,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDeathVfxController
   enemyCoreOverride: {fileID: 8315034985916432300}
   vfxEntries:
-  - prefab: {fileID: 2706563569258749630, guid: b36ecd158a34aba49848b903c9b66575, type: 3}
+  - effectObject: {fileID: 2706563569258749630, guid: b36ecd158a34aba49848b903c9b66575, type: 3}
     anchor: {fileID: 3148572458537625449}
     positionOffset: {x: 0, y: 0, z: 0}
     rotationOffset: {x: 0, y: 0, z: 0}
     scaleMultiplier: {x: 0, y: 0, z: 0}
-    followAnchorAfterSpawn: 0
-    restartParticleSystems: 0
-    restartVisualEffects: 0
-    lifetime: 0
+    attachToAnchor: 0
+    triggerPhase: 1
+    repeatVisualEffects: 0
+    repeatDelayRange: {x: 0, y: 0}
+    spawnDelay: 0
+  - effectObject: {fileID: 5198587617435638548, guid: 5be5fc888b022e5449b1f0f283e5fb11, type: 3}
+    anchor: {fileID: 4126218529174512536}
+    positionOffset: {x: 0, y: 0, z: 0}
+    rotationOffset: {x: 0, y: -177.66, z: 0}
+    scaleMultiplier: {x: 0, y: 0, z: 0}
+    attachToAnchor: 1
+    triggerPhase: 0
+    repeatVisualEffects: 0
+    repeatDelayRange: {x: 0, y: 0}
+    spawnDelay: 0
 --- !u!4 &9116645942203580927 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}

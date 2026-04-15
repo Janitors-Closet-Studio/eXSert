@@ -27,6 +27,12 @@ namespace Progression.Checkpoints
 
         [SerializeField]
         [Tooltip(
+            "If assigned, this diary will be unlocked or marked as read when the checkpoint is triggered. This allows you to gate diary entries behind checkpoints."
+        )]
+        private DiarySO associatedDiary; // Optional reference to a diary that can be unlocked or marked as read when this checkpoint is triggered.
+
+        [SerializeField]
+        [Tooltip(
             "SceneAsset that owns this checkpoint. Assign explicitly for additive-scene save/load routing."
         )]
         private SceneAsset checkpointSceneAsset;
@@ -183,9 +189,9 @@ namespace Progression.Checkpoints
                     forceReload: true,
                     loadScreen: false
                 );
-                yield return SceneLoader.EnsurePlayerObjectAvailableCoroutine(
-                    characterStartInactive: false
-                );
+              //  yield return SceneLoader.EnsurePlayerObjectAvailableCoroutine(
+              //      characterStartInactive: false
+               // );
                 MovePlayerToCheckpoint();
             }
 
@@ -279,12 +285,31 @@ namespace Progression.Checkpoints
 
             Debug.Log($"Checkpoint triggered: {this}");
 
-            if (isActCheckpoint && !updatedActsForCheckpoint)
-                UpdateAvailableActs();
+            if (isActCheckpoint && !updatedActsForCheckpoint) UpdateAvailableActs();
             
             RestorePlayerHealthIfConfigured();
             OnCheckpointTriggered?.Invoke(this);
 
+            // Handle associated diary entry if assigned
+            if (associatedDiary != null && !associatedDiary.isFound)
+            {
+                try
+                {
+                    associatedDiary.isFound = true; // Mark the diary as found/unlocked
+
+                    // Trigger any events related to finding this diary
+                    EventsManager.Instance.diaryEvents.FoundDiary(associatedDiary.diaryID);
+
+                    // Add to unread diaries list for HUD display
+                    DiaryManager.Instance.unreadDiaries.Add(associatedDiary); 
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[Checkpoint Zone] Failed to unlock or mark diary as read for checkpoint '{CheckpointId}'. Exception: {ex}");
+                }
+            }
+
+            // Make sure to save the game after updating all potential info
             if (DataPersistenceManager.HasGameData())
                 DataPersistenceManager.SaveGame();
         }

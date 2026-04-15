@@ -21,7 +21,7 @@ public abstract class UnlockableInteraction : InteractionManager
     protected bool needsItem => !string.IsNullOrEmpty(requiredItemID);
     protected bool canUnlock => InternalPlayerInventory.Instance != null && InternalPlayerInventory.Instance.HasItem(requiredItemID);
     protected bool canExecuteWithoutItem => IsUnlockedWithoutRequiredItem();
-    protected bool canExecuteInteraction => !needsItem || canUnlock || canExecuteWithoutItem;
+    internal bool canExecuteInteraction = false;
 
     [Header("Error SFX")]
     [SerializeField] internal AudioClip errorSFXClip;
@@ -37,6 +37,9 @@ public abstract class UnlockableInteraction : InteractionManager
         // Normalize required item ID
         if (needsItem)
             requiredItemID = requiredItemID.Trim().ToLowerInvariant();
+
+        if (needsItem)
+            canExecuteInteraction = false;
     }
 
     /// <summary>
@@ -50,10 +53,17 @@ public abstract class UnlockableInteraction : InteractionManager
         return false;
     }
 
+    protected void RefreshExecutionState()
+    {
+        canExecuteInteraction = !needsItem || canUnlock || canExecuteWithoutItem;
+    }
+
 
     protected override void OnTriggerEnter(Collider other)
     {
         base.OnTriggerEnter(other);
+
+        RefreshExecutionState();
 
         if (!other.transform.root.CompareTag("Player"))
             return;
@@ -73,15 +83,24 @@ public abstract class UnlockableInteraction : InteractionManager
     {
         Debug.Log($"[UnlockableInteraction] Failed interaction attempt on {gameObject.name}. needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}");
 
+        if (!needsItem)
+            return;
+
         bool playerAlreadyHasRequiredItem = InternalPlayerInventory.Instance != null
-            && InternalPlayerInventory.Instance.collectedInteractables.Contains(requiredItemID);
+            && InternalPlayerInventory.Instance.HasItem(requiredItemID);
 
         if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null && InteractionUI.Instance != null && !playerAlreadyHasRequiredItem)
         {
             Debug.Log($"[UnlockableInteraction] Playing error SFX: {errorSFXClip.name} on sfxSource from {gameObject.name}");
             SoundManager.Instance.sfxSource.PlayOneShot(errorSFXClip);
             RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.2f);
-            InteractionUI.Instance.AddCollectableToFindToObjective(requiredItemID);
+
+            // Sub Objective Stuff
+            string objectiveMessage = $"Find {requiredItemID}";
+
+            ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
+
+            // Notice stuff
             InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemID} is required to use this machine.", 0.5f, 2f);
         }
         else
@@ -92,10 +111,11 @@ public abstract class UnlockableInteraction : InteractionManager
 
     protected override void Interact()    
     {
+        RefreshExecutionState();
         
         Debug.Log($"[UnlockableInteraction] Interact called on {gameObject.name}.\n needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}, canExecuteInteraction: {canExecuteInteraction}, requiredItemID: '{requiredItemID}', playerHasItem: {(InternalPlayerInventory.Instance != null ? InternalPlayerInventory.Instance.HasItem(requiredItemID) : (bool?)null)}");
         // Defensive null checks
-        if (needsItem && InternalPlayerInventory.Instance == null)
+        if (needsItem && InternalPlayerInventory.Instance == null && !canExecuteWithoutItem)
         {
             Debug.LogWarning("[UnlockableInteraction] InternalPlayerInventory.Instance is null. Cannot check for required item.");
             return;
@@ -104,6 +124,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if (!canExecuteInteraction)
         {
             FailedInteract();
+            Debug.Log($"[UnlockableInteraction] Interaction failed on {gameObject.name} due to unmet conditions.");
             return;
         }
 

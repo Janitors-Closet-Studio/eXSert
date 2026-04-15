@@ -11,6 +11,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using EnemyBehavior.Boss;
 using Unity.Cinemachine;
 using UnityEngine;
 using Utilities.Combat.Attacks;
@@ -48,6 +49,10 @@ public class AttackLockSystem : MonoBehaviour
     private bool debugLockOn = true;
 
     [SerializeField]
+    [Tooltip("Enable verbose logs for close-range turn assist fallback selection.")]
+    private bool debugCloseRangeTurnAssist = false;
+
+    [SerializeField]
     [CriticalReference]
     [Tooltip("Reference to the player GameObject (used as the search origin).")]
     private GameObject player;
@@ -80,6 +85,9 @@ public class AttackLockSystem : MonoBehaviour
     [SerializeField]
     [Tooltip("Inside this radius the soft lock stops moving the player and only rotates them toward the target.")]
     private float softLockNoMoveRadius = 1.15f;
+
+    [SerializeField, Range(0f, 3f), Tooltip("Extra close-range radius used to rotate toward a nearby enemy even if they're outside the normal forward soft-lock cone.")]
+    private float closeRangeTurnAssistRadius = 1.1f;
 
     [SerializeField, Range(0.05f, 0.4f)]
     [Tooltip("Duration of the soft lock movement blend.")]
@@ -571,10 +579,11 @@ public class AttackLockSystem : MonoBehaviour
     {
         // Only target enemies within the player's forward-facing cone
         Transform target = FindNearestEnemyInPlayerCone(softLockRadius, includeDrones);
+        bool hadConeTarget = target != null;
+        if (!hadConeTarget)
+            target = FindNearestEnemy(Mathf.Max(0f, closeRangeTurnAssistRadius));
         if (target == null)
             return;
-
-        MarkSoftLockAttackFacingTarget(target);
 
         Vector3 direction = GetFlatDirection(target.position);
         if (direction.sqrMagnitude < 0.001f)
@@ -582,16 +591,30 @@ public class AttackLockSystem : MonoBehaviour
 
         Quaternion desiredRotation = Quaternion.LookRotation(direction);
 
+        float planarDistanceToTarget = Vector3.Distance(
+            new Vector3(target.position.x, playerTransform.position.y, target.position.z),
+            playerTransform.position);
+
+        bool closeRangeTurnAssistOnly = planarDistanceToTarget <= Mathf.Max(0f, closeRangeTurnAssistRadius)
+            && !hadConeTarget;
+
+        if (closeRangeTurnAssistOnly)
+        {
+            softLockAttackFacingTarget = null;
+            softLockAttackFacingExpireTime = -1f;
+            StartSoftLockRotate(desiredRotation);
+            return;
+        }
+
+        MarkSoftLockAttackFacingTarget(target);
+
         if (!allowPositionNudge)
         {
             StartSoftLockRotate(desiredRotation);
             return;
         }
 
-        float planarDistance = Vector3.Distance(
-            new Vector3(target.position.x, playerTransform.position.y, target.position.z),
-            playerTransform.position
-        );
+        float planarDistance = planarDistanceToTarget;
 
         if (planarDistance <= softLockNoMoveRadius)
         {
@@ -732,7 +755,12 @@ public class AttackLockSystem : MonoBehaviour
         if (target == null)
             return null;
 
-        return target.GetComponentInChildren<ReticleController>(true);
+        ReticleController reticle = target.GetComponentInChildren<ReticleController>(true);
+        if (reticle != null)
+            return reticle;
+
+        BaseEnemyCore enemyCore = ResolveEnemyCore(target);
+        return enemyCore != null ? enemyCore.GetComponentInChildren<ReticleController>(true) : null;
     }
 
     private static BaseEnemyCore ResolveEnemyCore(Transform target)
@@ -741,6 +769,14 @@ public class AttackLockSystem : MonoBehaviour
             return null;
 
         return target.GetComponentInParent<BaseEnemyCore>();
+    }
+
+    private static BossRoombaBrain ResolveBossRoomba(Transform target)
+    {
+        if (target == null)
+            return null;
+
+        return target.GetComponentInParent<BossRoombaBrain>();
     }
 
     private void SubscribeToCurrentTargetDeath()
@@ -952,6 +988,7 @@ public class AttackLockSystem : MonoBehaviour
         Collider[] hits = GetEnemyHits(radius);
         Transform closest = null;
         float smallestDistance = float.MaxValue;
+        float sqrRadius = Mathf.Max(0f, radius) * Mathf.Max(0f, radius);
 
         foreach (Collider hit in hits)
         {
@@ -968,6 +1005,9 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (sqrDistance > sqrRadius)
+                continue;
+
             if (sqrDistance < smallestDistance)
             {
                 smallestDistance = sqrDistance;
@@ -1036,6 +1076,7 @@ public class AttackLockSystem : MonoBehaviour
         Collider[] hits = GetEnemyHits(radius);
         Transform closest = null;
         float smallestDistance = float.MaxValue;
+        float sqrRadius = Mathf.Max(0f, radius) * Mathf.Max(0f, radius);
         float bestViewportScore = float.MaxValue;
         Camera screenCamera = null;
         bool canScoreViewport = prioritizeCenterOfViewForSoftLock && TryGetScreenCamera(out screenCamera);
@@ -1073,6 +1114,9 @@ public class AttackLockSystem : MonoBehaviour
                 continue;
 
             float sqrDistance = (candidate.position - playerTransform.position).sqrMagnitude;
+            if (sqrDistance > sqrRadius)
+                continue;
+
             float viewportScore = float.MaxValue;
             bool isCenteredInView = false;
             if (canScoreViewport)
@@ -1395,7 +1439,13 @@ public class AttackLockSystem : MonoBehaviour
         {
             BaseEnemyCore enemyCore = t.GetComponentInParent<BaseEnemyCore>();
             if (enemyCore != null)
+            {
+                BossRoombaBrain bossBrain = enemyCore.GetComponentInParent<BossRoombaBrain>();
+                if (bossBrain != null)
+                    return bossBrain.PlayerLockTargetTransform;
+
                 return enemyCore.transform;
+            }
         }
 
         Transform original = t;
@@ -1552,7 +1602,7 @@ public class AttackLockSystem : MonoBehaviour
         }
 
         // Check if the enemy is still alive (not dying)
-        BaseEnemyCore enemy = target.GetComponent<BaseEnemyCore>();
+        BaseEnemyCore enemy = ResolveEnemyCore(target);
         if (enemy != null && !enemy.isAlive)
         {
             reason = "Target enemy is dead.";
@@ -1565,6 +1615,15 @@ public class AttackLockSystem : MonoBehaviour
         {
             reason = $"Target out of range. distance={Mathf.Sqrt(sqrDistance):0.##}, max={effectiveMaxDistance:0.##}";
             return false;
+        }
+
+        // For Roomba hard lock, keep lock stable by distance/alive checks only.
+        // LOS checks against child colliders can be noisy due large animated appendages/adds.
+        BossRoombaBrain bossRoomba = ResolveBossRoomba(target);
+        if (bossRoomba != null)
+        {
+            reason = "Valid (Roomba range/alive check).";
+            return true;
         }
 
         bool hasLos = HasLockOnLineOfSight(target, out string losReason);
@@ -1646,6 +1705,18 @@ public class AttackLockSystem : MonoBehaviour
     private bool TryGetLockOnTargetPoint(Transform target, out Vector3 targetPoint)
     {
         targetPoint = target.position;
+        BossRoombaBrain bossRoomba = ResolveBossRoomba(target);
+        if (bossRoomba != null)
+        {
+            Transform lockPoint = bossRoomba.PlayerLockTargetTransform;
+            if (lockPoint != null)
+            {
+                Collider lockCollider = lockPoint.GetComponent<Collider>();
+                targetPoint = lockCollider != null ? lockCollider.bounds.center : lockPoint.position;
+                return true;
+            }
+        }
+
         BaseEnemyCore enemyCore = ResolveEnemyCore(target);
         if (enemyCore == null)
             return true;
@@ -1706,6 +1777,14 @@ public class AttackLockSystem : MonoBehaviour
             return;
 
         Debug.Log($"[AttackLockSystem][Debug] {message}");
+    }
+
+    private void LogCloseRangeAssist(string message)
+    {
+        if (!debugCloseRangeTurnAssist)
+            return;
+
+        Debug.Log($"[AttackLockSystem][CloseRangeAssist] {message}");
     }
 
     private Vector3 GetFlatDirection(Vector3 targetPosition)

@@ -35,6 +35,15 @@ public class GameActionHandler : MonoBehaviour
         Player.TriggerRespawn();
     }
 
+    public void RestartFromSelectedScene(SceneAsset sceneAsset)
+    {
+        Debug.Log($"[GameActionHandler] Restarting from selected scene '{sceneAsset.SceneName}'...");
+
+        PrepareForSceneLoad(resumeImmediately: false);
+        
+        SceneLoader.LoadIntoGame(sceneAsset);
+    }
+
     /// <summary>
     /// Returns to the main menu.
     /// Properly cleans up DontDestroyOnLoad objects.

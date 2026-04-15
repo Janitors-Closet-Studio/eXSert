@@ -12,6 +12,7 @@ public abstract class CollectableInteraction : InteractionManager
     [SerializeField] private float uiDisplayDuration = 4f;
     [SerializeField] private float uiFadeDuration = 2f;
     [SerializeField] private string bottomFlavorText = "Press Pause to View";
+
     private bool fadeOutComplete = false;   
 
     protected override void Awake()
@@ -33,7 +34,9 @@ public abstract class CollectableInteraction : InteractionManager
         AfterExecuteInteraction();
         
         InteractionUI.Instance.OnCollectedItem(collectID, bottomFlavorText, uiFadeDuration, uiDisplayDuration);
-        InteractionUI.Instance.RemoveCollectableToFindFromObjective(collectID);
+
+       // ObjectiveManager.CompleteSubObjective(collectID);
+        
         StartCoroutine(DeactivateInteractableCoroutine(this));
     }
     protected abstract void ExecuteInteraction();

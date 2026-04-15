@@ -398,6 +398,9 @@ public class SaveSlotsMenu : MonoBehaviour
         EnsureReferences();
         ResetTransientMenuState();
 
+        if (mainMenu != null)
+            mainMenu.ActivateMenu();
+
         this.DeactivateMenu();
     }
 

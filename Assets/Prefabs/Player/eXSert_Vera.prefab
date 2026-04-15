@@ -3784,7 +3784,7 @@ MonoBehaviour:
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
   m_RenderPostProcessing: 1
-  m_Antialiasing: 0
+  m_Antialiasing: 3
   m_AntialiasingQuality: 2
   m_StopNaN: 0
   m_Dithering: 0
@@ -3835,7 +3835,7 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-  CustomBlends: {fileID: 0}
+  CustomBlends: {fileID: 11400000, guid: 8ac88fa498abdc546891079b53df46ce, type: 2}
 --- !u!1 &1635823517529199888
 GameObject:
   m_ObjectHideFlags: 0
@@ -5492,6 +5492,9 @@ MonoBehaviour:
   blockAttackForwardMoveDuringSoftLockMotion: 1
   attackForwardMoveBlockDistance: 1.25
   attackForwardMoveBlockAngle: 150
+  crawlerAttackForwardMoveBlockDistance: 1.6
+  crawlerForwardMoveVerticalTolerance: 0.9
+  debugCrawlerForwardMoveBlock: 0
   debugPlungeDamage: 1
   debugPlungeDamageInitialized: 1
   attackAudioSource: {fileID: 0}
@@ -5656,6 +5659,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   debugLockOn: 0
+  debugCloseRangeTurnAssist: 0
   player: {fileID: 3646038222488559394}
   playerMovement: {fileID: 6150044602222399215}
   enemyLayers:
@@ -5666,6 +5670,7 @@ MonoBehaviour:
   softLockMoveDistance: 0.75
   softLockStopBuffer: 0.5
   softLockNoMoveRadius: 1.5
+  closeRangeTurnAssistRadius: 1.6
   softLockMoveDuration: 0.1
   softLockRotateOnlyDuration: 0.1
   allowInstantSoftLockSnap: 0
@@ -8161,7 +8166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30407f1e0f298a84faa3f1c362d5725d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLifeBoxDetector
-  killPlayerWhenOutOfLifeBox: 1
+  killPlayerWhenOutOfLifeBox: 0
   checkInterval: 0.5
   lifeBoxes: []
 --- !u!114 &7363011459679065324
@@ -15508,7 +15513,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineDeoccluder
   CollideAgainst:
     serializedVersion: 2
-    m_Bits: 9
+    m_Bits: 1163273
   IgnoreTag: Player
   TransparentLayers:
     serializedVersion: 2
@@ -17349,7 +17354,7 @@ MonoBehaviour:
   animationController: {fileID: 5311890396266669227}
   characterController: {fileID: 2289477533837267770}
   playerMovement: {fileID: 6150044602222399215}
-  combatDuration: 10
+  combatDuration: 3
   movementThreshold: 0.02
 --- !u!114 &8069822390347909149
 MonoBehaviour:
@@ -21107,7 +21112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineDeoccluder
   CollideAgainst:
     serializedVersion: 2
-    m_Bits: 9
+    m_Bits: 1163273
   IgnoreTag: Player
   TransparentLayers:
     serializedVersion: 2

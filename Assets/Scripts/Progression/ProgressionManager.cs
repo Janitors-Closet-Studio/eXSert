@@ -156,10 +156,7 @@ namespace Progression
         }
         #endregion
 
-        private void UpdateObjective(HUDMessage message)
-        {
-            PlayerHUD.NewMessage(message);
-        }
+        private void UpdateObjective(string message) => ObjectiveManager.SetMainObjective(message);
 
         #region Progression Management
         /// <summary>
