@@ -16,6 +16,7 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
 
     private static Objective currentObjective;
     private static readonly List<SubObjective> subObjectives = new();
+    public static List<SubObjective> SubObjectives = subObjectives;
     private static readonly Queue<Notice> noticeList = new();
 
     public static void SetMainObjective(string text)
@@ -55,6 +56,7 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
         Debug.Log($"[Objective Manager] Adding sub-objective with ID '{id}' and text: {text}");
         var newSubObjective = new SubObjective(id, text);
         subObjectives.Add(newSubObjective);
+        SubObjectives.Add(newSubObjective);
         OnSubObjectivesUpdated?.Invoke(subObjectives);
     }
 
