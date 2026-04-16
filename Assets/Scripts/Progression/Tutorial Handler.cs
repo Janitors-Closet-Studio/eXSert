@@ -29,7 +29,8 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField, CriticalReference] private CombatEncounter singleTargetFight;
     [SerializeField, CriticalReference] private CombatEncounter aoeTargetFight;
     [SerializeField, CriticalReference] private GameObject keycardToEnable;
-    [SerializeField, CriticalReference] private SceneAsset nextScene;
+    [SerializeField] private bool loadNextSceneOnComplete = true;
+    [SerializeField] private SceneAsset nextScene;
     #endregion
 
     private bool logCollected = false;
@@ -175,7 +176,10 @@ public class TutorialHandler : MonoBehaviour
 
         ObjectiveManager.SetMainObjective(tutorialCompleteMessage); // Displays the tutorial complete message
 
-        SceneLoader.Load(nextScene, loadScreen: false); // Loads the next scene for the player
+        if (loadNextSceneOnComplete && nextScene != null)
+        {
+            SceneLoader.Load(nextScene, loadScreen: false); // Loads the next scene for the player
+        }
     }
 
     #region -------------- CURRENTLY DEPRECATED FUNCTIONALITY --------------------------------
