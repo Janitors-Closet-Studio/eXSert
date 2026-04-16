@@ -20,7 +20,6 @@ public abstract class CollectableInteraction : InteractionManager
     {
         base.Awake();
 
-        displayName = "Picked Up: " + displayName;
     }
 
     protected override void Interact()
