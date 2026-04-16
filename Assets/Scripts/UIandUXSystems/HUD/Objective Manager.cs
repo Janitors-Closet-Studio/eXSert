@@ -47,6 +47,8 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
     /// <param name="text"></param>
     public static void AddSubObjective(string id, string text)
     {
+        Debug.Log($"[Objective Manager] Attempting to add sub-objective with ID '{id}' and text: {text}");
+
         if (subObjectives.Exists(obj => obj.ID == id))
         {
             Debug.LogWarning($"[Objective Manager] Sub-objective with ID '{id}' already exists. Skipping addition.");
@@ -56,7 +58,6 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
         Debug.Log($"[Objective Manager] Adding sub-objective with ID '{id}' and text: {text}");
         var newSubObjective = new SubObjective(id, text);
         subObjectives.Add(newSubObjective);
-        SubObjectives.Add(newSubObjective);
         OnSubObjectivesUpdated?.Invoke(subObjectives);
     }
 
