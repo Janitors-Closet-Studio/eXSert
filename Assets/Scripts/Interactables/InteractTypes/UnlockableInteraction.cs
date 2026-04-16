@@ -84,32 +84,32 @@ public abstract class UnlockableInteraction : InteractionManager
     {
         Debug.Log($"[UnlockableInteraction] Failed interaction attempt on {gameObject.name}. needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}");
 
-        if (!needsItem)
-            return;
+        if (!needsItem) return;
 
         bool playerAlreadyHasRequiredItem = InternalPlayerInventory.Instance != null
             && InternalPlayerInventory.Instance.HasItem(requiredItemID);
 
-        if (errorSFXClip != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null && InteractionUI.Instance != null && !playerAlreadyHasRequiredItem)
+        // Audio Stuff
+        if (errorSFXClip != null && SoundManager.Instance.sfxSource != null && InteractionUI.Instance != null && !playerAlreadyHasRequiredItem)
         {
             Debug.Log($"[UnlockableInteraction] Playing error SFX: {errorSFXClip.name} on sfxSource from {gameObject.name}");
             SoundManager.Instance.sfxSource.PlayOneShot(errorSFXClip);
             RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.2f);
-
-            // Sub Objective Stuff
-            string objectiveMessage = !string.IsNullOrEmpty(requiredItemDisplayName)
-                ? $"Find {requiredItemDisplayName}"
-                : $"Find {requiredItemID}";
-
-            ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
-
-            // Notice stuff
-            InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 0.5f, 2f);
         }
         else
         {
             Debug.LogWarning($"[UnlockableInteraction] Cannot play error SFX. Missing SoundManager instance, sfxSource, InteractionUI instance, or errorSFXClip on {gameObject.name}");
         }
+
+        // Sub Objective Stuff
+        string objectiveMessage = !string.IsNullOrEmpty(requiredItemDisplayName)
+            ? $"Find {requiredItemDisplayName}"
+            : $"Find {requiredItemID}";
+
+        ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
+
+        // Notice stuff
+        InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 0.5f, 2f);
     }
 
     protected override void Interact()    

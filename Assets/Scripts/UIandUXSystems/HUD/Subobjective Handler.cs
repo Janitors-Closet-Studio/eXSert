@@ -23,6 +23,8 @@ public class SubobjectiveHandler : MonoBehaviour
 
     private void UpdateUI(List<SubObjective> subObjectives)
     {
+        Debug.Log("[Subobjective Handler] Updating Subobjective UI with " + subObjectives.Count + " subobjectives.");
+
         // Clear existing sub-objectives
         ClearSubobjectives();
 
@@ -38,13 +40,6 @@ public class SubobjectiveHandler : MonoBehaviour
             // Set color based on completion status
             textComponent.color = subObj.IsCompleted ? completedColor : activeColor;
         }
-    }
-
-    private void AddSubobjective(string subobjectiveText)
-    {
-        GameObject newSubobjective = Instantiate(objectivePrefab, transform);
-        newSubobjective.GetComponentInChildren<TextMeshProUGUI>().text = subobjectiveText;
-        activeSubobjectives.Add(newSubobjective);
     }
 
     private void ClearSubobjectives()
