@@ -14,6 +14,7 @@ public abstract class UnlockableInteraction : InteractionManager
     [Header("Unlockable Interaction Settings")]
     [Tooltip("Insert the ID of the item needed to unlock this interaction; leave empty if none is needed")]
     [SerializeField] protected string requiredItemID = "";
+    [SerializeField] private string requiredItemDisplayName = "";
 
     [Tooltip("Prompt shown while the required item is missing.")]
     [SerializeField] private string lockedInteractionPrompt = "LOCKED";
@@ -96,12 +97,14 @@ public abstract class UnlockableInteraction : InteractionManager
             RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.2f);
 
             // Sub Objective Stuff
-            string objectiveMessage = $"Find {requiredItemID}";
+            string objectiveMessage = !string.IsNullOrEmpty(requiredItemDisplayName)
+                ? $"Find {requiredItemDisplayName}"
+                : $"Find {requiredItemID}";
 
             ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
 
             // Notice stuff
-            InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemID} is required to use this machine.", 0.5f, 2f);
+            InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 0.5f, 2f);
         }
         else
         {
@@ -140,7 +143,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if (!(this is DoorInteractions doorInt) || !(doorInt.HasActiveCameraTransition()))
         {
             if (needsItem && canUnlock && InteractionUI.Instance != null)
-                InteractionUI.Instance.OnCollectedItem($"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
+                InteractionUI.Instance.OnCollectedItem($"Used {requiredItemDisplayName}", $"Unlocked {this.interactId} with {requiredItemDisplayName}.", 0.5f, 6f);
         }
 
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
