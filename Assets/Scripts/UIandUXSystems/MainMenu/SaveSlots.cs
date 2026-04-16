@@ -58,9 +58,23 @@ public class SaveSlots : MonoBehaviour
     //Sets interactability of save slots
     public void SetInteractable(bool interactable)
     {
+        Debug.Log($"[SaveSlots] SetInteractable called for {gameObject.name} (profileId={profileId}) with value: {interactable} (isLoadingGame={{saveSlotsMenu != null && saveSlotsMenu.GetIsLoadingGame()}})");
+        if (saveSlotButton == null)
+            saveSlotButton = this.GetComponent<Button>();
+
         if (saveSlotButton != null)
+        {
             saveSlotButton.interactable = interactable;
+            Debug.Log($"[SaveSlots] SetInteractable: {gameObject.name} (profileId={profileId}) set to {interactable}");
+        }
         else
-            Debug.LogError("SaveSlots: Button component missing on " + gameObject.name);
+        {
+            Debug.LogError($"[SaveSlots] SetInteractable: Button component not found on {gameObject.name} (profileId={profileId})");
+        }
     }
+
+
+    // Helper for debug
+    public bool IsInteractable() => saveSlotButton != null && saveSlotButton.interactable;
+    
 }

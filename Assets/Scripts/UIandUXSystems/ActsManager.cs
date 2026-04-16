@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using Singletons;
 using System.Collections.Generic;
@@ -31,11 +32,11 @@ public class ActsManager : Singleton<ActsManager>
 
     internal Dictionary<int, string> actDisplayNameMap = new Dictionary<int, string>()
     {
-        { 0, "Act 1.1: Infiltration" },
-        { 1, "Act 1.2: Hangar" },
-        { 2, "Act 2.1: Augur Encounter" },
-        { 3, "Act 2.2: Conservatory" },
-        { 4, "Act 3.1: Final Encounter" }
+        { 0, "ACT 1.1: INFILTRATION" },
+        { 1, "ACT 1.2: HANGAR" },
+        { 2, "ACT 2.1: AUGUR ENCOUNTER" },
+        { 3, "ACT 2.2: CONSERVATORY" },
+        { 4, "ACT 3.1: FINAL ENCOUNTER" }
     };
 
     protected override void Awake()
@@ -124,14 +125,25 @@ public class ActsManager : Singleton<ActsManager>
         }
     }
 
-    public void LoadSelectedScene(string sceneName)
+
+    /// <summary>
+    /// Finds a checkpoint in the given scene and sets it as the current checkpoint.
+    /// </summary>
+    private void SetCheckpointForScene(string sceneName)
     {
-        Debug.Log($"[ActsManager] Loading selected scene '{sceneName}' from ActsManager (using checkpoint respawn)...");
-
-        PrepareForSceneLoad(resumeImmediately: false);
-
-        // Use the checkpoint system to reload the scene and respawn items, matching checkpoint reload behavior
-        Player.TriggerRespawn();
+        // Find all loaded checkpoints
+        var checkpoints = GameObject.FindObjectsOfType<Progression.Checkpoints.CheckpointBehavior>(true);
+        foreach (var checkpoint in checkpoints)
+        {
+            var sceneAsset = checkpoint.CheckpointSceneAsset;
+            if (sceneAsset != null && string.Equals(sceneAsset.SceneName, sceneName, System.StringComparison.OrdinalIgnoreCase))
+            {
+                Progression.Checkpoints.CheckpointBehavior.OverrideCurrentCheckpoint(checkpoint, true);
+                Debug.Log($"[ActsManager] Set checkpoint '{checkpoint.CheckpointId}' as current for scene '{sceneName}'.");
+                return;
+            }
+        }
+        Debug.LogWarning($"[ActsManager] No checkpoint found for scene '{sceneName}'. Player will respawn at the last checkpoint.");
     }
 
     private void PrepareForSceneLoad(bool resumeImmediately)
@@ -150,6 +162,32 @@ public class ActsManager : Singleton<ActsManager>
         {
             Time.timeScale = 1f;
         }
+    }
+
+    /// Loads the given scene, then respawns the player at a checkpoint in that scene.
+    public void LoadSceneAndRespawnAtCheckpoint(string sceneName)
+    {
+        StartCoroutine(LoadSceneAndRespawnCoroutine(sceneName));
+    }
+
+    private System.Collections.IEnumerator LoadSceneAndRespawnCoroutine(string sceneName)
+    {
+        Debug.Log($"[ActsManager] Loading scene '{sceneName}' and will respawn at checkpoint.");
+        PrepareForSceneLoad(resumeImmediately: false);
+
+        // Start loading the scene
+        var asyncOp = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName);
+        while (!asyncOp.isDone)
+            yield return null;
+
+        // Wait one frame to ensure all objects are initialized
+        yield return null;
+
+        // Find a checkpoint in the loaded scene and set it as current
+        SetCheckpointForScene(sceneName);
+
+        // Respawn the player at the checkpoint
+        Player.TriggerRespawn();
     }
 
 }

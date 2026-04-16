@@ -199,14 +199,51 @@ public class DoorInteractions : UnlockableInteraction
 
         if (useCameraTransition && useSpecialTransition)
         {
-            BeginSpecialTransition();
+            StartCoroutine(ExecuteInteractionWithNoticeAfterSpecialTransition());
             return;
         }
 
         if (useCameraTransition)
-            BeginTemporaryCameraTransition();
+        {
+            StartCoroutine(ExecuteInteractionWithNoticeAfterTemporaryTransition());
+            return;
+        }
 
         ExecuteAssignedDoorInteractions();
+        ShowUnlockNoticeIfNeeded();
+
+    }
+
+    // Helper to check if a camera transition is active
+    public bool HasActiveCameraTransition()
+    {
+        return useCameraTransition;
+    }
+
+    private void ShowUnlockNoticeIfNeeded()
+    {
+        if (needsItem && canUnlock && InteractionUI.Instance != null)
+            InteractionUI.Instance.OnCollectedItem($"Used BAMMMMM{requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
+    }
+
+    private IEnumerator ExecuteInteractionWithNoticeAfterSpecialTransition()
+    {
+        BeginSpecialTransition();
+        // Wait for the special transition to finish (wait for puzzleCameraRoutine to be null)
+        while (puzzleCameraRoutine != null)
+            yield return null;
+        ExecuteAssignedDoorInteractions();
+        ShowUnlockNoticeIfNeeded();
+    }
+
+    private IEnumerator ExecuteInteractionWithNoticeAfterTemporaryTransition()
+    {
+        BeginTemporaryCameraTransition();
+        // Wait for the temporary camera transition to finish (wait for puzzleCameraRoutine to be null)
+        while (puzzleCameraRoutine != null)
+            yield return null;
+        ExecuteAssignedDoorInteractions();
+        ShowUnlockNoticeIfNeeded();
     }
 
     private void ExecuteAssignedDoorInteractions()
