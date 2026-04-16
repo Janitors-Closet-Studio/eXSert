@@ -79101,7 +79101,7 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 1801951081}
   - {fileID: 1906613297}
-  onlyInteractableOnce: 1
+  onlyInteractableOnce: 0
   useCameraTransition: 1
   useSpecialTransition: 1
   transitionCinemachineCamera: {fileID: 268972451}
@@ -325475,6 +325475,14 @@ PrefabInstance:
     - target: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
       propertyPath: _interactId
       value: cq.greenkeycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
+      propertyPath: displayName
+      value: Green Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
       propertyPath: onItemCollected.m_PersistentCalls.m_Calls.Array.size

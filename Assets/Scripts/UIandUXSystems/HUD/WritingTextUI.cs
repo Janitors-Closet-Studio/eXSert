@@ -102,7 +102,7 @@ public class WritingTextUI : MonoBehaviour
 
             while (true)
             {
-                timer -= Time.deltaTime;
+                timer -= Time.unscaledDeltaTime;
 
                 if (timer <= 0f && characterIndex < fullText.Length)
                 {

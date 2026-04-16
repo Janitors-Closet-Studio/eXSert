@@ -136,8 +136,12 @@ public abstract class UnlockableInteraction : InteractionManager
         ExecuteInteraction();
         onInteractionExecuted?.Invoke();
 
-        if (needsItem && canUnlock && InteractionUI.Instance != null)
-            InteractionUI.Instance.OnCollectedItem($"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
+        // Only show notice immediately if not using camera transition (handled in DoorInteractions otherwise)
+        if (!(this is DoorInteractions doorInt) || !(doorInt.HasActiveCameraTransition()))
+        {
+            if (needsItem && canUnlock && InteractionUI.Instance != null)
+                InteractionUI.Instance.OnCollectedItem($"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
+        }
 
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
             SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);

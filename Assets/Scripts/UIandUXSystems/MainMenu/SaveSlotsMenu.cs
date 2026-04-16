@@ -1,3 +1,4 @@
+
 /*
 Written by Brandon Wahl
 Updated to work with SceneLoader and CheckpointSystem
@@ -38,6 +39,8 @@ public class SaveSlotsMenu : MonoBehaviour
     private bool hasStartedSceneTransition = false;
 
     private void Awake() => EnsureReferences();
+    // Helper for debug
+    public bool GetIsLoadingGame() => isLoadingGame;
 
     private void EnsureReferences()
     {
@@ -87,6 +90,19 @@ public class SaveSlotsMenu : MonoBehaviour
         return null;
     }
 
+
+    /// Call this from each SaveSlot's OnClick to update the act text immediately.
+    public void OnSaveSlotSelected(SaveSlots selectedSlot)
+    {
+        currentSaveSlotSelected = selectedSlot;
+        string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
+        if (!string.IsNullOrWhiteSpace(selectedProfileId) && actText != null)
+        {
+            string farthestAct = GetFarthestUnlockedActName(selectedProfileId);
+            actText.text = string.IsNullOrEmpty(farthestAct) ? "ACT 1.1: INFILTRATION" : farthestAct;
+        }
+    }
+
     /// <summary>
     /// When a save slot is clicked, it gathers the profile Id and loads the proper data.
     /// Uses new SceneLoader system for proper scene management.
@@ -97,11 +113,6 @@ public class SaveSlotsMenu : MonoBehaviour
 
         // Show farthest act unlocked for this profile in actText
         string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
-        if (!string.IsNullOrWhiteSpace(selectedProfileId) && actText != null)
-        {
-            string farthestAct = GetFarthestUnlockedActName(selectedProfileId);
-            actText.text = string.IsNullOrEmpty(farthestAct) ? "No Act Unlocked" : farthestAct;
-        }
 
         if (hasStartedSceneTransition) return;
         hasStartedSceneTransition = true;
@@ -282,14 +293,8 @@ public class SaveSlotsMenu : MonoBehaviour
 
     private void RestoreMenuButtons()
     {
-        if (saveSlots != null)
-        {
-            foreach (SaveSlots saveSlot in saveSlots)
-            {
-                if (saveSlot != null)
-                    saveSlot.SetInteractable(true);
-            }
-        }
+        // Always update slot interactability based on mode
+        EnsureTheCorrectSaveSlotText();
 
         if (backButton != null)
             backButton.gameObject.SetActive(true);
@@ -410,7 +415,7 @@ public class SaveSlotsMenu : MonoBehaviour
             ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
             : new Dictionary<string, GameData>();
 
-        // Always update slot data and interactability for both load and new game
+        // Update slot data and interactability for both load and new game
         foreach (SaveSlots saveSlot in saveSlots)
         {
             if (saveSlot == null) continue;
@@ -418,9 +423,9 @@ public class SaveSlotsMenu : MonoBehaviour
             profilesGameData.TryGetValue(saveSlot.GetProfileId(), out profileData);
             saveSlot.SetData(profileData); // This will update the slot's text (e.g., 'no data')
             // Interactability: only disable in load menu if no data, otherwise always interactable
-            if (profileData == null && isLoadingGame)
+            if (isLoadingGame)
             {
-                saveSlot.SetInteractable(false);
+                saveSlot.SetInteractable(profileData != null);
             }
             else
             {
@@ -482,6 +487,7 @@ public class SaveSlotsMenu : MonoBehaviour
         }
 
         TurnOffLoadButtonIfNoData();
+        EnsureTheCorrectSaveSlotText(); // Force update after menu activation
     }
 
     //Makes it so when clicking buttons other buttons are noninteractable so no errors occur
