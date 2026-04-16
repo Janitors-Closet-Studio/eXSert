@@ -26,13 +26,16 @@ public class SubobjectiveHandler : MonoBehaviour
         // Clear existing sub-objectives
         ClearSubobjectives();
 
-        // Add new sub-objectives
+        // Animate typing for each subobjective as it's added
         foreach (var subObj in subObjectives)
         {
-            AddSubobjective(subObj.DisplayText);
-
+            GameObject newSubobjective = Instantiate(objectivePrefab, transform);
+            var textComponent = newSubobjective.GetComponentInChildren<TextMeshProUGUI>();
+            textComponent.text = "";
+            activeSubobjectives.Add(newSubobjective);
+            // Animate typing in
+            WritingTextUI.AddWriter_Static(textComponent, subObj.DisplayText, 0.025f, false, true);
             // Set color based on completion status
-            var textComponent = activeSubobjectives[^1].GetComponentInChildren<TextMeshProUGUI>();
             textComponent.color = subObj.IsCompleted ? completedColor : activeColor;
         }
     }
