@@ -37,6 +37,7 @@ public class SlowDownElevator : MonoBehaviour
 
     [Header("Wall Offset")]
     [SerializeField] private float wallHeight = 2.0f; // Set this to your actual wall prefab height
+    [SerializeField] private float finalDoorWallLocalY = -0.03f;
     #endregion
 
     // Internal state
@@ -62,8 +63,6 @@ public class SlowDownElevator : MonoBehaviour
         {
             return;
         }
-#pragma warning restore CS0618
-#pragma warning restore CS0618
 
         StopAllCoroutines();
         _decelerationCoroutine = null;
@@ -219,6 +218,8 @@ public class SlowDownElevator : MonoBehaviour
             
             yield return null;
         }
+
+        SnapDoorWallToFinalLocalY();
         
         // Complete when total distance traveled is done
         _isDecelerating = false;
@@ -261,6 +262,19 @@ public class SlowDownElevator : MonoBehaviour
         }
 
         targetObject.transform.position = endPosition;
+    }
+
+    private void SnapDoorWallToFinalLocalY()
+    {
+        if (_elevatorWalls == null || _elevatorWalls.wallWithDoor == null)
+        {
+            return;
+        }
+
+        Transform doorTransform = _elevatorWalls.wallWithDoor.transform;
+        Vector3 localPosition = doorTransform.localPosition;
+        localPosition.y = finalDoorWallLocalY;
+        doorTransform.localPosition = localPosition;
     }
 
     /// <summary>
