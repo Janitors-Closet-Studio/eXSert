@@ -37,6 +37,12 @@ namespace Progression.Checkpoints
         )]
         private SceneAsset checkpointSceneAsset;
 
+        [SerializeField]
+        [Tooltip(
+            "Optional object to enable when the game loads or reloads into this checkpoint. Useful for restoring checkpoint-specific blockers or progression objects after a respawn."
+        )]
+        private GameObject enableObjectOnCheckpointLoad;
+
         [SerializeField] private bool isActCheckpoint = false;
         private bool updatedActsForCheckpoint = false; 
 
@@ -329,6 +335,14 @@ namespace Progression.Checkpoints
             playerHealth.ForceFullHeal();
         }
 
+        private void EnableConfiguredLoadObject()
+        {
+            if (enableObjectOnCheckpointLoad == null)
+                return;
+
+            enableObjectOnCheckpointLoad.SetActive(true);
+        }
+
         #region Data Persistence
         public void LoadData(GameData data)
         {
@@ -352,6 +366,7 @@ namespace Progression.Checkpoints
                 return;
 
             currentCheckpoint = this;
+            EnableConfiguredLoadObject();
         }
 
         public void SaveData(GameData data)
