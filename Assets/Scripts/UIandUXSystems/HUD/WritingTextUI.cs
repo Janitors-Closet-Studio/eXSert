@@ -60,9 +60,17 @@ public class WritingTextUI : MonoBehaviour
         {
             if (textWriterSingles[i].GetText() == text)
             {
+                // Stop and remove the coroutine if it exists
+                if (i < activeCoroutines.Count && activeCoroutines[i] != null)
+                {
+                    StopCoroutine(activeCoroutines[i]);
+                    activeCoroutines.RemoveAt(i);
+                }
+                else if (i < activeCoroutines.Count)
+                {
+                    activeCoroutines.RemoveAt(i);
+                }
                 textWriterSingles.RemoveAt(i);
-                StopCoroutine(activeCoroutines[i]);
-                activeCoroutines.RemoveAt(i);
                 i--;
             }
         }
