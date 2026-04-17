@@ -3,10 +3,10 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
-using Unity.AI.Navigation;
-using Unity.VisualScripting;
+using Managers.TimeLord;
 
 [RequireComponent(typeof(BoxCollider))]
+
 public class ElevatorLift : PuzzlePart, IConsoleSelectable
 {
     // FixedUpdate movement reverted; coroutine will handle movement
@@ -59,9 +59,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     private string gameplayInputBlockOwner;
     private int cachedCameraPriority = 9;
     private bool menuActive;
+    private bool wasMenuActiveBeforePause;
     private float nextGroundRecallTime;
-
-
 
     private int currentFloor = 0;
     private bool isMoving = false;
@@ -71,26 +70,51 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     private const string FloorTwoActionName = "FloorTwo";
     private const string FloorThreeActionName = "FloorThree";
 
-    private void Awake()
+    private void OnEnable()
     {
-        HideElevatorUI();
-
-        if (elevatorCamera != null)
-            cachedCameraPriority = elevatorCamera.Priority;
-
-        TryResolveRuntimeActions();
-
-        TryResolveLockCoordinates();
-        SyncCurrentFloorToLiftPosition();
+        PauseCoordinator.OnPaused += HandleGamePaused;
+        PauseCoordinator.OnResumed += HandleGameResumed;
     }
 
     private void OnDisable()
     {
+        PauseCoordinator.OnPaused -= HandleGamePaused;
+        PauseCoordinator.OnResumed -= HandleGameResumed;
+
         UnsubscribeFromInputActions();
 
         if (menuActive)
             RestoreGameplayState();
     }
+
+    private void HandleGamePaused()
+    {
+        if (menuActive)
+        {
+            wasMenuActiveBeforePause = true;
+            HideElevatorUI();
+            UnsubscribeFromInputActions();
+            SetElevatorCameraActive(false);
+        }
+        else
+        {
+            wasMenuActiveBeforePause = false;
+        }
+    }
+
+    private void HandleGameResumed()
+    {
+        if (wasMenuActiveBeforePause)
+        {
+            // Only restore if menuActive is still true (not closed during pause)
+            SetupElevatorUI();
+            SubscribeToInputActions();
+            SetElevatorCameraActive(true);
+        }
+        wasMenuActiveBeforePause = false;
+    }
+
+
 
     private void Start()
     {
@@ -100,6 +124,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             if (button != null)
                 button.SetActive(false);
         }
+
+        TryResolveLockCoordinates();
 
         CachePlayerReferences();
     }
@@ -569,7 +595,22 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     public void CallElevatorToFloorOne()
     {
         if(currentFloor == 0 || isMoving) return;
-        StartCoroutine(MoveLift(0, carryPlayerWithLift: true));
+        StartCoroutine(MoveElevatorToFirstFloor());
+    }
+
+    private IEnumerator MoveElevatorToFirstFloor()
+    {
+        Vector3 targetPosition = desiredLiftPosition[0];
+        float moveSpeed = liftSpeed; // units per second
+
+        while (Vector3.Distance(elevatorLift.transform.localPosition, targetPosition) > 0.001f)
+        {
+            elevatorLift.transform.localPosition = Vector3.MoveTowards(
+                elevatorLift.transform.localPosition, targetPosition, moveSpeed * Time.deltaTime);
+
+            yield return null;
+        }
+
     }
 
     private void TryTriggerGroundRecallFailsafe()
@@ -598,7 +639,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             return;
 
         nextGroundRecallTime = Time.time + groundRecallCooldown;
-        StartCoroutine(MoveLift(0, carryPlayerWithLift: false));
+        StartCoroutine(MoveLift(0, carryPlayerWithLift: false, restoreGameplayState: false));
     }
 
     private Vector3 GetFloorWorldPosition(int floorIndex)
@@ -626,11 +667,14 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         return playerCC;
     }
 
-    private IEnumerator MoveLift(int targetFloor, bool carryPlayerWithLift)
+    private IEnumerator MoveLift(int targetFloor, bool carryPlayerWithLift, bool restoreGameplayState = true)
     {
         if (!HasValidLiftConfiguration(targetFloor))
         {
-            RestoreGameplayState();
+            if (restoreGameplayState)
+                RestoreGameplayState();
+            else
+                menuActive = false;
             yield break;
         }
 
@@ -642,7 +686,6 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             sfxSource.clip = elevatorSFX;
             sfxSource.Play();
         }
-
 
         isMoving = true;
 
@@ -683,7 +726,10 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         currentFloor = targetFloor;
         if (playerCC != null)
             playerCC.enabled = true; // Re-enable CharacterController after movement
-        ReturnToGameplay();
+        if (restoreGameplayState)
+            ReturnToGameplay();
+        else
+            menuActive = false;
     }
 
 }

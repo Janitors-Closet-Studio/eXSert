@@ -3169,6 +3169,7 @@ MonoBehaviour:
         m_CallState: 2
   consoleIndex: 0
   verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1001 &38925480
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -44482,6 +44483,7 @@ MonoBehaviour:
         m_CallState: 2
   consoleIndex: 0
   verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1 &571144896
 GameObject:
   m_ObjectHideFlags: 0
@@ -60563,6 +60565,7 @@ MonoBehaviour:
         m_CallState: 2
   consoleIndex: 0
   verboseDebug: 1
+  optionalStringMessage: 
 --- !u!43 &798315172
 Mesh:
   m_ObjectHideFlags: 0
@@ -95474,6 +95477,7 @@ Transform:
   - {fileID: 1465311860}
   - {fileID: 1943893028}
   - {fileID: 1943804187}
+  - {fileID: 1643612379}
   - {fileID: 902602144}
   - {fileID: 1069724962}
   m_Father: {fileID: 787008822}
@@ -111991,7 +111995,7 @@ MonoBehaviour:
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 1375132224}
   requiredItemID: hwhitekeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Lift Key Card
   lockedInteractionPrompt: LOCKED
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
@@ -112035,6 +112039,7 @@ MonoBehaviour:
         m_CallState: 2
   consoleIndex: 0
   verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1001 &1517955119
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -121843,6 +121848,163 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1001 &1643612378
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1290203440}
+    m_Modifications:
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: _interactId
+      value: greenkeycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: errorSFXClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: requiredItemID
+      value: greenkeycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.670924
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2386
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9181333
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 96.94181
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.031000137
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -5.670006
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.70710677
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7071069
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4094026076739977524, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_Name
+      value: CallCraneToFirst
+      objectReference: {fileID: 0}
+    - target: {fileID: 4094026076739977524, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433932742785278877, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5433932742785278877, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_IsTrigger
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7807987390145800280, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4094026076739977524, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1643612381}
+  m_SourcePrefab: {fileID: 100100000, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+--- !u!4 &1643612379 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3718627120876198798, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+  m_PrefabInstance: {fileID: 1643612378}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1643612380 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4094026076739977524, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+  m_PrefabInstance: {fileID: 1643612378}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1643612381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1643612380}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 783730fa20d4f9b4e9bf2372e82e57ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
+  _showHitbox: 0
+  blockPromptWhenAttackingOrDashing: 1
+  interactable: 1
+  _interactAnimation: {fileID: 0}
+  _interactId: 
+  _interactionSFX: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
+  _interactionPrompt: Press to Interact
+  _interactInputAction: {fileID: 1375132224}
+  requiredItemID: 
+  requiredItemDisplayName: 
+  lockedInteractionPrompt: LOCKED
+  errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
+  onInteractionExecuted:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1120867917}
+        m_TargetAssemblyTypeName: ElevatorLift, Assembly-CSharp
+        m_MethodName: CallElevatorToFloorOne
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  consoleIndex: 0
+  verboseDebug: 1
+  optionalStringMessage: Calling Elevator to Floor One
 --- !u!1001 &1643613988
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -124746,6 +124908,7 @@ MonoBehaviour:
         m_CallState: 2
   consoleIndex: 0
   verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1001 &1676225207
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -148049,6 +148212,14 @@ PrefabInstance:
     - target: {fileID: 6216200123784054398, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
       propertyPath: _interactId
       value: hwhitekeycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 6216200123784054398, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
+      propertyPath: displayName
+      value: Lift Key Card
+      objectReference: {fileID: 0}
+    - target: {fileID: 6216200123784054398, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7039949267367733273, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
       propertyPath: m_LocalPosition.x

@@ -28,6 +28,10 @@ public class PuzzleInteraction : UnlockableInteraction
 
     [Header("Debug")]
     [SerializeField] private bool verboseDebug = true;
+    
+    [Header("Optional Settings")]
+    [Tooltip("Only use this if there is no key needed but you still want to update notice")]
+    [SerializeField] private string optionalStringMessage;
 
     public event Action ButtonPressed;
     public event Action<PuzzleInteraction> ButtonPressedWithSender;
@@ -71,6 +75,11 @@ public class PuzzleInteraction : UnlockableInteraction
         if (playerAnimator != null)
         {
             playerAnimator.PlayIdle();
+        }
+
+        if (!needsItem)
+        {
+            InteractionUI.Instance.OnCollectedItem(optionalStringMessage, null);
         }
     }
 
