@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Progression.Checkpoints;
 using UnityEngine.SceneManagement;
+using Utilities.Combat.Attacks;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -71,6 +72,16 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [SerializeField, Range(0.05f, 2f), Tooltip("Failsafe duration in case dash i-frame end animation event is missed. Set to a small value to avoid accidental permanent invulnerability.")]
     private float dashInvincibilityFailsafeSeconds = 0.5f;
 
+    [Header("Out of Combat Regeneration")]
+    [SerializeField, Tooltip("When enabled, player health passively regenerates after being out of combat for a delay.")]
+    private bool enableOutOfCombatRegen = true;
+    [SerializeField, Min(0f), Tooltip("Seconds without combat activity before passive regeneration starts.")]
+    private float outOfCombatRegenDelaySeconds = 10f;
+    [SerializeField, Min(0f), Tooltip("Health regenerated per second as a percent of max health (e.g. 0.5 = 0.5% of max HP per second).")]
+    private float outOfCombatRegenRatePercentPerSecond = 0.5f;
+    [SerializeField, Range(0f, 100f), Tooltip("Maximum percent of max health that passive regeneration can restore up to.")]
+    private float outOfCombatRegenMaxPercent = 35f;
+
     [Header("References")]
     [SerializeField] private PlayerAnimationController animationController;
     [SerializeField] private PlayerMovement playerMovement;
@@ -111,6 +122,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private float defaultMaxHealth;
     private float defaultCurrentHealth;
     private int lastKnownSceneHandle = -1;
+    private float lastCombatActivityTime;
 
     #region Unity MonoBehaviour Functions
     private void Awake()
@@ -118,6 +130,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Instance = this;
         lastKnownSceneHandle = gameObject.scene.handle;
         Player.ClearCachedPlayerObject();
+        lastCombatActivityTime = Time.unscaledTime;
 
         if (animationController == null) animationController = GetComponentInChildren<PlayerAnimationController>();
         if (playerMovement == null) playerMovement = GetComponent<PlayerMovement>();
@@ -155,6 +168,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Player.ClearCachedPlayerObject();
         Player.SetActive(true);
         Player.RespawnPlayer += HandleRespawnRequested;
+        PlayerAttackManager.OnAttack += HandlePlayerAttackPerformed;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
         dashInvincibilityActive = false;
@@ -167,6 +181,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Player.ClearCachedPlayerObject();
         Player.SetActive(false); 
         Player.RespawnPlayer -= HandleRespawnRequested;
+        PlayerAttackManager.OnAttack -= HandlePlayerAttackPerformed;
         CheckpointBehavior.UnsubscribeFromPlayerRespawn();
         LoadingScreenController.OnLoadingScreenShown -= HandleLoadingScreenShown;
         waitingForRespawnHeal = false;
@@ -178,11 +193,15 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private void Update()
     {
         if (lastKnownSceneHandle == gameObject.scene.handle)
+        {
+            ApplyOutOfCombatRegeneration(Time.deltaTime);
             return;
+        }
 
         lastKnownSceneHandle = gameObject.scene.handle;
         Player.ClearCachedPlayerObject();
         RefreshRegistration();
+        ApplyOutOfCombatRegeneration(Time.deltaTime);
     }
 
     private void OnTransformParentChanged()
@@ -211,6 +230,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     {
         if (isDead || invulnerable || IsTemporarilyInvincible() || damage <= 0f)
             return;
+
+        MarkCombatActivity();
 
         float previous = currentHealth;
         currentHealth = Mathf.Max(0f, currentHealth - damage);
@@ -446,6 +467,49 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             return;
 
         OnPlayerHealthRegistered?.Invoke(this);
+        NotifyHealthChanged();
+    }
+
+    private void HandlePlayerAttackPerformed(PlayerAttack attack)
+    {
+        MarkCombatActivity();
+    }
+
+    private void MarkCombatActivity()
+    {
+        lastCombatActivityTime = Time.unscaledTime;
+    }
+
+    private void ApplyOutOfCombatRegeneration(float deltaTime)
+    {
+        if (!enableOutOfCombatRegen || isDead || deltaTime <= 0f)
+            return;
+
+        float capPercent = Mathf.Clamp(outOfCombatRegenMaxPercent, 0f, 100f);
+        float regenCapHealth = maxHealth * (capPercent / 100f);
+        if (currentHealth >= regenCapHealth)
+            return;
+
+        float requiredDelay = Mathf.Max(0f, outOfCombatRegenDelaySeconds);
+        if ((Time.unscaledTime - lastCombatActivityTime) < requiredDelay)
+            return;
+
+        float regenPercentPerSecond = Mathf.Max(0f, outOfCombatRegenRatePercentPerSecond);
+        if (regenPercentPerSecond <= 0f)
+            return;
+
+        float healAmount = maxHealth * (regenPercentPerSecond / 100f) * deltaTime;
+        if (healAmount <= 0f)
+            return;
+
+        float previous = currentHealth;
+        currentHealth = Mathf.Min(regenCapHealth, currentHealth + healAmount);
+
+        float actual = currentHealth - previous;
+        if (actual <= 0f)
+            return;
+
+        OnPlayerHealed?.Invoke(actual);
         NotifyHealthChanged();
     }
 
