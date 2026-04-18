@@ -532,6 +532,7 @@ public class PlayerMovement : MonoBehaviour
     private bool previousFaceplateWatchCcGrounded;
     private Vector3 plungeTurretImmediateNudgeVelocity = Vector3.zero;
     private float plungeTurretImmediateNudgeTimer;
+    private bool airborneStartedWithUpwardVelocity;
 
     private Transform ResolveCameraTransform()
     {
@@ -2816,11 +2817,12 @@ public class PlayerMovement : MonoBehaviour
         if (grounded)
         {
             downhillGroundedGraceTimer = downhillAnimationGroundedGrace;
+            airborneStartedWithUpwardVelocity = false;
         }
         else
         {
             downhillGroundedGraceTimer = Mathf.Max(0f, downhillGroundedGraceTimer - Time.deltaTime);
-            if (downhillGroundedGraceTimer > 0f)
+            if (!airborneStartedWithUpwardVelocity && downhillGroundedGraceTimer > 0f)
             {
                 bool downhillGrounded = ShouldTreatAsDownhillGrounded(out string reason, out float slopeAngle);
                 if (downhillGrounded)
@@ -2889,6 +2891,7 @@ public class PlayerMovement : MonoBehaviour
             isPlunging = false;
             plungeTimer = 0f;
             aerialAttackLockTimer = 0f;
+            airborneStartedWithUpwardVelocity = false;
             aerialComboManager?.OnLanded();
 
             bool movementBuffered = InputReader.MoveInput.sqrMagnitude > moveInputDeadZone * moveInputDeadZone;
@@ -2910,6 +2913,7 @@ public class PlayerMovement : MonoBehaviour
                 airborneStartHeight = transform.position.y;
                 highFallActive = false;
                 airDashAvailable = true;
+                airborneStartedWithUpwardVelocity = currentMovement.y > 0.05f;
             }
 
             bool aerialAttackAnimationActive = aerialAttackLockTimer > 0f
