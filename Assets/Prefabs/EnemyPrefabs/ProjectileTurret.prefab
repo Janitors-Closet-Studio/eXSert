@@ -420,6 +420,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 158d1da5d982649468c0474368cb1791, type: 3}
       insertIndex: -1
       addedObject: {fileID: 309872677138740196}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 158d1da5d982649468c0474368cb1791, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2425107883102129089}
   m_SourcePrefab: {fileID: 100100000, guid: 158d1da5d982649468c0474368cb1791, type: 3}
 --- !u!4 &934192922792669990 stripped
 Transform:
@@ -508,6 +511,7 @@ MonoBehaviour:
   hitboxActiveColor: {r: 1, g: 0, b: 0, a: 1}
   turnSpeed: 360
   fireCooldown: 5
+  attackRange: 10
   projectilePrefab: {fileID: 12072098264220021, guid: 6f0bf0bd39447f548bf1ee531a616bd9, type: 3}
   projectileSpeed: 25
   firePoint: {fileID: 6965919029391367844}
@@ -519,6 +523,7 @@ MonoBehaviour:
   maxYawRight: 90
   muzzleForwardOffset: 0.1
   gunfireSfx: {fileID: 8300000, guid: 38a315f3cb914af48b952a8101d88e62, type: 3}
+  gunfireSfxVolume: 0.7
   projectilePoolSize: 16
   showTelegraphLine: 1
   telegraphColor: {r: 0.809, g: 0.12055686, b: 0.12055686, a: 0.67058825}
@@ -552,7 +557,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1.33, z: 1}
   m_Center: {x: 0, y: 0.66, z: 0}
@@ -612,6 +617,29 @@ MonoBehaviour:
     repeatVisualEffects: 0
     repeatDelayRange: {x: 0, y: 0}
     spawnDelay: 0
+--- !u!136 &2425107883102129089
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5070969307154705865}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.6
+  m_Height: 2.15
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.56, z: 0}
 --- !u!4 &5256308783616733347 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 174781233277820987, guid: 158d1da5d982649468c0474368cb1791, type: 3}

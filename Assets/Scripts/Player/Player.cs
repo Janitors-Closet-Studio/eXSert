@@ -37,7 +37,7 @@ public static class Player
         if (playerObject == null)
             return false;
 
-        _playerObject = playerObject.transform.root.gameObject;
+        _playerObject = ResolvePlayerRoot(playerObject.transform);
         playerObject = _playerObject;
         return true;
     }
@@ -105,5 +105,27 @@ public static class Player
         }
 
         return null;
+    }
+
+    private static GameObject ResolvePlayerRoot(Transform playerTransform)
+    {
+        if (playerTransform == null)
+            return null;
+
+        PlayerHealthBarManager health = playerTransform.GetComponentInParent<PlayerHealthBarManager>();
+        if (health != null)
+            return health.transform.gameObject;
+
+        PlayerMovement movement = playerTransform.GetComponentInParent<PlayerMovement>();
+        if (movement != null)
+            return movement.transform.gameObject;
+
+        Transform current = playerTransform;
+        while (current.parent != null && current.parent.CompareTag("Player"))
+        {
+            current = current.parent;
+        }
+
+        return current.gameObject;
     }
 }

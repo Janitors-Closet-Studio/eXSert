@@ -142,6 +142,7 @@ public class PlayerAttackManager : MonoBehaviour
     private bool lastAttackWasAoe;
     private float currentAttackDamageMultiplier = 1f;
     private readonly Collider[] forwardMoveBlockHits = new Collider[24];
+    private readonly RaycastHit[] groundedProbeHits = new RaycastHit[16];
 
     public bool IsAttackInProgress => currentAttack != null;
 
@@ -921,9 +922,6 @@ public class PlayerAttackManager : MonoBehaviour
 
     private bool IsGrounded()
     {
-        if (characterController != null)
-            return characterController.isGrounded;
-
         return PlayerMovement.isGrounded;
     }
 
@@ -964,14 +962,56 @@ public class PlayerAttackManager : MonoBehaviour
         float radius = Mathf.Max(0.05f, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.9f);
         Vector3 origin = new Vector3(bounds.center.x, bounds.min.y + radius + 0.02f, bounds.center.z);
 
-        return Physics.SphereCast(
+        int hitCount = Physics.SphereCastNonAlloc(
             origin,
             radius,
             Vector3.down,
-            out _,
+            groundedProbeHits,
             probeDistance,
             groundedAttackProbeMask,
             QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = groundedProbeHits[i].collider;
+            if (col == null)
+                continue;
+
+            if (col.transform != null && col.transform.root == transform.root)
+                continue;
+
+            if (IsEnemyGroundCollider(col))
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsEnemyGroundCollider(Collider col)
+    {
+        if (col == null)
+            return false;
+
+        if (col.CompareTag("Enemy"))
+            return true;
+
+        Transform root = col.transform.root;
+        if (root != null && root.CompareTag("Enemy"))
+            return true;
+
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+        {
+            if (col.gameObject.layer == enemyLayer)
+                return true;
+
+            if (root != null && root.gameObject.layer == enemyLayer)
+                return true;
+        }
+
+        return col.GetComponentInParent<BaseEnemyCore>() != null;
     }
 
     private void PlaySfx(AudioClip clip)
@@ -1091,6 +1131,16 @@ public class PlayerAttackManager : MonoBehaviour
                 lightAerialDroneRepositionVerticalOffset,
                 lightAerialDroneRepositionMinPlayerBelow,
                 lightAerialDroneRepositionForwardBias);
+            if (aerialComboManager != null)
+            {
+                damageManager.ConfigureUnderDroneAerialHitOverrideSettings(
+                    aerialComboManager.EnableUnderDroneAerialHitOverride,
+                    aerialComboManager.UnderDroneOverrideDistanceThreshold,
+                    aerialComboManager.UnderDroneOverrideMaxXZOffset,
+                    aerialComboManager.UnderDroneOverrideMinVerticalOffset,
+                    aerialComboManager.UnderDroneOverrideKnockbackMultiplier,
+                    aerialComboManager.UnderDroneOverrideMask);
+            }
             damageManager.ConfigureAttackType(currentAttack.attackType);
             damageManager.ConfigureAttackId(currentAttack.attackId);
             damageManager.ConfigureAttackerContext(transform.position);

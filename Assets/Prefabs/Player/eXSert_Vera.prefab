@@ -3694,8 +3694,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.074003056, y: -0.0019012393, z: 0.00014108462, w: -0.9972562}
-  m_LocalPosition: {x: 0.020424338, y: 1.9387524, z: -3.4486911}
+  m_LocalRotation: {x: -0.074492484, y: -0.0019247105, z: 0.00014378343, w: -0.99721974}
+  m_LocalPosition: {x: 0.020154463, y: 1.9423591, z: -3.4481235}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5465,7 +5465,7 @@ MonoBehaviour:
   plungeDroneSplashMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  plungeDroneCollapseDownwardVelocity: 16
+  plungeDroneCollapseDownwardVelocity: 30
   plungeDroneCollapseRadialForce: 6
   enableLightAerialDroneReposition: 1
   lightAerialDroneRepositionDistance: 1.8
@@ -5574,6 +5574,14 @@ MonoBehaviour:
   debugMode: 0
   plungeDamageMultiplierFullLightChain: 1.5
   plungeDamageMultiplierWithoutFullLightChain: 1
+  enableUnderDroneAerialHitOverride: 1
+  underDroneOverrideDistanceThreshold: 2
+  underDroneOverrideMaxXZOffset: 1
+  underDroneOverrideMinVerticalOffset: 0.3
+  underDroneOverrideKnockbackMultiplier: 1.1
+  underDroneOverrideMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   characterController: {fileID: 2289477533837267770}
   animationController: {fileID: 5311890396266669227}
   attackDatabase: {fileID: 11400000, guid: 5faf74d628b25214ca871b83ff4b455d, type: 2}
@@ -8054,7 +8062,9 @@ MonoBehaviour:
   downhillMaxFallSpeedForGroundedAnim: -6
   enableDownhillAnimationGroundingDebugLogs: 0
   dashDistance: 3
+  airDashDistance: 6
   dashDuration: 0.25
+  airDashDuration: 0.25
   dashAnimationTransition: 0.08
   airDashAnimationTransition: 0.08
   maxDashCharges: 3
@@ -8088,6 +8098,9 @@ MonoBehaviour:
     m_Bits: 4294967295
   plungeSustainEnemyPushSpeed: 2.5
   plungeSustainPlayerSlideSpeed: 7
+  enablePlungeTurretImmediateSideNudge: 1
+  plungeTurretImmediateNudgeSpeed: 8
+  plungeTurretImmediateNudgeDuration: 0.12
   plungeRecoveryFailsafeSeconds: 0.9
   locomotionFailsafeRefreshInterval: 0.2
   locomotionFailsafeMinHorizontalSpeed: 0.05
@@ -8138,6 +8151,10 @@ MonoBehaviour:
   flinchLockSeconds: 0.35
   enableDashInvincibility: 1
   dashInvincibilityFailsafeSeconds: 0.5
+  enableOutOfCombatRegen: 1
+  outOfCombatRegenDelaySeconds: 10
+  outOfCombatRegenRatePercentPerSecond: 0.5
+  outOfCombatRegenMaxPercent: 35
   animationController: {fileID: 5311890396266669227}
   playerMovement: {fileID: 6150044602222399215}
   attackManager: {fileID: 2445762002116463598}
@@ -15281,8 +15298,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6626823234369765875}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.074003056, y: -0.0019012393, z: 0.00014108462, w: -0.9972562}
-  m_LocalPosition: {x: 0.02042398, y: 1.9387524, z: -3.4486911}
+  m_LocalRotation: {x: -0.074509345, y: -0.0019393449, z: 0.00014490238, w: -0.99721843}
+  m_LocalPosition: {x: 0.020154463, y: 1.9423591, z: -3.4481235}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15365,7 +15382,7 @@ MonoBehaviour:
     SplineCurvature: 1
   RecenteringTarget: 2
   HorizontalAxis:
-    Value: 0
+    Value: 0.004387697
     Center: 0
     Range: {x: -180, y: 180}
     Wrap: 1
@@ -15375,7 +15392,7 @@ MonoBehaviour:
       Time: 2
     Restrictions: 0
   VerticalAxis:
-    Value: 18
+    Value: 18.058502
     Center: 17.5
     Range: {x: -10, y: 45}
     Wrap: 0
@@ -20880,8 +20897,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8983900087774367925}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.082045384, y: -0.002422122, z: 0.00019939675, w: -0.99662566}
-  m_LocalPosition: {x: 0.018337699, y: 2.0687096, z: -3.8779078}
+  m_LocalRotation: {x: -0.08229255, y: -0.0024898509, z: 0.00020559414, w: -0.9966051}
+  m_LocalPosition: {x: 0.017789979, y: 2.0709276, z: -3.8790252}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -20964,7 +20981,7 @@ MonoBehaviour:
     SplineCurvature: 0.5
   RecenteringTarget: 2
   HorizontalAxis:
-    Value: 0
+    Value: 0.007793009
     Center: 0
     Range: {x: -180, y: 180}
     Wrap: 1
@@ -20974,7 +20991,7 @@ MonoBehaviour:
       Time: 2
     Restrictions: 0
   VerticalAxis:
-    Value: 18
+    Value: 18.103907
     Center: 17.5
     Range: {x: -10, y: 45}
     Wrap: 0

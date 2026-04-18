@@ -1637,36 +1637,15 @@ namespace EnemyBehavior.Boss
             bool wallsRaised = false;
             float elapsed = 0f;
             float waitDuration = Mathf.Max(activePhaseDuration, suctionDuration);
+
+            // Immediate check: if player is already inside cage bounds when suction starts,
+            // raise walls right away.
+            TryRaiseWallsForCageMatch(ref wallsRaised);
             
             while (elapsed < waitDuration)
             {
-                // Check if player is in center bounds
-                if (!wallsRaised && player != null && ArenaCenterBounds != null)
-                {
-                    if (ArenaCenterBounds.bounds.Contains(player.position))
-                    {
-                        // RAISE WALLS IMMEDIATELY!
-                        if (ArenaManager != null)
-                        {
-                            ArenaManager.RaiseWalls(true);
-                            PushAction("Walls RAISED (player in center during suction)");
-                        }
-                        
-                        // NOW despawn all remaining adds (crawlers waiting at spawn points, any stragglers)
-                        // This is when the cage match officially starts - 1v1 with the boss
-                        ctrl.OnCageMatchStart();
-                        
-                        form = RoombaForm.CageBull;
-                        PushAction("Form changed to CAGE BULL");
-                        
-                        // Stop following - CageBull uses charge movement
-                        ctrl.StopFollowing();
-                        
-                        // Alarm already deactivated at start of vacuum sequence
-                        
-                        wallsRaised = true;
-                    }
-                }
+                // Keep checking continuously during suction in case player enters bounds later.
+                TryRaiseWallsForCageMatch(ref wallsRaised);
                 
                 elapsed += Time.deltaTime;
                 yield return null;
@@ -1690,6 +1669,61 @@ namespace EnemyBehavior.Boss
             }
 
             MarkCooldown(a);
+        }
+
+        private void TryRaiseWallsForCageMatch(ref bool wallsRaised)
+        {
+            if (wallsRaised)
+                return;
+
+            if (!IsPlayerInsideCageMatchBounds())
+                return;
+
+            if (ArenaManager != null)
+            {
+                ArenaManager.RaiseWalls(true);
+                PushAction("Walls RAISED (player in center during suction)");
+            }
+
+            // Cage match officially starts now.
+            ctrl.OnCageMatchStart();
+
+            form = RoombaForm.CageBull;
+            PushAction("Form changed to CAGE BULL");
+
+            // Stop following - CageBull uses charge movement
+            ctrl.StopFollowing();
+
+            wallsRaised = true;
+        }
+
+        private bool IsPlayerInsideCageMatchBounds()
+        {
+            if (player == null || ArenaCenterBounds == null)
+                return false;
+
+            Vector3 samplePosition = player.position;
+
+            // Prefer CharacterController center when available to avoid false negatives
+            // while attacking/jumping (feet position can move outside volume vertically).
+            if (playerMovement != null)
+            {
+                CharacterController cc = playerMovement.GetCharacterController();
+                if (cc != null)
+                    samplePosition = cc.bounds.center;
+            }
+
+            if (ArenaCenterBounds.bounds.Contains(samplePosition))
+                return true;
+
+            // Fallback: perform an XZ-only containment check at arena center height so
+            // vertical motion (air attacks, hit reactions) does not block cage activation.
+            Bounds bounds = ArenaCenterBounds.bounds;
+            Vector3 planarSample = new Vector3(samplePosition.x, bounds.center.y, samplePosition.z);
+
+            Vector3 closest = ArenaCenterBounds.ClosestPoint(planarSample);
+            Vector3 planarDelta = new Vector3(planarSample.x - closest.x, 0f, planarSample.z - closest.z);
+            return planarDelta.sqrMagnitude <= 0.0001f;
         }
 
         private void StartVacuumSuction(float duration)

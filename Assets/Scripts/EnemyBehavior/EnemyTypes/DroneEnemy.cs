@@ -428,7 +428,25 @@ public class DroneEnemy : BaseEnemy<DroneState, DroneTrigger>, IProjectileShoote
     public void ApplyPlungePhysicsCollapse(Vector3 impactOrigin, float downwardVelocity, float radialForce)
     {
         if (plungePhysicsCollapsed)
+        {
+            // Allow stronger follow-up plunge collapse values to override prior generic-death collapse.
+            Rigidbody existingRb = GetComponent<Rigidbody>();
+            if (existingRb != null)
+            {
+                Vector3 awayExisting = transform.position - impactOrigin;
+                awayExisting.y = 0f;
+                if (awayExisting.sqrMagnitude < 0.0001f)
+                    awayExisting = transform.forward;
+
+                Vector3 overrideVelocity = awayExisting.normalized * Mathf.Max(0f, radialForce)
+                    + Vector3.down * Mathf.Max(0f, downwardVelocity);
+
+                if (overrideVelocity.magnitude > existingRb.linearVelocity.magnitude)
+                    existingRb.linearVelocity = overrideVelocity;
+            }
+
             return;
+        }
 
         plungePhysicsCollapsed = true;
         deathPhysicsCollapseApplied = true;

@@ -6,6 +6,7 @@ This script is used to determine how much damage should be dealt when collided w
 
 */
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -50,6 +51,20 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
     [SerializeField, Range(0f, 1f), Tooltip("Blend between away-from-player direction (0) and attacker-forward direction (1).")]
     private float lightAerialDroneRepositionForwardBias = 0.45f;
 
+    [Header("Under-Drone Aerial Hit Override")]
+    [Tooltip("When enabled, aerial hitboxes can still damage drones directly above the player even if collider overlap misses.")]
+    private bool enableUnderDroneAerialHitOverride = true;
+    [Tooltip("Maximum 3D distance between player and drone for the under-drone override to apply.")]
+    private float underDroneOverrideDistanceThreshold = 1.8f;
+    [Tooltip("Maximum XZ offset allowed between player and drone for under-drone override.")]
+    private float underDroneOverrideMaxXZOffset = 0.45f;
+    [Tooltip("Drone must be at least this much above the player for under-drone override.")]
+    private float underDroneOverrideMinVerticalOffset = 0.2f;
+    [Tooltip("Extra multiplier applied to aerial drone reposition distance when under-drone override lands.")]
+    private float underDroneOverrideKnockbackMultiplier = 1.2f;
+    [Tooltip("Layer mask used when scanning for drones above the player for under-drone override.")]
+    private LayerMask underDroneOverrideMask = ~0;
+
     [Header("Enemy Hit Stagger")]
     [SerializeField, Tooltip("Master toggle: when enabled, all player attacks apply enemy stagger on hit.")]
     private bool staggerEnemiesOnAllAttacks;
@@ -93,6 +108,8 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
     private string currentAttackId;
     private bool hasAttackerContext;
     private int lockedSingleTargetId;
+    private Coroutine underDroneOverrideRoutine;
+    private readonly Collider[] underDroneOverrideHits = new Collider[24];
     float IAttackSystem.damageAmount => damageAmount;
     string IAttackSystem.weaponName => weaponName;
     public void Configure(string weapon, float damage, int maxTargets)
@@ -140,6 +157,22 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         lightAerialDroneRepositionVerticalOffset = repositionVerticalOffset;
         lightAerialDroneRepositionMinPlayerBelow = Mathf.Max(0f, repositionMinPlayerBelow);
         lightAerialDroneRepositionForwardBias = Mathf.Clamp01(repositionForwardBias);
+    }
+
+    public void ConfigureUnderDroneAerialHitOverrideSettings(
+        bool enableOverride,
+        float distanceThreshold,
+        float maxXZOffset,
+        float minVerticalOffset,
+        float knockbackMultiplier,
+        LayerMask overrideMask)
+    {
+        enableUnderDroneAerialHitOverride = enableOverride;
+        underDroneOverrideDistanceThreshold = Mathf.Max(0f, distanceThreshold);
+        underDroneOverrideMaxXZOffset = Mathf.Max(0f, maxXZOffset);
+        underDroneOverrideMinVerticalOffset = Mathf.Max(0f, minVerticalOffset);
+        underDroneOverrideKnockbackMultiplier = Mathf.Max(1f, knockbackMultiplier);
+        underDroneOverrideMask = overrideMask;
     }
 
     public void ConfigureAttackType(AttackType attackType)
@@ -226,6 +259,10 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         // Check for enemies already overlapping when hitbox activates
         // This handles cases where enemies are already in range when attack starts
         StartCoroutine(CheckInitialOverlaps());
+
+        if (underDroneOverrideRoutine != null)
+            StopCoroutine(underDroneOverrideRoutine);
+        underDroneOverrideRoutine = StartCoroutine(UnderDroneOverrideWatchRoutine());
     }
     
     // Public method to manually clear hit tracking (for debugging)
@@ -262,8 +299,78 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
     
     void OnDisable() 
     { 
+        if (underDroneOverrideRoutine != null)
+        {
+            StopCoroutine(underDroneOverrideRoutine);
+            underDroneOverrideRoutine = null;
+        }
+
         // Debug.Log($"{weaponName} hitbox DISABLED - hit {hitThisActivation.Count} enemies during this activation");
         // Note: We keep hitThisActivation data until next OnEnable() clears it
+    }
+
+    private IEnumerator UnderDroneOverrideWatchRoutine()
+    {
+        while (isActiveAndEnabled && boxCollider != null && boxCollider.enabled)
+        {
+            if (ShouldAttemptUnderDroneOverride())
+                TryProcessUnderDroneOverrideHits();
+
+            yield return null;
+        }
+
+        underDroneOverrideRoutine = null;
+    }
+
+    private bool ShouldAttemptUnderDroneOverride()
+    {
+        if (!enableUnderDroneAerialHitOverride)
+            return false;
+
+        if (underDroneOverrideDistanceThreshold <= 0f || underDroneOverrideMaxXZOffset <= 0f)
+            return false;
+
+        return currentAttackType == AttackType.LightAerial || currentAttackType == AttackType.HeavyAerial;
+    }
+
+    private void TryProcessUnderDroneOverrideHits()
+    {
+        Vector3 origin = hasAttackerContext ? cachedAttackerPosition : transform.root.position;
+        float maxDistance = Mathf.Max(0f, underDroneOverrideDistanceThreshold);
+        float maxXZ = Mathf.Max(0f, underDroneOverrideMaxXZOffset);
+        float minY = Mathf.Max(0f, underDroneOverrideMinVerticalOffset);
+
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            origin,
+            maxDistance,
+            underDroneOverrideHits,
+            underDroneOverrideMask,
+            QueryTriggerInteraction.Collide);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = underDroneOverrideHits[i];
+            if (col == null)
+                continue;
+
+            DroneEnemy drone = col.GetComponentInParent<DroneEnemy>();
+            if (drone == null || !drone.isAlive)
+                continue;
+
+            Vector3 toDrone = drone.transform.position - origin;
+            if (toDrone.y < minY)
+                continue;
+
+            Vector2 planar = new Vector2(toDrone.x, toDrone.z);
+            if (planar.magnitude > maxXZ)
+                continue;
+
+            if (toDrone.magnitude > maxDistance)
+                continue;
+
+            Component healthComp = drone;
+            TryApplyDamageToTarget(healthComp, col, true);
+        }
     }
 
 
@@ -308,9 +415,19 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             return;
         }
         
-        // One hit per activation: Check if this enemy was already hit during current activation
+        TryApplyDamageToTarget(healthComp, other, false);
+    }
+
+    private void TryApplyDamageToTarget(Component healthComp, Collider sourceCollider, bool usedUnderDroneOverride)
+    {
+        if (healthComp == null)
+            return;
+
+        IHealthSystem health = healthComp.GetComponent<IHealthSystem>() ?? healthComp.GetComponentInParent<IHealthSystem>();
+        if (health == null)
+            return;
+
         int enemyId = ResolveDamageTargetId(healthComp);
-        // Debug.Log($"{weaponName} checking enemy ID {enemyId} ({healthComp.name}) - HashSet currently has {hitThisActivation.Count} entries");
 
         if (IsSingleTargetAttackType(currentAttackType))
         {
@@ -324,18 +441,12 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             if (enemyId != lockedSingleTargetId)
                 return;
         }
-        
+
         if (hitThisActivation.Contains(enemyId))
-        {
-            // Debug.Log($"{weaponName} BLOCKED: already hit {healthComp.name} (ID: {enemyId}) during this activation");
             return;
-        }
-        
-        // Mark this enemy as hit during this activation
+
         hitThisActivation.Add(enemyId);
-        // Debug.Log($"{weaponName} ADDED enemy {healthComp.name} (ID: {enemyId}) to hit tracking - HashSet now has {hitThisActivation.Count} entries");
-        
-        // Apply damage via the interface
+
         float beforeHP = health.currentHP;
         health.LoseHP(damageAmount);
         float afterHP = health.currentHP;
@@ -356,25 +467,29 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         {
             DroneEnemy liveDrone = healthComp.GetComponentInParent<DroneEnemy>();
             if (liveDrone != null)
-                TryApplyLightAerialDroneReposition(liveDrone);
+            {
+                float knockbackMultiplier = usedUnderDroneOverride
+                    ? Mathf.Max(1f, underDroneOverrideKnockbackMultiplier)
+                    : 1f;
+                TryApplyLightAerialDroneReposition(liveDrone, knockbackMultiplier);
+            }
         }
 
         if (enablePlungeDroneEffects && afterHP <= 0f)
         {
-            var primaryDrone = healthComp.GetComponentInParent<DroneEnemy>();
+            DroneEnemy primaryDrone = healthComp.GetComponentInParent<DroneEnemy>();
             if (primaryDrone != null)
                 ApplyPlungeDroneKillEffects(primaryDrone);
         }
-        
-        // Debug.Log($"SUCCESS: {weaponName} hit {healthComp.name} for {damageAmount} damage! Health: {beforeHP} -> {afterHP} (Max: {health.maxHP})");
-        
-        // Tell the enemy AI it was attacked (for state machine reactions)
-        var enemy = other.GetComponentInParent<BaseEnemy<EnemyState, EnemyTrigger>>();
-        if (enemy != null)
-        {
-            enemy.TryFireTriggerByName("Attacked");
-            // Debug.Log($"{weaponName} fired 'Attacked' trigger on {enemy.name}");
-        }
+
+        BaseEnemy<EnemyState, EnemyTrigger> enemy = null;
+        if (sourceCollider != null)
+            enemy = sourceCollider.GetComponentInParent<BaseEnemy<EnemyState, EnemyTrigger>>();
+
+        if (enemy == null)
+            enemy = healthComp.GetComponentInParent<BaseEnemy<EnemyState, EnemyTrigger>>();
+
+        enemy?.TryFireTriggerByName("Attacked");
     }
 
     private void ApplyPlungeDroneKillEffects(DroneEnemy primaryDrone)
@@ -427,12 +542,12 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             plungeDroneCollapseRadialForce);
     }
 
-    private void TryApplyLightAerialDroneReposition(DroneEnemy drone)
+    private void TryApplyLightAerialDroneReposition(DroneEnemy drone, float distanceMultiplier = 1f)
     {
         if (!enableLightAerialDroneReposition || drone == null || !drone.isAlive)
             return;
 
-        float distance = Mathf.Max(0f, lightAerialDroneRepositionDistance);
+        float distance = Mathf.Max(0f, lightAerialDroneRepositionDistance * Mathf.Max(1f, distanceMultiplier));
         if (distance <= 0f)
             return;
 

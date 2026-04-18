@@ -229,6 +229,7 @@ public class AttackLockSystem : MonoBehaviour
     private float softLockAttackFacingExpireTime = -1f;
     private float lastTargetInvalidLogTime = -1f;
     private string lastTargetInvalidReason;
+    private bool playerDead;
     private readonly List<Transform> reticleCandidates = new();
     private readonly HashSet<ReticleController> drivenReticles = new();
     private readonly HashSet<ReticleController> drivenReticlesThisFrame = new();
@@ -254,14 +255,25 @@ public class AttackLockSystem : MonoBehaviour
     private void OnEnable()
     {
         PlayerAttackManager.OnAttack += HandleAttackEvent;
+        PlayerHealthBarManager.OnPlayerDied += HandlePlayerDied;
+        PlayerHealthBarManager.OnPlayerHealthChanged += HandlePlayerHealthChanged;
         InputReader.LockOnPressed += HandleLockOnToggle;
         InputReader.LeftTargetPressed += HandleLeftTargetRequested;
         InputReader.RightTargetPressed += HandleRightTargetRequested;
+
+        playerDead = IsPlayerDead();
+        if (playerDead)
+        {
+            ClearHardLock(playReticleExit: true);
+            ClearReticleStageOverrides();
+        }
     }
 
     private void OnDisable()
     {
         PlayerAttackManager.OnAttack -= HandleAttackEvent;
+        PlayerHealthBarManager.OnPlayerDied -= HandlePlayerDied;
+        PlayerHealthBarManager.OnPlayerHealthChanged -= HandlePlayerHealthChanged;
         InputReader.LockOnPressed -= HandleLockOnToggle;
         InputReader.LeftTargetPressed -= HandleLeftTargetRequested;
         InputReader.RightTargetPressed -= HandleRightTargetRequested;
@@ -279,6 +291,11 @@ public class AttackLockSystem : MonoBehaviour
 
     private void Update()
     {
+        if (playerDead)
+        {
+            return;
+        }
+
         if (hardLockActive && currentTarget != null)
         {
             if (IsCurrentTargetDead())
@@ -486,6 +503,9 @@ public class AttackLockSystem : MonoBehaviour
 
     private void HandleLockOnToggle()
     {
+        if (playerDead)
+            return;
+
         LogLock($"LockOn toggle received. hardLockActive={hardLockActive}, currentTarget={(currentTarget != null ? currentTarget.name : "null")}");
 
         if (hardLockActive)
@@ -502,6 +522,27 @@ public class AttackLockSystem : MonoBehaviour
     private void HandleLeftTargetRequested() => CycleHardLock(-1);
 
     private void HandleRightTargetRequested() => CycleHardLock(1);
+
+    private void HandlePlayerDied()
+    {
+        playerDead = true;
+        ClearHardLock(playReticleExit: true);
+        ClearReticleStageOverrides();
+    }
+
+    private void HandlePlayerHealthChanged(PlayerHealthBarManager.HealthSnapshot snapshot)
+    {
+        if (!playerDead)
+            return;
+
+        if (snapshot.current > 0f)
+            playerDead = false;
+    }
+
+    private static bool IsPlayerDead()
+    {
+        return PlayerHealthBarManager.Instance != null && PlayerHealthBarManager.Instance.IsDead;
+    }
 
     private void CycleHardLock(int direction)
     {

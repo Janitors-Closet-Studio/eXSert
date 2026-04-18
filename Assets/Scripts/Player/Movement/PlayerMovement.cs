@@ -279,8 +279,14 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private float dashDistance = 6f;
 
+    [SerializeField]
+    private float airDashDistance = 6f;
+
     [SerializeField, Range(0.05f, 1f)]
     private float dashDuration = 0.25f;
+
+    [SerializeField, Range(0.05f, 1f)]
+    private float airDashDuration = 0.25f;
 
     [SerializeField, Range(0f, 0.3f), Tooltip("Crossfade duration used when entering grounded dash animation.")]
     private float dashAnimationTransition = 0.08f;
@@ -296,6 +302,15 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField, Range(0f, 2f)]
     private float dashCoolDown = 0.5f;
+
+    [SerializeField, Tooltip("Enable focused logs for post-dash sprint recovery speed/state.")]
+    private bool enableDashRecoveryDebugLogs = true;
+
+    [SerializeField, Tooltip("Log player velocity every frame for a short window after each dash starts.")]
+    private bool enableDashVelocityTraceLogs = true;
+
+    [SerializeField, Range(0f, 10f), Tooltip("Seconds to keep logging velocity every frame after dash initiation.")]
+    private float dashVelocityTraceDuration = 3f;
 
     [Header("Dash Momentum")]
     [SerializeField, Range(0f, 1f), Tooltip("Fraction of dash speed preserved briefly after dash end.")]
@@ -357,6 +372,12 @@ public class PlayerMovement : MonoBehaviour
     [Range(0f, 20f)] private float plungeSustainEnemyPushSpeed = 2.5f;
     [SerializeField, Tooltip("Additional horizontal slide speed to force the player off overlapping enemies while plunging.")]
     [Range(0f, 20f)] private float plungeSustainPlayerSlideSpeed = 7f;
+    [SerializeField, Tooltip("When plunging directly above a turret, applies a brief sideways nudge before continuing descent.")]
+    private bool enablePlungeTurretImmediateSideNudge = true;
+    [SerializeField, Range(0f, 20f), Tooltip("Initial sideways speed applied by the immediate turret plunge nudge.")]
+    private float plungeTurretImmediateNudgeSpeed = 8f;
+    [SerializeField, Range(0.01f, 0.4f), Tooltip("Duration of the immediate sideways nudge when plunging directly over a turret.")]
+    private float plungeTurretImmediateNudgeDuration = 0.12f;
 
     [Header("Plunge Recovery Safeguards")]
     [SerializeField, Tooltip("Failsafe timeout after plunge landing before forcing attack unlock if input remains busy.")]
@@ -485,6 +506,7 @@ public class PlayerMovement : MonoBehaviour
     private readonly Collider[] plungeEnemyPushBuffer = new Collider[32];
     private readonly Collider[] enemyTopSlideHits = new Collider[32];
     private readonly Collider[] bossFaceplateHits = new Collider[24];
+    private readonly RaycastHit[] groundedProbeHits = new RaycastHit[16];
     private readonly int[] plungeProcessedEnemyIds = new int[32];
     private bool warnedMissingSoundSource;
     private Vector3 dashCarryVelocity = Vector3.zero;
@@ -517,6 +539,9 @@ public class PlayerMovement : MonoBehaviour
     private float previousFaceplateWatchY;
     private bool previousFaceplateWatchGrounded;
     private bool previousFaceplateWatchCcGrounded;
+    private Vector3 plungeTurretImmediateNudgeVelocity = Vector3.zero;
+    private float plungeTurretImmediateNudgeTimer;
+    private bool airborneStartedWithUpwardVelocity;
 
     private Transform ResolveCameraTransform()
     {
@@ -544,7 +569,7 @@ public class PlayerMovement : MonoBehaviour
         if (characterController == null)
             return false;
 
-        if (characterController.isGrounded)
+        if (characterController.isGrounded && !IsStandingOnEnemySurface())
             return true;
 
         float probeDistance = Mathf.Max(0.01f, maxDistance);
@@ -560,14 +585,111 @@ public class PlayerMovement : MonoBehaviour
         Vector3 origin = new Vector3(bounds.center.x, bounds.min.y + halfExtents.y + 0.02f, bounds.center.z);
         LayerMask probeMask = layerMask.value == 0 ? Physics.DefaultRaycastLayers : layerMask;
 
-        return Physics.BoxCast(
+        int hitCount = Physics.BoxCastNonAlloc(
             origin,
             halfExtents,
             Vector3.down,
+            groundedProbeHits,
             Quaternion.identity,
             probeDistance,
             probeMask,
             QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = groundedProbeHits[i].collider;
+            if (col == null)
+                continue;
+
+            if (col.transform != null && col.transform.root == transform.root)
+                continue;
+
+            if (IsEnemyGroundCollider(col))
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsStandingOnEnemySurface()
+    {
+        if (characterController == null)
+            return false;
+
+        Bounds bounds = characterController.bounds;
+        float footprintScale = Mathf.Max(0.5f, enemyTopSlideFootprintScale);
+        float footprintThickness = Mathf.Max(0.05f, enemyTopSlideFootprintThickness);
+        Vector3 footprintCenter = new Vector3(bounds.center.x, bounds.min.y + footprintThickness * 0.5f, bounds.center.z);
+        Vector3 footprintHalfExtents = new Vector3(
+            Mathf.Max(0.05f, bounds.extents.x * footprintScale),
+            footprintThickness * 0.5f,
+            Mathf.Max(0.05f, bounds.extents.z * footprintScale));
+
+        int overlapCount = Physics.OverlapBoxNonAlloc(
+            footprintCenter,
+            footprintHalfExtents,
+            enemyTopSlideHits,
+            Quaternion.identity,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < overlapCount; i++)
+        {
+            Collider col = enemyTopSlideHits[i];
+            if (IsEnemyGroundCollider(col))
+                return true;
+        }
+
+        Vector3 origin = new Vector3(bounds.center.x, bounds.min.y + 0.15f, bounds.center.z);
+        float radius = Mathf.Max(0.08f, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.75f);
+
+        int hitCount = Physics.SphereCastNonAlloc(
+            origin,
+            radius,
+            Vector3.down,
+            groundedProbeHits,
+            0.45f,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = groundedProbeHits[i].collider;
+            if (col == null)
+                continue;
+
+            if (IsEnemyGroundCollider(col))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsEnemyGroundCollider(Collider col)
+    {
+        if (col == null)
+            return false;
+
+        if (col.CompareTag("Enemy"))
+            return true;
+
+        Transform root = col.transform.root;
+        if (root != null && root.CompareTag("Enemy"))
+            return true;
+
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+        {
+            if (col.gameObject.layer == enemyLayer)
+                return true;
+
+            if (root != null && root.gameObject.layer == enemyLayer)
+                return true;
+        }
+
+        return col.GetComponentInParent<BaseEnemyCore>() != null;
     }
 
     private Vector3 forward
@@ -612,7 +734,12 @@ public class PlayerMovement : MonoBehaviour
 
     private GroundMoveState moveState = GroundMoveState.Walk;
     private bool shouldRestoreSprintAfterDash;
+    private float postDashForceFullSprintTimer;
+    private bool postDashSprintLogPending;
+    private float dashVelocityTraceTimer;
+    private int dashVelocityTraceSequence;
     private bool keyboardWalkToggleActive;
+    private const float PostDashForceFullSprintDuration = 0.2f;
     private float CurrentSpeed => moveState switch
     {
         GroundMoveState.Walk => walkSpeed,
@@ -866,6 +993,8 @@ public class PlayerMovement : MonoBehaviour
 
         ApplyMovement();
 
+        LogDashVelocityTraceFrame();
+
         HandleAirborneAnimations();
     }
 
@@ -968,7 +1097,28 @@ public class PlayerMovement : MonoBehaviour
             if (!movementSpeedOverrideActive && moveState == GroundMoveState.Sprint)
             {
                 float currentHorizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
-                appliedSpeed = Mathf.MoveTowards(currentHorizontalSpeed, targetSpeed, sprintSpeedRampRate * Time.deltaTime);
+
+                bool postDashSprintRecoveryActive = postDashForceFullSprintTimer > 0f
+                    || dashCarryVelocity.sqrMagnitude > 0.0001f;
+
+                if (postDashSprintRecoveryActive)
+                {
+                    appliedSpeed = targetSpeed;
+
+                    if (postDashForceFullSprintTimer > 0f)
+                        postDashForceFullSprintTimer = Mathf.Max(0f, postDashForceFullSprintTimer - Time.deltaTime);
+
+                    if (postDashSprintLogPending)
+                    {
+                        DashRecoveryLog(
+                            $"Post-dash sprint recovery | forceMinSprint=true targetSpeed={targetSpeed:F2} appliedSpeed={appliedSpeed:F2} currentHorizontalSpeed={currentHorizontalSpeed:F2} dashCarryMag={dashCarryVelocity.magnitude:F2} timerRemaining={postDashForceFullSprintTimer:F3}");
+                        postDashSprintLogPending = false;
+                    }
+                }
+                else
+                {
+                    appliedSpeed = Mathf.MoveTowards(currentHorizontalSpeed, targetSpeed, sprintSpeedRampRate * Time.deltaTime);
+                }
             }
 
             Vector3 desiredVelocity = moveDirection * appliedSpeed;
@@ -1086,13 +1236,17 @@ public class PlayerMovement : MonoBehaviour
                 continue;
 
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
-            if (enemy == null || !enemy.isAlive)
+            bool isEnemySurface = enemy != null || IsEnemyGroundCollider(col);
+            if (!isEnemySurface)
                 continue;
 
-            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+            if (enemy != null && !enemy.isAlive)
                 continue;
 
-            int enemyId = enemy.GetInstanceID();
+            if (col.GetComponentInParent<BossRoombaBrain>() != null)
+                continue;
+
+            int enemyId = enemy != null ? enemy.GetInstanceID() : col.transform.root.GetInstanceID();
             bool alreadyProcessed = false;
             for (int j = 0; j < processedCount; j++)
             {
@@ -1108,7 +1262,7 @@ public class PlayerMovement : MonoBehaviour
             if (processedCount < plungeProcessedEnemyIds.Length)
                 plungeProcessedEnemyIds[processedCount++] = enemyId;
 
-            Transform enemyTransform = enemy.transform;
+            Transform enemyTransform = enemy != null ? enemy.transform : col.transform.root;
             Vector3 away = enemyTransform.position - impactPoint;
             away.y = 0f;
             if (away.sqrMagnitude < 0.0001f)
@@ -1120,13 +1274,16 @@ public class PlayerMovement : MonoBehaviour
                 away = Vector3.forward;
 
             Vector3 pushDir = away.normalized;
+            bool isTurret = col.GetComponentInParent<BaseTurretEnemy>() != null;
 
             float pushDistance = plungeEnemyPushDistance;
-            bool isCleanser = enemy.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
+            bool isCleanser = col.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
             if (isCleanser)
                 pushDistance *= Mathf.Clamp01(plungeCleanserPushbackMultiplier);
 
-            ApplyEnemyPlungePush(enemyTransform, pushDir * pushDistance);
+            if (!isTurret)
+                ApplyEnemyPlungePush(enemyTransform, pushDir * pushDistance);
+
             playerSlideDirectionAccum += -pushDir;
         }
 
@@ -1164,13 +1321,17 @@ public class PlayerMovement : MonoBehaviour
                 continue;
 
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
-            if (enemy == null || !enemy.isAlive)
+            bool isEnemySurface = enemy != null || IsEnemyGroundCollider(col);
+            if (!isEnemySurface)
                 continue;
 
-            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+            if (enemy != null && !enemy.isAlive)
                 continue;
 
-            int enemyId = enemy.GetInstanceID();
+            if (col.GetComponentInParent<BossRoombaBrain>() != null)
+                continue;
+
+            int enemyId = enemy != null ? enemy.GetInstanceID() : col.transform.root.GetInstanceID();
             bool alreadyProcessed = false;
             for (int j = 0; j < processedCount; j++)
             {
@@ -1186,7 +1347,7 @@ public class PlayerMovement : MonoBehaviour
             if (processedCount < plungeProcessedEnemyIds.Length)
                 plungeProcessedEnemyIds[processedCount++] = enemyId;
 
-            Transform enemyTransform = enemy.transform;
+            Transform enemyTransform = enemy != null ? enemy.transform : col.transform.root;
             Vector3 away = enemyTransform.position - impactPoint;
             away.y = 0f;
             if (away.sqrMagnitude < 0.0001f)
@@ -1199,13 +1360,16 @@ public class PlayerMovement : MonoBehaviour
                 away = Vector3.forward;
 
             Vector3 pushDir = away.normalized;
+            bool isTurret = col.GetComponentInParent<BaseTurretEnemy>() != null;
 
             float pushSpeed = plungeSustainEnemyPushSpeed;
-            bool isCleanser = enemy.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
+            bool isCleanser = col.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
             if (isCleanser)
                 pushSpeed *= Mathf.Clamp01(plungeCleanserPushbackMultiplier);
 
-            ApplyEnemyPlungePush(enemyTransform, pushDir * (pushSpeed * dt), allowWarp: false);
+            if (!isTurret)
+                ApplyEnemyPlungePush(enemyTransform, pushDir * (pushSpeed * dt), allowWarp: false);
+
             playerSlideDirAccum += -pushDir;
         }
 
@@ -1271,10 +1435,14 @@ public class PlayerMovement : MonoBehaviour
                 continue;
 
             BaseEnemyCore enemyCandidate = col.GetComponentInParent<BaseEnemyCore>();
-            if (enemyCandidate == null || !enemyCandidate.isAlive)
+            bool isEnemySurface = enemyCandidate != null || IsEnemyGroundCollider(col);
+            if (!isEnemySurface)
                 continue;
 
-            if (enemyCandidate.GetComponentInParent<BossRoombaBrain>() != null)
+            if (enemyCandidate != null && !enemyCandidate.isAlive)
+                continue;
+
+            if (col.GetComponentInParent<BossRoombaBrain>() != null)
                 continue;
 
             Vector3 closest = col.ClosestPoint(playerFeetPoint);
@@ -1306,14 +1474,18 @@ public class PlayerMovement : MonoBehaviour
             if (!Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, probeDistance, ~0, QueryTriggerInteraction.Ignore))
                 return Vector3.zero;
 
-            BaseEnemyCore enemy = hit.collider != null ? hit.collider.GetComponentInParent<BaseEnemyCore>() : null;
-            if (enemy == null || !enemy.isAlive)
+            if (hit.collider == null || !IsEnemyGroundCollider(hit.collider))
                 return Vector3.zero;
 
-            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+            BaseEnemyCore enemy = hit.collider.GetComponentInParent<BaseEnemyCore>();
+            if (enemy != null && !enemy.isAlive)
                 return Vector3.zero;
 
-            pushDir = transform.position - enemy.transform.position;
+            if (hit.collider.GetComponentInParent<BossRoombaBrain>() != null)
+                return Vector3.zero;
+
+            Transform enemyTransform = enemy != null ? enemy.transform : hit.collider.transform.root;
+            pushDir = transform.position - enemyTransform.position;
             pushDir.y = 0f;
             if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
                 pushDir = hit.normal;
@@ -1681,6 +1853,9 @@ public class PlayerMovement : MonoBehaviour
         if (!dashAllowed)
             return;
 
+        float dashDistanceToUse = grounded ? dashDistance : airDashDistance;
+        float dashDurationToUse = grounded ? dashDuration : airDashDuration;
+
         shouldRestoreSprintAfterDash = grounded && moveState == GroundMoveState.Sprint;
 
         DashPerformed?.Invoke();
@@ -1723,8 +1898,8 @@ public class PlayerMovement : MonoBehaviour
             DashCoroutine(
                 dashDirection,
                 isAirDash,
-                dashDistance,
-                dashDuration,
+                dashDistanceToUse,
+                dashDurationToUse,
                 lockInput: true,
                 useDashCharges: true,
                 onStart: () =>
@@ -1736,14 +1911,30 @@ public class PlayerMovement : MonoBehaviour
                 },
                 onComplete: () =>
                 {
+                    float preRecoveryHorizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+                    bool forcedSprintAfterDash = false;
+
                     if (shouldRestoreSprintAfterDash && IsGroundedNow())
                     {
                         TrySetMoveState(GroundMoveState.Sprint, force: true);
+                        forcedSprintAfterDash = true;
                     }
                     else if (InputReader.MoveInput.sqrMagnitude > 0.1f)
+                    {
                         TrySetMoveState(GroundMoveState.Sprint, force: true);
+                        forcedSprintAfterDash = true;
+                    }
                     else
                         ResetMoveState();
+
+                    if (forcedSprintAfterDash)
+                    {
+                        postDashForceFullSprintTimer = Mathf.Max(postDashForceFullSprintTimer, PostDashForceFullSprintDuration);
+                        postDashSprintLogPending = true;
+                    }
+
+                    DashRecoveryLog(
+                        $"Dash complete | forcedSprint={forcedSprintAfterDash} preRecoveryHorizontalSpeed={preRecoveryHorizontalSpeed:F2} moveState={moveState} shouldRestoreSprintAfterDash={shouldRestoreSprintAfterDash} groundedNow={IsGroundedNow()} inputMag={InputReader.MoveInput.magnitude:F2}");
 
                     shouldRestoreSprintAfterDash = false;
                 }));
@@ -1765,6 +1956,8 @@ public class PlayerMovement : MonoBehaviour
         direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
 
         isDashing = true;
+        dashVelocityTraceSequence++;
+        dashVelocityTraceTimer = Mathf.Max(0f, dashVelocityTraceDuration);
         dashCarryVelocity = Vector3.zero;
         currentDashUsesCharges = useDashCharges;
         dashStateExpectedEndTime = Time.unscaledTime + duration + 0.2f;
@@ -1786,6 +1979,9 @@ public class PlayerMovement : MonoBehaviour
         }
 
         onStart?.Invoke();
+
+        DashRecoveryLog(
+            $"Dash started | traceId={dashVelocityTraceSequence} direction={direction} dashVelocity={dashVelocity} duration={duration:F3} distance={distance:F2} moveState={moveState} groundedNow={IsGroundedNow()} inputMag={InputReader.MoveInput.magnitude:F2}");
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -2120,6 +2316,7 @@ public class PlayerMovement : MonoBehaviour
         currentMovement.x *= 0.5f;
         currentMovement.z *= 0.5f;
         plungeLandingPending = false;
+        BeginPlungeTurretImmediateSideNudge();
 
         if (enablePlungeTargetAssist)
         {
@@ -2134,7 +2331,68 @@ public class PlayerMovement : MonoBehaviour
         plungeLandingPending = false;
         plungeTimer = 0f;
         aerialAttackLockTimer = 0f;
+        plungeTurretImmediateNudgeTimer = 0f;
+        plungeTurretImmediateNudgeVelocity = Vector3.zero;
         StopAerialTargetAssist();
+    }
+
+    private void BeginPlungeTurretImmediateSideNudge()
+    {
+        plungeTurretImmediateNudgeTimer = 0f;
+        plungeTurretImmediateNudgeVelocity = Vector3.zero;
+
+        if (!enablePlungeTurretImmediateSideNudge || characterController == null)
+            return;
+
+        Bounds bounds = characterController.bounds;
+        Vector3 probeCenter = new Vector3(bounds.center.x, bounds.min.y + 0.12f, bounds.center.z);
+        float probeRadius = Mathf.Max(0.12f, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.9f);
+
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            probeCenter,
+            probeRadius,
+            enemyTopSlideHits,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        BaseTurretEnemy nearestTurret = null;
+        float nearestSqrDist = float.MaxValue;
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = enemyTopSlideHits[i];
+            if (col == null)
+                continue;
+
+            BaseTurretEnemy turret = col.GetComponentInParent<BaseTurretEnemy>();
+            if (turret == null)
+                continue;
+
+            BaseEnemyCore enemyCore = turret.GetComponent<BaseEnemyCore>();
+            if (enemyCore != null && !enemyCore.isAlive)
+                continue;
+
+            Vector3 turretPos = turret.transform.position;
+            turretPos.y = probeCenter.y;
+            float sqrDist = (probeCenter - turretPos).sqrMagnitude;
+            if (sqrDist < nearestSqrDist)
+            {
+                nearestSqrDist = sqrDist;
+                nearestTurret = turret;
+            }
+        }
+
+        if (nearestTurret == null)
+            return;
+
+        Vector3 away = transform.position - nearestTurret.transform.position;
+        away.y = 0f;
+        if (away.sqrMagnitude < 0.0001f)
+            away = transform.right;
+        if (away.sqrMagnitude < 0.0001f)
+            away = Vector3.right;
+
+        plungeTurretImmediateNudgeVelocity = away.normalized * Mathf.Max(0f, plungeTurretImmediateNudgeSpeed);
+        plungeTurretImmediateNudgeTimer = Mathf.Max(0.01f, plungeTurretImmediateNudgeDuration);
     }
 
     private void StartAerialTargetAssist(AttackType attackType, float duration)
@@ -2479,6 +2737,23 @@ public class PlayerMovement : MonoBehaviour
         if (isPlunging)
             horizontalMovement += ApplyPlungeSustainRepulsion(movementDeltaTime);
 
+        if (plungeTurretImmediateNudgeTimer > 0f)
+        {
+            horizontalMovement += plungeTurretImmediateNudgeVelocity;
+
+            plungeTurretImmediateNudgeTimer = Mathf.Max(0f, plungeTurretImmediateNudgeTimer - movementDeltaTime);
+            float decayRate = plungeTurretImmediateNudgeDuration > 0f
+                ? Mathf.Max(0.01f, plungeTurretImmediateNudgeSpeed / plungeTurretImmediateNudgeDuration)
+                : plungeTurretImmediateNudgeSpeed;
+            plungeTurretImmediateNudgeVelocity = Vector3.MoveTowards(
+                plungeTurretImmediateNudgeVelocity,
+                Vector3.zero,
+                decayRate * movementDeltaTime);
+
+            if (plungeTurretImmediateNudgeTimer <= 0f)
+                plungeTurretImmediateNudgeVelocity = Vector3.zero;
+        }
+
         if (!isDashing && dashCarryVelocity.sqrMagnitude > 0.0001f)
         {
             horizontalMovement += dashCarryVelocity;
@@ -2600,11 +2875,12 @@ public class PlayerMovement : MonoBehaviour
         if (grounded)
         {
             downhillGroundedGraceTimer = downhillAnimationGroundedGrace;
+            airborneStartedWithUpwardVelocity = false;
         }
         else
         {
             downhillGroundedGraceTimer = Mathf.Max(0f, downhillGroundedGraceTimer - Time.deltaTime);
-            if (downhillGroundedGraceTimer > 0f)
+            if (!airborneStartedWithUpwardVelocity && downhillGroundedGraceTimer > 0f)
             {
                 bool downhillGrounded = ShouldTreatAsDownhillGrounded(out string reason, out float slopeAngle);
                 if (downhillGrounded)
@@ -2673,6 +2949,7 @@ public class PlayerMovement : MonoBehaviour
             isPlunging = false;
             plungeTimer = 0f;
             aerialAttackLockTimer = 0f;
+            airborneStartedWithUpwardVelocity = false;
             aerialComboManager?.OnLanded();
 
             bool movementBuffered = InputReader.MoveInput.sqrMagnitude > moveInputDeadZone * moveInputDeadZone;
@@ -2694,6 +2971,7 @@ public class PlayerMovement : MonoBehaviour
                 airborneStartHeight = transform.position.y;
                 highFallActive = false;
                 airDashAvailable = true;
+                airborneStartedWithUpwardVelocity = currentMovement.y > 0.05f;
             }
 
             bool aerialAttackAnimationActive = aerialAttackLockTimer > 0f
@@ -3272,6 +3550,15 @@ public class PlayerMovement : MonoBehaviour
 
     private bool UpdateMoveState(bool useAnalogThresholds, float inputMagnitude)
     {
+        if (postDashForceFullSprintTimer > 0f && inputMagnitude > moveInputDeadZone)
+        {
+            if (moveState != GroundMoveState.Sprint)
+                DashRecoveryLog($"Post-dash move-state override | previousState={moveState} inputMag={inputMagnitude:F2} timer={postDashForceFullSprintTimer:F3}");
+
+            TrySetMoveState(GroundMoveState.Sprint, force: true);
+            return true;
+        }
+
         bool stateChanged = false;
 
         if (useAnalogThresholds)
@@ -3659,6 +3946,34 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         Debug.Log($"[PlayerMovement][Debug] {message}");
+    }
+
+    private void DashRecoveryLog(string message)
+    {
+        if (!enableDashRecoveryDebugLogs)
+            return;
+
+        Debug.Log($"[PlayerMovement][DashRecovery] {message}");
+    }
+
+    private void LogDashVelocityTraceFrame()
+    {
+        if (!enableDashVelocityTraceLogs)
+            return;
+
+        if (dashVelocityTraceTimer <= 0f)
+            return;
+
+        dashVelocityTraceTimer = Mathf.Max(0f, dashVelocityTraceTimer - Time.deltaTime);
+
+        Vector3 controllerVelocity = characterController != null ? characterController.velocity : Vector3.zero;
+        Vector3 planarCurrentMovement = new Vector3(currentMovement.x, 0f, currentMovement.z);
+
+        Debug.Log(
+            $"[PlayerMovement][DashVelocityTrace] id={dashVelocityTraceSequence} tRemaining={dashVelocityTraceTimer:F3} "
+            + $"controllerVel={controllerVelocity} speed={controllerVelocity.magnitude:F3} "
+            + $"planarCurrentMovement={planarCurrentMovement} moveState={moveState} "
+            + $"isDashing={isDashing} dashCarry={dashCarryVelocity} inputMag={InputReader.MoveInput.magnitude:F3}");
     }
 
     #region External Velocity Injection (Vacuum, Knockback, etc.)
