@@ -18,6 +18,9 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
     [Tooltip("Seconds between shots while in Attack state.")]
     [SerializeField] protected float fireCooldown = 1.0f;
 
+    [Tooltip("Maximum distance allowed to enter/maintain turret attack. Set to 0 to use Detection Range.")]
+    [SerializeField, Min(0f)] private float attackRange = 0f;
+
     [Tooltip("Projectile prefab spawned when firing. Should have a Rigidbody and EnemyProjectile (or custom) component.")]
     [SerializeField] protected GameObject projectilePrefab;
 
@@ -290,11 +293,11 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             }
 
             float dist = Vector3.Distance(transform.position, player.position);
+            float effectiveAttackRange = GetEffectiveAttackRange();
 
             // Compute thresholds and enforce exit > enter
-            float effectiveRange = GetEffectiveDetectionRange();
-            float enterThreshold = Mathf.Max(0f, effectiveRange + Mathf.Max(0f, enterBuffer));
-            float exitThreshold = effectiveRange + Mathf.Max(exitBuffer, enterBuffer + 0.5f);
+            float enterThreshold = Mathf.Max(0f, effectiveAttackRange + Mathf.Max(0f, enterBuffer));
+            float exitThreshold = effectiveAttackRange + Mathf.Max(exitBuffer, enterBuffer + 0.5f);
             if (exitThreshold <= enterThreshold)
                 exitThreshold = enterThreshold + 0.5f;
 
@@ -412,6 +415,15 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             if (!canAim)
             {
                 TryFireTriggerByName("LosePlayer");
+                yield return null;
+                continue;
+            }
+
+            float distToPlayer = Vector3.Distance(transform.position, player.position);
+            if (distToPlayer > GetEffectiveAttackRange())
+            {
+                TryFireTriggerByName("LosePlayer");
+                SetTelegraphVisible(false);
                 yield return null;
                 continue;
             }
@@ -794,7 +806,16 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
 
     private float GetTelegraphRange()
     {
-        return Mathf.Max(0f, GetEffectiveDetectionRange() + Mathf.Max(0f, enterBuffer));
+        return Mathf.Max(0f, GetEffectiveAttackRange() + Mathf.Max(0f, enterBuffer));
+    }
+
+    private float GetEffectiveAttackRange()
+    {
+        float detection = GetEffectiveDetectionRange();
+        if (attackRange <= 0f)
+            return detection;
+
+        return attackRange;
     }
 
     private new void OnDisable()
