@@ -279,6 +279,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private float dashDistance = 6f;
 
+    [SerializeField]
+    private float airDashDistance = 6f;
+
     [SerializeField, Range(0.05f, 1f)]
     private float dashDuration = 0.25f;
 
@@ -1681,6 +1684,8 @@ public class PlayerMovement : MonoBehaviour
         if (!dashAllowed)
             return;
 
+        float dashDistanceToUse = grounded ? dashDistance : airDashDistance;
+
         shouldRestoreSprintAfterDash = grounded && moveState == GroundMoveState.Sprint;
 
         DashPerformed?.Invoke();
@@ -1723,7 +1728,7 @@ public class PlayerMovement : MonoBehaviour
             DashCoroutine(
                 dashDirection,
                 isAirDash,
-                dashDistance,
+                dashDistanceToUse,
                 dashDuration,
                 lockInput: true,
                 useDashCharges: true,
