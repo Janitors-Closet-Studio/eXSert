@@ -303,6 +303,15 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Range(0f, 2f)]
     private float dashCoolDown = 0.5f;
 
+    [SerializeField, Tooltip("Enable focused logs for post-dash sprint recovery speed/state.")]
+    private bool enableDashRecoveryDebugLogs = true;
+
+    [SerializeField, Tooltip("Log player velocity every frame for a short window after each dash starts.")]
+    private bool enableDashVelocityTraceLogs = true;
+
+    [SerializeField, Range(0f, 10f), Tooltip("Seconds to keep logging velocity every frame after dash initiation.")]
+    private float dashVelocityTraceDuration = 3f;
+
     [Header("Dash Momentum")]
     [SerializeField, Range(0f, 1f), Tooltip("Fraction of dash speed preserved briefly after dash end.")]
     private float dashMomentumCarryPercent = 0.3f;
@@ -725,7 +734,12 @@ public class PlayerMovement : MonoBehaviour
 
     private GroundMoveState moveState = GroundMoveState.Walk;
     private bool shouldRestoreSprintAfterDash;
+    private float postDashForceFullSprintTimer;
+    private bool postDashSprintLogPending;
+    private float dashVelocityTraceTimer;
+    private int dashVelocityTraceSequence;
     private bool keyboardWalkToggleActive;
+    private const float PostDashForceFullSprintDuration = 0.2f;
     private float CurrentSpeed => moveState switch
     {
         GroundMoveState.Walk => walkSpeed,
@@ -979,6 +993,8 @@ public class PlayerMovement : MonoBehaviour
 
         ApplyMovement();
 
+        LogDashVelocityTraceFrame();
+
         HandleAirborneAnimations();
     }
 
@@ -1081,7 +1097,28 @@ public class PlayerMovement : MonoBehaviour
             if (!movementSpeedOverrideActive && moveState == GroundMoveState.Sprint)
             {
                 float currentHorizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
-                appliedSpeed = Mathf.MoveTowards(currentHorizontalSpeed, targetSpeed, sprintSpeedRampRate * Time.deltaTime);
+
+                bool postDashSprintRecoveryActive = postDashForceFullSprintTimer > 0f
+                    || dashCarryVelocity.sqrMagnitude > 0.0001f;
+
+                if (postDashSprintRecoveryActive)
+                {
+                    appliedSpeed = targetSpeed;
+
+                    if (postDashForceFullSprintTimer > 0f)
+                        postDashForceFullSprintTimer = Mathf.Max(0f, postDashForceFullSprintTimer - Time.deltaTime);
+
+                    if (postDashSprintLogPending)
+                    {
+                        DashRecoveryLog(
+                            $"Post-dash sprint recovery | forceMinSprint=true targetSpeed={targetSpeed:F2} appliedSpeed={appliedSpeed:F2} currentHorizontalSpeed={currentHorizontalSpeed:F2} dashCarryMag={dashCarryVelocity.magnitude:F2} timerRemaining={postDashForceFullSprintTimer:F3}");
+                        postDashSprintLogPending = false;
+                    }
+                }
+                else
+                {
+                    appliedSpeed = Mathf.MoveTowards(currentHorizontalSpeed, targetSpeed, sprintSpeedRampRate * Time.deltaTime);
+                }
             }
 
             Vector3 desiredVelocity = moveDirection * appliedSpeed;
@@ -1874,14 +1911,30 @@ public class PlayerMovement : MonoBehaviour
                 },
                 onComplete: () =>
                 {
+                    float preRecoveryHorizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+                    bool forcedSprintAfterDash = false;
+
                     if (shouldRestoreSprintAfterDash && IsGroundedNow())
                     {
                         TrySetMoveState(GroundMoveState.Sprint, force: true);
+                        forcedSprintAfterDash = true;
                     }
                     else if (InputReader.MoveInput.sqrMagnitude > 0.1f)
+                    {
                         TrySetMoveState(GroundMoveState.Sprint, force: true);
+                        forcedSprintAfterDash = true;
+                    }
                     else
                         ResetMoveState();
+
+                    if (forcedSprintAfterDash)
+                    {
+                        postDashForceFullSprintTimer = Mathf.Max(postDashForceFullSprintTimer, PostDashForceFullSprintDuration);
+                        postDashSprintLogPending = true;
+                    }
+
+                    DashRecoveryLog(
+                        $"Dash complete | forcedSprint={forcedSprintAfterDash} preRecoveryHorizontalSpeed={preRecoveryHorizontalSpeed:F2} moveState={moveState} shouldRestoreSprintAfterDash={shouldRestoreSprintAfterDash} groundedNow={IsGroundedNow()} inputMag={InputReader.MoveInput.magnitude:F2}");
 
                     shouldRestoreSprintAfterDash = false;
                 }));
@@ -1903,6 +1956,8 @@ public class PlayerMovement : MonoBehaviour
         direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
 
         isDashing = true;
+        dashVelocityTraceSequence++;
+        dashVelocityTraceTimer = Mathf.Max(0f, dashVelocityTraceDuration);
         dashCarryVelocity = Vector3.zero;
         currentDashUsesCharges = useDashCharges;
         dashStateExpectedEndTime = Time.unscaledTime + duration + 0.2f;
@@ -1924,6 +1979,9 @@ public class PlayerMovement : MonoBehaviour
         }
 
         onStart?.Invoke();
+
+        DashRecoveryLog(
+            $"Dash started | traceId={dashVelocityTraceSequence} direction={direction} dashVelocity={dashVelocity} duration={duration:F3} distance={distance:F2} moveState={moveState} groundedNow={IsGroundedNow()} inputMag={InputReader.MoveInput.magnitude:F2}");
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -3492,6 +3550,15 @@ public class PlayerMovement : MonoBehaviour
 
     private bool UpdateMoveState(bool useAnalogThresholds, float inputMagnitude)
     {
+        if (postDashForceFullSprintTimer > 0f && inputMagnitude > moveInputDeadZone)
+        {
+            if (moveState != GroundMoveState.Sprint)
+                DashRecoveryLog($"Post-dash move-state override | previousState={moveState} inputMag={inputMagnitude:F2} timer={postDashForceFullSprintTimer:F3}");
+
+            TrySetMoveState(GroundMoveState.Sprint, force: true);
+            return true;
+        }
+
         bool stateChanged = false;
 
         if (useAnalogThresholds)
@@ -3879,6 +3946,34 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         Debug.Log($"[PlayerMovement][Debug] {message}");
+    }
+
+    private void DashRecoveryLog(string message)
+    {
+        if (!enableDashRecoveryDebugLogs)
+            return;
+
+        Debug.Log($"[PlayerMovement][DashRecovery] {message}");
+    }
+
+    private void LogDashVelocityTraceFrame()
+    {
+        if (!enableDashVelocityTraceLogs)
+            return;
+
+        if (dashVelocityTraceTimer <= 0f)
+            return;
+
+        dashVelocityTraceTimer = Mathf.Max(0f, dashVelocityTraceTimer - Time.deltaTime);
+
+        Vector3 controllerVelocity = characterController != null ? characterController.velocity : Vector3.zero;
+        Vector3 planarCurrentMovement = new Vector3(currentMovement.x, 0f, currentMovement.z);
+
+        Debug.Log(
+            $"[PlayerMovement][DashVelocityTrace] id={dashVelocityTraceSequence} tRemaining={dashVelocityTraceTimer:F3} "
+            + $"controllerVel={controllerVelocity} speed={controllerVelocity.magnitude:F3} "
+            + $"planarCurrentMovement={planarCurrentMovement} moveState={moveState} "
+            + $"isDashing={isDashing} dashCarry={dashCarryVelocity} inputMag={InputReader.MoveInput.magnitude:F3}");
     }
 
     #region External Velocity Injection (Vacuum, Knockback, etc.)
