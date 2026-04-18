@@ -1131,6 +1131,16 @@ public class PlayerAttackManager : MonoBehaviour
                 lightAerialDroneRepositionVerticalOffset,
                 lightAerialDroneRepositionMinPlayerBelow,
                 lightAerialDroneRepositionForwardBias);
+            if (aerialComboManager != null)
+            {
+                damageManager.ConfigureUnderDroneAerialHitOverrideSettings(
+                    aerialComboManager.EnableUnderDroneAerialHitOverride,
+                    aerialComboManager.UnderDroneOverrideDistanceThreshold,
+                    aerialComboManager.UnderDroneOverrideMaxXZOffset,
+                    aerialComboManager.UnderDroneOverrideMinVerticalOffset,
+                    aerialComboManager.UnderDroneOverrideKnockbackMultiplier,
+                    aerialComboManager.UnderDroneOverrideMask);
+            }
             damageManager.ConfigureAttackType(currentAttack.attackType);
             damageManager.ConfigureAttackId(currentAttack.attackId);
             damageManager.ConfigureAttackerContext(transform.position);

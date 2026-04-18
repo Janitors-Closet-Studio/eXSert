@@ -26,6 +26,20 @@ public class AerialComboManager : MonoBehaviour
     [SerializeField, Tooltip("Plunge damage multiplier used when plunging without completing both aerial light attacks first.")]
     [Range(0.1f, 5f)] private float plungeDamageMultiplierWithoutFullLightChain = 1f;
 
+    [Header("Under-Drone Aerial Hit Override")]
+    [SerializeField, Tooltip("When enabled, aerial hitboxes can still damage drones directly above the player even if collider overlap misses.")]
+    private bool enableUnderDroneAerialHitOverride = true;
+    [SerializeField, Range(0f, 4f), Tooltip("Maximum 3D distance between player and drone for the under-drone override to apply.")]
+    private float underDroneOverrideDistanceThreshold = 1.8f;
+    [SerializeField, Range(0f, 2f), Tooltip("Maximum XZ offset allowed between player and drone for under-drone override.")]
+    private float underDroneOverrideMaxXZOffset = 0.45f;
+    [SerializeField, Range(0f, 3f), Tooltip("Drone must be at least this much above the player for under-drone override.")]
+    private float underDroneOverrideMinVerticalOffset = 0.2f;
+    [SerializeField, Range(1f, 2f), Tooltip("Extra multiplier applied to aerial drone reposition distance when under-drone override lands.")]
+    private float underDroneOverrideKnockbackMultiplier = 1.2f;
+    [SerializeField, Tooltip("Layer mask used when scanning for drones above the player for under-drone override.")]
+    private LayerMask underDroneOverrideMask = ~0;
+
     [Header("References")]
     [SerializeField] private CharacterController characterController;
     [SerializeField] private PlayerAnimationController animationController;
@@ -66,6 +80,13 @@ public class AerialComboManager : MonoBehaviour
         pendingPlungeDamageMultiplier = 1f;
         return multiplier;
     }
+
+    public bool EnableUnderDroneAerialHitOverride => enableUnderDroneAerialHitOverride;
+    public float UnderDroneOverrideDistanceThreshold => underDroneOverrideDistanceThreshold;
+    public float UnderDroneOverrideMaxXZOffset => underDroneOverrideMaxXZOffset;
+    public float UnderDroneOverrideMinVerticalOffset => underDroneOverrideMinVerticalOffset;
+    public float UnderDroneOverrideKnockbackMultiplier => underDroneOverrideKnockbackMultiplier;
+    public LayerMask UnderDroneOverrideMask => underDroneOverrideMask;
 #pragma warning restore CS0414
 
     private void Awake()
