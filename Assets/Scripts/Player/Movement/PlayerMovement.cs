@@ -285,6 +285,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Range(0.05f, 1f)]
     private float dashDuration = 0.25f;
 
+    [SerializeField, Range(0.05f, 1f)]
+    private float airDashDuration = 0.25f;
+
     [SerializeField, Range(0f, 0.3f), Tooltip("Crossfade duration used when entering grounded dash animation.")]
     private float dashAnimationTransition = 0.08f;
 
@@ -1685,6 +1688,7 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         float dashDistanceToUse = grounded ? dashDistance : airDashDistance;
+        float dashDurationToUse = grounded ? dashDuration : airDashDuration;
 
         shouldRestoreSprintAfterDash = grounded && moveState == GroundMoveState.Sprint;
 
@@ -1729,7 +1733,7 @@ public class PlayerMovement : MonoBehaviour
                 dashDirection,
                 isAirDash,
                 dashDistanceToUse,
-                dashDuration,
+                dashDurationToUse,
                 lockInput: true,
                 useDashCharges: true,
                 onStart: () =>
