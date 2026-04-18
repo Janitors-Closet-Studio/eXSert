@@ -363,6 +363,12 @@ public class PlayerMovement : MonoBehaviour
     [Range(0f, 20f)] private float plungeSustainEnemyPushSpeed = 2.5f;
     [SerializeField, Tooltip("Additional horizontal slide speed to force the player off overlapping enemies while plunging.")]
     [Range(0f, 20f)] private float plungeSustainPlayerSlideSpeed = 7f;
+    [SerializeField, Tooltip("When plunging directly above a turret, applies a brief sideways nudge before continuing descent.")]
+    private bool enablePlungeTurretImmediateSideNudge = true;
+    [SerializeField, Range(0f, 20f), Tooltip("Initial sideways speed applied by the immediate turret plunge nudge.")]
+    private float plungeTurretImmediateNudgeSpeed = 8f;
+    [SerializeField, Range(0.01f, 0.4f), Tooltip("Duration of the immediate sideways nudge when plunging directly over a turret.")]
+    private float plungeTurretImmediateNudgeDuration = 0.12f;
 
     [Header("Plunge Recovery Safeguards")]
     [SerializeField, Tooltip("Failsafe timeout after plunge landing before forcing attack unlock if input remains busy.")]
@@ -491,6 +497,7 @@ public class PlayerMovement : MonoBehaviour
     private readonly Collider[] plungeEnemyPushBuffer = new Collider[32];
     private readonly Collider[] enemyTopSlideHits = new Collider[32];
     private readonly Collider[] bossFaceplateHits = new Collider[24];
+    private readonly RaycastHit[] groundedProbeHits = new RaycastHit[16];
     private readonly int[] plungeProcessedEnemyIds = new int[32];
     private bool warnedMissingSoundSource;
     private Vector3 dashCarryVelocity = Vector3.zero;
@@ -523,6 +530,8 @@ public class PlayerMovement : MonoBehaviour
     private float previousFaceplateWatchY;
     private bool previousFaceplateWatchGrounded;
     private bool previousFaceplateWatchCcGrounded;
+    private Vector3 plungeTurretImmediateNudgeVelocity = Vector3.zero;
+    private float plungeTurretImmediateNudgeTimer;
 
     private Transform ResolveCameraTransform()
     {
@@ -550,7 +559,7 @@ public class PlayerMovement : MonoBehaviour
         if (characterController == null)
             return false;
 
-        if (characterController.isGrounded)
+        if (characterController.isGrounded && !IsStandingOnEnemySurface())
             return true;
 
         float probeDistance = Mathf.Max(0.01f, maxDistance);
@@ -566,14 +575,111 @@ public class PlayerMovement : MonoBehaviour
         Vector3 origin = new Vector3(bounds.center.x, bounds.min.y + halfExtents.y + 0.02f, bounds.center.z);
         LayerMask probeMask = layerMask.value == 0 ? Physics.DefaultRaycastLayers : layerMask;
 
-        return Physics.BoxCast(
+        int hitCount = Physics.BoxCastNonAlloc(
             origin,
             halfExtents,
             Vector3.down,
+            groundedProbeHits,
             Quaternion.identity,
             probeDistance,
             probeMask,
             QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = groundedProbeHits[i].collider;
+            if (col == null)
+                continue;
+
+            if (col.transform != null && col.transform.root == transform.root)
+                continue;
+
+            if (IsEnemyGroundCollider(col))
+                continue;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsStandingOnEnemySurface()
+    {
+        if (characterController == null)
+            return false;
+
+        Bounds bounds = characterController.bounds;
+        float footprintScale = Mathf.Max(0.5f, enemyTopSlideFootprintScale);
+        float footprintThickness = Mathf.Max(0.05f, enemyTopSlideFootprintThickness);
+        Vector3 footprintCenter = new Vector3(bounds.center.x, bounds.min.y + footprintThickness * 0.5f, bounds.center.z);
+        Vector3 footprintHalfExtents = new Vector3(
+            Mathf.Max(0.05f, bounds.extents.x * footprintScale),
+            footprintThickness * 0.5f,
+            Mathf.Max(0.05f, bounds.extents.z * footprintScale));
+
+        int overlapCount = Physics.OverlapBoxNonAlloc(
+            footprintCenter,
+            footprintHalfExtents,
+            enemyTopSlideHits,
+            Quaternion.identity,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < overlapCount; i++)
+        {
+            Collider col = enemyTopSlideHits[i];
+            if (IsEnemyGroundCollider(col))
+                return true;
+        }
+
+        Vector3 origin = new Vector3(bounds.center.x, bounds.min.y + 0.15f, bounds.center.z);
+        float radius = Mathf.Max(0.08f, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.75f);
+
+        int hitCount = Physics.SphereCastNonAlloc(
+            origin,
+            radius,
+            Vector3.down,
+            groundedProbeHits,
+            0.45f,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = groundedProbeHits[i].collider;
+            if (col == null)
+                continue;
+
+            if (IsEnemyGroundCollider(col))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsEnemyGroundCollider(Collider col)
+    {
+        if (col == null)
+            return false;
+
+        if (col.CompareTag("Enemy"))
+            return true;
+
+        Transform root = col.transform.root;
+        if (root != null && root.CompareTag("Enemy"))
+            return true;
+
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+        {
+            if (col.gameObject.layer == enemyLayer)
+                return true;
+
+            if (root != null && root.gameObject.layer == enemyLayer)
+                return true;
+        }
+
+        return col.GetComponentInParent<BaseEnemyCore>() != null;
     }
 
     private Vector3 forward
@@ -1092,13 +1198,17 @@ public class PlayerMovement : MonoBehaviour
                 continue;
 
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
-            if (enemy == null || !enemy.isAlive)
+            bool isEnemySurface = enemy != null || IsEnemyGroundCollider(col);
+            if (!isEnemySurface)
                 continue;
 
-            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+            if (enemy != null && !enemy.isAlive)
                 continue;
 
-            int enemyId = enemy.GetInstanceID();
+            if (col.GetComponentInParent<BossRoombaBrain>() != null)
+                continue;
+
+            int enemyId = enemy != null ? enemy.GetInstanceID() : col.transform.root.GetInstanceID();
             bool alreadyProcessed = false;
             for (int j = 0; j < processedCount; j++)
             {
@@ -1114,7 +1224,7 @@ public class PlayerMovement : MonoBehaviour
             if (processedCount < plungeProcessedEnemyIds.Length)
                 plungeProcessedEnemyIds[processedCount++] = enemyId;
 
-            Transform enemyTransform = enemy.transform;
+            Transform enemyTransform = enemy != null ? enemy.transform : col.transform.root;
             Vector3 away = enemyTransform.position - impactPoint;
             away.y = 0f;
             if (away.sqrMagnitude < 0.0001f)
@@ -1126,13 +1236,16 @@ public class PlayerMovement : MonoBehaviour
                 away = Vector3.forward;
 
             Vector3 pushDir = away.normalized;
+            bool isTurret = col.GetComponentInParent<BaseTurretEnemy>() != null;
 
             float pushDistance = plungeEnemyPushDistance;
-            bool isCleanser = enemy.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
+            bool isCleanser = col.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
             if (isCleanser)
                 pushDistance *= Mathf.Clamp01(plungeCleanserPushbackMultiplier);
 
-            ApplyEnemyPlungePush(enemyTransform, pushDir * pushDistance);
+            if (!isTurret)
+                ApplyEnemyPlungePush(enemyTransform, pushDir * pushDistance);
+
             playerSlideDirectionAccum += -pushDir;
         }
 
@@ -1170,13 +1283,17 @@ public class PlayerMovement : MonoBehaviour
                 continue;
 
             BaseEnemyCore enemy = col.GetComponentInParent<BaseEnemyCore>();
-            if (enemy == null || !enemy.isAlive)
+            bool isEnemySurface = enemy != null || IsEnemyGroundCollider(col);
+            if (!isEnemySurface)
                 continue;
 
-            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+            if (enemy != null && !enemy.isAlive)
                 continue;
 
-            int enemyId = enemy.GetInstanceID();
+            if (col.GetComponentInParent<BossRoombaBrain>() != null)
+                continue;
+
+            int enemyId = enemy != null ? enemy.GetInstanceID() : col.transform.root.GetInstanceID();
             bool alreadyProcessed = false;
             for (int j = 0; j < processedCount; j++)
             {
@@ -1192,7 +1309,7 @@ public class PlayerMovement : MonoBehaviour
             if (processedCount < plungeProcessedEnemyIds.Length)
                 plungeProcessedEnemyIds[processedCount++] = enemyId;
 
-            Transform enemyTransform = enemy.transform;
+            Transform enemyTransform = enemy != null ? enemy.transform : col.transform.root;
             Vector3 away = enemyTransform.position - impactPoint;
             away.y = 0f;
             if (away.sqrMagnitude < 0.0001f)
@@ -1205,13 +1322,16 @@ public class PlayerMovement : MonoBehaviour
                 away = Vector3.forward;
 
             Vector3 pushDir = away.normalized;
+            bool isTurret = col.GetComponentInParent<BaseTurretEnemy>() != null;
 
             float pushSpeed = plungeSustainEnemyPushSpeed;
-            bool isCleanser = enemy.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
+            bool isCleanser = col.GetComponentInParent<EnemyBehavior.Boss.Cleanser.CleanserBrain>() != null;
             if (isCleanser)
                 pushSpeed *= Mathf.Clamp01(plungeCleanserPushbackMultiplier);
 
-            ApplyEnemyPlungePush(enemyTransform, pushDir * (pushSpeed * dt), allowWarp: false);
+            if (!isTurret)
+                ApplyEnemyPlungePush(enemyTransform, pushDir * (pushSpeed * dt), allowWarp: false);
+
             playerSlideDirAccum += -pushDir;
         }
 
@@ -1277,10 +1397,14 @@ public class PlayerMovement : MonoBehaviour
                 continue;
 
             BaseEnemyCore enemyCandidate = col.GetComponentInParent<BaseEnemyCore>();
-            if (enemyCandidate == null || !enemyCandidate.isAlive)
+            bool isEnemySurface = enemyCandidate != null || IsEnemyGroundCollider(col);
+            if (!isEnemySurface)
                 continue;
 
-            if (enemyCandidate.GetComponentInParent<BossRoombaBrain>() != null)
+            if (enemyCandidate != null && !enemyCandidate.isAlive)
+                continue;
+
+            if (col.GetComponentInParent<BossRoombaBrain>() != null)
                 continue;
 
             Vector3 closest = col.ClosestPoint(playerFeetPoint);
@@ -1312,14 +1436,18 @@ public class PlayerMovement : MonoBehaviour
             if (!Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, probeDistance, ~0, QueryTriggerInteraction.Ignore))
                 return Vector3.zero;
 
-            BaseEnemyCore enemy = hit.collider != null ? hit.collider.GetComponentInParent<BaseEnemyCore>() : null;
-            if (enemy == null || !enemy.isAlive)
+            if (hit.collider == null || !IsEnemyGroundCollider(hit.collider))
                 return Vector3.zero;
 
-            if (enemy.GetComponentInParent<BossRoombaBrain>() != null)
+            BaseEnemyCore enemy = hit.collider.GetComponentInParent<BaseEnemyCore>();
+            if (enemy != null && !enemy.isAlive)
                 return Vector3.zero;
 
-            pushDir = transform.position - enemy.transform.position;
+            if (hit.collider.GetComponentInParent<BossRoombaBrain>() != null)
+                return Vector3.zero;
+
+            Transform enemyTransform = enemy != null ? enemy.transform : hit.collider.transform.root;
+            pushDir = transform.position - enemyTransform.position;
             pushDir.y = 0f;
             if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
                 pushDir = hit.normal;
@@ -2129,6 +2257,7 @@ public class PlayerMovement : MonoBehaviour
         currentMovement.x *= 0.5f;
         currentMovement.z *= 0.5f;
         plungeLandingPending = false;
+        BeginPlungeTurretImmediateSideNudge();
 
         if (enablePlungeTargetAssist)
         {
@@ -2143,7 +2272,68 @@ public class PlayerMovement : MonoBehaviour
         plungeLandingPending = false;
         plungeTimer = 0f;
         aerialAttackLockTimer = 0f;
+        plungeTurretImmediateNudgeTimer = 0f;
+        plungeTurretImmediateNudgeVelocity = Vector3.zero;
         StopAerialTargetAssist();
+    }
+
+    private void BeginPlungeTurretImmediateSideNudge()
+    {
+        plungeTurretImmediateNudgeTimer = 0f;
+        plungeTurretImmediateNudgeVelocity = Vector3.zero;
+
+        if (!enablePlungeTurretImmediateSideNudge || characterController == null)
+            return;
+
+        Bounds bounds = characterController.bounds;
+        Vector3 probeCenter = new Vector3(bounds.center.x, bounds.min.y + 0.12f, bounds.center.z);
+        float probeRadius = Mathf.Max(0.12f, Mathf.Min(bounds.extents.x, bounds.extents.z) * 0.9f);
+
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            probeCenter,
+            probeRadius,
+            enemyTopSlideHits,
+            ~0,
+            QueryTriggerInteraction.Ignore);
+
+        BaseTurretEnemy nearestTurret = null;
+        float nearestSqrDist = float.MaxValue;
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider col = enemyTopSlideHits[i];
+            if (col == null)
+                continue;
+
+            BaseTurretEnemy turret = col.GetComponentInParent<BaseTurretEnemy>();
+            if (turret == null)
+                continue;
+
+            BaseEnemyCore enemyCore = turret.GetComponent<BaseEnemyCore>();
+            if (enemyCore != null && !enemyCore.isAlive)
+                continue;
+
+            Vector3 turretPos = turret.transform.position;
+            turretPos.y = probeCenter.y;
+            float sqrDist = (probeCenter - turretPos).sqrMagnitude;
+            if (sqrDist < nearestSqrDist)
+            {
+                nearestSqrDist = sqrDist;
+                nearestTurret = turret;
+            }
+        }
+
+        if (nearestTurret == null)
+            return;
+
+        Vector3 away = transform.position - nearestTurret.transform.position;
+        away.y = 0f;
+        if (away.sqrMagnitude < 0.0001f)
+            away = transform.right;
+        if (away.sqrMagnitude < 0.0001f)
+            away = Vector3.right;
+
+        plungeTurretImmediateNudgeVelocity = away.normalized * Mathf.Max(0f, plungeTurretImmediateNudgeSpeed);
+        plungeTurretImmediateNudgeTimer = Mathf.Max(0.01f, plungeTurretImmediateNudgeDuration);
     }
 
     private void StartAerialTargetAssist(AttackType attackType, float duration)
@@ -2487,6 +2677,23 @@ public class PlayerMovement : MonoBehaviour
 
         if (isPlunging)
             horizontalMovement += ApplyPlungeSustainRepulsion(movementDeltaTime);
+
+        if (plungeTurretImmediateNudgeTimer > 0f)
+        {
+            horizontalMovement += plungeTurretImmediateNudgeVelocity;
+
+            plungeTurretImmediateNudgeTimer = Mathf.Max(0f, plungeTurretImmediateNudgeTimer - movementDeltaTime);
+            float decayRate = plungeTurretImmediateNudgeDuration > 0f
+                ? Mathf.Max(0.01f, plungeTurretImmediateNudgeSpeed / plungeTurretImmediateNudgeDuration)
+                : plungeTurretImmediateNudgeSpeed;
+            plungeTurretImmediateNudgeVelocity = Vector3.MoveTowards(
+                plungeTurretImmediateNudgeVelocity,
+                Vector3.zero,
+                decayRate * movementDeltaTime);
+
+            if (plungeTurretImmediateNudgeTimer <= 0f)
+                plungeTurretImmediateNudgeVelocity = Vector3.zero;
+        }
 
         if (!isDashing && dashCarryVelocity.sqrMagnitude > 0.0001f)
         {
