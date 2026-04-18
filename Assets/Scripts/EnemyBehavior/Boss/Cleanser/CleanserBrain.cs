@@ -23,6 +23,8 @@ namespace EnemyBehavior.Boss.Cleanser
     [RequireComponent(typeof(NavMeshAgent))]
     public class CleanserBrain : MonoBehaviour, IQueuedAttacker, IHealthSystem
     {
+        private const string PlayerSceneName = "PlayerScene";
+
         [System.Serializable]
         private class PostRecoveryDistanceRangesByAggression
         {
@@ -5085,7 +5087,10 @@ namespace EnemyBehavior.Boss.Cleanser
             if (platformController != null)
             {
                 platformController.LowerPlatforms();
+                platformController.ForceUnmountPlayer();
             }
+
+            TryReturnPlayerToPlayerScene();
             
             if (dualWieldSystem != null)
             {
@@ -5105,6 +5110,35 @@ namespace EnemyBehavior.Boss.Cleanser
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Defeated!");
 #endif
+        }
+
+        private void TryReturnPlayerToPlayerScene()
+        {
+            if (!global::Player.TryGetPlayerObject(out GameObject playerObject) || playerObject == null)
+                return;
+
+            if (platformController != null && platformController.IsPlayerMounted)
+                return;
+
+            Transform playerTransform = playerObject.transform;
+            if (playerTransform.parent != null)
+            {
+                CleanserPlatformController parentPlatformController = playerTransform.parent.GetComponentInParent<CleanserPlatformController>();
+                if (parentPlatformController != null)
+                    return;
+
+                playerTransform.SetParent(null, true);
+            }
+
+            Scene playerScene = SceneManager.GetSceneByName(PlayerSceneName);
+            if (!playerScene.IsValid() || !playerScene.isLoaded)
+                return;
+
+            if (playerObject.scene != playerScene)
+                SceneManager.MoveGameObjectToScene(playerObject, playerScene);
+
+            if (PlayerPresenceManager.Instance != null)
+                PlayerPresenceManager.Instance.RegisterPlayer(playerTransform);
         }
 
         #endregion

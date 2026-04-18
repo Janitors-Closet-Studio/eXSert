@@ -11,6 +11,7 @@ using UI.Loading;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Progression.Checkpoints;
+using UnityEngine.SceneManagement;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -109,11 +110,14 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool attackManagerDisabledByDeath;
     private float defaultMaxHealth;
     private float defaultCurrentHealth;
+    private int lastKnownSceneHandle = -1;
 
     #region Unity MonoBehaviour Functions
     private void Awake()
     {
         Instance = this;
+        lastKnownSceneHandle = gameObject.scene.handle;
+        Player.ClearCachedPlayerObject();
 
         if (animationController == null) animationController = GetComponentInChildren<PlayerAnimationController>();
         if (playerMovement == null) playerMovement = GetComponent<PlayerMovement>();
@@ -133,6 +137,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     private void OnDestroy()
     {
+        Player.ClearCachedPlayerObject();
+
         if (Instance == this)
         {
             Instance = null;
@@ -146,15 +152,19 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
      */
     private void OnEnable() 
     {
+        Player.ClearCachedPlayerObject();
         Player.SetActive(true);
         Player.RespawnPlayer += HandleRespawnRequested;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
         dashInvincibilityActive = false;
         dashInvincibilityFailsafeUntilUnscaledTime = 0f;
+
+        RefreshRegistration();
     }
     private void OnDisable() 
     { 
+        Player.ClearCachedPlayerObject();
         Player.SetActive(false); 
         Player.RespawnPlayer -= HandleRespawnRequested;
         CheckpointBehavior.UnsubscribeFromPlayerRespawn();
@@ -163,6 +173,22 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         dashInvincibilityActive = false;
         dashInvincibilityFailsafeUntilUnscaledTime = 0f;
+    }
+
+    private void Update()
+    {
+        if (lastKnownSceneHandle == gameObject.scene.handle)
+            return;
+
+        lastKnownSceneHandle = gameObject.scene.handle;
+        Player.ClearCachedPlayerObject();
+        RefreshRegistration();
+    }
+
+    private void OnTransformParentChanged()
+    {
+        Player.ClearCachedPlayerObject();
+        RefreshRegistration();
     }
     #endregion
 
@@ -412,6 +438,15 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             healthBar.SetHealth(snapshot.current, snapshot.max);
         }
         OnPlayerHealthChanged?.Invoke(snapshot);
+    }
+
+    private void RefreshRegistration()
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        OnPlayerHealthRegistered?.Invoke(this);
+        NotifyHealthChanged();
     }
 
     private void TryTriggerFlinch()

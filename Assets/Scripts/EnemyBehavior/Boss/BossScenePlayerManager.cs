@@ -256,7 +256,7 @@ namespace EnemyBehavior.Boss
                 PlayerPresenceManager.IsPlayerPresent
                 && PlayerPresenceManager.PlayerTransform != null
             )
-                return PlayerPresenceManager.PlayerTransform.root.gameObject;
+                return ResolvePlayerRootFromTransform(PlayerPresenceManager.PlayerTransform);
 
             GameObject resolvedPlayer = FindPlayerRootInLoadedScenes();
             if (resolvedPlayer != null)
@@ -348,7 +348,7 @@ namespace EnemyBehavior.Boss
                 return null;
 
             if (MatchesPlayerCandidate(currentTransform.gameObject))
-                return currentTransform.root.gameObject;
+                return ResolvePlayerRootFromTransform(currentTransform);
 
             for (int childIndex = 0; childIndex < currentTransform.childCount; childIndex++)
             {
@@ -383,6 +383,28 @@ namespace EnemyBehavior.Boss
             }
 
             return false;
+        }
+
+        private GameObject ResolvePlayerRootFromTransform(Transform playerTransform)
+        {
+            if (playerTransform == null)
+                return null;
+
+            PlayerHealthBarManager health = playerTransform.GetComponentInParent<PlayerHealthBarManager>();
+            if (health != null)
+                return health.transform.gameObject;
+
+            PlayerMovement movement = playerTransform.GetComponentInParent<PlayerMovement>();
+            if (movement != null)
+                return movement.transform.gameObject;
+
+            Transform current = playerTransform;
+            while (current.parent != null && current.parent.CompareTag(playerTag))
+            {
+                current = current.parent;
+            }
+
+            return current.gameObject;
         }
 
         private bool IsHostedInBossScene()
