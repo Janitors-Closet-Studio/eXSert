@@ -229,10 +229,10 @@ public class DoorInteractions : UnlockableInteraction
     private IEnumerator ExecuteInteractionWithNoticeAfterSpecialTransition()
     {
         BeginSpecialTransition();
-        // Wait for the special transition to finish (wait for puzzleCameraRoutine to be null)
+        // Wait for the special transition to finish. The door interaction itself is executed
+        // inside SpecialTransitionRoutine after the camera has cut to the transition shot.
         while (puzzleCameraRoutine != null)
             yield return null;
-        ExecuteAssignedDoorInteractions();
         ShowUnlockNoticeIfNeeded();
     }
 
