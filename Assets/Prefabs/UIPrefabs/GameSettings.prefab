@@ -2913,6 +2913,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2354455592871224062}
     - target: {fileID: 987746079864126608, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
+      propertyPath: m_Navigation.m_SelectOnUp
+      value: 
+      objectReference: {fileID: 8125690024797888107}
+    - target: {fileID: 987746079864126608, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
       propertyPath: m_Navigation.m_SelectOnLeft
       value: 
       objectReference: {fileID: 0}
@@ -3496,6 +3500,14 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 2354455592871224062}
+    - target: {fileID: 4424573751741459616, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
+      propertyPath: m_Navigation.m_SelectOnUp
+      value: 
+      objectReference: {fileID: 3890732536260053494}
+    - target: {fileID: 4424573751741459616, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
+      propertyPath: m_Navigation.m_SelectOnDown
+      value: 
+      objectReference: {fileID: 4615833473663818771}
     - target: {fileID: 4424573751741459616, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
       propertyPath: m_Navigation.m_SelectOnLeft
       value: 
@@ -4832,6 +4844,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &8125690024797888107 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8680446506449635506, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
+  m_PrefabInstance: {fileID: 626954852470445785}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1 &8173967944021420439 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8781069932246269774, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
@@ -4906,26 +4929,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8506832281424261823}
     m_Modifications:
-    - target: {fileID: 5109768390716181769, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
-      propertyPath: m_Name
-      value: LeftText
-      objectReference: {fileID: 0}
-    - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
-      propertyPath: m_text
-      value: Music Volume
-      objectReference: {fileID: 0}
-    - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
-      propertyPath: m_margin.z
-      value: -1.3013916
-      objectReference: {fileID: 0}
-    - target: {fileID: 7161452719626308319, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: -327.5234
-      objectReference: {fileID: 0}
-    - target: {fileID: 7161452719626308319, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -163.76172
-      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 17004ce59f926eb46aa1d317ee464f5b, type: 3}
       propertyPath: m_Navigation.m_Mode
       value: 4
@@ -5101,6 +5104,26 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 17004ce59f926eb46aa1d317ee464f5b, type: 3}
       propertyPath: m_text
       value: Voice Volume
+      objectReference: {fileID: 0}
+    - target: {fileID: 5109768390716181769, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
+      propertyPath: m_Name
+      value: LeftText
+      objectReference: {fileID: 0}
+    - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
+      propertyPath: m_text
+      value: Music Volume
+      objectReference: {fileID: 0}
+    - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
+      propertyPath: m_margin.z
+      value: -1.3013916
+      objectReference: {fileID: 0}
+    - target: {fileID: 7161452719626308319, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: -327.5234
+      objectReference: {fileID: 0}
+    - target: {fileID: 7161452719626308319, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -163.76172
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
