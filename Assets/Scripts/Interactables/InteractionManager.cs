@@ -31,6 +31,12 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [Header("Input Action Reference")]
     [SerializeField, CriticalReference] internal InputActionReference _interactInputAction;
 
+    [Space(10)]
+    [Header("Rumble Settings")]
+    [SerializeField] private float _rumbleLowFrequency = 0.5f;
+    [SerializeField] private float _rumbleHighFrequency = 0.5f;
+    [SerializeField] private float _rumbleDuration = 0.5f;
+
     private PlayerCombatIdleController _combatIdleController;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
@@ -199,6 +205,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                 interactionUI.HideInteractPrompt();
             return;
         }
+
+        RumbleManager.Instance.RumblePulse(_rumbleLowFrequency, _rumbleHighFrequency, _rumbleDuration);
 
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         Interact();
