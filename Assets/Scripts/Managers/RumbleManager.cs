@@ -13,46 +13,46 @@ public class RumbleManager : Singleton<RumbleManager>
 
     //current gamepad
     private Gamepad pad;
-
-    //current control scheme
-    private string currentControlScheme;
     protected override void Awake()
     {
 
         base.Awake();
     }
-
-    void OnEnable()
-    {
-        //Subscribes onControlsChanged to SwitchControls function
-        InputReader.PlayerInput.onControlsChanged += SwitchControls;
-    }
-
+    
+    //lowfreq is the low frequency motor, highfreq is the high frequency motor, duration is how long the rumble should last
     public void RumblePulse(float lowFreq, float highFreq, float duration)
     {
         //checks the current control scheme and if rumble is activated
-        if (currentControlScheme == "Gamepad")
+        if (InputReader.PlayerInput.currentControlScheme == "Gamepad")
         {
-            pad = Gamepad.current;
+            // Try to get the gamepad associated with the PlayerInput
+            var playerInput = InputReader.PlayerInput;
+            if (playerInput != null)
+            {
+                foreach (var device in playerInput.devices)
+                {
+                    if (device is Gamepad gamepad)
+                    {
+                        pad = gamepad;
+                        break;
+                    }
+                }
+            }
+            // Fallback to Gamepad.current if not found
+            if (pad == null)
+            {
+                pad = Gamepad.current;
+            }
 
             //if pad is not null then the rumble is activated with the strength assigned in the settings menu
             if (pad != null)
             {
                 pad.SetMotorSpeeds(lowFreq * SettingsManager.Instance.rumbleStrength, highFreq * SettingsManager.Instance.rumbleStrength);
-                
                 StartCoroutine(StopRumble(duration, pad));
                 Debug.Log("Rumble Activated with low frequency: " + lowFreq + " and high frequency: " + highFreq + " for duration: " + duration);
             }
         }
-
     }
-    
-    private void SwitchControls(PlayerInput input)
-    {
-        //Gets current control scheme
-        currentControlScheme = input.currentControlScheme;
-    }
-
     private IEnumerator StopRumble(float duration, Gamepad pad)
     {
         float elapsedTime = 0f;
@@ -66,12 +66,5 @@ public class RumbleManager : Singleton<RumbleManager>
 
         pad.SetMotorSpeeds(0, 0);
 
-    }
-
-    private void OnDisable()
-    {
-        //If the script is disabled then onControlsChanged is unsubscribed
-        if(InputReader.PlayerInput != null)
-            InputReader.PlayerInput.onControlsChanged -= SwitchControls;
     }
 }

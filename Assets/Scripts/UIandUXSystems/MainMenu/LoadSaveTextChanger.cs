@@ -25,5 +25,11 @@ public class LoadSaveTextChanger : MonoBehaviour
     {
         titleText.text = loadGameTitle;
         footerText.text = loadGameFooter;
+
+        RumbleManager.Instance.RumblePulse(0.5f, 0.5f, 0.3f); // Example rumble feedback for selecting Load Game
+
+
     }
+
+    
 }

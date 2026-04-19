@@ -93,7 +93,22 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [Header("SFX")]
     [SerializeField] private AudioClip[] playerHurtSFX;
     [SerializeField] private AudioClip[] impactSFX;
-    [SerializeField] private AudioClip playerDeathSFX;
+    [SerializeField] private AudioClip[] playerDeathSFX;
+
+    [Header("Lose Health Rumble Settings")]
+    [SerializeField] private float _rumbleLowFrequency = 0.5f;
+    [SerializeField] private float _rumbleHighFrequency = 0.5f;
+    [SerializeField] private float _rumbleDuration = 0.5f;
+
+    [Header("Gain Health Rumble Settings")]
+    [SerializeField] private float _gainHealthRumbleLowFrequency = 0.5f;
+    [SerializeField] private float _gainHealthRumbleHighFrequency = 0.5f;
+    [SerializeField] private float _gainHealthRumbleDuration = 0.5f;
+
+    [Header("Death Rumble Settings")]
+    [SerializeField] private float _deathRumbleLowFrequency = 0.5f;
+    [SerializeField] private float _deathRumbleHighFrequency = 0.5f;
+    [SerializeField] private float _deathRumbleDuration = 0.5f;
 
     [Header("Debug")]
     [SerializeField, Tooltip("Damage applied when using the debug buttons.")]
@@ -216,6 +231,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (isDead || hp <= 0f)
             return;
 
+        RumbleManager.Instance.RumblePulse(_gainHealthRumbleLowFrequency, _gainHealthRumbleHighFrequency, _gainHealthRumbleDuration);
+
         float previous = currentHealth;
         currentHealth = Mathf.Min(maxHealth, currentHealth + hp);
         float actual = currentHealth - previous;
@@ -232,6 +249,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             return;
 
         MarkCombatActivity();
+
+        RumbleManager.Instance.RumblePulse(_rumbleLowFrequency, _rumbleHighFrequency, _rumbleDuration);
 
         float previous = currentHealth;
         currentHealth = Mathf.Max(0f, currentHealth - damage);
@@ -431,6 +450,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         currentHealth = 0f;
 
+        RumbleManager.Instance.RumblePulse(_deathRumbleLowFrequency, _deathRumbleHighFrequency, _deathRumbleDuration);
+
         CancelFlinchRoutine();
         attackManager?.ForceCancelCurrentAttack();
 
@@ -445,7 +466,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             SoundManager soundManager = SoundManager.Instance;
             AudioSource source = soundManager != null ? soundManager.voiceSource : null;
             if (source != null)
-                source.PlayOneShot(playerDeathSFX);
+                source.PlayOneShot(playerDeathSFX[UnityEngine.Random.Range(0, playerDeathSFX.Length)]);
             else if (!PlayerMovement.IsTestingOrDebugMode)
                 Debug.LogError("[PlayerHealthBarManager] Cannot play death SFX because SoundManager.voiceSource is missing.");
         }
