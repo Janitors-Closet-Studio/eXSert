@@ -22,6 +22,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private bool staggerPlayerOnHit = false;
         [Tooltip("Forced stagger duration for player when this projectile hits.")]
         [SerializeField, Range(0.05f, 2f)] private float playerHitStaggerDuration = 0.4f;
+        [Tooltip("If true, prefers this prefab's trigger collider(s) as the player hitbox instead of overlap-sphere checks.")]
+        [SerializeField] private bool useTriggerColliderHitbox = true;
 
         private Vector3 moveDirection;
         private float speed;
@@ -34,6 +36,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private Vector3 startPos;
         private bool initialized;
         private bool playerHitConsumed;
+        private bool usingTriggerHitbox;
 
         private static readonly Collider[] hitBuffer = new Collider[8];
 
@@ -69,6 +72,8 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             initialized = true;
 
+            ConfigureHitboxMode();
+
             if (maxLifetime > 0f)
             {
                 Destroy(gameObject, maxLifetime);
@@ -88,7 +93,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
             }
 
-            TryHitPlayer();
+            if (!usingTriggerHitbox)
+                TryHitPlayer();
 
             if (Vector3.Distance(startPos, transform.position) >= maxDistance)
             {
@@ -121,42 +127,100 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (!isPlayer)
                     continue;
 
-                float finalDamage = damage;
-
-                if (canBeParried && category == AttackCategory.Halberd)
-                {
-                    if (CombatManager.isParrying)
-                    {
-                        playerHitConsumed = true;
-                        CombatManager.ParrySuccessful();
-                        return false;
-                    }
-                }
-
-                if (canBeGuarded && CombatManager.isGuarding)
-                {
-                    finalDamage *= guardDamageMultiplier;
-                }
-
-                if (hit.TryGetComponent<IHealthSystem>(out var health))
-                {
-                    health.LoseHP(finalDamage);
-                    if (staggerPlayerOnHit && health is PlayerHealthBarManager playerHealth)
-                        playerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
-                }
-                else
-                {
-                    var parentHealth = hit.GetComponentInParent<IHealthSystem>();
-                    parentHealth?.LoseHP(finalDamage);
-                    if (staggerPlayerOnHit && parentHealth is PlayerHealthBarManager parentPlayerHealth)
-                        parentPlayerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
-                }
-
-                playerHitConsumed = true;
-                return false;
+                return TryApplyHit(hit);
             }
 
             return false;
+        }
+
+        private bool TryApplyHit(Collider hit)
+        {
+            if (playerHitConsumed || hit == null)
+                return false;
+
+            Transform hitRoot = hit.transform.root;
+            bool isPlayer = hit.CompareTag("Player") || (hitRoot != null && hitRoot.CompareTag("Player"));
+            if (!isPlayer)
+                return false;
+
+            float finalDamage = damage;
+
+            if (canBeParried && category == AttackCategory.Halberd)
+            {
+                if (CombatManager.isParrying)
+                {
+                    playerHitConsumed = true;
+                    CombatManager.ParrySuccessful();
+                    return true;
+                }
+            }
+
+            if (canBeGuarded && CombatManager.isGuarding)
+            {
+                finalDamage *= guardDamageMultiplier;
+            }
+
+            if (hit.TryGetComponent<IHealthSystem>(out var health))
+            {
+                health.LoseHP(finalDamage);
+                if (staggerPlayerOnHit && health is PlayerHealthBarManager playerHealth)
+                    playerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
+            }
+            else
+            {
+                var parentHealth = hit.GetComponentInParent<IHealthSystem>();
+                parentHealth?.LoseHP(finalDamage);
+                if (staggerPlayerOnHit && parentHealth is PlayerHealthBarManager parentPlayerHealth)
+                    parentPlayerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
+            }
+
+            playerHitConsumed = true;
+            return true;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!usingTriggerHitbox)
+                return;
+
+            TryApplyHit(other);
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!usingTriggerHitbox || playerHitConsumed)
+                return;
+
+            TryApplyHit(other);
+        }
+
+        private void ConfigureHitboxMode()
+        {
+            usingTriggerHitbox = false;
+            if (!useTriggerColliderHitbox)
+                return;
+
+            Collider[] allColliders = GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < allColliders.Length; i++)
+            {
+                Collider col = allColliders[i];
+                if (col != null && col.enabled && col.isTrigger)
+                {
+                    usingTriggerHitbox = true;
+                    break;
+                }
+            }
+
+            if (!usingTriggerHitbox)
+                return;
+
+            if (!TryGetComponent<Rigidbody>(out _))
+            {
+                var rb = gameObject.AddComponent<Rigidbody>();
+                rb.isKinematic = true;
+                rb.useGravity = false;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            }
         }
     }
 }
