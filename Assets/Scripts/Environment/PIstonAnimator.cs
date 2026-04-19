@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PIstonAnimator : MonoBehaviour
+public class PistonAnimator : MonoBehaviour
 {
     [SerializeField] private Transform[] pistons;
     [SerializeField] private float topDeadCenterY = -2f;
