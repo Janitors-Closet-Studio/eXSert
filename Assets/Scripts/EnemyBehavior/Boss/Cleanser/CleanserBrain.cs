@@ -351,6 +351,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isExecutingAttack;
         private bool isInUltimateHoverPhase;
         private bool ultimateCanceledByAerial;
+        private bool ultimateAttackLockActive;
         private int combosSinceUltimate;
         private bool hasUsedUltimate;
         private bool pendingUltimateByHealth;
@@ -596,7 +597,22 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             LogCriticalDiagnostic("Starting ultimate immediately from health-threshold hit.", true);
+            ActivateUltimateAttackLock();
             StartCoroutine(ExecuteUltimateAttack());
+        }
+
+        private void ActivateUltimateAttackLock()
+        {
+            ultimateAttackLockActive = true;
+
+            if (comboSystem != null && comboSystem.IsExecutingCombo)
+                comboSystem.CancelCombo();
+
+            isExecutingAttack = false;
+            HideAttackIndicator();
+            SetAllMeleeHitboxesEnabled(false);
+            EndSpinDashHitboxPhase();
+            EndWhirlwindDamagePhase();
         }
         
         #endregion
@@ -1202,8 +1218,15 @@ namespace EnemyBehavior.Boss.Cleanser
                     yield return null;
                 }
 
+                if (ultimateAttackLockActive && !isExecutingUltimate)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 if (ShouldTriggerUltimate())
                 {
+                    ActivateUltimateAttackLock();
                     yield return ExecuteUltimateAttack();
                     continue;
                 }
@@ -1381,6 +1404,12 @@ namespace EnemyBehavior.Boss.Cleanser
             
             while (comboSystem.IsExecutingCombo)
             {
+                if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                {
+                    comboSystem.CancelCombo();
+                    break;
+                }
+
                 var step = comboSystem.GetCurrentStep();
                 if (step == null)
                     break;
@@ -1450,6 +1479,12 @@ namespace EnemyBehavior.Boss.Cleanser
                 {
                     yield return new WaitForSeconds(step.PreDelay);
                 }
+
+                if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                {
+                    comboSystem.CancelCombo();
+                    break;
+                }
                 
                 if (step.IsFinisher)
                 {
@@ -1492,6 +1527,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ExecuteBasicAttack(CleanserBasicAttack attackType)
         {
+            if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                yield break;
+
             NotifyAttackBegin();
             isExecutingAttack = true;
             
@@ -1848,6 +1886,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ExecuteStrongAttack(CleanserStrongAttack attackType)
         {
+            if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                yield break;
+
             NotifyAttackBegin();
             isExecutingAttack = true;
             
@@ -1882,6 +1923,9 @@ namespace EnemyBehavior.Boss.Cleanser
         private IEnumerator ExecuteAttackWithAnimationEvents(CleanserAttackDescriptor attack)
         {
             if (attack == null) yield break;
+
+            if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                yield break;
 
             ApplyAnimationSpeedMultiplier(attack.AnimationSpeedMultiplier);
             
@@ -1921,6 +1965,9 @@ namespace EnemyBehavior.Boss.Cleanser
             
             while (!attackAnimationComplete && elapsed < timeout)
             {
+                if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                    break;
+
                 elapsed += Time.deltaTime;
 
                 if (attack.IncludesMovement && !attackMovementTriggered && elapsed >= 0.1f)
@@ -2236,6 +2283,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
 
             waitingForUltimateLowSweepEvent = false;
+            pendingUltimateSweepTargetPos = GetCurrentUltimateSweepTargetPosition(pendingUltimateSweepTargetPos);
             SpawnCrescentWave(UltimateSettings.LowSweepProjectile, pendingUltimateSweepTargetPos);
             PlaySFX(UltimateSettings.SweepSFX);
         }
@@ -2252,6 +2300,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
 
             waitingForUltimateMidSweepEvent = false;
+            pendingUltimateSweepTargetPos = GetCurrentUltimateSweepTargetPosition(pendingUltimateSweepTargetPos);
             SpawnCrescentWave(UltimateSettings.MidSweepProjectile, pendingUltimateSweepTargetPos);
             PlaySFX(UltimateSettings.SweepSFX);
         }
@@ -3396,7 +3445,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private bool ShouldTriggerUltimate()
         {
-            if (isExecutingUltimate || isStunned)
+            if (isExecutingUltimate || isStunned || isDefeated)
             {
                 LogUltimateTriggerDiagnostics("Blocked by state (isExecutingUltimate/isStunned)");
                 return false;
@@ -3482,7 +3531,12 @@ namespace EnemyBehavior.Boss.Cleanser
         private IEnumerator ExecuteUltimateAttack()
         {
             if (UltimateSettings == null)
+            {
+                ultimateAttackLockActive = false;
                 yield break;
+            }
+
+            ultimateAttackLockActive = true;
 
             ApplyAnimationSpeedMultiplier(UltimateSettings.AnimationSpeedMultiplier);
 
@@ -3514,10 +3568,11 @@ namespace EnemyBehavior.Boss.Cleanser
             Vector3 arenaCenter = ultimateArenaCenterPoint != null
                 ? ultimateArenaCenterPoint.position
                 : (player != null ? player.position : transform.position + transform.forward * 10f);
-            yield return FaceTarget(arenaCenter, 0.3f);
+            Vector3 sweepTargetPos = GetCurrentUltimateSweepTargetPosition(arenaCenter);
+            yield return FaceTarget(sweepTargetPos, 0.3f);
 
             // Double-sweep animation plays once; both sweep events/fallbacks are handled during that single playback.
-            pendingUltimateSweepTargetPos = arenaCenter;
+            pendingUltimateSweepTargetPos = sweepTargetPos;
             waitingForUltimateLowSweepEvent = CanSpawnUltimateSweep(UltimateSettings.LowSweepProjectile);
             waitingForUltimateMidSweepEvent = CanSpawnUltimateSweep(UltimateSettings.MidSweepProjectile);
 
@@ -3626,6 +3681,7 @@ namespace EnemyBehavior.Boss.Cleanser
             ResetAnimationSpeed();
             isInUltimatePreSweepPhase = false;
             isExecutingUltimate = false;
+            ultimateAttackLockActive = false;
         }
 
         private Transform GetRandomValidDoubleSweepPosition()
@@ -3658,6 +3714,7 @@ namespace EnemyBehavior.Boss.Cleanser
             if (waitingForUltimateLowSweepEvent)
             {
                 waitingForUltimateLowSweepEvent = false;
+                pendingUltimateSweepTargetPos = GetCurrentUltimateSweepTargetPosition(pendingUltimateSweepTargetPos);
                 SpawnCrescentWave(UltimateSettings.LowSweepProjectile, pendingUltimateSweepTargetPos);
                 PlaySFX(UltimateSettings.SweepSFX);
             }
@@ -3665,9 +3722,15 @@ namespace EnemyBehavior.Boss.Cleanser
             if (waitingForUltimateMidSweepEvent)
             {
                 waitingForUltimateMidSweepEvent = false;
+                pendingUltimateSweepTargetPos = GetCurrentUltimateSweepTargetPosition(pendingUltimateSweepTargetPos);
                 SpawnCrescentWave(UltimateSettings.MidSweepProjectile, pendingUltimateSweepTargetPos);
                 PlaySFX(UltimateSettings.SweepSFX);
             }
+        }
+
+        private Vector3 GetCurrentUltimateSweepTargetPosition(Vector3 fallback)
+        {
+            return player != null ? player.position : fallback;
         }
 
         private void SpawnCrescentWave(CrescentArcProjectileConfig sourceConfig, Vector3 targetPos)
