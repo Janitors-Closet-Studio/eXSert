@@ -3124,6 +3124,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 1994980444}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -44438,6 +44441,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -60544,6 +60550,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -111994,6 +112003,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 1375132224}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: Lift Key Card
   lockedInteractionPrompt: LOCKED
@@ -121983,6 +121995,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 1375132224}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: 
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -124887,6 +124902,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 917917060}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -131987,7 +132005,7 @@ Transform:
   m_GameObject: {fileID: 1798321438}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 8.643753, y: 22.4374, z: -59.128815}
+  m_LocalPosition: {x: 8.643753, y: 22.4374, z: -39}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -132033,7 +132051,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LifeBox
   showHitBox: 1
-  boxSize: {x: 75, y: 65, z: 184.8}
+  boxSize: {x: 75, y: 65, z: 240.4}
 --- !u!65 &1798321442
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -132053,7 +132071,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 75, y: 65, z: 184.8}
+  m_Size: {x: 75, y: 65, z: 240.4}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!43 &1800589675
 Mesh:
@@ -148130,8 +148148,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1967734653}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.10095934, y: 0.17262056, z: -0.017789874, w: 0.97963923}
-  m_LocalPosition: {x: 18.999752, y: 12.620287, z: -333.7247}
+  m_LocalRotation: {x: 0.000000029802317, y: -0.7071068, z: 0.7071068, w: 0.000000029802317}
+  m_LocalPosition: {x: 8.002001, y: 44.29218, z: -113.974304}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
