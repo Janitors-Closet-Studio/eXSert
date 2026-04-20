@@ -116,7 +116,7 @@ namespace EnemyBehavior.Boss
         /// IHealthSystem implementation - called by player weapons via HitboxDamageManager.
         /// This applies panel armor reduction before dealing damage.
         /// </summary>
-        public void LoseHP(float damage)
+        public void LoseHP(float damage, float rumbleDuration = 0, float lowFrequency = 0, float highFrequency = 0)
         {
             float finalDamage = damage;
             
@@ -391,9 +391,9 @@ namespace EnemyBehavior.Boss
             wasAlive = isAlive;
         }
 
-        public override void LoseHP(float damage)
+        public override void LoseHP(float damage, float rumbleDuration = 0, float lowFrequency = 0, float highFrequency = 0)
         {
-            bossHealth?.LoseHP(damage);
+            bossHealth?.LoseHP(damage, rumbleDuration, lowFrequency, highFrequency);
         }
     }
 }

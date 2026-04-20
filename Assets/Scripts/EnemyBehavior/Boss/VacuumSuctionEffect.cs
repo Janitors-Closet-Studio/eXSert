@@ -67,6 +67,16 @@ namespace EnemyBehavior.Boss
         [Tooltip("Optional particle effect to show suction direction")]
         public ParticleSystem SuctionVFX;
 
+        [Header("Rumble Settings")]
+        [Tooltip("Duration of the rumble effect when the player is sucked")]
+        public float RumbleDuration = 0.15f;
+
+        [Tooltip("Low frequency of the rumble effect")]
+        public float RumbleLowFrequency = 0.35f;
+
+        [Tooltip("High frequency of the rumble effect")]
+        public float RumbleHighFrequency = 0.35f;
+
         [Tooltip("Optional audio source for vacuum sound")]
         public AudioSource VacuumAudioSource;
 
@@ -348,7 +358,7 @@ namespace EnemyBehavior.Boss
                 if (playerHealthSystem != null && bossBrain != null && Time.time - lastDamageTickTime >= damageTickInterval)
                 {
                     float damage = bossBrain.GetDamageForAttackType("VacuumSuction");
-                    playerHealthSystem.LoseHP(damage);
+                    playerHealthSystem.LoseHP(damage, RumbleDuration, RumbleLowFrequency, RumbleHighFrequency);
                     lastDamageTickTime = Time.time;
 #if UNITY_EDITOR
                     EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect][DamageDebug] Vacuum HIT PLAYER for {damage} damage!");

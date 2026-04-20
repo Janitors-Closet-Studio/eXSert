@@ -25,6 +25,14 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("If true, prefers this prefab's trigger collider(s) as the player hitbox instead of overlap-sphere checks.")]
         [SerializeField] private bool useTriggerColliderHitbox = true;
 
+        [Header("Rumble on Hit Settings")]
+        [SerializeField, Tooltip("Duration of controller rumble when hit.")]
+        private float rumbleDuration = 0.15f;
+        [SerializeField, Tooltip("Low frequency intensity of rumble (0-1) when hit.")]
+        private float rumbleLowFrequency = 0.35f;
+        [SerializeField, Tooltip("High frequency intensity of rumble (0-1) when hit.")]
+        private float rumbleHighFrequency = 0.35f;
+
         private Vector3 moveDirection;
         private float speed;
         private float damage;
@@ -162,14 +170,14 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (hit.TryGetComponent<IHealthSystem>(out var health))
             {
-                health.LoseHP(finalDamage);
+                health.LoseHP(finalDamage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
                 if (staggerPlayerOnHit && health is PlayerHealthBarManager playerHealth)
                     playerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
             }
             else
             {
                 var parentHealth = hit.GetComponentInParent<IHealthSystem>();
-                parentHealth?.LoseHP(finalDamage);
+                parentHealth?.LoseHP(finalDamage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
                 if (staggerPlayerOnHit && parentHealth is PlayerHealthBarManager parentPlayerHealth)
                     parentPlayerHealth.ApplyForcedStagger(playerHitStaggerDuration, resetCombo: true);
             }

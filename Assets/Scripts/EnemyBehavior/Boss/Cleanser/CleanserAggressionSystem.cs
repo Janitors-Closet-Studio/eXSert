@@ -257,6 +257,11 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Window in seconds for player to parry the Cleanser's counter.")]
         [SerializeField] private float counterParryWindow = 0.4f;
 
+        [Header("Rumble on Counter")]
+        [SerializeField] private float counterRumbleDuration = 0.15f;
+        [SerializeField] private float counterRumbleLowFrequency = 0.35f;
+        [SerializeField] private float counterRumbleHighFrequency = 0.35f;
+
         [Header("Debug")]
         [Tooltip("Show aggression range gizmo in editor.")]
         [SerializeField] private bool showAggressionRangeGizmo = true;
@@ -792,7 +797,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 // Counter lands - deal damage
                 if (player != null && player.TryGetComponent<IHealthSystem>(out var health))
                 {
-                    health.LoseHP(counterDamage);
+                    health.LoseHP(counterDamage, counterRumbleDuration, counterRumbleLowFrequency, counterRumbleHighFrequency);
                 }
 
                 OnCleanserCounterLanded();

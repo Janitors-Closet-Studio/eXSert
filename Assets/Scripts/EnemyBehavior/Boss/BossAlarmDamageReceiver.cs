@@ -59,7 +59,7 @@ namespace EnemyBehavior.Boss
         /// <summary>
         /// IHealthSystem implementation - called by player weapons.
         /// </summary>
-        public void LoseHP(float damage)
+        public void LoseHP(float damage, float rumbleDuration = 0.15f, float lowFrequency = 0.35f, float highFrequency = 0.35f)
         {
             if (controller == null) return;
             

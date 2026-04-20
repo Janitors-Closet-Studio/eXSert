@@ -67,6 +67,9 @@ public class CutsceneManager : Singleton<CutsceneManager>
     private static void OnCutsceneStarted(VideoPlayer source)
     {
         SoundManager.Instance.PauseAllMusic(true); // Pause music if SoundManager exists
+
+        RumbleManager.Instance.StopControllerRumble(); // Stop any ongoing controller rumble when a cutscene starts
+
         // Request pause via the coordinator rather than directly changing Time.timeScale.
         _pauseToken = PauseCoordinator.RequestPause("CutsceneManager");
 

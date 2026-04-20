@@ -473,7 +473,7 @@ namespace EnemyBehavior.Boss.Cleanser
             currentHealth = Mathf.Min(currentHealth + hp, maxHealth);
         }
         
-        public void LoseHP(float damage)
+        public void LoseHP(float damage, float rumbleDuration = 0.15f, float lowFrequency = 0.35f, float highFrequency = 0.35f)
         {
             if (isDefeated) return;
             
@@ -1946,6 +1946,8 @@ namespace EnemyBehavior.Boss.Cleanser
             
             // Play SFX
             PlaySFX(attack.AttackSFX);
+
+            
             
             // Spawn VFX
             if (attack.AttackVFX != null)
@@ -3350,7 +3352,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 // Deal damage
                 if (player.TryGetComponent<IHealthSystem>(out var health))
                 {
-                    health.LoseHP(KnockbackSettings.Damage);
+                    health.LoseHP(KnockbackSettings.Damage, .5f, .5f, .5f);
                 }
 
                 // Notify aggression system that player blocked (if they did)
@@ -3983,7 +3985,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (player.TryGetComponent<IHealthSystem>(out var health))
             {
-                health.LoseHP(damage);
+                health.LoseHP(damage, .5f, .5f, .5f);
             }
         }
 
@@ -4508,8 +4510,8 @@ namespace EnemyBehavior.Boss.Cleanser
             
             if (player.TryGetComponent<IHealthSystem>(out var health))
             {
-                health.LoseHP(damage);
-
+                health.LoseHP(damage, .5f, .5f, .5f);
+                
                 if (shouldStaggerPlayer && health is PlayerHealthBarManager playerHealth)
                     playerHealth.ApplyForcedStagger(meleeHitStaggerDuration, resetPlayerComboOnMeleeStagger);
 

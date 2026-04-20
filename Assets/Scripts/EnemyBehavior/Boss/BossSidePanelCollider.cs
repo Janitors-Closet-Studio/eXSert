@@ -97,7 +97,7 @@ namespace EnemyBehavior.Boss
         /// Called by player weapon systems (HitboxDamageManager) via IHealthSystem.
         /// Damage amount comes from the player's weapon, not a fixed value.
         /// </summary>
-        public void LoseHP(float damage)
+        public void LoseHP(float damage, float rumbleDuration = 0, float lowFrequency = 0, float highFrequency = 0)
         {
             if (bossBrain == null) return;
 

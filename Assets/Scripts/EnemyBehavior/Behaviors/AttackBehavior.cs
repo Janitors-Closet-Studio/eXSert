@@ -18,6 +18,7 @@ namespace Behaviors
         private Coroutine attackRangeMonitorCoroutine;
         private Coroutine attackLoopCoroutine;
         private BaseEnemy<TState, TTrigger> enemy;
+        public BaseEnemy<TState, TTrigger> Enemy => enemy;
         private Transform playerTarget;
         private TState attackStateValue;
         private bool damageSentThisEnable;
@@ -276,7 +277,7 @@ namespace Behaviors
 #endif
             }
 
-            healthSystem.LoseHP(dmg);
+            healthSystem.LoseHP(dmg, Enemy.rumbleDuration, Enemy.lowFrequency, Enemy.highFrequency);
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log("AttackBehavior", $"{enemy.gameObject.name} attacked {playerCollider.gameObject.name} for {dmg} damage.");
 #endif

@@ -146,6 +146,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        RumbleManager.Instance.StopControllerRumble();
+
         if(LogManager.Instance.unreadLogs.Count > 0 || DiaryManager.Instance.unreadDiaries.Count > 0)
             unreadEntriesNotif.SetActive(true);
         else

@@ -14,6 +14,14 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField, Tooltip("Tag that represents the player. Used as a fallback if layer masks are broad.")]
     private string playerTag = "Player";
 
+    [Header("Rumble")]
+    [SerializeField, Tooltip("Duration of controller rumble when hitting the player.")]
+    private float rumbleDuration = 0.15f;
+    [SerializeField, Tooltip("Low frequency intensity of rumble (0-1).")]
+    private float rumbleLowFrequency = 0.35f;
+    [SerializeField, Tooltip("High frequency intensity of rumble (0-1).")]
+    private float rumbleHighFrequency = 0.35f;
+
     // Optional: owner for drone-side pooling
     private DroneEnemy owner;
 
@@ -90,7 +98,7 @@ public class EnemyProjectile : MonoBehaviour
             {
                 playerHealth.SuppressNextFlinch();
             }
-            healthSystem.LoseHP(damage);
+            healthSystem.LoseHP(damage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
             return true;
         }
 
@@ -101,14 +109,14 @@ public class EnemyProjectile : MonoBehaviour
             {
                 parentPlayerHealth.SuppressNextFlinch();
             }
-            healthParent.LoseHP(damage);
+            healthParent.LoseHP(damage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
             return true;
         }
 
         if (col.CompareTag(playerTag) && PlayerHealthBarManager.Instance != null)
         {
             PlayerHealthBarManager.Instance.SuppressNextFlinch();
-            PlayerHealthBarManager.Instance.LoseHP(damage);
+            PlayerHealthBarManager.Instance.LoseHP(damage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
             return true;
         }
 

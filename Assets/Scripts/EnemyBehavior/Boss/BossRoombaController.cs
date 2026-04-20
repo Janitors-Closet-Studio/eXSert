@@ -779,7 +779,7 @@ public class BossRoombaController : MonoBehaviour
         var healthSystem = target.GetComponent<IHealthSystem>();
         if (healthSystem != null)
         {
-            healthSystem.LoseHP(9999f);
+            healthSystem.LoseHP(9999f, 0, 0, 0);
         }
         else
         {
@@ -803,7 +803,7 @@ public class BossRoombaController : MonoBehaviour
                 var healthSystem = kvp.Value.GetComponent<IHealthSystem>();
                 if (healthSystem != null)
                 {
-                    healthSystem.LoseHP(9999f);
+                    healthSystem.LoseHP(9999f, 0, 0, 0);
                 }
                 else
                 {
@@ -821,7 +821,7 @@ public class BossRoombaController : MonoBehaviour
                 var healthSystem = kvp.Value.GetComponent<IHealthSystem>();
                 if (healthSystem != null)
                 {
-                    healthSystem.LoseHP(9999f);
+                    healthSystem.LoseHP(9999f, 0, 0, 0);
                 }
                 else
                 {
