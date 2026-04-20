@@ -60,6 +60,11 @@ public class HangarPlatExtHandler : MonoBehaviour
     [SerializeField] private AudioClip extendSFX;
     [SerializeField] private AudioClip extendStopSFX;
 
+    [Header("Rumble Settings")]
+    [SerializeField] private float rumbleDuration = 0.1f;
+    [SerializeField] private float rumbleLowFrequency = 0.1f;
+    [SerializeField] private float rumbleHighFrequency = 0.05f;
+
     internal bool isOpened = false;
 
     private void Awake()
@@ -174,6 +179,7 @@ public class HangarPlatExtHandler : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < openSpeed)
         {
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while moving platform
             float t = Mathf.Clamp01(elapsed / openSpeed);
             float easedT = Mathf.SmoothStep(0f, 1f, t);
 
@@ -247,6 +253,7 @@ public class HangarPlatExtHandler : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < openSpeed)
         {
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while moving platform
             float t = Mathf.Clamp01(elapsed / openSpeed);
             float easedT = Mathf.SmoothStep(0f, 1f, t);
 
@@ -274,6 +281,7 @@ public class HangarPlatExtHandler : MonoBehaviour
 
         SoundManager.Instance.sfxSource.Stop();
         SoundManager.Instance.sfxSource.PlayOneShot(extendStopSFX);
+        RumbleManager.Instance.StopControllerRumble(); // Stop rumble when fully retracted
         isOpened = false;
     }
 }

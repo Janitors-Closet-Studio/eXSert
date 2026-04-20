@@ -16,7 +16,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &4263739790572315362
 Transform:
@@ -145,7 +145,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &8876989916128129437
 Transform:
@@ -239,8 +239,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0.000121534154, y: -0.011360608, z: 0.07138181}
+  m_Size: {x: 0.98395294, y: 0.7599783, z: 0.8602282}
+  m_Center: {x: -0.10074113, y: 0.030336898, z: 0.42873663}
 --- !u!114 &7622018774058524696
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -257,11 +257,14 @@ MonoBehaviour:
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
-  _interactId: 
+  _interactId: 'Tutorial Log '
   _interactionSFX: {fileID: 8300000, guid: 5311eee9c9986724c91de6aa7dde1649, type: 3}
   _interactionPrompt: Press to PickUp
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
-  collectID: 
+  _rumbleLowFrequency: 0.1
+  _rumbleHighFrequency: 0.1
+  _rumbleDuration: 0.1
+  displayName: 
   uiDisplayDuration: 4
   uiFadeDuration: 2
   bottomFlavorText: Press Pause to View
@@ -284,7 +287,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &5935609796589278558
 Transform:

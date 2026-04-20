@@ -17,7 +17,11 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
     [Header("SFX")]
     [SerializeField] private AudioClip extendSFX;
     [SerializeField] private AudioClip extendStopSFX;
-
+    
+    [Header("Rumble Settings")]
+    [SerializeField] private float rumbleDuration = 0.1f;
+    [SerializeField] private float rumbleLowFrequency = 0.1f;
+    [SerializeField] private float rumbleHighFrequency = 0.05f;
     private bool isExtending = false;
     private Vector3 startPos;
     private Vector3 targetPos;
@@ -67,6 +71,7 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
             isExtending = true;
             isCompleted = false;
             StartMoveCoroutine();
+            RumbleManager.Instance.StopControllerRumble(); // Stop rumble when fully retracted
         }
     }
 
@@ -101,6 +106,7 @@ public class HangarPlatformExtendPuzzle : PuzzlePart
 
         while (isExtending)
         {
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while moving platform
             transform.localPosition = Vector3.MoveTowards(
                 transform.localPosition,
                 targetPos,

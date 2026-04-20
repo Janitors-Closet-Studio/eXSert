@@ -261,6 +261,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         float elapsed = 0f;
         while (elapsed < duration)
         {
+             RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while moving crane
             float t = elapsed / duration;
             Vector3 nextPosition = Vector3.Lerp(startPosition, finalTarget, t);
             crane.transform.localPosition = nextPosition;
@@ -350,6 +351,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         // Lower magnet until collision or max distance reached
         while (droppedDistance < maxDropDistance && !reachedDropTarget)
         {
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while dropping magnet
             float step = dropSpeed * Time.deltaTime;
             bool hasExplicitDropZone = targetCollider != null && activeDropZoneCollider != null;
 
@@ -365,6 +367,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
                 if (shouldRelease)
                 {
                     Debug.Log("[CraneDrop] Active drop zone reached based on collider bounds.");
+                    RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while retracting magnet
                     break;
                 }
             }
@@ -429,6 +432,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
         while (elapsed < duration)
         {
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while retracting magnet
             magnet.transform.localPosition = Vector3.Lerp(startPosition, originalPosition, elapsed / duration);
             elapsed += Time.deltaTime;
             yield return null;

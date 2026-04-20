@@ -125,6 +125,11 @@ public class CranePuzzle : PuzzlePart
     [SerializeField] private bool invertForwardBackward = false;
     [Tooltip("Optional override for forward/backward speed. Uses Crane Move Speed when set to 0 or less")]
     [SerializeField] private float forwardBackwardMoveSpeed = 0f;
+
+    [Space(10), Header("Rumble Settings")]
+    public float rumbleDuration = 0.1f;
+    public float rumbleLowFrequency = 0.1f;
+    public float rumbleHighFrequency = 0.05f;
     #endregion
 
     #region Light Settings
@@ -524,6 +529,7 @@ public class CranePuzzle : PuzzlePart
     {
         ReleasePuzzleControl(stopRunningCoroutines: true, clearAutomationState: true);
         HandleGameplayMap(true); // Re-enable gameplay map after puzzle
+        RumbleManager.Instance.StopControllerRumble(); // Stop any ongoing rumble when puzzle ends
         isCompleted = false;
     }
 
@@ -703,6 +709,8 @@ public class CranePuzzle : PuzzlePart
         while (puzzleActive && !isAutomatedMovement && !isExtending)
         {
             ReadMoveAction();
+
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while moving crane
 
             // Always check the runtimeEscapeAction, not the serialized reference, for correct action state
             InputAction escapeActionToRead = runtimeEscapeAction != null ? runtimeEscapeAction : (_escapePuzzleAction != null ? _escapePuzzleAction.action : null);
