@@ -29,6 +29,12 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
     [Header("SFX")]
     [SerializeField] private AudioClip rotationSFX;
     [SerializeField] private AudioClip rotationCompleteSFX;
+
+    [Header("Rumble Settings")]
+    [SerializeField] private float rumbleDuration = 0.1f;
+    [SerializeField] private float rumbleLowFrequency = 0.1f;
+    [SerializeField] private float rumbleHighFrequency = 0.05f;
+
     private Quaternion originLocalRotation;
     private Quaternion rotatedLocalRotation;
     private Quaternion targetLocalRotation;
@@ -78,6 +84,7 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
     public override void EndPuzzle()
     {
         BeginRotation(originLocalRotation, completedState: false);
+        RumbleManager.Instance.StopControllerRumble(); // Stop rumble when returning to original position
     }
 
     public void Interact()
@@ -149,6 +156,7 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
         }
         while (elapsed < duration)
         {
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while rotating platform
             transform.localRotation = Quaternion.Slerp(startRotation, endRotation, elapsed / duration);
             if (movePlayerWithPlatform)
             {

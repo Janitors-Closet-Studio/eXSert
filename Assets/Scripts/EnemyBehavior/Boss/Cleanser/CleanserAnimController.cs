@@ -42,6 +42,9 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class Locomotion
             {
                 internal const string Walk = "Walk";
+                internal const string StrafeLeft = "StrafeL";
+                internal const string StrafeRight = "StrafeR";
+                internal const string WalkBack = "Walkback";
                 internal const string JumpFull = "JumpFull";
                 internal const string JumpTakeoff = "JumpTakeoff";
                 internal const string JumpInAir = "JumpInAir";
@@ -76,6 +79,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 internal const string WingBash = "WingBash";
                 internal const string OverheadAttack = "OverheadAttack";
                 internal const string SpareToss = "SpareToss";
+                internal const string ForcePush = "ForcePush";
                 internal const string LegSweep = "LegSweep";
                 internal const string SlashToSlap = "SlashToSlap";
                 internal const string RakeIntoSpinSlash = "RakeIntoSpinSlash";
@@ -87,6 +91,8 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class StrongAttacks
             {
                 internal const string AnimeDash = "AnimeDash";
+                internal const string AnimeDashLeft = "AnimeDash_L";
+                internal const string AnimeDashRight = "AnimeDash_R";
                 internal const string Whirlwind = "Whirlwind";
                 internal const string SpinAttackWindUp = "JumpSpinAttackHPWindup";
                 internal const string SpinWindUp = "JumpSpinAttackWindup";
@@ -198,6 +204,9 @@ namespace EnemyBehavior.Boss.Cleanser
     #region Locomotion Animations
 
     public void PlayWalk(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.Walk, transition);
+    public void PlayStrafeLeft(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.StrafeLeft, transition);
+    public void PlayStrafeRight(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.StrafeRight, transition);
+    public void PlayWalkBack(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.WalkBack, transition);
     public void PlayJumpFull(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpFull, transition);
     public void PlayJumpTakeoff(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpTakeoff, transition);
     public void PlayJumpInAir(float transition = -1f) => CrossFade(CleanserAnim.Locomotion.JumpInAir, transition);
@@ -250,10 +259,13 @@ namespace EnemyBehavior.Boss.Cleanser
         public void PlayDiagUpwardSlash() => CrossFade(CleanserAnim.BasicAttacks.DiagUpwardSlash, attackTransition, true);
         public void PlayPommelStrike() => CrossFade(CleanserAnim.BasicAttacks.PommelStrike, attackTransition, true);
         public void PlayWingBash() => CrossFade(CleanserAnim.BasicAttacks.WingBash, attackTransition, true);
+        public void PlayForcePush() => CrossFade(CleanserAnim.BasicAttacks.ForcePush, attackTransition, true);
         public void PlayLegSweep() => CrossFade(CleanserAnim.BasicAttacks.LegSweep, attackTransition, true);
         public void PlaySlashToSlap() => CrossFade(CleanserAnim.BasicAttacks.SlashToSlap, attackTransition, true);
         public void PlayRakeIntoSpinSlash() => CrossFade(CleanserAnim.BasicAttacks.RakeIntoSpinSlash, attackTransition, true);
         public void PlayAnimeDash() => CrossFade(CleanserAnim.StrongAttacks.AnimeDash, attackTransition, true);
+        public void PlayAnimeDashLeft() => CrossFade(CleanserAnim.StrongAttacks.AnimeDashLeft, attackTransition, true);
+        public void PlayAnimeDashRight() => CrossFade(CleanserAnim.StrongAttacks.AnimeDashRight, attackTransition, true);
         public void PlaySpinAttackWindUp() => CrossFade(CleanserAnim.StrongAttacks.SpinAttackWindUp, attackTransition, true);
         public void PlaySpinWindUp() => CrossFade(CleanserAnim.StrongAttacks.SpinWindUp, attackTransition, true);
         public void PlaySpinHold() => CrossFade(CleanserAnim.StrongAttacks.SpinHold, defaultTransition, true);

@@ -58,12 +58,12 @@ namespace EnemyBehavior.Boss.Cleanser
             wasAlive = isAlive;
         }
 
-        public override void LoseHP(float damage)
+        public override void LoseHP(float damage, float rumbleDuration = 0, float lowFrequency = 0, float highFrequency = 0)
         {
             if (brain == null)
                 return;
 
-            brain.LoseHP(damage);
+            brain.LoseHP(damage, rumbleDuration, lowFrequency, highFrequency);
         }
     }
 }

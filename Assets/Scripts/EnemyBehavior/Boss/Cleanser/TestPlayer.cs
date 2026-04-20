@@ -20,7 +20,7 @@ public class TestPlayer : MonoBehaviour, IHealthSystem
             ?? GetComponentInChildren<PlayerMovement>();
     }
     
-    public void LoseHP(float damage)
+    public void LoseHP(float damage, float rumbleDuration, float lowFrequency, float highFrequency)
     {
         health -= damage;
         Debug.Log($"[TestPlayer] Took {damage} damage. Health: {health}/{maxHealth}");

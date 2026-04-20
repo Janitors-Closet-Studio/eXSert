@@ -2,6 +2,7 @@
 // Purpose: Projectile that explodes on impact, applying area damage.
 // Works with: EnemyProjectile, Damage system, Pooling systems (optional).
 
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ExplosiveEnemyProjectile : MonoBehaviour
@@ -19,6 +20,11 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
     [SerializeField] private GameObject explosionVFXPrefab;
     [SerializeField] private AudioClip explosionSFX;
     [SerializeField] private float sfxVolume = 1f;
+
+    [UnitHeaderInspectable("Rumble")]
+    [SerializeField] private float rumbleDuration = 0.15f;
+    [SerializeField] private float rumbleLowFrequency = 0.35f;
+    [SerializeField] private float rumbleHighFrequency = 0.35f;
 
     private void OnEnable()
     {
@@ -59,7 +65,7 @@ public class ExplosiveEnemyProjectile : MonoBehaviour
             var hp = h.GetComponentInParent<IHealthSystem>();
             if (hp != null)
             {
-                hp.LoseHP(damage);
+                hp.LoseHP(damage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
 
                 if (staggerPlayerOnSplash && hp is PlayerHealthBarManager playerHealth)
                     playerHealth.ApplyForcedStagger(playerSplashStaggerDuration, resetCombo: true);

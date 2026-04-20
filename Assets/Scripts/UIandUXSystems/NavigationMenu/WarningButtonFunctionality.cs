@@ -200,6 +200,7 @@ public class WarningButtonFunctionality : MonoBehaviour
     private void ExecuteAction(WarningAction action)
     {
         Debug.Log($"[WarningButtonFunctionality] Executing action: {action}");
+        RumbleManager.Instance.StopControllerRumble();
         switch (action)
         {
             case WarningAction.RestartCheckpoint:

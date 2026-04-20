@@ -19,6 +19,14 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Forced stagger duration applied to player by falling spare-weapon hits.")]
         [SerializeField, Range(0.05f, 2f)] private float fallingHitStaggerDuration = 0.4f;
 
+        [Header("Rumble")]
+        [SerializeField, Tooltip("Duration of controller rumble when hit by falling spare weapon.")]
+        private float rumbleDuration = 0.15f;
+        [SerializeField, Tooltip("Low frequency intensity of rumble (0-1) when hit by falling spare weapon.")]
+        private float rumbleLowFrequency = 0.35f;
+        [SerializeField, Tooltip("High frequency intensity of rumble (0-1) when hit by falling spare weapon.")]
+        private float rumbleHighFrequency = 0.35f;
+
         private Transform player;
 
         public IEnumerator LaunchVolley(
@@ -149,7 +157,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 damage *= guardDamageMultiplier;
             }
 
-            health.LoseHP(damage);
+            health.LoseHP(damage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
 
             if (staggerPlayerOnFallingHit && health is PlayerHealthBarManager playerHealth)
                 playerHealth.ApplyForcedStagger(fallingHitStaggerDuration, resetCombo: true);

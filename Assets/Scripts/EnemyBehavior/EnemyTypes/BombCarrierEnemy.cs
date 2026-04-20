@@ -155,6 +155,14 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     [SerializeField, Tooltip("Effects that spawn while the bomb bot is heating up during countdown. Each entry can have its own anchor and delay.")]
     private CountdownVfxEntry[] countdownVfxEntries = Array.Empty<CountdownVfxEntry>();
 
+    [Header("Explosion Rumble")]
+    [SerializeField, Tooltip("Duration of the rumble effect when the bomb explodes.")]
+    private float rumbleDuration = 0.15f;
+    [SerializeField, Tooltip("Low frequency of the rumble effect.")]
+    private float rumbleLowFrequency = 0.35f;
+    [SerializeField, Tooltip("High frequency of the rumble effect.")]
+    private float rumbleHighFrequency = 0.35f;
+
     // Spawn context
     private bool spawnedByAlarm = false;
     private AlarmCarrierEnemy alarmSource;
@@ -788,7 +796,7 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             if (!hit.isTrigger)
             {
                 IHealthSystem health = hit.GetComponent<IHealthSystem>();
-                health?.LoseHP(explosionDamage);
+                health?.LoseHP(explosionDamage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
 
                 if (staggerPlayerOnExplosion && health is PlayerHealthBarManager playerHealth)
                     playerHealth.ApplyForcedStagger(playerExplosionStaggerDuration, resetCombo: true);

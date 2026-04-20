@@ -324,6 +324,20 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Lifetime for each spawned smoke trail instance.")]
         [Min(0.01f)] public float CircleSmokeTrailLifetime = 0.8f;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -521,6 +535,20 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Damage multiplier applied when guarding (0.3 = 70% reduction).")]
         [Range(0f, 1f)] public float GuardDamageMultiplier = 0.35f;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -541,6 +569,20 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Damage percentage dealt at the outer edge of the effective range.")]
         [Range(0f, 1f)] public float EdgeDamagePercent = 1f;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -597,6 +639,20 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("VFX prefab spawned on slam impact.")]
         public GameObject ImpactVFX;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -692,6 +748,20 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("VFX prefab for the slam impact.")]
         public GameObject SlamVFX;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -706,6 +776,20 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Damage percentage dealt at the outer edge of MassiveStrikeRadius.")]
         [Range(0f, 1f)] public float EdgeDamagePercent = 1f;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -831,6 +915,20 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("VFX prefab for the massive strike impact.")]
         public GameObject MassiveStrikeVFX;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -907,6 +1005,20 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("VFX prefab spawned on impact.")]
         public GameObject ImpactVFX;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>
@@ -945,6 +1057,20 @@ namespace EnemyBehavior.Boss.Cleanser
         
         [Tooltip("VFX prefab for the impact effect.")]
         public GameObject ImpactVFX;
+
+        [Header("Rumble")]
+        
+        [Tooltip("Turn on Rumble.")]
+        public bool rumbleOn = true;
+
+        [Tooltip("How long the rumble effect lasts (seconds).")]
+        public float rumbleDuration = 0.5f;
+
+        [Tooltip("Low frequency intensity of the rumble (0-1).")]
+        public float lowFrequency = 0.8f;
+
+        [Tooltip("High frequency intensity of the rumble (0-1).")]
+        public float highFrequency = 0.75f;
     }
 
     /// <summary>

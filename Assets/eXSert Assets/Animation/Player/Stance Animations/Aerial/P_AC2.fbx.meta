@@ -17,19 +17,79 @@ ModelImporter:
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
-    animationImportWarnings: 
+    animationImportWarnings: "\nClip 'AC2' has import animation warnings that might
+      lower retargeting quality:\nNote: Activate translation DOF on avatar to improve
+      retargeting quality.\n\t'THERIGAnimatorAerial1:mixamorig:Spine2' has translation
+      animation that will be discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
     importConstraints: 0
-    animationCompression: 1
+    animationCompression: 3
     animationRotationError: 0.5
     animationPositionError: 0.5
     animationScaleError: 0.5
     animationWrapMode: 0
     extraExposedTransformPaths: []
     extraUserProperties: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: AC_X2
+      takeName: AC2
+      internalID: 5282041389539160222
+      firstFrame: 2
+      lastFrame: 32
+      wrapMode: 0
+      orientationOffsetY: -13
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events:
+      - time: 0.31476322
+        functionName: GenerateHitbox
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.5703094
+        functionName: CancelWindowStart
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.1006192
+        functionName: RightFire
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.29411763
+        functionName: LeftFire
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 1.8
     isReadable: 0
   meshes:
     lODScreenPercentages: []
@@ -82,8 +142,1279 @@ ModelImporter:
   importAnimation: 1
   humanDescription:
     serializedVersion: 3
-    human: []
-    skeleton: []
+    human:
+    - boneName: THERIGAnimatorAerial1:mixamorig:Hips
+      humanName: Hips
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftUpLeg
+      humanName: LeftUpperLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightUpLeg
+      humanName: RightUpperLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftLeg
+      humanName: LeftLowerLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightLeg
+      humanName: RightLowerLeg
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftFoot
+      humanName: LeftFoot
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightFoot
+      humanName: RightFoot
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:Spine
+      humanName: Spine
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:Spine1
+      humanName: Chest
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:Neck
+      humanName: Neck
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:Head
+      humanName: Head
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftShoulder
+      humanName: LeftShoulder
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightShoulder
+      humanName: RightShoulder
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftArm
+      humanName: LeftUpperArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightArm
+      humanName: RightUpperArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftForeArm
+      humanName: LeftLowerArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightForeArm
+      humanName: RightLowerArm
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftHand
+      humanName: LeftHand
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightHand
+      humanName: RightHand
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:LeftToeBase
+      humanName: LeftToes
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:RightToeBase
+      humanName: RightToes
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    - boneName: THERIGAnimatorAerial1:mixamorig:Spine2
+      humanName: UpperChest
+      limit:
+        min: {x: 0, y: 0, z: 0}
+        max: {x: 0, y: 0, z: 0}
+        value: {x: 0, y: 0, z: 0}
+        length: 0
+        modified: 0
+    skeleton:
+    - name: P_Walkback(Clone)
+      parentName: 
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_Root
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_Hips
+      parentName: Janitor Hunter_Root
+      position: {x: -0.043689594, y: 0.920577, z: 0.0101771755}
+      rotation: {x: -0.00727155, y: 0.12850419, z: 0.0026922333, w: 0.99167866}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_Spine
+      parentName: Janitor Hunter_Hips
+      position: {x: -0.0000000071013346, y: 0.07541616, z: 0.0000000121071935}
+      rotation: {x: 0.043282412, y: -0.0037006682, z: -0.0021703898, w: 0.99905366}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_Spine1
+      parentName: Janitor Hunter_Spine
+      position: {x: 0.0000000018626451, y: 0.2302016, z: -0.0000000022118911}
+      rotation: {x: 0.011009715, y: -0.0037507673, z: -0.0036851587, w: 0.9999256}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_Neck
+      parentName: Janitor Hunter_Spine1
+      position: {x: 0.0000000018626451, y: 0.25651103, z: 0.0000000020954758}
+      rotation: {x: 0.021337619, y: -0.10147048, z: -0.012621822, w: 0.9945296}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_Head
+      parentName: Janitor Hunter_Neck
+      position: {x: -0.0000000055879354, y: 0.15371524, z: 0.019618668}
+      rotation: {x: 0.03822357, y: -0.10195907, z: 0.00414341, w: 0.9940454}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_HeadEnd
+      parentName: Janitor Hunter_Head
+      position: {x: -0, y: 0.1961866, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftShoulder
+      parentName: Janitor Hunter_Spine1
+      position: {x: -0.039230563, y: 0.18307573, z: -0.0036832672}
+      rotation: {x: 0.0030853492, y: 0.02186571, z: 0.13968655, w: 0.9899495}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftArm
+      parentName: Janitor Hunter_LeftShoulder
+      position: {x: -0.14110595, y: -0.000000011175871, z: 0.000000007450581}
+      rotation: {x: -0.17745219, y: 0.23532172, z: 0.4527404, w: 0.84152275}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftForeArm
+      parentName: Janitor Hunter_LeftArm
+      position: {x: -0.28040317, y: 0, z: 0}
+      rotation: {x: 0.19597307, y: 0.7672613, z: -0.27604362, w: 0.5447059}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHand
+      parentName: Janitor Hunter_LeftForeArm
+      position: {x: -0.25260898, y: -0.000000029802322, z: 0.000000029802322}
+      rotation: {x: -0.2167068, y: -0.0010400447, z: -0.23633762, w: 0.9471967}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandThumb1
+      parentName: Janitor Hunter_LeftHand
+      position: {x: -0.025684122, y: -0.02918656, z: 0.040861167}
+      rotation: {x: 0.31827545, y: 0.22120269, z: -0.30661136, w: 0.86934435}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandThumb2
+      parentName: Janitor Hunter_LeftHandThumb1
+      position: {x: -0.030964412, y: 0.000000018626451, z: -0.000000003259629}
+      rotation: {x: -0.007931428, y: -0.20192647, z: 0.23953806, w: 0.9496233}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandThumb3
+      parentName: Janitor Hunter_LeftHandThumb2
+      position: {x: -0.026465582, y: 0.0000000037252903, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LThumb3End
+      parentName: Janitor Hunter_LeftHandThumb3
+      position: {x: -0.025960982, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandIndex1
+      parentName: Janitor Hunter_LeftHand
+      position: {x: -0.10507166, y: 0.000000014901161, z: 0.040861204}
+      rotation: {x: 0.06088529, y: 0.18412334, z: 0.35311115, w: 0.9152618}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandIndex2
+      parentName: Janitor Hunter_LeftHandIndex1
+      position: {x: -0.04659431, y: -0.000000011175871, z: 0.0000000016298145}
+      rotation: {x: 0.0000000041909516, y: 0.0000000065192585, z: 0.19859633, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandIndex3
+      parentName: Janitor Hunter_LeftHandIndex2
+      position: {x: -0.023297148, y: -0.000000038184226, z: 0.0000000066356733}
+      rotation: {x: 0.0000000065119825, y: 9.313226e-10, z: 0.19859634, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LIndex3End
+      parentName: Janitor Hunter_LeftHandIndex3
+      position: {x: -0.022852993, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandMiddle1
+      parentName: Janitor Hunter_LeftHand
+      position: {x: -0.10507163, y: 0.000000007450581, z: 0.013542569}
+      rotation: {x: 0.0040487056, y: 0.0462342, z: 0.5612668, w: 0.8263326}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandMiddle2
+      parentName: Janitor Hunter_LeftHandMiddle1
+      position: {x: -0.051253743, y: -0.000000055879354, z: -0.000000011641532}
+      rotation: {x: -0.0000000054133125, y: -0.0000000018626451, z: 0.19859633, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandMiddle3
+      parentName: Janitor Hunter_LeftHandMiddle2
+      position: {x: -0.027956596, y: 0.000000017229468, z: 0.000000011641532}
+      rotation: {x: 0.000000023283066, y: -0.000000014435503, z: 0.19859634, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LMiddle3End
+      parentName: Janitor Hunter_LeftHandMiddle3
+      position: {x: -0.027423551, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandRing1
+      parentName: Janitor Hunter_LeftHand
+      position: {x: -0.09923426, y: 0.000000007450581, z: -0.013542585}
+      rotation: {x: -0.082846284, y: 0.07905803, z: 0.6560615, w: 0.74596894}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandRing2
+      parentName: Janitor Hunter_LeftHandRing1
+      position: {x: -0.04659432, y: 0.0000000037252903, z: 0.000000013038516}
+      rotation: {x: 0.000000046566132, y: -0.000000027008356, z: 0.19859631, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandRing3
+      parentName: Janitor Hunter_LeftHandRing2
+      position: {x: -0.023297176, y: -0.000000049360096, z: -0.000000013969839}
+      rotation: {x: 0.000000011175871, y: -0.000000024214387, z: 0.19859631, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LRing3End
+      parentName: Janitor Hunter_LeftHandRing3
+      position: {x: -0.022852993, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandPinky1
+      parentName: Janitor Hunter_LeftHand
+      position: {x: -0.093397014, y: 0.000000014901161, z: -0.040861182}
+      rotation: {x: -0.07641512, y: 0.09394008, z: 0.74527174, w: 0.65567225}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandPinky2
+      parentName: Janitor Hunter_LeftHandPinky1
+      position: {x: -0.03727546, y: 0.000000020023435, z: 0.00000002142042}
+      rotation: {x: 0.000000033527613, y: -0.000000013038516, z: 0.19859628, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftHandPinky3
+      parentName: Janitor Hunter_LeftHandPinky2
+      position: {x: -0.018637743, y: -0.000000026077032, z: -0.000000013038516}
+      rotation: {x: 1.9364576e-16, y: 0.000000013038515, z: 0.19859634, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LPinky3End
+      parentName: Janitor Hunter_LeftHandPinky3
+      position: {x: -0.018282335, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightShoulder
+      parentName: Janitor Hunter_Spine1
+      position: {x: 0.039230563, y: 0.18307583, z: -0.0036832725}
+      rotation: {x: 0.004280614, y: -0.028980441, z: -0.14605893, w: 0.98884207}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightArm
+      parentName: Janitor Hunter_RightShoulder
+      position: {x: 0.14110593, y: 0.000000029802322, z: -0.0000000037252903}
+      rotation: {x: 0.033885334, y: -0.277588, z: -0.5042326, w: 0.8170351}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightForeArm
+      parentName: Janitor Hunter_RightArm
+      position: {x: 0.28040317, y: 0, z: 0}
+      rotation: {x: -0.17228948, y: 0.8197535, z: -0.31809825, w: -0.44399777}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHand
+      parentName: Janitor Hunter_RightForeArm
+      position: {x: 0.25260895, y: 0, z: -0.000000029802322}
+      rotation: {x: -0.29957238, y: -0.035676148, z: 0.18639039, w: 0.93500924}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandThumb1
+      parentName: Janitor Hunter_RightHand
+      position: {x: 0.025684208, y: -0.029186577, z: 0.040861204}
+      rotation: {x: 0.3571819, y: -0.27610773, z: 0.14061455, w: 0.88114315}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandThumb2
+      parentName: Janitor Hunter_RightHandThumb1
+      position: {x: 0.030964402, y: 0, z: 0.00000001071021}
+      rotation: {x: -0.049995895, y: 0.1957999, z: -0.43288547, w: 0.8785061}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandThumb3
+      parentName: Janitor Hunter_RightHandThumb2
+      position: {x: 0.02646562, y: 0.000000026077032, z: 0.000000029802322}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RThumb3End
+      parentName: Janitor Hunter_RightHandThumb3
+      position: {x: 0.025960982, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandIndex1
+      parentName: Janitor Hunter_RightHand
+      position: {x: 0.10507163, y: -0.000000029802322, z: 0.040861186}
+      rotation: {x: 0.12514547, y: 0.0129757775, z: -0.38383362, w: 0.91479075}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandIndex2
+      parentName: Janitor Hunter_RightHandIndex1
+      position: {x: 0.0465943, y: -0.000000029802322, z: -0.000000011175871}
+      rotation: {x: -0.0000000074505793, y: -0.0000000745058, z: -0.19859639, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandIndex3
+      parentName: Janitor Hunter_RightHandIndex2
+      position: {x: 0.023297165, y: 0.0000000037252903, z: -0.0000000018626451}
+      rotation: {x: -0.000000012107193, y: 0.00000004470348, z: -0.19859631, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RIndex3End
+      parentName: Janitor Hunter_RightHandIndex3
+      position: {x: 0.022852993, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandMiddle1
+      parentName: Janitor Hunter_RightHand
+      position: {x: 0.10507161, y: -0.000000022351742, z: 0.013542555}
+      rotation: {x: 0.04035756, y: 0.009530507, z: -0.5685312, w: 0.82161593}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandMiddle2
+      parentName: Janitor Hunter_RightHandMiddle1
+      position: {x: 0.05125378, y: 0.000000031664968, z: 0.000000018626451}
+      rotation: {x: 0.000000030267984, y: -0.000000037252903, z: -0.19859639, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandMiddle3
+      parentName: Janitor Hunter_RightHandMiddle2
+      position: {x: 0.027956592, y: -0.000000034226105, z: -0.000000010244548}
+      rotation: {x: -0.00000003352761, y: 0.00000003306195, z: -0.19859634, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RMiddle3End
+      parentName: Janitor Hunter_RightHandMiddle3
+      position: {x: 0.027423551, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandRing1
+      parentName: Janitor Hunter_RightHand
+      position: {x: 0.09923431, y: -0.000000022351742, z: -0.013542573}
+      rotation: {x: -0.084422685, y: -0.08017544, z: -0.6473655, w: 0.7532348}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandRing2
+      parentName: Janitor Hunter_RightHandRing1
+      position: {x: 0.04659433, y: 0.000000010244548, z: 0.0000000018626451}
+      rotation: {x: -0.000000022817405, y: 0.000000005587936, z: -0.19859634, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandRing3
+      parentName: Janitor Hunter_RightHandRing2
+      position: {x: 0.023297165, y: -0.000000045867637, z: -0.00000001839362}
+      rotation: {x: 0.000000022351745, y: -0.000000006519259, z: -0.19859633, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RRing3End
+      parentName: Janitor Hunter_RightHandRing3
+      position: {x: 0.022852993, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandPinky1
+      parentName: Janitor Hunter_RightHand
+      position: {x: 0.09339704, y: -0.000000029802322, z: -0.040861167}
+      rotation: {x: -0.13166781, y: -0.1370897, z: -0.71582234, w: 0.67191404}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandPinky2
+      parentName: Janitor Hunter_RightHandPinky1
+      position: {x: 0.03727546, y: 0.000000016763806, z: 0.0000000045401976}
+      rotation: {x: -0.000000030267984, y: 0.0000000018626456, z: -0.19859636, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightHandPinky3
+      parentName: Janitor Hunter_RightHandPinky2
+      position: {x: 0.018637735, y: -0.00000001071021, z: -0.000000008381903}
+      rotation: {x: -0.000000014901163, y: 0.000000005587936, z: -0.19859633, w: 0.9800814}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RPinky3End
+      parentName: Janitor Hunter_RightHandPinky3
+      position: {x: 0.018282335, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftUpLeg
+      parentName: Janitor Hunter_Hips
+      position: {x: -0.0980933, y: -0.000000006519258, z: 0.000000007450581}
+      rotation: {x: -0.15477628, y: -0.026421506, z: -0.052174494, w: 0.9862171}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftLeg
+      parentName: Janitor Hunter_LeftUpLeg
+      position: {x: -0, y: -0.39234072, z: 0}
+      rotation: {x: 0.31002834, y: -3.685145e-17, z: 0.000000015832486, w: 0.95072734}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftFoot
+      parentName: Janitor Hunter_LeftLeg
+      position: {x: 0.000000007450581, y: -0.42753753, z: 0.000000029802322}
+      rotation: {x: -0.10581525, y: -0.08354207, z: 0.06405607, w: 0.9887976}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LeftToeBase
+      parentName: Janitor Hunter_LeftFoot
+      position: {x: 0.0000000037252903, y: -0.06376066, z: 0.14714}
+      rotation: {x: 0.012963462, y: 0.0000000011632438, z: -8.7311505e-11, w: 0.999916}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_LToeEnd
+      parentName: Janitor Hunter_LeftToeBase
+      position: {x: -0, y: 0, z: 0.03923732}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightUpLeg
+      parentName: Janitor Hunter_Hips
+      position: {x: 0.0980933, y: 0.000000006519258, z: -0.000000007450581}
+      rotation: {x: -0.05809043, y: 0.027890308, z: 0.08700186, w: 0.9941219}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightLeg
+      parentName: Janitor Hunter_RightUpLeg
+      position: {x: -0.000000022351742, y: -0.39234072, z: -0.000000007450581}
+      rotation: {x: 0.32053542, y: 0.000000018961147, z: 0.0000000074505815, w: 0.94723654}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightFoot
+      parentName: Janitor Hunter_RightLeg
+      position: {x: -0.000000011175871, y: -0.4275375, z: 0.000000074505806}
+      rotation: {x: -0.18945776, y: 0.13804242, z: -0.104535654, w: 0.9665001}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RightToeBase
+      parentName: Janitor Hunter_RightFoot
+      position: {x: -0, y: -0.06376066, z: 0.14713994}
+      rotation: {x: -0.0023732572, y: 0.0000000043219197, z: 9.313228e-10, w: 0.9999972}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Janitor Hunter_RToeEnd
+      parentName: Janitor Hunter_RightToeBase
+      position: {x: -0, y: 0, z: 0.03923732}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:MC_low
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0.9271845, z: 0.013664722}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:head
+      parentName: THERIGAnimatorAerial1:MC_low
+      position: {x: -0, y: -0.9271845, z: -0.013664722}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:face
+      parentName: THERIGAnimatorAerial1:head
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:eyes
+      parentName: THERIGAnimatorAerial1:head
+      position: {x: -0, y: 0.9271845, z: 0.013664722}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:right_eye
+      parentName: THERIGAnimatorAerial1:eyes
+      position: {x: -0.003126844, y: 0.75177985, z: 0.11443507}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:eye_shine_r
+      parentName: THERIGAnimatorAerial1:right_eye
+      position: {x: 0.003126844, y: -1.6789644, z: -0.12809978}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pupil_r
+      parentName: THERIGAnimatorAerial1:right_eye
+      position: {x: 0.003126844, y: -1.6789644, z: -0.12809978}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:eye_r
+      parentName: THERIGAnimatorAerial1:right_eye
+      position: {x: 0.003126844, y: -1.6789644, z: -0.12809978}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:left_eye
+      parentName: THERIGAnimatorAerial1:eyes
+      position: {x: 0.0000000023841857, y: 0.7542463, z: 0.113651454}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:eye_shine_l
+      parentName: THERIGAnimatorAerial1:left_eye
+      position: {x: -0.0000000023841857, y: -1.6814308, z: -0.12731618}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pupil_l
+      parentName: THERIGAnimatorAerial1:left_eye
+      position: {x: -0.0000000023841857, y: -1.6814308, z: -0.12731618}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:eye_l
+      parentName: THERIGAnimatorAerial1:left_eye
+      position: {x: -0.0000000023841857, y: -1.6814308, z: -0.12731618}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:lashes_brows
+      parentName: THERIGAnimatorAerial1:head
+      position: {x: -0, y: 1.6965895, z: 0.12952998}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:brow_l
+      parentName: THERIGAnimatorAerial1:lashes_brows
+      position: {x: -0, y: -1.6965895, z: -0.12952998}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:top_lashes_l
+      parentName: THERIGAnimatorAerial1:lashes_brows
+      position: {x: -0, y: -1.6965895, z: -0.12952998}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:bottom_lashes_l
+      parentName: THERIGAnimatorAerial1:lashes_brows
+      position: {x: -0, y: -1.6965895, z: -0.12952998}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:brow_r
+      parentName: THERIGAnimatorAerial1:lashes_brows
+      position: {x: -0, y: -1.6965895, z: -0.12952998}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:bottom_lashes_r
+      parentName: THERIGAnimatorAerial1:lashes_brows
+      position: {x: -0, y: -1.6965895, z: -0.12952998}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:top_lashes_r
+      parentName: THERIGAnimatorAerial1:lashes_brows
+      position: {x: -0, y: -1.6965895, z: -0.12952998}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:earrings
+      parentName: THERIGAnimatorAerial1:head
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:hair
+      parentName: THERIGAnimatorAerial1:head
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:goggles
+      parentName: THERIGAnimatorAerial1:head
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:legs
+      parentName: THERIGAnimatorAerial1:MC_low
+      position: {x: -0, y: -0.9271845, z: -0.013664722}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:thighs
+      parentName: THERIGAnimatorAerial1:legs
+      position: {x: -0, y: 0.78410137, z: 0.032185767}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:thigh_l
+      parentName: THERIGAnimatorAerial1:thighs
+      position: {x: -0, y: -0.78410137, z: -0.032185767}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:thigh_r
+      parentName: THERIGAnimatorAerial1:thighs
+      position: {x: -0, y: -0.78410137, z: -0.032185767}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:socks
+      parentName: THERIGAnimatorAerial1:legs
+      position: {x: -0, y: 0.41129023, z: 0.021805238}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:sock_l
+      parentName: THERIGAnimatorAerial1:socks
+      position: {x: -0, y: -0.41129023, z: -0.021805238}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:sock_r
+      parentName: THERIGAnimatorAerial1:socks
+      position: {x: -0, y: -0.41129023, z: -0.021805238}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:leg_straps
+      parentName: THERIGAnimatorAerial1:legs
+      position: {x: -0, y: 0.42039934, z: 0.011237239}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:leg_straps_l
+      parentName: THERIGAnimatorAerial1:leg_straps
+      position: {x: -0, y: -0.42039934, z: -0.011237239}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:leg_straps_r
+      parentName: THERIGAnimatorAerial1:leg_straps
+      position: {x: -0, y: -0.42039934, z: -0.011237239}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:knee_pads
+      parentName: THERIGAnimatorAerial1:legs
+      position: {x: -0, y: 0.53166157, z: 0.09186147}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:knee_pad_l
+      parentName: THERIGAnimatorAerial1:knee_pads
+      position: {x: -0, y: -0.53166157, z: -0.09186147}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:knee_pad_r
+      parentName: THERIGAnimatorAerial1:knee_pads
+      position: {x: -0, y: -0.53166157, z: -0.09186147}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:shin_guards
+      parentName: THERIGAnimatorAerial1:legs
+      position: {x: -0, y: 0.32668728, z: 0.029512586}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:shin_pad_l
+      parentName: THERIGAnimatorAerial1:shin_guards
+      position: {x: -0, y: -0.32668728, z: -0.029512586}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:shin_pad_r
+      parentName: THERIGAnimatorAerial1:shin_guards
+      position: {x: -0, y: -0.32668728, z: -0.029512586}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:boots
+      parentName: THERIGAnimatorAerial1:legs
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:boot_l
+      parentName: THERIGAnimatorAerial1:boots
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:boot_r
+      parentName: THERIGAnimatorAerial1:boots
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pants
+      parentName: THERIGAnimatorAerial1:MC_low
+      position: {x: -0, y: -0.9271845, z: -0.013664722}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:jerry_can_holder
+      parentName: THERIGAnimatorAerial1:pants
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:jerry_can
+      parentName: THERIGAnimatorAerial1:pants
+      position: {x: -0.62180644, y: 0.87922674, z: -0.080228955}
+      rotation: {x: 0.19992825, y: -0.2527372, z: 0.05254338, w: 0.94519407}
+      scale: {x: 0.41912884, y: 0.41912884, z: 0.41912884}
+    - name: THERIGAnimatorAerial1:belt
+      parentName: THERIGAnimatorAerial1:pants
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pants_detail
+      parentName: THERIGAnimatorAerial1:pants
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:shorts
+      parentName: THERIGAnimatorAerial1:pants
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:arms
+      parentName: THERIGAnimatorAerial1:MC_low
+      position: {x: -0, y: -0.9271845, z: -0.013664722}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:arms1
+      parentName: THERIGAnimatorAerial1:arms
+      position: {x: -0, y: 1.4614985, z: -0.012427173}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:arm_l
+      parentName: THERIGAnimatorAerial1:arms1
+      position: {x: -0, y: -1.4614985, z: 0.012427173}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:arm_r
+      parentName: THERIGAnimatorAerial1:arms1
+      position: {x: -0, y: -1.4614985, z: 0.012427173}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:armbands
+      parentName: THERIGAnimatorAerial1:arms
+      position: {x: 0.000000009536743, y: 1.4564989, z: -0.031204313}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:armband_l
+      parentName: THERIGAnimatorAerial1:armbands
+      position: {x: -0.000000009536743, y: -1.4564989, z: 0.031204313}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:armband_r
+      parentName: THERIGAnimatorAerial1:armbands
+      position: {x: -0.000000009536743, y: -1.4564989, z: 0.031204313}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:paldron_straps
+      parentName: THERIGAnimatorAerial1:arms
+      position: {x: -0, y: 1.4677093, z: -0.007468731}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pauldron_strap_l
+      parentName: THERIGAnimatorAerial1:paldron_straps
+      position: {x: -0, y: -1.4677093, z: 0.007468731}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pauldron_strap_r
+      parentName: THERIGAnimatorAerial1:paldron_straps
+      position: {x: -0, y: -1.4677093, z: 0.007468731}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pauldrons
+      parentName: THERIGAnimatorAerial1:arms
+      position: {x: -0, y: 1.5235438, z: -0.0057272003}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pauldron_l
+      parentName: THERIGAnimatorAerial1:pauldrons
+      position: {x: -0, y: -1.5235438, z: 0.0057272003}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:pauldron_r
+      parentName: THERIGAnimatorAerial1:pauldrons
+      position: {x: -0, y: -1.5235438, z: 0.0057272003}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:torso
+      parentName: THERIGAnimatorAerial1:MC_low
+      position: {x: -0, y: -0.9271845, z: -0.013664722}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:shirt
+      parentName: THERIGAnimatorAerial1:torso
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:zipper
+      parentName: THERIGAnimatorAerial1:torso
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:chest_armor
+      parentName: THERIGAnimatorAerial1:torso
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:back_strap_clasp
+      parentName: THERIGAnimatorAerial1:chest_armor
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:chest_straps
+      parentName: THERIGAnimatorAerial1:chest_armor
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:chest_plate
+      parentName: THERIGAnimatorAerial1:chest_armor
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:stomach
+      parentName: THERIGAnimatorAerial1:torso
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:transform1
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:transform2
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:transform3
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:transform4
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:transform5
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:THERIG
+      parentName: P_Walkback(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:ArmControllers
+      parentName: THERIGAnimatorAerial1:THERIG
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:PoleVector_LArm
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: -0.46426013, y: 1.2904922, z: -0.46291664}
+      rotation: {x: -0.00000009794902, y: 0.000001345599, z: -0.0000005417753, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:PoleVector_RArm
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: 0.24407299, y: 1.2616655, z: -0.62410486}
+      rotation: {x: -0.000000028471627, y: -0.0000014271117, z: 0.00000043481162, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKController_Larm
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: -0.20391075, y: 1.4460341, z: 0.21828061}
+      rotation: {x: 0.000000049434025, y: 0.000000013806893, z: 0.000000073340715, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:ikHandle_L_Arm
+      parentName: THERIGAnimatorAerial1:IKController_Larm
+      position: {x: 0.000009384155, y: 0.0000016784668, z: -0.0000018310546}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKController_Rarm
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: 0.094598085, y: 1.4407575, z: 0.39913476}
+      rotation: {x: -0.000000013660315, y: -6.5214787e-16, z: 0.000000047740325, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:ikHandle_R_Arm
+      parentName: THERIGAnimatorAerial1:IKController_Rarm
+      position: {x: -0.0000022125244, y: -0.0000018310546, z: 0.00000086307523}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_RightArm
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: 0.20357929, y: 1.4942867, z: -0.04930734}
+      rotation: {x: -0.05554538, y: -0.16235793, z: -0.63772273, w: 0.75090903}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_RightForeArm
+      parentName: THERIGAnimatorAerial1:FK_RightArm
+      position: {x: 0.26004162, y: -0.0131101115, z: -0.021610241}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_RightHand
+      parentName: THERIGAnimatorAerial1:FK_RightForeArm
+      position: {x: 0.28900662, y: -0.011482739, z: 0.018408477}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_LeftArm
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: -0.21571618, y: 1.4942868, z: -0.05061043}
+      rotation: {x: -0.117400765, y: 0.26562515, z: 0.59910494, w: 0.74614584}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_LeftForeArm
+      parentName: THERIGAnimatorAerial1:FK_LeftArm
+      position: {x: -0.26003748, y: -0.013511032, z: -0.021170955}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_LeftHand
+      parentName: THERIGAnimatorAerial1:FK_LeftForeArm
+      position: {x: -0.28900868, y: -0.0110782385, z: 0.018640568}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_IK_SWITCH_RIGHT
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_IK_SWITCH_LEFT
+      parentName: THERIGAnimatorAerial1:ArmControllers
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:LegControllers
+      parentName: THERIGAnimatorAerial1:THERIG
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:PoleVector_LLeg
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: -0.14976154, y: 0.65358245, z: 0.54866}
+      rotation: {x: -0.015931023, y: 0.0000013300464, z: 0.000022014787, w: 0.9998731}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:PoleVector_RLeg
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: 0.14452778, y: 0.63836414, z: 0.38265648}
+      rotation: {x: -0.014663919, y: -0.00000527926, z: 0.0000806329, w: 0.9998925}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKController_LLeg
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: -0.21206185, y: 0.08963194, z: 0.12314954}
+      rotation: {x: -0.00000031727885, y: -0.00000002054225, z: -0.000000023085247, w: 1}
+      scale: {x: 0.7326744, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:ikHandle_L_Leg
+      parentName: THERIGAnimatorAerial1:IKController_LLeg
+      position: {x: -0, y: 0.0610001, z: -0.062568046}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1.3648628, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKController_RLeg
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: 0.1279855, y: 0.11822122, z: -0.13597284}
+      rotation: {x: -0.00000045096752, y: -0.000000031073338, z: -0.000000032253386, w: 1}
+      scale: {x: 0.73285866, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:ikHandle_R_Leg
+      parentName: THERIGAnimatorAerial1:IKController_RLeg
+      position: {x: -0, y: 0.060920432, z: -0.06133459}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1.3645196, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_RightUpLeg
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: 0.091324784, y: 0.98884666, z: -0.0049546724}
+      rotation: {x: -0.047557667, y: 0.14855032, z: 0.09366117, w: 0.9833101}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_RightLeg
+      parentName: THERIGAnimatorAerial1:FK_RightUpLeg
+      position: {x: 0.0035098197, y: -0.45558596, z: 0.0075598625}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_RightFoot
+      parentName: THERIGAnimatorAerial1:FK_RightLeg
+      position: {x: -0.0035477781, y: -0.40776885, z: -0.035887927}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_LeftUpLeg
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: -0.10346177, y: 0.9888467, z: -0.008066262}
+      rotation: {x: -0.15925471, y: 0.1024418, z: -0.026012369, w: 0.98156357}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_LeftLeg
+      parentName: THERIGAnimatorAerial1:FK_LeftUpLeg
+      position: {x: -0.0035622038, y: -0.45551997, z: 0.010967819}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FK_LeftFoot
+      parentName: THERIGAnimatorAerial1:FK_LeftLeg
+      position: {x: 0.003502273, y: -0.40782318, z: -0.036514614}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IK_FK_SWITCH_R_LEG
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IK_FK_SWITCH_L_LEG
+      parentName: THERIGAnimatorAerial1:LegControllers
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:Hips
+      parentName: P_Walkback(Clone)
+      position: {x: 0.000000022351742, y: 1.0599315, z: 0.018800858}
+      rotation: {x: 7.2759576e-10, y: 0.000000011641532, z: 3.6379788e-10, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKLeftUpLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:Hips
+      position: {x: -0.09739018, y: -0.055339355, z: 0.00395429}
+      rotation: {x: -0.09903781, y: 0.15123262, z: 0.98141915, w: 0.0643173}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKLeftLeg
+      parentName: THERIGAnimatorAerial1:IKLeftUpLeg
+      position: {x: 0.00000015862992, y: 0.45566592, z: 0.00005330863}
+      rotation: {x: -0.33111823, y: -0.00396322, z: 0.0029370575, w: 0.9435764}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKLeftFoot
+      parentName: THERIGAnimatorAerial1:IKLeftLeg
+      position: {x: -0.0000003351513, y: 0.4094696, z: -0.0000026121022}
+      rotation: {x: 0.45832595, y: 0.0565399, z: -0.018408094, w: 0.88679296}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKRightUpLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:Hips
+      position: {x: 0.09739328, y: -0.055333965, z: 0.0070655285}
+      rotation: {x: 0.00007606484, y: 0.007874327, z: 0.9999616, w: -0.003852572}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKRightLeg
+      parentName: THERIGAnimatorAerial1:FKRightUpLeg
+      position: {x: -0.12163052, y: 0.42290732, z: 0.050878786}
+      rotation: {x: 0.00009711973, y: -0.023092698, z: 0.07625631, w: 0.9968208}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKRightFoot
+      parentName: THERIGAnimatorAerial1:FKRightLeg
+      position: {x: 0.0000003733343, y: 0.40936047, z: -0.0000028052102}
+      rotation: {x: 0.45750102, y: -0.056590196, z: 0.018308956, w: 0.88721764}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKLeftUpLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:Hips
+      position: {x: -0.09739328, y: -0.05533391, z: 0.00395429}
+      rotation: {x: 0.000017341976, y: 0.011977349, z: 0.99992067, w: 0.003909184}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKLeftLeg
+      parentName: THERIGAnimatorAerial1:FKLeftUpLeg
+      position: {x: -0.0029551738, y: 0.40685114, z: 0.08731604}
+      rotation: {x: 0.09103189, y: 0.025048072, z: -0.039259464, w: 0.99475855}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKLeftFoot
+      parentName: THERIGAnimatorAerial1:FKLeftLeg
+      position: {x: -0.0000003351513, y: 0.4094696, z: -0.0000026121022}
+      rotation: {x: 0.45832595, y: 0.0565399, z: -0.018408094, w: 0.88679296}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKRightUpLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:Hips
+      position: {x: 0.097396374, y: -0.055328522, z: 0.0070655285}
+      rotation: {x: -0.072048016, y: 0.04312511, z: 0.9945639, w: -0.061579846}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKRightLeg
+      parentName: THERIGAnimatorAerial1:IKRightUpLeg
+      position: {x: 0.0000015126978, y: 0.45566207, z: 0.00038438404}
+      rotation: {x: -0.33806214, y: 0.003189881, z: -0.0060159527, w: 0.94109917}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKRightFoot
+      parentName: THERIGAnimatorAerial1:IKRightLeg
+      position: {x: 0.0000003733343, y: 0.40936047, z: -0.0000028052102}
+      rotation: {x: 0.45750102, y: -0.056590196, z: 0.018308956, w: 0.88721764}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:RightUpLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:Hips
+      position: {x: 0.09739319, y: -0.05533399, z: 0.007065442}
+      rotation: {x: 0.00001424942, y: -0.0020627722, z: 0.999974, w: 0.006913545}
+      scale: {x: 1.0000032, y: 1.0000045, z: 0.99999994}
+    - name: THERIGAnimatorAerial1:mixamorig:RightLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:RightUpLeg
+      position: {x: 0.00009321818, y: 0.45566168, z: -0.0000068316617}
+      rotation: {x: -0.050513495, y: 0.00041440915, z: -0.008193057, w: 0.99868965}
+      scale: {x: 1.0000015, y: 1.0000012, z: 1.0000006}
+    - name: THERIGAnimatorAerial1:mixamorig:RightFoot
+      parentName: THERIGAnimatorAerial1:mixamorig:RightLeg
+      position: {x: 0.00000042270406, y: 0.40936023, z: 0.00000041493993}
+      rotation: {x: 0.46577635, y: -0.052747954, z: 0.027827611, w: 0.8828906}
+      scale: {x: 1.0000013, y: 0.9999997, z: 1.0000015}
+    - name: THERIGAnimatorAerial1:mixamorig:RightToeBase
+      parentName: THERIGAnimatorAerial1:mixamorig:RightFoot
+      position: {x: -0, y: 0.17350884, z: 0}
+      rotation: {x: 0.34571454, y: 0.0033822842, z: -0.0012462437, w: 0.93833286}
+      scale: {x: 1.0000014, y: 1.0000076, z: 0.99999434}
+    - name: THERIGAnimatorAerial1:mixamorig:RightToe_End
+      parentName: THERIGAnimatorAerial1:mixamorig:RightToeBase
+      position: {x: 2.6645352e-17, y: 0.06819217, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:Spine
+      parentName: THERIGAnimatorAerial1:mixamorig:Hips
+      position: {x: -0.0000000075816855, y: 0.09972855, z: -0.007587832}
+      rotation: {x: -0.03795982, y: 1.9333601e-10, z: -0.0000000050894995, w: 0.99927926}
+      scale: {x: 1, y: 0.99999994, z: 0.9999999}
+    - name: THERIGAnimatorAerial1:mixamorig:Spine1
+      parentName: THERIGAnimatorAerial1:mixamorig:Spine
+      position: {x: 0.000000002612523, y: 0.11668616, z: -0.00000001134289}
+      rotation: {x: -0, y: -0, z: -1.7347235e-17, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:Spine2
+      parentName: THERIGAnimatorAerial1:mixamorig:Spine1
+      position: {x: 2.0671263e-10, y: 0.13335559, z: -0.000000010387418}
+      rotation: {x: -0, y: 0.000000011414789, z: 0.0000000034224295, w: 1}
+      scale: {x: 1.0000002, y: 1.0000018, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:Neck
+      parentName: THERIGAnimatorAerial1:mixamorig:Spine2
+      position: {x: -0.00000002019168, y: 0.15002449, z: -0.00000013277982}
+      rotation: {x: 0.03795982, y: -0.000000011633143, z: -4.4191045e-10, w: 0.99927926}
+      scale: {x: 0.9999999, y: 0.9999999, z: 1.0000002}
+    - name: THERIGAnimatorAerial1:mixamorig:Head
+      parentName: THERIGAnimatorAerial1:mixamorig:Neck
+      position: {x: 0.00000009910221, y: 0.040779334, z: 0.012917431}
+      rotation: {x: 0.0000000037252903, y: -0.000000017462302, z: 7.2759676e-10, w: 1}
+      scale: {x: 1.0000001, y: 1, z: 0.99999976}
+    - name: THERIGAnimatorAerial1:mixamorig:HeadTop_End
+      parentName: THERIGAnimatorAerial1:mixamorig:Head
+      position: {x: -0, y: 0.24426864, z: 0.077375986}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:RightShoulder
+      parentName: THERIGAnimatorAerial1:mixamorig:Spine2
+      position: {x: 0.07011274, y: 0.13385206, z: -0.0010123923}
+      rotation: {x: -0.54945606, y: -0.44325566, z: 0.55745643, w: -0.43688086}
+      scale: {x: 1.0000005, y: 1.000001, z: 1.0000004}
+    - name: THERIGAnimatorAerial1:IKRightArm
+      parentName: THERIGAnimatorAerial1:mixamorig:RightShoulder
+      position: {x: -0.00000055039527, y: 0.14320567, z: -0.0000056441036}
+      rotation: {x: 0.54588723, y: -0.13059351, z: 0.47734436, w: 0.6760879}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKRightForeArm
+      parentName: THERIGAnimatorAerial1:IKRightArm
+      position: {x: -0.000009459901, y: 0.26126716, z: 0.000006507104}
+      rotation: {x: 0.013838004, y: 0.008696383, z: 0.5328038, w: 0.846081}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKRightHand
+      parentName: THERIGAnimatorAerial1:IKRightForeArm
+      position: {x: 0.0000006423653, y: 0.28981987, z: -0.0000005772686}
+      rotation: {x: 0, y: -0, z: -0.0000018775464, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKRightArm
+      parentName: THERIGAnimatorAerial1:mixamorig:RightShoulder
+      position: {x: -0.000000039483428, y: 0.14323285, z: 0.0000001651239}
+      rotation: {x: -0.08915233, y: 0.0576536, z: -0.041360278, w: 0.9934874}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKRightForeArm
+      parentName: THERIGAnimatorAerial1:FKRightArm
+      position: {x: -0.12801002, y: 0.06524841, z: 0.20723295}
+      rotation: {x: 0.598503, y: 0.018851116, z: 0.37187973, w: 0.7093267}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKRightHand
+      parentName: THERIGAnimatorAerial1:FKRightForeArm
+      position: {x: 0.0000006423653, y: 0.28981987, z: -0.0000005772686}
+      rotation: {x: 1.3877789e-16, y: -6.4012404e-30, z: -0.0000018775464, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:RightArm
+      parentName: THERIGAnimatorAerial1:mixamorig:RightShoulder
+      position: {x: -0.00000002567124, y: 0.14323282, z: 0.00000006943602}
+      rotation: {x: -0.07633779, y: 0.0015718488, z: -0.005001604, w: 0.9970683}
+      scale: {x: 1.0000007, y: 1.0000012, z: 1.0000007}
+    - name: THERIGAnimatorAerial1:mixamorig:RightForeArm
+      parentName: THERIGAnimatorAerial1:mixamorig:RightArm
+      position: {x: -0.000009459901, y: 0.26126716, z: 0.000006507104}
+      rotation: {x: 0.06628253, y: 0.0020757546, z: -0.031231605, w: -0.99730986}
+      scale: {x: 1.0000012, y: 0.99999946, z: 0.9999998}
+    - name: THERIGAnimatorAerial1:mixamorig:RightHand
+      parentName: THERIGAnimatorAerial1:mixamorig:RightForeArm
+      position: {x: 0.000000979162, y: 0.28981978, z: -0.00000023913745}
+      rotation: {x: 0.000000044703473, y: 0.00000006565823, z: -0.00000005181936, w: 1}
+      scale: {x: 1.0000004, y: 1.0000001, z: 1.0000004}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftShoulder
+      parentName: THERIGAnimatorAerial1:mixamorig:Spine2
+      position: {x: -0.07011272, y: 0.13388507, z: -0.0014460811}
+      rotation: {x: 0.5476224, y: -0.44474646, z: 0.5590517, w: 0.43562785}
+      scale: {x: 0.99999994, y: 1.0000014, z: 1.0000004}
+    - name: THERIGAnimatorAerial1:IKLeftArm
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftShoulder
+      position: {x: -0.00000037725042, y: 0.14326, z: 0.000005790259}
+      rotation: {x: 0.54743296, y: 0.04900652, z: -0.0360239, w: 0.8346364}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKLeftForeArm
+      parentName: THERIGAnimatorAerial1:IKLeftArm
+      position: {x: 0.000008353084, y: 0.2612475, z: 0.0000066657576}
+      rotation: {x: -0.07698236, y: 0.02082441, z: 0.93524843, w: -0.344892}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:IKLeftHand
+      parentName: THERIGAnimatorAerial1:IKLeftForeArm
+      position: {x: -0.00000019222432, y: 0.289821, z: -0.0000036887725}
+      rotation: {x: 0, y: 0, z: 0.000001564621, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKLeftArm
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftShoulder
+      position: {x: 0.000000005174897, y: 0.14323285, z: 0.00000015752157}
+      rotation: {x: -0.089262255, y: -0.03304326, z: 0.03521233, w: 0.9948369}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKLeftForeArm
+      parentName: THERIGAnimatorAerial1:FKLeftArm
+      position: {x: 0.05422024, y: -0.0026097863, z: 0.20366438}
+      rotation: {x: 0.5576601, y: 0.16997714, z: -0.2929722, w: 0.7578194}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:FKLeftHand
+      parentName: THERIGAnimatorAerial1:FKLeftForeArm
+      position: {x: -0.00000019222432, y: 0.289821, z: -0.0000036887725}
+      rotation: {x: 1.3877788e-16, y: -1.110223e-16, z: 0.000001564621, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftArm
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftShoulder
+      position: {x: -0.0000000087289544, y: 0.14323284, z: 0.00000006297978}
+      rotation: {x: -0.074384995, y: -0.0009871869, z: 0.0049304063, w: 0.99721694}
+      scale: {x: 1.0000012, y: 1.0000015, z: 1.0000019}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftForeArm
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftArm
+      position: {x: 0.000008353084, y: 0.2612475, z: 0.0000066657576}
+      rotation: {x: -0.06631237, y: 0.002013405, z: -0.030281033, w: 0.9973373}
+      scale: {x: 1.0000015, y: 1.0000004, z: 1.0000002}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftHand
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftForeArm
+      position: {x: 0.00000062249933, y: 0.28982076, z: -0.0000046496566}
+      rotation: {x: -0, y: -0, z: -7.2759565e-10, w: 1}
+      scale: {x: 0.99999994, y: 1, z: 0.99999994}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftUpLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:Hips
+      position: {x: -0.09739324, y: -0.055333875, z: 0.0039544296}
+      rotation: {x: 0.000019843932, y: 0.0028720323, z: 0.999972, w: -0.006913481}
+      scale: {x: 1.0000014, y: 1.0000001, z: 0.99999994}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftLeg
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftUpLeg
+      position: {x: -0.000012291866, y: 0.45566535, z: 0.0000040095615}
+      rotation: {x: -0.056684226, y: -0.00046594293, z: 0.008206487, w: 0.99835837}
+      scale: {x: 1.000002, y: 1.0000025, z: 1}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftFoot
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftLeg
+      position: {x: -0.00000026268987, y: 0.40946928, z: 0.0000013583968}
+      rotation: {x: 0.46702647, y: 0.052716456, z: -0.027906572, w: 0.8822292}
+      scale: {x: 1.0000005, y: 1.0000012, z: 1.0000001}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftToeBase
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftFoot
+      position: {x: -8.881784e-18, y: 0.17358173, z: 0}
+      rotation: {x: 0.3455473, y: -0.0036203451, z: 0.0013333242, w: 0.9383935}
+      scale: {x: 1.0000019, y: 1.0000031, z: 0.99999815}
+    - name: THERIGAnimatorAerial1:mixamorig:LeftToe_End
+      parentName: THERIGAnimatorAerial1:mixamorig:LeftToeBase
+      position: {x: -0, y: 0.0685744, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
     armTwist: 0.5
     foreArmTwist: 0.5
     upperLegTwist: 0.5
@@ -94,13 +1425,13 @@ ModelImporter:
     globalScale: 1
     rootMotionBoneName: 
     hasTranslationDoF: 0
-    hasExtraRoot: 0
+    hasExtraRoot: 1
     skeletonHasParents: 1
-  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  lastHumanDescriptionAvatarSource: {fileID: 9000000, guid: 5afc432be3b78ef46b4ef6e7a9125ec9, type: 3}
   autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 2
+  animationType: 3
   humanoidOversampling: 1
-  avatarSetup: 0
+  avatarSetup: 2
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0
