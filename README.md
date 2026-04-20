@@ -1,8 +1,8 @@
-# eXSert - Beta Build README
+# eXSert - Release Candidate README
 
 ## Build Overview
 
-This Beta build represents a significantly expanded and refined version of the eXSert Alpha Build.
+This Release Candidate build represents a significantly expanded and refined version of the eXSert Beta Build.
 
 The entire playable section of the game has been updated with improved combat encounters, clearer player guidance, expanded traversal routes, and major visual upgrades across multiple zones.
 
@@ -38,7 +38,7 @@ Recent progress areas include:
 
 ## Installation & Launch
 
-1. Unzip `eXSert Beta Build.zip`
+1. Unzip `eXSert Release Candidate Build.zip`
 2. Run `eXSert.exe`
 
 No additional setup or external dependencies are required.
@@ -112,13 +112,13 @@ The final boss room has been prepared for demonstration and includes a basic bos
 
 ## Major Mechanics
 
-### Combo System
+### Faster Combo System
 
-Attacks can chain into multi-stage combos. Finisher attacks deal increased damage and help control groups of enemies.
+Attacks can chain into multi-stage combos. Finisher attacks deal increased damage and help control groups of enemies. Combat speed is also adjusted so the pacing of the game feels much faster.
 
 ### Aerial Combat
 
-Enemies can be launched into the air and followed with aerial attacks before finishing with plunge strikes.
+Enemies can be launched into the air and followed with aerial attacks before finishing with plunge strikes. Air dashes support automatic lock-on to aid the movement in air.
 
 ### Guard & Parry
 
@@ -157,74 +157,65 @@ Combat encounters and level triggers have also been optimized for better loading
 
 ## Conservatory Progression Guide
 
-Progression in Crew Quarters now follows a structured encounter and keycard sequence.
+Progression in Conservatory now follows a structured encounter and keycard sequence.
 
 1. Enter Room 1 (first room on the left) and defeat all enemies.
 2. Collect the Key dropped by the encounter.
 3. Exit through the opposite door and move toward Room 2.
 4. On the right side of the area, find a gap in the fence leading to a ramp downward.
 5. Use the ramp to descend to the lower floors.
-6. Navigate the second floor and locate the opening that leads to the first floor.
-
-While progressing downward:
-
-* Players must defeat enemy groups along the path.
-* These enemies will drop a Key Card required to activate the lift system in Room 2.
-
-Using the lift system allows players to ascend the structure.
-
-Players may choose to continue exploring upward toward the third floor.
-
-After clearing the encounters on the third floor:
-
-* Enemies will drop a Key required to activate the third room lift.
-* Inside the third room, defeating the enemies will reward the player with a Golden Key.
-
-The Golden Key unlocks a console on the third floor.
-
-Interacting with this console allows players to open the maintenance hatch, which leads down to the Engine Core, where the final boss encounter takes place.
+6. Navigate the second floor through elevator, with the keycard acquired from completing enemy waves.
+7. Interact with Water pipe system and acquire keycard, then continue up to third floor through elevator.
+8. Use the circular catwalk to reach third room.
+9. Fight enemies on top of third room and acquire cardkey to enable elevator.
+10. Get to second floor of third room and defeat all enemies.
+11. Acquire the last key, get down to first floor and interact with hatch by the root of tree.
 
 ---
 
-## Known Bugs
+Known Bugs
+The following issues are currently known in the Release Candidate build.
 
-The following issues are currently known in the Beta build.
+Gameplay / Progression
+Entering a New Game, returning to Main Menu, then attempting to start another New Game may lock the game.
 
-### Gameplay / Progression
+Interaction during dash may break player movement and cause dash to become locked after restarting.
 
-* Entering a New Game, returning to Main Menu, then attempting to start another New Game may lock the game.
-* Interaction during dash may break player movement and cause dash to become locked after restarting.
-* Player movement during attacks can behave inconsistently when lock-on is active.
+Player movement during attacks can behave inconsistently when lock-on is active.
 
-### UI / Settings
+Lock-on targeting behaves incorrectly against spider bots, causing the player character to clip through them during attacks.
 
-* Audio sliders sometimes do not update visually in the Settings Menu.
-* All settings changed in the Main Menu may not save properly.
-* Objective UI does not update correctly.
-* Brightness slider currently does not function.
-* Combo Progression Manager fail to toggle correctly.
-* Motion blur cannot currently be disabled in the settings.
+Defeating the Cleanser does not trigger any subsequent events or progression.
 
-### Controls / Input
+UI / Settings
+Audio sliders sometimes do not update visually in the Settings Menu.
 
-* Interaction feedback occasionally updates slowly.
+All settings changed in the Main Menu may not save properly.
 
-### Audio
+Objective UI does not update correctly.
 
-* Elevator audio may play during the initial cutscene.
-* Double jump SFX volume is currently too quiet.
+Brightness slider currently does not function.
 
-### Environment / Level Issues
+Combo Progression Manager fail to toggle correctly.
 
-* Card keys may occasionally spawn floating.
-* Missing NavMesh in Crew Quarters causes enemies to not chase after player.
-* Missing enemy zone in Hangar causes enemies to not chase after player.
-* Hangar key ID assignment may fail, allowing players to interact with consoles before acquiring proper keycard.
-* Small collision gap between magnet and cargo in Cargo Bay.
-* Player may slightly float in Cargo Bay due to collider issues.
+Motion blur cannot currently be disabled in the settings.
 
-These issues are currently under investigation and will be addressed in future builds.
+Controls / Input
+Interaction feedback occasionally updates slowly.
 
+Audio
+Elevator audio may play during the initial cutscene.
+
+Double jump SFX volume is currently too quiet.
+
+Environment / Level Issues
+Card keys may occasionally spawn floating.
+
+Drone meshes occasionally disappear, rendering the enemies completely invisible.
+
+Incorrect NavMesh setup in the Conservatory allows enemies to walk through environmental objects.
+
+Water shaders in the Water Treatment Facility sometimes fail to render, causing pipes to appear empty.
 ---
 
 ## Removed Debug Shortcuts
@@ -244,20 +235,20 @@ All encounter systems and progression paths are now fully functional within the 
 
 Engine: Unity 6000.2.15f2  
 Platform: Windows 10 / 11 (DX11, URP)  
-Milestone: Beta  
-Last Update: March 8th, 2026
+Milestone: Release Candidate  
+Last Update: April 5th, 2026
 
 ---
 
 ## AI Disclosure
 
-During the production of eXSert Beta Build, Janitor's Closet Studio utilized GitHub Copilot in debugging and iterating compiler errors during building, and ChatGPT to summarize the known bug lists and quickly iterate the current README document to reflect the updated state of the build compared to previous submissions.
+During the production of eXSert Release Candidate Build, Janitor's Closet Studio utilized GitHub Copilot in debugging and iterating compiler errors during building, and ChatGPT to summarize the known bug lists and quickly iterate the current README document to reflect the updated state of the build compared to previous submissions.
 
 All assets and scripts are created by Janitor's Closet Studio's artists, composers, and engineers.
 
 ---
 
-Thank you for participating in the eXSert Beta playtest.
+Thank you for participating in the eXSert Release Candidate playtest.
 
 Your feedback helps us refine combat feel, encounter pacing, level clarity, and overall gameplay quality.
 
