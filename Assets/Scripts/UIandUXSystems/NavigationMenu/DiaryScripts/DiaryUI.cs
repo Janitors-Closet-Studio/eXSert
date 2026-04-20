@@ -7,13 +7,16 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using UnityEngine.Serialization;
 public class DiaryUI : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private GameObject contentParent;
     [SerializeField] private DiaryScrollingList scrollingList;
-    [SerializeField] private TMP_Text diaryID;
-    [SerializeField] private GameObject diaryDescription;
+    [FormerlySerializedAs("diaryID")]
+    [SerializeField] private TMP_Text diaryTitle;
+    [SerializeField] private TMP_Text diaryIdText;
+    [SerializeField] private TMP_Text diaryDescription;
     [SerializeField] private Image diaryImage;
 
     //DiaryStateChange being subscribed and unsubscribed
@@ -49,8 +52,10 @@ public class DiaryUI : MonoBehaviour
     //Sets each diary info
     internal void SetDiaryInfo(Diaries diaries)
     {
-        diaryID.text = diaries.info.diaryTitle;
-        diaryDescription.GetComponent<TMP_Text>().text = diaries.info.diaryDescription;
+        diaryTitle.text = diaries.info.diaryTitle;
+        if (diaryIdText != null)
+            diaryIdText.text = diaries.info.diaryID;
+        diaryDescription.text = diaries.info.diaryDescription;
         diaries.info.isRead = true; // Mark diary as read when selected
         
         if(DiaryManager.Instance.unreadDiaries.Contains(diaries.info))

@@ -100,8 +100,8 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7661403428839493760}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.0000015137595}
-  m_LocalScale: {x: 1.4792814, y: 1.4745679, z: 1.4745679}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 115631730129993040}
@@ -271,6 +271,10 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 1398636510495394709, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -6.9999695
+      objectReference: {fileID: 0}
     - target: {fileID: 2082563872448806079, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Name
       value: UIButton
@@ -301,7 +305,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6075495815193146463, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 476.648
+      value: 477
       objectReference: {fileID: 0}
     - target: {fileID: 6075495815193146463, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_SizeDelta.y
@@ -337,7 +341,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6075495815193146463, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6075495815193146463, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_AnchoredPosition.y
