@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using UnityEngine.UI;
+using System.Text;
 
 [Serializable]
 [ExecuteInEditMode]
@@ -33,8 +34,16 @@ public class NavigationLogSO : ScriptableObject
     {
 
 #if UNITY_EDITOR
-        string idName = this.name.Replace("Log", "");
-        logID = "ENTRY #00" + idName;
+        StringBuilder digits = new StringBuilder();
+
+        foreach (char character in name)
+        {
+            if (char.IsDigit(character))
+                digits.Append(character);
+        }
+
+        if (int.TryParse(digits.ToString(), out int logNumber))
+            logID = $"ARCHIVE_{logNumber:D3}";
         EditorUtility.SetDirty(this);
 
 #endif

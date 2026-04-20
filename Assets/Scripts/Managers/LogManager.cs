@@ -10,6 +10,7 @@ using Singletons;
 using System.Collections.Generic;
 using System;
 using System.Collections;
+using System.Linq;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -66,7 +67,7 @@ public class LogManager : Singleton<LogManager>
 
     private void Start()
     {
-        foreach(Logs log in logMap.Values)
+        foreach (Logs log in GetLogsInDisplayOrder())
         {
             EventsManager.Instance.logEvents.LogStateChange(log);
         }
@@ -79,10 +80,25 @@ public class LogManager : Singleton<LogManager>
     /// </summary>
     public void RefreshAllLogs()
     {
-        foreach(Logs log in logMap.Values)
+        foreach (Logs log in GetLogsInDisplayOrder())
         {
             EventsManager.Instance.logEvents.LogStateChange(log);
         }
+    }
+
+    private IEnumerable<Logs> GetLogsInDisplayOrder()
+    {
+        return logMap.Values.OrderBy(log => GetLogDisplayNumber(log.info.logID));
+    }
+
+    private int GetLogDisplayNumber(string logId)
+    {
+        string digits = new string(logId.Where(char.IsDigit).ToArray());
+
+        if (int.TryParse(digits, out int logNumber))
+            return logNumber;
+
+        return int.MaxValue;
     }
 
     //Changes the state of the log and if it is Found, it will turn isLogFound true
