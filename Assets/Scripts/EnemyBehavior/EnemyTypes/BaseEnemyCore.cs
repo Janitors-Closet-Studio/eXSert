@@ -25,7 +25,7 @@ public abstract class BaseEnemyCore : MonoBehaviour, IHealthSystem
     public abstract void Spawn();
     public abstract void ResetEnemy();
     public abstract void HealHP(float hp);
-    public abstract void LoseHP(float damage);
+    public abstract void LoseHP(float damage, float rumbleDuration, float lowFrequency, float highFrequency);
 
     public virtual void ApplyHitStagger(float duration)
     {

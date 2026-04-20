@@ -203,7 +203,7 @@ namespace Utilities.Combat
         }
 
         //Grabs the function from the health interface, updates the health count, and updates the health bar
-        public void LoseHP(float damage)
+        public void LoseHP(float damage, float rumbleDuration, float lowFrequency, float highFrequency)
         {
             health -= damage;
         }

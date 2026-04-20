@@ -32,6 +32,14 @@ namespace EnemyBehavior.Boss
         [SerializeField, Tooltip("If enabled, player combo is reset when this stagger is applied.")]
         private bool resetPlayerComboOnStagger = true;
 
+        [Header("Rumble on Hit Settings")]
+        [SerializeField, Tooltip("Duration of controller rumble when hit.")]
+        private float rumbleDuration = 0.15f;
+        [SerializeField, Tooltip("Low frequency intensity of rumble (0-1) when hit.")]
+        private float rumbleLowFrequency = 0.35f;
+        [SerializeField, Tooltip("High frequency intensity of rumble (0-1) when hit.")]
+        private float rumbleHighFrequency = 0.35f;
+
         [Header("Debug")]
         [SerializeField, Tooltip("Enable debug logs for this hitbox")]
         private bool enableDebugLogs = false;
@@ -189,7 +197,7 @@ namespace EnemyBehavior.Boss
                         EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox] Player GUARDED - damage reduced to {finalDamage}");
                 }
 
-                healthSystem.LoseHP(finalDamage);
+                healthSystem.LoseHP(finalDamage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
                 bossBrain?.NotifyAttackDamageApplied();
                 if (enableDebugLogs)
                     EnemyBehaviorDebugLogBools.Log(nameof(BossArmHitbox), $"[BossArmHitbox][DamageDebug] {armSide} HIT PLAYER for {finalDamage} damage! healthType={healthSystem.GetType().Name}");

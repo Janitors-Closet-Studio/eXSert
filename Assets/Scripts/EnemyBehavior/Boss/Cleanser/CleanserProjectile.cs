@@ -52,6 +52,14 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Spin speed in degrees per second.")]
         public float SpinSpeed = 720f;
 
+        [Header("Rumble on Hit Settings")]
+        [Tooltip("Duration of controller rumble when hit.")]
+        public float RumbleDuration = 0.15f;
+        [Tooltip("Low frequency intensity of rumble (0-1) when hit.")]
+        public float RumbleLowFrequency = 0.35f;
+        [Tooltip("High frequency intensity of rumble (0-1) when hit.")]
+        public float RumbleHighFrequency = 0.35f;
+
         // Flight configuration (set by CleanserBrain when spawned)
         [HideInInspector] public bool UseStraightPath;
         [HideInInspector] public bool ReturnsLikeBoomerang;
@@ -452,12 +460,12 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (playerCollider.TryGetComponent<IHealthSystem>(out var health))
             {
-                health.LoseHP(amount);
+                health.LoseHP(amount, RumbleDuration, RumbleLowFrequency, RumbleHighFrequency);
             }
             else
             {
                 var parentHealth = playerCollider.GetComponentInParent<IHealthSystem>();
-                parentHealth?.LoseHP(amount);
+                parentHealth?.LoseHP(amount, RumbleDuration, RumbleLowFrequency, RumbleHighFrequency);
             }
         }
 

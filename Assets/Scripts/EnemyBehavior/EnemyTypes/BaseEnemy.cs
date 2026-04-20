@@ -185,8 +185,19 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private bool wasMovingForSFX;
     private Coroutine movementSFXFadeCoroutine;
     private bool hasLoggedMissingHitSfxSource;
-    
-    
+
+    [Header("Rumble on Hit Settings")]
+    [SerializeField, Tooltip("Duration in seconds for the rumble effect when the enemy is hit.")]
+    private float _rumbleDuration = 0.15f;
+    [SerializeField, Tooltip("Low frequency for the rumble effect.")]
+    private float _lowFrequency = 0.5f;
+    [SerializeField, Tooltip("High frequency for the rumble effect.")]
+    private float _highFrequency = 0.75f;
+
+    public float rumbleDuration => _rumbleDuration;
+    public float lowFrequency => _lowFrequency;
+    public float highFrequency => _highFrequency;
+
     [Header("Behavior Profile")]
     [SerializeField, Tooltip("Optional behavior profile for NavMeshAgent settings. If assigned, these settings will be applied on Awake.")]
     public EnemyBehaviorProfile behaviorProfile;
@@ -999,7 +1010,11 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
                 if (hit.TryGetComponent<IHealthSystem>(out var healthSystem))
                 {
                     float dmg = damage;
-                    
+                    float rumble = rumbleDuration;
+                    float lowFreq = lowFrequency * dmg;
+                    float highFreq = highFrequency * dmg;
+
+
                     // Check for guard
                     if (Utilities.Combat.CombatManager.isGuarding)
                     {
@@ -1009,7 +1024,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
 #endif
                     }
 
-                    healthSystem.LoseHP(dmg);
+                    healthSystem.LoseHP(dmg, rumble, lowFreq, highFreq);
                     animEventDamageDealtThisAttack = true;
 #if UNITY_EDITOR
                     EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Animation event attack dealt {dmg} damage to player.");
@@ -1240,7 +1255,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     public override float maxHP => maxHealth;
 
     // LoseHP is called to apply damage to the enemy
-    public override void LoseHP(float damage)
+    public override void LoseHP(float damage, float rumbleDuration = 0f, float lowFrequency = 0f, float highFrequency = 0f)
     {
         if (damage <= 0f)
             return;

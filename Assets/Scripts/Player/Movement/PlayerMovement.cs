@@ -441,6 +441,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AudioClip jumpSFX;
     [SerializeField] private AudioClip doubleJumpSFX;
 
+    [Header("Rumble on Hit Wall Settings")]
+    [SerializeField] private float hitWallRumbleDuration = 0.15f;
+    [SerializeField] private float hitWallRumbleLowFrequency = 0.35f;
+    [SerializeField] private float hitWallRumbleHighFrequency = 0.35f;
+
     #endregion
 
     private bool isDashing;
@@ -4094,7 +4099,7 @@ public class PlayerMovement : MonoBehaviour
                     var healthSystem = GetComponent<IHealthSystem>();
                     if (healthSystem != null && damageAmount > 0)
                     {
-                        healthSystem.LoseHP(damageAmount);
+                        healthSystem.LoseHP(damageAmount, hitWallRumbleDuration, hitWallRumbleLowFrequency, hitWallRumbleHighFrequency);
                         Debug.Log($"[PlayerMovement] Wall impact damage: {damageAmount:F1}");
                     }
                 }
