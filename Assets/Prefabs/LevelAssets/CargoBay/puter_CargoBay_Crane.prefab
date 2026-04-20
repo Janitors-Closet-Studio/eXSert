@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5299557992692470206, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
       propertyPath: m_Name
-      value: puter Variant
+      value: puter_CargoBay_Crane
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -62,6 +62,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5299557992692470206, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5089308843351349082}
+    - targetCorrespondingSourceObject: {fileID: 6132184374068187218, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5399452552548838224}
   m_SourcePrefab: {fileID: 100100000, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
 --- !u!1 &6949230231241728582 stripped
 GameObject:
@@ -87,7 +90,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 22.3, y: 24.3, z: 12.4}
+  m_Size: {x: 22.3, y: 24.3, z: 24.5}
   m_Center: {x: 0, y: 12.1, z: 0}
 --- !u!114 &5089308843351349082
 MonoBehaviour:
@@ -102,12 +105,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
   _showHitbox: 1
+  blockPromptWhenAttackingOrDashing: 1
+  interactable: 1
   _interactAnimation: {fileID: 0}
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.25
+  _rumbleHighFrequency: 0.25
+  _rumbleDuration: 0.25
   requiredItemID: FirstCrane
+  requiredItemDisplayName: Crane Computer Key
   lockedInteractionPrompt: LOCKED
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
@@ -115,3 +124,25 @@ MonoBehaviour:
       m_Calls: []
   consoleIndex: 0
   verboseDebug: 1
+  optionalStringMessage: 
+--- !u!1 &8998907614068532138 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6132184374068187218, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+  m_PrefabInstance: {fileID: 3025134690594321400}
+  m_PrefabAsset: {fileID: 0}
+--- !u!208 &5399452552548838224
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8998907614068532138}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 4.315, y: 7.3320003, z: 3.8170002}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5

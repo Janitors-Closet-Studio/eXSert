@@ -47,6 +47,11 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     [SerializeField] private AudioClip elevatorSFX;
     [SerializeField] private AudioClip elevatorStopSFX;
 
+    [Header("Rumble")]
+    [SerializeField] private float rumbleDuration = 0.1f;
+    [SerializeField] private float rumbleLowFrequency = 0.1f;
+    [SerializeField] private float rumbleHighFrequency = 0.1f;
+
     private GameObject playerReference;
     private PlayerMovement cachedPlayerMovement;
     private PlayerAnimationController cachedPlayerAnimationController;
@@ -290,6 +295,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     public override void EndPuzzle()
     {
         ReturnToGameplay();
+        RumbleManager.Instance.StopControllerRumble();
         ElevatorMenuActive = false;
     }
 
@@ -699,6 +705,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
         while (Vector3.Distance(elevatorLift.transform.localPosition, targetPosition) > 0.001f)
         {
+            RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while moving elevator
             elevatorLift.transform.localPosition = Vector3.MoveTowards(
                 elevatorLift.transform.localPosition, targetPosition, moveSpeed * Time.deltaTime);
 
