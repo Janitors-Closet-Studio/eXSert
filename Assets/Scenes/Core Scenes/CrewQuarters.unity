@@ -80688,6 +80688,38 @@ PrefabInstance:
       propertyPath: m_Name
       value: puter
       objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 12.178761
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.28488156
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5572837643005833738, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8743079959939480438, guid: 7bd8429475e98a94a8acd065ab752c0d, type: 3}
       propertyPath: m_Center.y
       value: 0.53
@@ -80754,6 +80786,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: cq.greenkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -187605,6 +187640,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: cq.bluekeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -197739,6 +197777,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 125
       objectReference: {fileID: 0}
+    - target: {fileID: 1269592235338329509, guid: b4461f22a9f9a32439f667f25c392f8c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: c9d3ec3ba94ca404a83a2fd015b82420, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -209289,6 +209331,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: cq.redkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -330255,6 +330300,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6477411860878625685, guid: f08e59f1f0cceea4698fd3551748648f, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3ac3abd159f780e459454ceb1dcb55c9, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -389098,6 +389147,9 @@ MonoBehaviour:
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: cq.orangekeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -390050,6 +390102,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 45
       objectReference: {fileID: 0}
+    - target: {fileID: 6477411860878625685, guid: f08e59f1f0cceea4698fd3551748648f, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3ac3abd159f780e459454ceb1dcb55c9, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -432095,6 +432151,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6477411860878625685, guid: f08e59f1f0cceea4698fd3551748648f, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3ac3abd159f780e459454ceb1dcb55c9, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -432555,6 +432615,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 125
       objectReference: {fileID: 0}
+    - target: {fileID: 1269592235338329509, guid: b4461f22a9f9a32439f667f25c392f8c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: c9d3ec3ba94ca404a83a2fd015b82420, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
