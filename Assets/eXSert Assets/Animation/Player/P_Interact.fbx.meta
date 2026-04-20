@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: abec9550062b6804482e1abd63839bc3
+guid: f582832c75488b74aaa628ee503cd10a
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -17,10 +17,11 @@ ModelImporter:
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
-    animationImportWarnings: "\nClip 'AC2' has import animation warnings that might
-      lower retargeting quality:\nNote: Activate translation DOF on avatar to improve
-      retargeting quality.\n\t'THERIGAnimatorAerial1:mixamorig:Spine2' has translation
-      animation that will be discarded.\n"
+    animationImportWarnings: "\nClip 'Interact' has import animation warnings that
+      might lower retargeting quality:\nNote: Activate translation DOF on avatar
+      to improve retargeting quality.\n\t'THERIGAnimatorAerial1:mixamorig:Spine2'
+      has translation animation that will be discarded.\n\t'THERIGAnimatorAerial1:mixamorig:Head'
+      has translation animation that will be discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
@@ -34,13 +35,13 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: AC_X2
-      takeName: AC2
-      internalID: 5282041389539160222
-      firstFrame: 2
-      lastFrame: 32
+      name: Interact
+      takeName: Interact
+      internalID: 1701519168366769839
+      firstFrame: 94
+      lastFrame: 150
       wrapMode: 0
-      orientationOffsetY: -13
+      orientationOffsetY: -11
       level: 0
       cycleOffset: 0
       loop: 0
@@ -48,8 +49,8 @@ ModelImporter:
       loopTime: 0
       loopBlend: 0
       loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
       keepOriginalOrientation: 0
       keepOriginalPositionY: 1
       keepOriginalPositionXZ: 0
@@ -57,39 +58,11 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events:
-      - time: 0.31476322
-        functionName: GenerateHitbox
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.5703094
-        functionName: CancelWindowStart
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.1006192
-        functionName: RightFire
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.29411763
-        functionName: LeftFire
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
+      events: []
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 1.8
+      additiveReferencePoseFrame: 79.8
     isReadable: 0
   meshes:
     lODScreenPercentages: []

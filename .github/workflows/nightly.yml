@@ -66,7 +66,9 @@ jobs:
         run: |
           SINCE=$(date -u '+%Y-%m-%dT00:00:00Z')
           TARGET_COMMIT="${{ steps.build_meta.outputs.commit_sha }}"
-          BASE_COMMIT=$(git rev-list -1 --before="$SINCE" "$TARGET_COMMIT")
+          # Use first-parent history so merged branch commits from earlier author dates
+          # are still treated as newly introduced when they land on Development today.
+          BASE_COMMIT=$(git rev-list --first-parent -1 --before="$SINCE" "$TARGET_COMMIT")
 
           if [ -n "$BASE_COMMIT" ]; then
             RANGE="$BASE_COMMIT..$TARGET_COMMIT"
@@ -133,7 +135,7 @@ jobs:
             '{
               contents: [{
                 parts: [{
-                  text: ("You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the Development branch today, write a short, friendly summary (3-6 bullet points) of what was added, fixed, or changed. Group related changes together. Ignore merge commits, PR bookkeeping, and branch sync messages. Do not repeat commit messages verbatim — paraphrase them clearly. Use plain language a playtester would understand.\n\nCommits:\n" + $log)
+                  text: ("You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the Development branch today, write a short, friendly summary (3-6 bullet points) of what was added, fixed, or changed. Group related changes together. Ignore merge commits, PR bookkeeping, and branch sync messages. Do not repeat commit messages verbatim — paraphrase them clearly. Use plain language a playtester would understand. When the commits come from multiple contributors or feature areas, reflect that breadth in the summary instead of focusing on a single person or one narrow cluster of commits.\n\nCommits:\n" + $log)
                 }]
               }]
             }')
