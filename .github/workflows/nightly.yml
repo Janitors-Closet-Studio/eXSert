@@ -100,9 +100,9 @@ jobs:
 
       - name: Build fallback summary from commit titles
         id: fallback_summary
+        env:
+          COMMIT_LOG: ${{ steps.commits.outputs.commit_log }}
         run: |
-          COMMIT_LOG='${{ steps.commits.outputs.commit_log }}'
-
           if [ "$COMMIT_LOG" = "- No new Development changes were introduced today." ]; then
             SUMMARY="- No new Development commits were pushed today."
           else
@@ -117,11 +117,12 @@ jobs:
 
       - name: Summarize commits with Gemini
         id: summary
+        env:
+          COMMIT_LOG: ${{ steps.commits.outputs.commit_log }}
+          FALLBACK_SUMMARY: ${{ steps.fallback_summary.outputs.summary }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          COMMIT_LOG='${{ steps.commits.outputs.commit_log }}'
-          FALLBACK_SUMMARY='${{ steps.fallback_summary.outputs.summary }}'
-
-          if [ -z "${{ secrets.GEMINI_API_KEY }}" ]; then
+          if [ -z "$GEMINI_API_KEY" ]; then
             {
               echo "summary<<EOF"
               echo "$FALLBACK_SUMMARY"
@@ -141,7 +142,7 @@ jobs:
             }')
 
           RESPONSE=$(curl -s \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${{ secrets.GEMINI_API_KEY }}" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD")
 
