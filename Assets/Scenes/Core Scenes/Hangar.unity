@@ -58031,11 +58031,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 5, y: 0.055, z: 6.055}
+  m_Extents: {x: 5, y: 0.055, z: 5.22}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 1.9, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!65 &755956412
 BoxCollider:
@@ -58057,7 +58057,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 10.000006, y: 0.000001730686, z: 10.000006}
-  m_Center: {x: -0.0000019073486, y: 0.0000038146973, z: -0.0000019073486}
+  m_Center: {x: -1.2, y: 0.0000038146973, z: -0.0000019073486}
 --- !u!1 &758093544
 GameObject:
   m_ObjectHideFlags: 0
@@ -63549,7 +63549,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7591342626242082683, guid: 7f06b16aecdebf9409201375b0417945, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -80419,6 +80420,7 @@ GameObject:
   - component: {fileID: 1043555311}
   - component: {fileID: 1043555310}
   - component: {fileID: 1043555312}
+  - component: {fileID: 1043555313}
   m_Layer: 0
   m_Name: Plane (12)
   m_TagString: Untagged
@@ -80518,6 +80520,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 10.000006, y: 0.0000022168615, z: 10.000006}
   m_Center: {x: 0.00000047683716, y: -0.0000076293945, z: 0}
+--- !u!208 &1043555313
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1043555307}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 5, y: 0.00001, z: 5}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &1047454569
 GameObject:
   m_ObjectHideFlags: 0
@@ -92840,6 +92858,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7591342626242082683, guid: 7f06b16aecdebf9409201375b0417945, type: 3}
+      propertyPath: m_Extents.z
+      value: 17.855
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -104543,7 +104565,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7591342626242082683, guid: 7f06b16aecdebf9409201375b0417945, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
