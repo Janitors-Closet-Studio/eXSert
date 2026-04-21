@@ -38,6 +38,17 @@ public class SlowDownElevator : MonoBehaviour
     [Header("Wall Offset")]
     [SerializeField] private float wallHeight = 2.0f; // Set this to your actual wall prefab height
     [SerializeField] private float finalDoorWallLocalY = -0.03f;
+
+    [Header("Camera Shake")]
+    [SerializeField] private float shakeAmplitude = 1.5f;
+    [SerializeField] private float shakeFrequency = 2.0f;
+    [SerializeField] private float shakeDuration = 0.1f;
+    [SerializeField] private float timeToResetShake = 0.1f;
+
+    [Header("SFX")]
+    [SerializeField] private AudioClip elevatorDecelerateSFX;
+    [SerializeField] private AudioClip elevatorBell;
+
     #endregion
 
     // Internal state
@@ -152,8 +163,13 @@ public class SlowDownElevator : MonoBehaviour
     /// </summary>
     private IEnumerator SlowDownWalls()
     {
+        SoundManager.Instance.puzzleSource.Stop();
+        SoundManager.Instance.puzzleSource.clip = elevatorDecelerateSFX;
+        SoundManager.Instance.puzzleSource.Play();
+
         while (_decelerationTimer < _actualDecelerationDuration)
         {
+            CameraManager.Instance?.ShakeCamera(shakeAmplitude, shakeFrequency, shakeDuration, timeToResetShake); 
             _decelerationTimer += Time.deltaTime;
             float decelerationProgress = Mathf.Clamp01(_decelerationTimer / _actualDecelerationDuration);
             
@@ -220,6 +236,8 @@ public class SlowDownElevator : MonoBehaviour
         }
 
         SnapDoorWallToFinalLocalY();
+        SoundManager.Instance.puzzleSource.Stop();
+        SoundManager.Instance.puzzleSource.PlayOneShot(elevatorBell);
         
         // Complete when total distance traveled is done
         _isDecelerating = false;

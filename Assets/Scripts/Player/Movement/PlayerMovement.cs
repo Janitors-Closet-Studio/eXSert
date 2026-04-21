@@ -1788,6 +1788,7 @@ public class PlayerMovement : MonoBehaviour
         // checks to see if the player can jump or double jump
         if (IsGroundedNow())
         {
+            CameraManager.Instance.ShakeCamera();
             airborneAnimationLocked = true;
             fallingAnimationPlaying = false;
             highFallActive = false;
