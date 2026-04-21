@@ -3308,6 +3308,7 @@ MonoBehaviour:
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -45243,6 +45244,7 @@ MonoBehaviour:
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -61639,6 +61641,7 @@ MonoBehaviour:
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -76094,6 +76097,11 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &980584286 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8380740060267118774, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
+  m_PrefabInstance: {fileID: 1971049556}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &982561254
 Mesh:
   m_ObjectHideFlags: 0
@@ -113396,6 +113404,7 @@ MonoBehaviour:
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: Lift Key Card
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -123623,6 +123632,7 @@ MonoBehaviour:
   requiredItemID: 
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -126547,6 +126557,7 @@ MonoBehaviour:
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -141807,6 +141818,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8530458340202710104, guid: efc588e010d594a4c94830813166a9e0, type: 3}
+      propertyPath: objectToDrop
+      value: 
+      objectReference: {fileID: 980584286}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -149675,9 +149690,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7159643285846252080, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8380740060267118774, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
       propertyPath: m_Name
       value: PuzzleKeyCard(White) Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 8380740060267118774, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

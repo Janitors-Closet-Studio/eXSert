@@ -37,6 +37,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     [SerializeField, Tooltip("Small debounce to prevent one key press from triggering Pause then Back after action map switch.")]
     private float inputDebounceSeconds = 0.15f;
 
+    private AudioClip sfxClipToPause;
+    private AudioClip puzzleClipToPause;
+
 
     private MenuListManager menuListManager;
 
@@ -145,6 +148,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             return;
         }
+
+        SoundManager.Instance.sfxSource.Pause();
+        SoundManager.Instance.puzzleSource.Pause();
 
         RumbleManager.Instance.StopControllerRumble();
 
@@ -382,6 +388,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
 
         StartCoroutine(DelayAfterUnpausing());
+
+        SoundManager.Instance.sfxSource.UnPause();
+        SoundManager.Instance.puzzleSource.UnPause();
 
         Debug.Log("Game Resumed");
         
