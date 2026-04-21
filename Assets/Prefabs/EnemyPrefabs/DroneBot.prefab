@@ -346,7 +346,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 87c9d8cab7647524d98ad7921b83a701, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 2.1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 87c9d8cab7647524d98ad7921b83a701, type: 3}
       propertyPath: m_LocalPosition.z
@@ -894,6 +894,9 @@ MonoBehaviour:
   movementSFXFadeOutDuration: 0.3
   movementSFXSpeedThreshold: 0.1
   loopSFXContinuously: 1
+  _rumbleDuration: 0.15
+  _lowFrequency: 0.5
+  _highFrequency: 0.75
   behaviorProfile: {fileID: 0}
   patrolColor: {r: 0, g: 1, b: 0, a: 1}
   chaseColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
