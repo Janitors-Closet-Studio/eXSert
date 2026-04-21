@@ -103,11 +103,64 @@ jobs:
         env:
           COMMIT_LOG: ${{ steps.commits.outputs.commit_log }}
         run: |
-          if [ "$COMMIT_LOG" = "- No new Development changes were introduced today." ]; then
-            SUMMARY="- No new Development commits were pushed today."
-          else
-            SUMMARY="$COMMIT_LOG"
-          fi
+          SUMMARY=$(python3 <<'PY'
+          import os
+          import re
+
+          commit_log = os.environ.get("COMMIT_LOG", "").strip()
+
+          if commit_log == "- No new Development changes were introduced today.":
+            print("Here's a quick summary of what's new in eXSert today:\n\n- No new Development commits were pushed today.")
+            raise SystemExit(0)
+
+          lines = [line.strip() for line in commit_log.splitlines() if line.strip()]
+          subjects = []
+          for line in lines:
+            if line.startswith("-"):
+              line = line[1:].strip()
+            line = re.sub(r"\s*\([^)]*\)\s*$", "", line)
+            line = re.sub(r"\b(update|fix|wip|tweak|adjust|cleanup)\b", "", line, flags=re.IGNORECASE)
+            line = re.sub(r"\s+", " ", line).strip(" -")
+            if line:
+              subjects.append(line)
+
+          categories = [
+            ("ui", "UI and menus received polish, layout updates, and ongoing presentation improvements."),
+            ("menu", "UI and menus received polish, layout updates, and ongoing presentation improvements."),
+            ("map", "Navigation and map-related content were expanded to help players move through the world more clearly."),
+            ("navmesh", "Navigation and map-related content were expanded to help players move through the world more clearly."),
+            ("drone", "Hangar and drone-related gameplay saw iteration, including placement and movement adjustments."),
+            ("hangar", "Hangar and drone-related gameplay saw iteration, including placement and movement adjustments."),
+            ("camera", "Moment-to-moment feedback was improved with camera and presentation updates."),
+            ("shake", "Moment-to-moment feedback was improved with camera and presentation updates."),
+            ("workflow", "Internal build and workflow changes were made to keep nightly delivery more reliable."),
+            ("nightly", "Internal build and workflow changes were made to keep nightly delivery more reliable."),
+          ]
+
+          summary_lines = []
+          used_subjects = set()
+
+          lowered_subjects = [subject.lower() for subject in subjects]
+          for keyword, sentence in categories:
+            if any(keyword in subject for subject in lowered_subjects) and sentence not in summary_lines:
+              summary_lines.append(sentence)
+              for subject in subjects:
+                if keyword in subject.lower():
+                  used_subjects.add(subject)
+
+          remaining = [subject for subject in subjects if subject not in used_subjects]
+          for subject in remaining[:3]:
+            clean_subject = subject[0].upper() + subject[1:] if subject else subject
+            summary_lines.append(f"Additional development work included {clean_subject.lower()}.")
+
+          if not summary_lines:
+            summary_lines.append("General development updates landed across the project.")
+
+          print("Here's a quick summary of what's new in eXSert today:\n")
+          for line in summary_lines[:5]:
+            print(f"- {line}")
+          PY
+          )
 
           {
             echo "summary<<EOF"
@@ -121,8 +174,10 @@ jobs:
           COMMIT_LOG: ${{ steps.commits.outputs.commit_log }}
           FALLBACK_SUMMARY: ${{ steps.fallback_summary.outputs.summary }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODELS: gemini-3-flash-preview gemini-2.5-flash
         run: |
           if [ -z "$GEMINI_API_KEY" ]; then
+            echo "Gemini summary skipped: GEMINI_API_KEY secret is not configured."
             {
               echo "summary<<EOF"
               echo "$FALLBACK_SUMMARY"
@@ -136,25 +191,71 @@ jobs:
             '{
               contents: [{
                 parts: [{
-                  text: ("You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the Development branch today, write a short, friendly summary (3-6 bullet points) of what was added, fixed, or changed. Group related changes together. Ignore merge commits, PR bookkeeping, and branch sync messages. Do not repeat commit messages verbatim — paraphrase them clearly. Use plain language a playtester would understand. When the commits come from multiple contributors or feature areas, reflect that breadth in the summary instead of focusing on a single person or one narrow cluster of commits.\n\nCommits:\n" + $log)
+                  text: ("You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the Development branch today, write release notes that sound like a player-facing nightly update. Start with exactly this sentence: Here's a quick summary of what's new in eXSert today: Then provide 3-5 bullet points. Group related changes together, paraphrase clearly, and describe the player-visible impact whenever possible. Do not copy commit messages verbatim. Do not mention contributors by name. Ignore merge commits, bookkeeping, vague filler like 'misc changes', and branch sync messages. If the changes are highly technical, translate them into simple, natural language instead of raw engineering phrasing.\n\nCommits:\n" + $log)
                 }]
               }]
             }')
 
-          RESPONSE=$(curl -s \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD")
+          SUMMARY=""
+          LAST_ERROR=""
 
-          SUMMARY=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+          for MODEL in $GEMINI_MODELS; do
+            echo "Requesting Gemini summary with model: $MODEL"
+
+            RESPONSE_FILE=$(mktemp)
+            HTTP_STATUS=$(curl --silent --show-error \
+              --retry 3 \
+              --retry-delay 2 \
+              --retry-all-errors \
+              --connect-timeout 10 \
+              --max-time 90 \
+              --output "$RESPONSE_FILE" \
+              --write-out "%{http_code}" \
+              "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD") || CURL_EXIT=$?
+
+            RESPONSE=$(cat "$RESPONSE_FILE")
+            rm -f "$RESPONSE_FILE"
+
+            if [ -n "$CURL_EXIT" ]; then
+              LAST_ERROR="curl failed with exit code $CURL_EXIT while calling model $MODEL"
+              echo "Gemini summary failed: $LAST_ERROR"
+              unset CURL_EXIT
+              continue
+            fi
+
+            if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+              API_ERROR=$(echo "$RESPONSE" | jq -r '.error.message // empty')
+              if [ -n "$API_ERROR" ]; then
+                LAST_ERROR="HTTP $HTTP_STATUS from $MODEL: $API_ERROR"
+              else
+                LAST_ERROR="HTTP $HTTP_STATUS from $MODEL with non-success response"
+              fi
+              echo "Gemini summary failed: $LAST_ERROR"
+              continue
+            fi
+
+            SUMMARY=$(echo "$RESPONSE" | jq -r '[.candidates[0].content.parts[]?.text // empty] | join("")')
+            if [ -n "$SUMMARY" ]; then
+              echo "Gemini summary succeeded with model: $MODEL"
+              break
+            fi
+
+            BLOCK_REASON=$(echo "$RESPONSE" | jq -r '.promptFeedback.blockReason // empty')
+            FINISH_REASON=$(echo "$RESPONSE" | jq -r '.candidates[0].finishReason // empty')
+            if [ -n "$BLOCK_REASON" ]; then
+              LAST_ERROR="Model $MODEL blocked the prompt: $BLOCK_REASON"
+            elif [ -n "$FINISH_REASON" ]; then
+              LAST_ERROR="Model $MODEL returned no text. finishReason=$FINISH_REASON"
+            else
+              LAST_ERROR="Model $MODEL returned no text."
+            fi
+            echo "Gemini summary failed: $LAST_ERROR"
+          done
 
           if [ -z "$SUMMARY" ]; then
-            API_ERROR=$(echo "$RESPONSE" | jq -r '.error.message // empty')
-            if [ -n "$API_ERROR" ]; then
-              echo "Gemini summary failed: $API_ERROR"
-            else
-              echo "Gemini summary failed: empty response"
-            fi
+            echo "Falling back to local summary. Last Gemini error: ${LAST_ERROR:-unknown error}"
             SUMMARY="$FALLBACK_SUMMARY"
           fi
 
@@ -224,3 +325,62 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete nightly releases older than 24 hours
+        uses: actions/github-script@v7
+        env:
+          CURRENT_TAG: ${{ steps.package.outputs.tag_name }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+            const currentTag = process.env.CURRENT_TAG;
+
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            });
+
+            const staleNightlies = releases.filter((release) => {
+              if (!release.tag_name?.startsWith('daily-')) {
+                return false;
+              }
+
+              if (release.tag_name === currentTag) {
+                return false;
+              }
+
+              return new Date(release.created_at).getTime() < cutoff;
+            });
+
+            if (staleNightlies.length === 0) {
+              core.info('No nightly releases older than 24 hours were found.');
+              return;
+            }
+
+            for (const release of staleNightlies) {
+              core.info(`Deleting nightly release ${release.tag_name} (${release.id}) created at ${release.created_at}`);
+
+              await github.rest.repos.deleteRelease({
+                owner,
+                repo,
+                release_id: release.id,
+              });
+
+              try {
+                await github.rest.git.deleteRef({
+                  owner,
+                  repo,
+                  ref: `tags/${release.tag_name}`,
+                });
+              } catch (error) {
+                if (error.status === 404) {
+                  core.warning(`Tag ${release.tag_name} was already missing.`);
+                } else {
+                  throw error;
+                }
+              }
+            }

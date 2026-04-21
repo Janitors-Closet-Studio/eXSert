@@ -18,6 +18,7 @@ jobs:
         with:
           ref: main
           lfs: false
+          fetch-depth: 0
 
       - name: Capture build metadata
         id: build_meta
@@ -58,6 +59,209 @@ jobs:
           rm -f "Assets/Imported Assets/WireBuilder/Prefabs/EndAnchor.prefab"
           rm -f "Assets/Imported Assets/WireBuilder/Prefabs/EndAnchor.prefab.meta"
 
+      - name: Gather this week's introduced changes
+        id: commits
+        run: |
+          SINCE=$(date -u -d '7 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+          TARGET_COMMIT="${{ steps.build_meta.outputs.commit_sha }}"
+          BASE_COMMIT=$(git rev-list --first-parent -1 --before="$SINCE" "$TARGET_COMMIT")
+
+          if [ -n "$BASE_COMMIT" ]; then
+            RANGE="$BASE_COMMIT..$TARGET_COMMIT"
+          else
+            RANGE="$TARGET_COMMIT"
+          fi
+
+          LOG=$(git log "$RANGE" --reverse --no-merges --pretty=format:"- %s (%an)")
+          if [ -z "$LOG" ]; then
+            LOG=$(git log "$RANGE" --reverse --pretty=format:"- %s (%an)" | grep -vE '^- Merge ' || true)
+          fi
+          if [ -z "$LOG" ]; then
+            LOG="- No new main branch changes were introduced this week."
+          fi
+
+          RAW_LOG=$(git log "$RANGE" --reverse --pretty=format:"- %h %s (%an)")
+          if [ -z "$RAW_LOG" ]; then
+            RAW_LOG="$LOG"
+          fi
+
+          {
+            echo "commit_log<<EOF"
+            echo "$LOG"
+            echo "EOF"
+            echo "raw_commit_log<<EOF"
+            echo "$RAW_LOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Build fallback weekly summary from commit titles
+        id: fallback_summary
+        env:
+          COMMIT_LOG: ${{ steps.commits.outputs.commit_log }}
+        run: |
+          SUMMARY=$(python3 <<'PY'
+          import os
+          import re
+
+          commit_log = os.environ.get("COMMIT_LOG", "").strip()
+
+          if commit_log == "- No new main branch changes were introduced this week.":
+              print("Here's a quick summary of what's new in eXSert this week:\n\n- No new main branch commits were pushed this week.")
+              raise SystemExit(0)
+
+          lines = [line.strip() for line in commit_log.splitlines() if line.strip()]
+          subjects = []
+          for line in lines:
+              if line.startswith("-"):
+                  line = line[1:].strip()
+              line = re.sub(r"\s*\([^)]*\)\s*$", "", line)
+              line = re.sub(r"\b(update|fix|wip|tweak|adjust|cleanup)\b", "", line, flags=re.IGNORECASE)
+              line = re.sub(r"\s+", " ", line).strip(" -")
+              if line:
+                  subjects.append(line)
+
+          categories = [
+              ("ui", "UI and menus received polish, layout updates, and broader presentation improvements this week."),
+              ("menu", "UI and menus received polish, layout updates, and broader presentation improvements this week."),
+              ("map", "Navigation and map-related content expanded to help players move through the world more clearly."),
+              ("navmesh", "Navigation and map-related content expanded to help players move through the world more clearly."),
+              ("drone", "Hangar and drone-related gameplay continued to evolve with placement and movement adjustments."),
+              ("hangar", "Hangar and drone-related gameplay continued to evolve with placement and movement adjustments."),
+              ("camera", "Moment-to-moment feedback improved through camera and presentation updates."),
+              ("shake", "Moment-to-moment feedback improved through camera and presentation updates."),
+              ("workflow", "Internal workflow and build pipeline changes were made to keep deliveries more reliable."),
+              ("nightly", "Internal workflow and build pipeline changes were made to keep deliveries more reliable."),
+              ("weekly", "Internal workflow and build pipeline changes were made to keep deliveries more reliable."),
+          ]
+
+          summary_lines = []
+          used_subjects = set()
+
+          lowered_subjects = [subject.lower() for subject in subjects]
+          for keyword, sentence in categories:
+              if any(keyword in subject for subject in lowered_subjects) and sentence not in summary_lines:
+                  summary_lines.append(sentence)
+                  for subject in subjects:
+                      if keyword in subject.lower():
+                          used_subjects.add(subject)
+
+          remaining = [subject for subject in subjects if subject not in used_subjects]
+          for subject in remaining[:3]:
+              clean_subject = subject[0].upper() + subject[1:] if subject else subject
+              summary_lines.append(f"Additional development work this week included {clean_subject.lower()}.")
+
+          if not summary_lines:
+              summary_lines.append("General development updates landed across the project this week.")
+
+          print("Here's a quick summary of what's new in eXSert this week:\n")
+          for line in summary_lines[:5]:
+              print(f"- {line}")
+          PY
+          )
+
+          {
+            echo "summary<<EOF"
+            echo "$SUMMARY"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Summarize weekly commits with Gemini
+        id: summary
+        env:
+          COMMIT_LOG: ${{ steps.commits.outputs.commit_log }}
+          FALLBACK_SUMMARY: ${{ steps.fallback_summary.outputs.summary }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODELS: gemini-3-flash-preview gemini-2.5-flash
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "Gemini summary skipped: GEMINI_API_KEY secret is not configured."
+            {
+              echo "summary<<EOF"
+              echo "$FALLBACK_SUMMARY"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg log "$COMMIT_LOG" \
+            '{
+              contents: [{
+                parts: [{
+                  text: ("You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the main branch over the last week, write release notes that sound like a player-facing weekly update. Start with exactly this sentence: Here's a quick summary of what's new in eXSert this week: Then provide 3-5 bullet points. Group related changes together, paraphrase clearly, and describe the player-visible impact whenever possible. Do not copy commit messages verbatim. Do not mention contributors by name. Ignore merge commits, bookkeeping, vague filler like 'misc changes', and branch sync messages. If the changes are highly technical, translate them into simple, natural language instead of raw engineering phrasing.\n\nCommits:\n" + $log)
+                }]
+              }]
+            }')
+
+          SUMMARY=""
+          LAST_ERROR=""
+
+          for MODEL in $GEMINI_MODELS; do
+            echo "Requesting Gemini summary with model: $MODEL"
+
+            RESPONSE_FILE=$(mktemp)
+            HTTP_STATUS=$(curl --silent --show-error \
+              --retry 3 \
+              --retry-delay 2 \
+              --retry-all-errors \
+              --connect-timeout 10 \
+              --max-time 90 \
+              --output "$RESPONSE_FILE" \
+              --write-out "%{http_code}" \
+              "https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD") || CURL_EXIT=$?
+
+            RESPONSE=$(cat "$RESPONSE_FILE")
+            rm -f "$RESPONSE_FILE"
+
+            if [ -n "$CURL_EXIT" ]; then
+              LAST_ERROR="curl failed with exit code $CURL_EXIT while calling model $MODEL"
+              echo "Gemini summary failed: $LAST_ERROR"
+              unset CURL_EXIT
+              continue
+            fi
+
+            if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+              API_ERROR=$(echo "$RESPONSE" | jq -r '.error.message // empty')
+              if [ -n "$API_ERROR" ]; then
+                LAST_ERROR="HTTP $HTTP_STATUS from $MODEL: $API_ERROR"
+              else
+                LAST_ERROR="HTTP $HTTP_STATUS from $MODEL with non-success response"
+              fi
+              echo "Gemini summary failed: $LAST_ERROR"
+              continue
+            fi
+
+            SUMMARY=$(echo "$RESPONSE" | jq -r '[.candidates[0].content.parts[]?.text // empty] | join("")')
+            if [ -n "$SUMMARY" ]; then
+              echo "Gemini summary succeeded with model: $MODEL"
+              break
+            fi
+
+            BLOCK_REASON=$(echo "$RESPONSE" | jq -r '.promptFeedback.blockReason // empty')
+            FINISH_REASON=$(echo "$RESPONSE" | jq -r '.candidates[0].finishReason // empty')
+            if [ -n "$BLOCK_REASON" ]; then
+              LAST_ERROR="Model $MODEL blocked the prompt: $BLOCK_REASON"
+            elif [ -n "$FINISH_REASON" ]; then
+              LAST_ERROR="Model $MODEL returned no text. finishReason=$FINISH_REASON"
+            else
+              LAST_ERROR="Model $MODEL returned no text."
+            fi
+            echo "Gemini summary failed: $LAST_ERROR"
+          done
+
+          if [ -z "$SUMMARY" ]; then
+            echo "Falling back to local summary. Last Gemini error: ${LAST_ERROR:-unknown error}"
+            SUMMARY="$FALLBACK_SUMMARY"
+          fi
+
+          {
+            echo "summary<<EOF"
+            echo "$SUMMARY"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Build project
         uses: game-ci/unity-builder@v4
         env:
@@ -91,6 +295,18 @@ jobs:
             Automated weekly build from the main branch.
 
             Source commit: `${{ steps.build_meta.outputs.short_sha }}`
+
+            ---
+
+            ## What's new this week
+
+            ${{ steps.summary.outputs.summary }}
+
+            ---
+
+            ## Raw commits
+
+            ${{ steps.commits.outputs.raw_commit_log }}
           files: eXSert-main-${{ github.run_number }}.zip
           prerelease: false
         env:
