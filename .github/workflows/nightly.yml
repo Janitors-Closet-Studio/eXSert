@@ -290,19 +290,19 @@ jobs:
         run: |
           BUILD_DATE='${{ steps.build_meta.outputs.build_date }}'
           SHORT_SHA='${{ steps.build_meta.outputs.short_sha }}'
-          ZIP_NAME=eXSert-daily-${BUILD_DATE}.zip
+          ZIP_NAME=eXSert-daily-latest.zip
           zip -r "$ZIP_NAME" build/StandaloneWindows64/
           echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-          echo "tag_name=daily-${BUILD_DATE}-${GITHUB_RUN_NUMBER}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "tag_name=DailyBuild" >> $GITHUB_OUTPUT
 
       - name: Create and push daily tag
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag "${{ steps.package.outputs.tag_name }}"
-          git push origin "${{ steps.package.outputs.tag_name }}"
+          git tag -f "${{ steps.package.outputs.tag_name }}"
+          git push origin "refs/tags/${{ steps.package.outputs.tag_name }}" --force
 
       - name: Create DailyBuild release
         uses: softprops/action-gh-release@v2
@@ -328,21 +328,18 @@ jobs:
 
             ${{ steps.commits.outputs.raw_commit_log }}
           files: ${{ steps.package.outputs.zip_name }}
+          overwrite_files: true
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete nightly releases older than 24 hours
+      - name: Delete legacy nightly releases and tags
         uses: actions/github-script@v7
-        env:
-          CURRENT_TAG: ${{ steps.package.outputs.tag_name }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const cutoff = Date.now() - (24 * 60 * 60 * 1000);
-            const currentTag = process.env.CURRENT_TAG;
 
             const releases = await github.paginate(github.rest.repos.listReleases, {
               owner,
@@ -350,20 +347,10 @@ jobs:
               per_page: 100,
             });
 
-            const staleNightlies = releases.filter((release) => {
-              if (!release.tag_name?.startsWith('daily-')) {
-                return false;
-              }
-
-              if (release.tag_name === currentTag) {
-                return false;
-              }
-
-              return new Date(release.created_at).getTime() < cutoff;
-            });
+            const staleNightlies = releases.filter((release) => release.tag_name?.startsWith('daily-'));
 
             if (staleNightlies.length === 0) {
-              core.info('No nightly releases older than 24 hours were found.');
+              core.info('No legacy nightly releases were found.');
               return;
             }
 
