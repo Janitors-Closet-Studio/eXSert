@@ -186,12 +186,18 @@ jobs:
             exit 0
           fi
 
+          GEMINI_PROMPT=$(cat <<'EOF'
+          You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the Development branch today, write release notes that sound like a player-facing nightly update. Start with exactly this sentence: Here's a quick summary of what's new in eXSert today: Then provide 3-5 bullet points. Group related changes together, paraphrase clearly, and describe the player-visible impact whenever possible. Do not copy commit messages verbatim. Do not mention contributors by name. Ignore merge commits, bookkeeping, vague filler like 'misc changes', and branch sync messages. If the changes are highly technical, translate them into simple, natural language instead of raw engineering phrasing.
+          EOF
+          )
+
           PAYLOAD=$(jq -n \
+            --arg prompt "$GEMINI_PROMPT" \
             --arg log "$COMMIT_LOG" \
             '{
               contents: [{
                 parts: [{
-                  text: ("You are a changelog writer for a game development project called eXSert. Given the following commit titles that were introduced into the Development branch today, write release notes that sound like a player-facing nightly update. Start with exactly this sentence: Here's a quick summary of what's new in eXSert today: Then provide 3-5 bullet points. Group related changes together, paraphrase clearly, and describe the player-visible impact whenever possible. Do not copy commit messages verbatim. Do not mention contributors by name. Ignore merge commits, bookkeeping, vague filler like 'misc changes', and branch sync messages. If the changes are highly technical, translate them into simple, natural language instead of raw engineering phrasing.\n\nCommits:\n" + $log)
+                  text: ($prompt + "\n\nCommits:\n" + $log)
                 }]
               }]
             }')
