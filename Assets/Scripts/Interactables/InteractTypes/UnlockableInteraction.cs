@@ -19,6 +19,8 @@ public abstract class UnlockableInteraction : InteractionManager
     [Tooltip("Prompt shown while the required item is missing.")]
     [SerializeField] private string lockedInteractionPrompt = "LOCKED";
 
+    [SerializeField] private bool interactOnce = true;
+
     protected bool needsItem => !string.IsNullOrEmpty(requiredItemID);
     protected bool canUnlock => InternalPlayerInventory.Instance != null && InternalPlayerInventory.Instance.HasItem(requiredItemID);
     protected bool canExecuteWithoutItem => IsUnlockedWithoutRequiredItem();
@@ -148,5 +150,8 @@ public abstract class UnlockableInteraction : InteractionManager
 
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
             SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+
+        if (interactOnce)
+            interactable = false;
     }
 }
