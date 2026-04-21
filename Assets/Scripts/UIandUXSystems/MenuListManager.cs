@@ -74,6 +74,14 @@ public class MenuListManager : MonoBehaviour
             menuToMove.transform.SetAsLastSibling();
     }
 
+    public void DisablePreviousWithoutRemovingFromList(GameObject menuToDisable)
+    {
+        if (menuToDisable == null)
+            return;
+
+        menuToDisable.SetActive(false);
+    }
+
     public void AddToMenuList(GameObject menuToAdd)
     {
         if (menuToAdd == null)
@@ -183,6 +191,10 @@ public class MenuListManager : MonoBehaviour
             fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
 
         menusToManage.RemoveAt(0);
+
+        // Ensure the new top menu is active
+        if (menusToManage.Count > 0 && menusToManage[0] != null)
+            menusToManage[0].SetActive(true);
 
         // On back, pop and select the first selectable in the history
         if (selectionHistory.Count > 0)
