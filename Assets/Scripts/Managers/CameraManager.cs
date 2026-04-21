@@ -36,6 +36,7 @@ public class CameraManager : MonoBehaviour
     [SerializeField] private bool preserveOrbitOnSwitch = true;
     [SerializeField] private int activePriority = 20;
     [SerializeField] private int inactivePriority = 0;
+    private CameraShake cameraShakeComponent;
 
     [Header("Gameplay Combat Camera")]
     [SerializeField] private bool enableGameplayCombatZoom = true;
@@ -85,7 +86,7 @@ public class CameraManager : MonoBehaviour
         lastInCombat = CombatManager.isInCombat;
         lastState = CurrentState;
         _ = CombatManager.Instance;
-
+        cameraShakeComponent = GetComponent<CameraShake>();
         if (SettingsManager.Instance != null)
         {
             SettingsManager.Instance.UpdatePlayerCameraSens(SettingsManager.Instance.sensitivity);
@@ -141,6 +142,12 @@ public class CameraManager : MonoBehaviour
             LogCombatCameraStateTransitions();
 
         UpdateGameplayCombatCamera();
+    }
+
+    public void ShakeCamera(float amplitude = -1f, float frequency = -1f, float duration = -1f, float timeToReset = 0.1f)
+    {
+        Debug.Log("Camera shake requested");
+        cameraShakeComponent?.TriggerShake(amplitude, frequency, duration, timeToReset);
     }
 
     private void LogCombatCameraStateTransitions()
