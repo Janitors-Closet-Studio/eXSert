@@ -13,7 +13,7 @@ public interface IHealthSystem
  
     void HealHP(float hp);
 
-    void LoseHP(float damage);
+    void LoseHP(float damage, float rumbleDuration, float lowFrequency, float highFrequency);
 
     float currentHP { get; }
 

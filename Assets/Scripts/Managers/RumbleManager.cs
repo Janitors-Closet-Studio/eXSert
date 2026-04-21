@@ -53,6 +53,12 @@ public class RumbleManager : Singleton<RumbleManager>
             }
         }
     }
+
+    public void StopControllerRumble()
+    {
+        StartCoroutine(StopRumble(0, pad));
+    }
+
     private IEnumerator StopRumble(float duration, Gamepad pad)
     {
         float elapsedTime = 0f;

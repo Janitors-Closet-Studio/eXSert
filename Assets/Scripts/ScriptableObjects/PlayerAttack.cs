@@ -153,6 +153,14 @@ namespace Utilities.Combat.Attacks
         }
 
         // ---------------------------------------------------------------------------------------------
+        [Space, Header("Rumble")]
+        [SerializeField, Tooltip("Whether to trigger a rumble effect on hit")]
+        public bool _rumbleOnHit = true;
+        public float rumbleDuration = 0.15f;
+        public float lowFrequency = 0.5f;
+        public float highFrequency = 0.75f;
+
+        // ---------------------------------------------------------------------------------------------
 
         [Space, Header("Movement")]
 

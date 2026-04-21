@@ -202,12 +202,12 @@ public class GraphicsSettings : MonoBehaviour
         {
             //Add camera shake logic here
             cameraShakeText.text = "On";
-
+            SettingsManager.Instance.cameraShake = true;
         }
         else
         {
             cameraShakeText.text = "Off";
-
+            SettingsManager.Instance.cameraShake = false;
         }
     }
 

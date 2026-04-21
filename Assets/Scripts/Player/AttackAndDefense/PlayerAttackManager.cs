@@ -1086,11 +1086,13 @@ public class PlayerAttackManager : MonoBehaviour
     private void SpawnHitbox(PlayerAttack attack)
     {
         ClearHitbox();
+        
 
         attack.GetHitboxPose(transform.position, transform.forward, out var spawnPosition, out var spawnRotation);
         activeHitbox = attack.CreateHitBoxAt(spawnPosition, spawnRotation);
         if (activeHitbox != null)
             activeHitbox.transform.SetParent(transform, worldPositionStays: true);
+
 
         if (activeHitbox != null
             && currentAttack != null
@@ -1115,9 +1117,7 @@ public class PlayerAttackManager : MonoBehaviour
 
                 if (debugPlungeDamage)
                 {
-                    Debug.Log(
-                        $"[PlayerAttackManager] Plunge hitbox spawned: '{currentAttack.attackId}' base={currentAttack.damage} x{multiplier:0.##} => {scaledDamage:0.##}"
-                    );
+                    Debug.Log($"[PlayerAttackManager] Plunge hitbox spawned: '{currentAttack.attackId}' base={currentAttack.damage} x{multiplier:0.##} => {scaledDamage:0.##}");
                 }
             }
 
@@ -1161,6 +1161,13 @@ public class PlayerAttackManager : MonoBehaviour
                 staggerOnAcX2,
                 staggerOnPlunge,
                 enemyStaggerDuration);
+
+            // Pass rumble info from PlayerAttack to HitboxDamageManager
+            damageManager.PassAttackRumbleInfo(
+                currentAttack._rumbleOnHit,
+                currentAttack.rumbleDuration,
+                currentAttack.lowFrequency,
+                currentAttack.highFrequency);
         }
 
         PlayAttackVfx(attack, spawnPosition, spawnRotation);

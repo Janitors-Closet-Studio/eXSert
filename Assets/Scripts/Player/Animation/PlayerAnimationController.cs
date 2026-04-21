@@ -28,6 +28,9 @@ public class PlayerAnimationController : MonoBehaviour
         internal static class Locomotion
         {
             internal const string Walk = "Walk";
+            internal const string WalkBack = "Walkback";
+            internal const string WalkStrafeLeft = "WalkStrafeL";
+            internal const string WalkStrafeRight = "WalkStrafeR";
             internal const string Jog = "Jog";
             internal const string Sprint = "Sprint";
             internal const string Dash = "Dash";
@@ -90,6 +93,7 @@ public class PlayerAnimationController : MonoBehaviour
         {
             internal const string Launcher = "Launcher";
             internal const string Plunge = "Plunge";
+            internal const string Interact = "Interact";
         }
 
         internal static class Combo
@@ -193,6 +197,9 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayAoeIdleCombat(float transition = -1f) => CrossFade(PlayerAnim.AreaOfEffect.IdleCombat, transition);
 
     public void PlayWalk(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Walk, -1f, forceRestart);
+    public void PlayWalkBack(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkBack, -1f, forceRestart);
+    public void PlayWalkStrafeLeft(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkStrafeLeft, -1f, forceRestart);
+    public void PlayWalkStrafeRight(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkStrafeRight, -1f, forceRestart);
     public void PlayJog(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Jog, -1f, forceRestart);
     public void PlaySprint(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Sprint, -1f, forceRestart);
     public void PlayDash(float transition = 0.08f) => CrossFade(PlayerAnim.Locomotion.Dash, transition, true);
@@ -284,6 +291,8 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayLauncher() => CrossFade(PlayerAnim.Specials.Launcher, 0.04f, true);
 
     public void PlayPlunge() => CrossFade(PlayerAnim.Specials.Plunge, 0.04f, true);
+
+    public void PlayInteract() => CrossFade(PlayerAnim.Specials.Interact, 0.04f, true);
 
     public void PlayComboChain(int step)
     {

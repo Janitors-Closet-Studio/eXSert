@@ -20,7 +20,7 @@ public class PlayerHealthBar : MonoBehaviour
     {
         var health = FindPlayerHealth();
         if (health == null) return;
-        health.LoseHP(amountOfHPEffected);
+        health.LoseHP(amountOfHPEffected, 0, 0, 0);
         Debug.Log(health.CurrentHealth);
     }
 

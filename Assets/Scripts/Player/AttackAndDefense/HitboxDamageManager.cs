@@ -99,6 +99,19 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
     [SerializeField, Range(0.05f, 2f), Tooltip("Duration of enemy stagger applied from player hits.")]
     private float enemyStaggerDuration = 0.35f;
 
+    // ---------------------------------------------------------------------------------------------
+    [Header("Rumble Settings")]
+    [SerializeField, Tooltip("Whether to trigger controller rumble when this attack hits an enemy.")]
+    private bool _rumbleOnHit = true;
+    public bool rumbleOnHit { get => _rumbleOnHit; }
+    [SerializeField]
+    private float rumbleDuration = 0.1f;
+    [SerializeField]
+    private float lowFrequency = 0.5f;
+    [SerializeField]
+    private float highFrequency = 0.5f;
+    internal PlayerAttack associatedAttack;
+
     private BoxCollider boxCollider;
     private HashSet<int> hitThisActivation = new HashSet<int>(); // Track which enemies were hit during this activation
     private bool currentHitboxIsLightAerial;
@@ -418,6 +431,14 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         TryApplyDamageToTarget(healthComp, other, false);
     }
 
+    public void PassAttackRumbleInfo(bool rumbleOnHit, float duration, float lowFreq, float highFreq)
+    {
+        _rumbleOnHit = rumbleOnHit;
+        rumbleDuration = duration;
+        lowFrequency = lowFreq;
+        highFrequency = highFreq;
+    }
+
     private void TryApplyDamageToTarget(Component healthComp, Collider sourceCollider, bool usedUnderDroneOverride)
     {
         if (healthComp == null)
@@ -448,11 +469,17 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         hitThisActivation.Add(enemyId);
 
         float beforeHP = health.currentHP;
-        health.LoseHP(damageAmount);
+        health.LoseHP(damageAmount, rumbleDuration, lowFrequency, highFrequency);
+            
         float afterHP = health.currentHP;
 
         if (afterHP < beforeHP)
         {
+            if (_rumbleOnHit && RumbleManager.Instance != null)
+            {
+                RumbleManager.Instance.RumblePulse(lowFrequency, highFrequency, rumbleDuration);
+            }
+
             bool hitWasDrone = healthComp.GetComponentInParent<DroneEnemy>() != null;
             AttackHitConfirmed?.Invoke(currentAttackType, hitWasDrone);
 

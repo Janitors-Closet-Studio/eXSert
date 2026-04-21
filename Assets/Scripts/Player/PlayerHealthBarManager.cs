@@ -243,7 +243,12 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         NotifyHealthChanged();
     }
 
-    public void LoseHP(float damage)
+    private void LoseHPPass(float damage)
+    {
+        LoseHP(damage, _rumbleDuration, _rumbleLowFrequency, _rumbleHighFrequency);
+    }
+
+    public void LoseHP(float damage, float _rumbleDuration, float _rumbleLowFrequency, float _rumbleHighFrequency)
     {
         if (isDead || invulnerable || IsTemporarilyInvincible() || damage <= 0f)
             return;
@@ -731,7 +736,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (!other.TryGetComponent<IAttackSystem>(out var attack))
             return;
 
-        LoseHP(attack.damageAmount);
+        LoseHPPass(attack.damageAmount);
     }
 
     public void SetInvulnerable(bool value) => invulnerable = value;
@@ -755,7 +760,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             return;
 
         float amount = Mathf.Max(1f, debugDamageAmount);
-        LoseHP(amount);
+        LoseHP(amount, 0.5f, 0.5f, 0.5f);
     }
 
     public void DebugKillPlayer()
@@ -763,7 +768,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (!Application.isPlaying)
             return;
 
-        LoseHP(maxHealth * 2f);
+        LoseHP(maxHealth * 2f, 0.5f, 0.5f, 0.5f);
     }
 #endif
 }

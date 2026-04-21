@@ -74,6 +74,14 @@ public class MenuListManager : MonoBehaviour
             menuToMove.transform.SetAsLastSibling();
     }
 
+    public void DisablePreviousWithoutRemovingFromList(GameObject menuToDisable)
+    {
+        if (menuToDisable == null)
+            return;
+
+        menuToDisable.SetActive(false);
+    }
+
     public void AddToMenuList(GameObject menuToAdd)
     {
         if (menuToAdd == null)
@@ -184,6 +192,10 @@ public class MenuListManager : MonoBehaviour
 
         menusToManage.RemoveAt(0);
 
+        // Ensure the new top menu is active
+        if (menusToManage.Count > 0 && menusToManage[0] != null)
+            menusToManage[0].SetActive(true);
+
         // On back, pop and select the first selectable in the history
         if (selectionHistory.Count > 0)
         {
@@ -266,23 +278,28 @@ public class MenuListManager : MonoBehaviour
     // Overload for UnityEvent<float> sources like Slider.onValueChanged.
     public void SwapBetweenMenus(float _)
     {
-        // Prevent menu stack changes when a slider is selected
-        if (ShouldIgnoreMenuSwap())
-            return;
-
         EventSystem currentEventSystem = EventSystem.current;
         if (currentEventSystem == null)
             return;
 
         GameObject selected = currentEventSystem.currentSelectedGameObject;
-        // Only set selection if not editing a slider value
-        if ((selected == null || selected.GetComponentInParent<Slider>() == null) && menusToManage.Count > 0)
-        {
-            SetSelectedToFirstSelectable(menusToManage[0]);
-        }
+        bool editingSlider = selected != null && selected.GetComponentInParent<Slider>() != null;
 
+        // Always fade out and remove the top menu if there are enough menus
         if (menusToManage.Count >= 5)
-            GoBackToPreviousMenu();
+        {
+            GameObject currentTop = menusToManage[0];
+            FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
+            if (currentTop != null && !menusToBlock.Contains(currentTop))
+                fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
+            menusToManage.RemoveAt(0);
+
+            // Only set selection if not editing a slider value
+            if (!editingSlider && menusToManage.Count > 0)
+            {
+                SetSelectedToFirstSelectable(menusToManage[0]);
+            }
+        }
     }
 
     private static bool ShouldIgnoreMenuSwap()

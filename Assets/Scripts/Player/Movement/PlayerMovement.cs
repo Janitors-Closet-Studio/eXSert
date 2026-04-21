@@ -441,6 +441,22 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AudioClip jumpSFX;
     [SerializeField] private AudioClip doubleJumpSFX;
 
+    [Header("Rumble Settings")]
+    [SerializeField] private float hitWallRumbleDuration = 0.15f;
+    [SerializeField] private float hitWallRumbleLowFrequency = 0.35f;
+    [SerializeField] private float hitWallRumbleHighFrequency = 0.35f;
+
+    [Space(10)]
+
+    [SerializeField] private float dashRumbleDuration = 0.12f;
+    [SerializeField] private float dashRumbleLowFrequency = 0.25f;
+    [SerializeField] private float dashRumbleHighFrequency = 0.25f;
+
+    [Space(10)]
+    [SerializeField] private float doubleJumpRumbleDuration = 0.18f;
+    [SerializeField] private float doubleJumpRumbleLowFrequency = 0.4f;
+    [SerializeField] private float doubleJumpRumbleHighFrequency = 0.4f;
+
     #endregion
 
     private bool isDashing;
@@ -1772,6 +1788,7 @@ public class PlayerMovement : MonoBehaviour
         // checks to see if the player can jump or double jump
         if (IsGroundedNow())
         {
+            CameraManager.Instance.ShakeCamera();
             airborneAnimationLocked = true;
             fallingAnimationPlaying = false;
             highFallActive = false;
@@ -1791,6 +1808,7 @@ public class PlayerMovement : MonoBehaviour
             pendingJump = PendingJumpType.Double;
             StartPendingJumpTimeout();
             animationController?.PlayAirJumpStart();
+            RumbleManager.Instance.RumblePulse(doubleJumpRumbleDuration, doubleJumpRumbleLowFrequency, doubleJumpRumbleHighFrequency);
             if (animationController == null || jumpEventTimeout <= 0f)
                 HandleAnimationJumpEvent();
         }
@@ -1859,6 +1877,7 @@ public class PlayerMovement : MonoBehaviour
         shouldRestoreSprintAfterDash = grounded && moveState == GroundMoveState.Sprint;
 
         DashPerformed?.Invoke();
+        RumbleManager.Instance.RumblePulse(dashRumbleDuration, dashRumbleLowFrequency, dashRumbleHighFrequency);
 
         if (InputReader.inputBusy)
             attackManager?.ForceCancelCurrentAttack(resetCombo: false);
@@ -4094,7 +4113,7 @@ public class PlayerMovement : MonoBehaviour
                     var healthSystem = GetComponent<IHealthSystem>();
                     if (healthSystem != null && damageAmount > 0)
                     {
-                        healthSystem.LoseHP(damageAmount);
+                        healthSystem.LoseHP(damageAmount, hitWallRumbleDuration, hitWallRumbleLowFrequency, hitWallRumbleHighFrequency);
                         Debug.Log($"[PlayerMovement] Wall impact damage: {damageAmount:F1}");
                     }
                 }

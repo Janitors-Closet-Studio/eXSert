@@ -8129,6 +8129,15 @@ MonoBehaviour:
   dashSFX: {fileID: 8300000, guid: 4a80ad5659e0df34fa32064cd1c4ae09, type: 3}
   jumpSFX: {fileID: 8300000, guid: ea2d65beafcf27e4398ba2b45473e354, type: 3}
   doubleJumpSFX: {fileID: 8300000, guid: 9539a2ae48c4aea4b84ff3d3a8e0a787, type: 3}
+  hitWallRumbleDuration: 0.15
+  hitWallRumbleLowFrequency: 0.35
+  hitWallRumbleHighFrequency: 0.35
+  dashRumbleDuration: 0.12
+  dashRumbleLowFrequency: 0.25
+  dashRumbleHighFrequency: 0.25
+  doubleJumpRumbleDuration: 0.18
+  doubleJumpRumbleLowFrequency: 0.4
+  doubleJumpRumbleHighFrequency: 0.4
 --- !u!114 &8127531854480134888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21775,6 +21784,10 @@ PrefabInstance:
     - target: {fileID: 2423161447584847749, guid: 7412b307bafea0142851deabd46cdbed, type: 3}
       propertyPath: m_Layer
       value: 19
+      objectReference: {fileID: 0}
+    - target: {fileID: 2423161447584847749, guid: 7412b307bafea0142851deabd46cdbed, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5139223294003811546, guid: 7412b307bafea0142851deabd46cdbed, type: 3}
       propertyPath: m_LocalScale.x

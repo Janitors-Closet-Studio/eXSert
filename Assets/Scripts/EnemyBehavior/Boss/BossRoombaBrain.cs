@@ -404,6 +404,8 @@ namespace EnemyBehavior.Boss
         [Tooltip("Angular speed multiplier for turning before targeted charge (relative to base angular speed).")]
         [Range(0.5f, 3f)] public float TargetedChargeTurnSpeedMultiplier = 1f;
         
+
+       
         // =====================================================================
         // BASE SETTINGS (SHARED)
         // =====================================================================
@@ -423,6 +425,11 @@ namespace EnemyBehavior.Boss
 
         [Header("Side Panels")]
         public List<SidePanel> SidePanels = new List<SidePanel>();
+
+        [Header("Rumble")]
+        [SerializeField] private float rumbleDuration = 0.15f;
+        [SerializeField] private float rumbleLowFrequency = 0.35f;
+        [SerializeField] private float rumbleHighFrequency = 0.35f;
 
         [Header("Animator Integration")]
         [SerializeField] private string ParamIdleIntensity = "IdleIntensity";
@@ -5013,12 +5020,12 @@ namespace EnemyBehavior.Boss
             if (CombatManager.isGuarding)
             {
                 float reduced = damage * 0.5f;
-                hs.LoseHP(reduced);
+                hs.LoseHP(reduced, rumbleDuration * 0.5f, rumbleLowFrequency * 0.5f, rumbleHighFrequency * 0.5f);
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"Boss attack {currentAttack?.Id} guarded. Damage reduced to {reduced}.");
             }
             else
             {
-                hs.LoseHP(damage);
+                hs.LoseHP(damage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
             }
 
             return true;
