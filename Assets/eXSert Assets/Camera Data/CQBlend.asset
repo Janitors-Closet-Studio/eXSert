@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBlenderSettings
   CustomBlends:
   - From: '**ANY CAMERA**'
-    To: RedCardCamera
+    To: RedConsoleCamera
     Blend:
-      Style: 1
+      Style: 0
       Time: 0.5
       CustomCurve:
         serializedVersion: 2
@@ -79,10 +79,10 @@ MonoBehaviour:
         m_PreInfinity: 0
         m_PostInfinity: 0
         m_RotationOrder: 0
-  - From: RedCardCamera
+  - From: RedConsoleCamera
     To: '**ANY CAMERA**'
     Blend:
-      Style: 1
+      Style: 0
       Time: 0
       CustomCurve:
         serializedVersion: 2
