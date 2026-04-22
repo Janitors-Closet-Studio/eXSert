@@ -17,6 +17,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     [Header("UI GameObjects")]
     [SerializeField] private GameObject pauseOverlay;
+    
     [SerializeField] private GameObject pauseMenuHolder;
     [SerializeField] private GameObject navigationMenuHolder;
     [SerializeField] private GameObject settingsMenuContainer;
@@ -331,12 +332,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (!IsPaused || currentActiveMenu == ActiveMenu.None)
             return;
 
-        if (currentActiveMenu == ActiveMenu.PauseMenu)
+        if (currentActiveMenu == ActiveMenu.PauseMenu && menuListManager.menusToManage[0] == pauseMenuHolder)
         {
             // Switch from pause menu to navigation menu
             SwapToNavigationMenu();
         }
-        else if (currentActiveMenu == ActiveMenu.NavigationMenu)
+        else if (currentActiveMenu == ActiveMenu.NavigationMenu && menuListManager.menusToManage[0] == navigationMenuHolder)
         {
             // Switch from navigation menu to pause menu
             SwapToPauseMenu();

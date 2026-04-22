@@ -1,14 +1,20 @@
-
 using UnityEngine;
 using Singletons;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System.Collections;
+using System.Timers;
 
 
 public class ActsManager : Singleton<ActsManager>
 {
     [SerializeField] private Button[] actsButton;
+
+    [SerializeField] private Color selectedColor;
+    [SerializeField] private Color highlightColor;
+    [SerializeField] private Color defaultColor;
 
     // Per-profile act completion: profileId -> (actNumber -> completed)
     private Dictionary<string, Dictionary<int, bool>> profileActCompletionMap = new Dictionary<string, Dictionary<int, bool>>();
@@ -27,7 +33,25 @@ public class ActsManager : Singleton<ActsManager>
         }
 
         mapLocationImages[0].SetActive(true);
-
+        ActivateAllImagesBefore();
+        
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        if (sceneNames.ContainsValue(currentSceneName))
+        {
+            foreach (var kvp in sceneNames)
+            {
+                if (kvp.Value == currentSceneName)
+                {
+                    if (kvp.Key > currentPulsingSceneIndex)
+                    {
+                        currentPulsingSceneIndex = kvp.Key;
+                        StopAllCoroutines();
+                        StartCoroutine(PulseColorForMapIfInRespectiveScene(2f, mapLocationImages[kvp.Key]));
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     private void OnEnable()
@@ -87,8 +111,7 @@ public class ActsManager : Singleton<ActsManager>
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         string sceneName = scene.name;
-        Debug.Log($"[ActsManager] Scene loaded: {sceneName}");
-        
+        Debug.Log($"[ActsManager] Scene loaded: {sceneName}");       
         if (sceneNames.ContainsValue(sceneName))
         {
             // Find map location image for this scene and activate it
@@ -97,9 +120,61 @@ public class ActsManager : Singleton<ActsManager>
                 if (kvp.Value == sceneName)
                 {
                     mapLocationImages[kvp.Key].SetActive(true);
+                    
+                    // Only pulse if this is the highest index scene loaded
+                    if (kvp.Key > currentPulsingSceneIndex)
+                    {
+                        currentPulsingSceneIndex = kvp.Key;
+                        StopAllCoroutines(); // Stop any lower-indexed pulses
+                        StartCoroutine(PulseColorForMapIfInRespectiveScene(2f, mapLocationImages[kvp.Key]));
+                    }
                     break;
                 }
+                else 
+                {
+                   mapLocationImages[kvp.Key].GetComponent<Image>().color = defaultColor; // Reset color for non-active scenes 
+                }
             }
+        }
+    }
+
+    private IEnumerator PulseColorForMapIfInRespectiveScene(float pulseDuration, GameObject imageToPulse = null)
+    {
+        if (imageToPulse == null)
+            yield break;
+
+        Image imageComponent = imageToPulse.GetComponent<Image>();
+        if (imageComponent == null)
+        {
+            Debug.LogWarning($"[ActsManager] Map image '{imageToPulse.name}' does not have an Image component.");
+            yield break;
+        }
+
+        // Pulse indefinitely while the scene is active
+        float elapsedTime = 0f;
+        while (true)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            float t = (Mathf.Sin(elapsedTime / pulseDuration * Mathf.PI * 2) + 1f) / 2f; // Oscillates between 0 and 1
+            Color targetColor = Color.Lerp(defaultColor, highlightColor, t);
+            imageComponent.color = targetColor;
+            yield return null;
+        }
+    }
+
+    public void ActivateAllImagesBefore()
+    {
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        if (!sceneNames.ContainsValue(currentSceneName))        {
+            Debug.LogWarning($"[ActsManager] Current scene '{currentSceneName}' not found in sceneNames mapping. Cannot activate map location images.");
+            return;
+        }
+
+        int mapIndex = sceneNames.First(kvp => kvp.Value == currentSceneName).Key;
+
+        for (int i = 0; i < mapIndex; i++)
+        {
+            mapLocationImages[i].SetActive(true);
         }
     }
 
@@ -245,4 +320,5 @@ public class ActsManager : Singleton<ActsManager>
         Player.TriggerRespawn();
     }
 
+    private int currentPulsingSceneIndex = -1;
 }
