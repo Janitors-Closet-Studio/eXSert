@@ -296,8 +296,7 @@ namespace Progression
 
         private GameObject ResolvePrewarmPrefab(GameObject prefabOrMarker)
         {
-            if (prefabOrMarker == null)
-                return null;
+            if (prefabOrMarker == null) return null;
 
             GameObject intendedPrefab;
 
