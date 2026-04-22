@@ -25,6 +25,9 @@ public class MenuListManager : MonoBehaviour
     // Guard flag to prevent double back
     private bool backGuardActive = false;
     private float backGuardCooldown = 0.15f; // seconds
+    private FadeMenus _fadeMenus;
+
+    private FadeMenus FadeMenusComponent => _fadeMenus != null ? _fadeMenus : (_fadeMenus = GetComponent<FadeMenus>());
     
 
     private void Start()
@@ -68,17 +71,15 @@ public class MenuListManager : MonoBehaviour
         }
     }
 
-    public void SwapToMenu(GameObject menuToSwapTo)
-    {
-        AddToMenuList(menuToSwapTo);
-    }
-
+    // Sets the selected menu so they are last in sibling order, so they can appear on top
     public void SetAsLastSibling(GameObject menuToMove)
     {
         if (menuToMove != firstMenuToOpen && menuToMove != canvas)
             menuToMove.transform.SetAsLastSibling();
     }
 
+    // Added for new transparent background. this will disable the previous menu but keep
+    // it for going back.
     public void DisablePreviousWithoutRemovingFromList(GameObject menuToDisable)
     {
         if (menuToDisable == null)
@@ -86,38 +87,29 @@ public class MenuListManager : MonoBehaviour
 
         menuToDisable.SetActive(false);
 
-        // Keep the disabled menu in the stack so Back can restore it.
-        if (menusToManage != null && !menusToManage.Contains(menuToDisable))
-            menusToManage.Insert(Mathf.Min(1, menusToManage.Count), menuToDisable);
     }
 
+    // Central function to add a menu to the stack and handle all related logic (selection, sibling order, fading, etc.)
     public void AddToMenuList(GameObject menuToAdd)
     {
         if (menuToAdd == null)
             return;
 
-        // Only update selection history on explicit button press
-        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
-        {
-            Selectable selected = EventSystem.current.currentSelectedGameObject.GetComponent<Selectable>();
-            if (selected != null && (selectionHistory.Count == 0 || selectionHistory[0] != selected))
-            {
-                selectionHistory.Insert(0, selected);
-            }
-        }
+        PushCurrentSelectionToHistory();
 
         EnsureHierarchyIsActive(menuToAdd);
         RemoveOtherOpenSettingPageMenu(menuToAdd);
+        ClearOpenSubmenusOnSettingsSwitch(menuToAdd);
+        ReplaceTopMenuIfSwitchingSiblingSubmenu(menuToAdd);
 
         if (menusToManage.Contains(menuToAdd))
             menusToManage.Remove(menuToAdd);
 
-        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
         if (!menusToManage.Contains(menuToAdd))
         {
             menusToManage.Insert(0, menuToAdd);
-            if(menuToAdd != firstMenuToOpen && menuToAdd != canvas && !menusToBlock.Contains(menuToAdd))
-                fadeMenus.FadeMenuSafe(menuToAdd, fadeMenus.fadeDuration, true);
+            if(menuToAdd != firstMenuToOpen && menuToAdd != canvas && !IsBlockedFromFade(menuToAdd))
+                ShowMenu(menuToAdd);
             if(menuToAdd.tag != "LogUI" && menuToAdd.tag != "DiaryUI")
                 SetAsLastSibling(menuToAdd);
         }
@@ -132,6 +124,54 @@ public class MenuListManager : MonoBehaviour
             SetSelected(firstSelectable);
 
         DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, "Menu added to list. Current menus in list: " + menusToManage.Count);
+    }
+
+    // When switching between peer submenus in the same settings section,
+    // replace the current top menu so panels do not stack visually.
+    private void ReplaceTopMenuIfSwitchingSiblingSubmenu(GameObject menuToAdd)
+    {
+        if (menusToManage == null || menusToManage.Count == 0 || menuToAdd == null)
+            return;
+
+        GameObject currentTop = menusToManage[0];
+        if (currentTop == null || currentTop == menuToAdd)
+            return;
+
+        bool sharesSettingsRoot = ShareSettingsRoot(currentTop, menuToAdd);
+        if (!sharesSettingsRoot)
+            return;
+
+        bool isParentChildTransition =
+            currentTop.transform.IsChildOf(menuToAdd.transform) ||
+            menuToAdd.transform.IsChildOf(currentTop.transform);
+        if (isParentChildTransition)
+            return;
+
+        CloseAndRemoveMenuAt(0);
+    }
+
+    // Returns true if both menus share the same root settings page in the hierarchy, 
+    // indicating they are peer submenus within the same section.
+    private bool ShareSettingsRoot(GameObject a, GameObject b)
+    {
+        if (a == null || b == null || settingPageMenus == null)
+            return false;
+
+        foreach (GameObject root in settingPageMenus)
+        {
+            if (root == null)
+                continue;
+
+            bool aUnderRoot = a == root || a.transform.IsChildOf(root.transform);
+            if (!aUnderRoot)
+                continue;
+
+            bool bUnderRoot = b == root || b.transform.IsChildOf(root.transform);
+            if (bUnderRoot)
+                return true;
+        }
+
+        return false;
     }
 
     // Ensures the entire parent chain of the menu is active so that it can be properly displayed and interacted with.
@@ -161,30 +201,68 @@ public class MenuListManager : MonoBehaviour
         }
     }
 
-    // When opening a settings page, we want to ensure any other open settings pages are closed so that we don't have multiple open on top of each other. This method checks if the menu being added is a settings page, and if so, fades out any other open settings pages and removes them from the menu list.
+
+    // Checks if the menu being added is a settings page, and if so, 
+    // fades out any other open settings pages and removes them from the menu list.
     private void RemoveOtherOpenSettingPageMenu(GameObject menuToAdd)
     {
         if (menuToAdd == null || settingPageMenus == null || !settingPageMenus.Contains(menuToAdd))
             return;
 
-        if (menusToManage == null || menusToManage.Count == 0)
+        CloseManagedMenusWhere(openMenu =>
+            openMenu != null &&
+            openMenu != menuToAdd &&
+            settingPageMenus.Contains(openMenu));
+    }
+
+    // Opening a new top-level settings page should clear any stacked submenu panels so
+    // returning later starts from a clean page (no previously open submenu overlays).
+    private void ClearOpenSubmenusOnSettingsSwitch(GameObject menuToAdd)
+    {
+        if (menuToAdd == null || settingPageMenus == null || !settingPageMenus.Contains(menuToAdd))
+            return;
+
+        CloseManagedMenusWhere(openMenu =>
+            openMenu != null &&
+            !settingPageMenus.Contains(openMenu) &&
+            IsDescendantOfAnySettingsPage(openMenu));
+    }
+
+    private void CloseManagedMenusWhere(System.Predicate<GameObject> shouldClose)
+    {
+        if (menusToManage == null || menusToManage.Count == 0 || shouldClose == null)
             return;
 
         for (int i = menusToManage.Count - 1; i >= 0; i--)
         {
             GameObject openMenu = menusToManage[i];
-            if (openMenu == null || openMenu == menuToAdd || !settingPageMenus.Contains(openMenu))
+            if (!shouldClose(openMenu))
                 continue;
 
-            FadeMenus fadeMenus = GetComponent<FadeMenus>();
-            if (fadeMenus != null && !menusToBlock.Contains(openMenu))
-                fadeMenus.FadeMenuSafe(openMenu, fadeMenus.fadeDuration, false);
-
-            menusToManage.RemoveAt(i);
+            CloseAndRemoveMenuAt(i);
         }
     }
 
+    // Returns true if the menu is a descendant of any of the top-level settings pages, 
+    // indicating it is a submenu that should be closed when switching between settings sections.
+    private bool IsDescendantOfAnySettingsPage(GameObject menu)
+    {
+        if (menu == null || settingPageMenus == null)
+            return false;
 
+        foreach (GameObject settingsPage in settingPageMenus)
+        {
+            if (settingsPage == null)
+                continue;
+
+            if (menu.transform.IsChildOf(settingsPage.transform))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Central back function to return to the previous menu, with guards against edge cases and double-back issues.
     public void GoBackToPreviousMenu()
     {
         if (backGuardActive)
@@ -195,42 +273,25 @@ public class MenuListManager : MonoBehaviour
             return;
 
         GameObject currentTop = menusToManage[0];
-        FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
-        if (currentTop != null && !menusToBlock.Contains(currentTop))
-            fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
+        GameObject previousMenu = menusToManage[1];
 
+        // Keep the revealed menu fully visible during back transitions to prevent self-fades.
+        EnsureHierarchyIsActive(previousMenu);
+        previousMenu.SetActive(true);
+        CanvasGroup previousCanvasGroup = previousMenu.GetComponent<CanvasGroup>();
+        if (previousCanvasGroup != null)
+            previousCanvasGroup.alpha = 1f;
+
+        // Remove outgoing menu from stack first, then resolve a valid selection for the revealed menu.
         menusToManage.RemoveAt(0);
+        EnsureSelectionForMenu(previousMenu);
 
-        // Ensure the new top menu is active
-        if (menusToManage.Count > 0 && menusToManage[0] != null)
-        {
-            GameObject previousMenu = menusToManage[0];
-            EnsureHierarchyIsActive(previousMenu);
+        // Fade out only the outgoing menu.
+        CloseMenu(currentTop);
 
-            FadeMenus restoreFadeMenus = GetComponent<FadeMenus>();
-            if (restoreFadeMenus != null && !menusToBlock.Contains(previousMenu))
-            {
-                restoreFadeMenus.FadeMenuSafe(previousMenu, restoreFadeMenus.fadeDuration, true);
-            }
-            else
-            {
-                previousMenu.SetActive(true);
-                CanvasGroup canvasGroup = previousMenu.GetComponent<CanvasGroup>();
-                if (canvasGroup != null)
-                    canvasGroup.alpha = 1f;
-            }
-        }
-
-        // On back, pop and select the first selectable in the history
-        if (selectionHistory.Count > 0)
-        {
-            Selectable toSelect = selectionHistory[0];
-            selectionHistory.RemoveAt(0);
-            if (toSelect != null && toSelect.IsInteractable() && toSelect.gameObject.activeInHierarchy)
-                SetSelected(toSelect);
-        }
     }
 
+    // Cooldown so back cant be spammed
     private IEnumerator BackGuardCooldown()
     {
         backGuardActive = true;
@@ -238,7 +299,7 @@ public class MenuListManager : MonoBehaviour
         backGuardActive = false;
     }
 
-
+    // Finds a valid selectable in the menu and sets it as selected
     private void EnsureSelectionForMenu(GameObject menu)
     {
         Selectable currentSelection = EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null
@@ -258,6 +319,7 @@ public class MenuListManager : MonoBehaviour
             SetSelected(fallback);
     }
 
+    // Finds the first selectable component in the menu hierarchy that is active and interactable, or returns null if none found.
     private static Selectable GetFirstValidSelectable(GameObject root)
     {
         if (root == null)
@@ -277,6 +339,7 @@ public class MenuListManager : MonoBehaviour
         return null;
     }
 
+    // Sets the given selectable as the current selection in the EventSystem, if possible.
     private static void SetSelected(Selectable selectable)
     {
         if (selectable == null)
@@ -284,23 +347,27 @@ public class MenuListManager : MonoBehaviour
 
         if (EventSystem.current != null)
         {
-            EventSystem.current.SetSelectedGameObject(null);
             SelectionDebugger.SetSelected(selectable.gameObject);
         }
 
         selectable.Select();
     }
 
+    // Swaps to the previous menu in the stack, 
+    // or if coming from a slider interaction, just goes back one menu without affecting selection
     public void SwapBetweenMenus(int numberOfMenusToGoBack)
     {
         if (ShouldIgnoreMenuSwap())
+            return;
+
+        if (numberOfMenusToGoBack > 2)
             return;
 
         if (menusToManage.Count >= numberOfMenusToGoBack)
             GoBackToPreviousMenu();
     }
 
-    // Overload for UnityEvent<float> sources like Slider.onValueChanged.
+    // Same as above but with a float parameter so it can be used by a slider for onValueChanged
     public void SwapBetweenMenus(float _)
     {
         EventSystem currentEventSystem = EventSystem.current;
@@ -310,23 +377,78 @@ public class MenuListManager : MonoBehaviour
         GameObject selected = currentEventSystem.currentSelectedGameObject;
         bool editingSlider = selected != null && selected.GetComponentInParent<Slider>() != null;
 
-        // Always fade out and remove the top menu if there are enough menus
-        if (menusToManage.Count >= 5)
-        {
-            GameObject currentTop = menusToManage[0];
-            FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
-            if (currentTop != null && !menusToBlock.Contains(currentTop))
-                fadeMenus.FadeMenuSafe(currentTop, fadeMenus.fadeDuration, false);
-            menusToManage.RemoveAt(0);
+        // Only close a true nested submenu; never fall back to closing the whole page/screen.
+        int menuIndexToClose = FindFirstOpenSubmenuIndex();
 
-            // Only set selection if not editing a slider value
+        if (menuIndexToClose >= 0)
+        {
+            CloseAndRemoveMenuAt(menuIndexToClose);
+
+            // If no slider is currently selected, restore focus to revealed menu.
             if (!editingSlider && menusToManage.Count > 0)
-            {
-                SetSelectedToFirstSelectable(menusToManage[0]);
-            }
+                EnsureSelectionForMenu(menusToManage[0]);
         }
     }
 
+    // Finds the first open submenu in the stack, if none is found
+    // returns -1 
+    private int FindFirstOpenSubmenuIndex()
+    {
+        if (menusToManage == null || menusToManage.Count == 0)
+            return -1;
+
+        int bestIndex = -1;
+        int bestNestingScore = -1;
+
+        for (int i = 0; i < menusToManage.Count; i++)
+        {
+            GameObject menu = menusToManage[i];
+            if (menu == null)
+                continue;
+
+            bool isTopLevelSettingsPage = settingPageMenus != null && settingPageMenus.Contains(menu);
+            if (isTopLevelSettingsPage)
+                continue;
+
+            if (!IsDescendantOfAnySettingsPage(menu))
+                continue;
+
+            int nestingScore = GetManagedAncestorCount(menu);
+            if (nestingScore <= 0)
+                continue;
+
+            if (nestingScore > bestNestingScore)
+            {
+                bestNestingScore = nestingScore;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    // Counts how many ancestors of the given menu are also in the managed menu list,
+    //  to determine how deeply nested it is within the stack.
+    private int GetManagedAncestorCount(GameObject menu)
+    {
+        if (menu == null || menusToManage == null)
+            return 0;
+
+        int count = 0;
+        for (int i = 0; i < menusToManage.Count; i++)
+        {
+            GameObject candidateAncestor = menusToManage[i];
+            if (candidateAncestor == null || candidateAncestor == menu)
+                continue;
+
+            if (menu.transform.IsChildOf(candidateAncestor.transform))
+                count++;
+        }
+
+        return count;
+    }
+
+    // Prevents menu swaps when interacting with sliders, to avoid unintentionally closing menus when adjusting slider values.
     private static bool ShouldIgnoreMenuSwap()
     {
         if (EventSystem.current == null)
@@ -340,6 +462,80 @@ public class MenuListManager : MonoBehaviour
         return selected.GetComponentInParent<Slider>() != null;
     }
 
+    // Blocks fade out and back in when trying to open certain menus,
+    //  to prevent visual issues with important persistent menus
+    private bool IsBlockedFromFade(GameObject menu)
+    {
+        if (menu == null || menusToBlock == null)
+            return false;
+
+        foreach (GameObject blockedMenu in menusToBlock)
+        {
+            if (blockedMenu == null)
+                continue;
+
+            if (menu == blockedMenu || menu.transform.IsChildOf(blockedMenu.transform))
+                return true;
+        }
+
+        return false;
+    }
+
+    // Pushes the currently selected selectable onto the history stack before opening a new menu,
+    private void PushCurrentSelectionToHistory()
+    {
+        if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject == null)
+            return;
+
+        Selectable selected = EventSystem.current.currentSelectedGameObject.GetComponent<Selectable>();
+        if (selected != null && (selectionHistory.Count == 0 || selectionHistory[0] != selected))
+            selectionHistory.Insert(0, selected);
+    }
+
+    // Shows the given menu with a fade in if possible, or just enables it if not.
+    private void ShowMenu(GameObject menu)
+    {
+        if (menu == null)
+            return;
+
+        FadeMenus fadeMenus = FadeMenusComponent;
+        if (fadeMenus != null)
+            fadeMenus.FadeMenuSafe(menu, fadeMenus.fadeDuration, true);
+        else
+            menu.SetActive(true);
+    }
+
+    // Closes the given menu with a fade out if possible, or just disables it if not.
+    private void CloseMenu(GameObject menu)
+    {
+        if (menu == null)
+            return;
+
+        if (!IsBlockedFromFade(menu))
+        {
+            FadeMenus fadeMenus = FadeMenusComponent;
+            if (fadeMenus != null)
+            {
+                fadeMenus.FadeMenuSafe(menu, fadeMenus.fadeDuration, false);
+                return;
+            }
+        }
+
+        menu.SetActive(false);
+    }
+
+    // Closes the menu at the given index in the stack and removes it from the list, with safety checks.
+    private void CloseAndRemoveMenuAt(int index)
+    {
+        if (menusToManage == null || index < 0 || index >= menusToManage.Count)
+            return;
+
+        GameObject menu = menusToManage[index];
+        CloseMenu(menu);
+        menusToManage.RemoveAt(index);
+    }
+
+    // Clears the whole stack if not protected
     public void ClearMenuList()
     {
         foreach(GameObject menu in menusToManage)
@@ -351,6 +547,7 @@ public class MenuListManager : MonoBehaviour
         selectionHistory.Clear();
     }
 
+    // Checks if menu is protected
     private bool IsProtectedMenu(GameObject menu)
     {
         return menu != null && (menu == canvas || menu == firstMenuToOpen);
@@ -366,7 +563,6 @@ public class MenuListManager : MonoBehaviour
             selectable = target.GetComponentInChildren<Selectable>(true);
         if (selectable != null)
         {
-            EventSystem.current.SetSelectedGameObject(null);
             SelectionDebugger.SetSelected(selectable.gameObject);
             selectable.Select();
         }

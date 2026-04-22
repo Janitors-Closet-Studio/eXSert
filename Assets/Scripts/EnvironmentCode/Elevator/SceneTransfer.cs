@@ -48,12 +48,8 @@ public class SceneTransferTrigger : MonoBehaviour
 
         if (setLoadedSceneActive && IsSceneLoaded(sceneToLoad))
         {
-            if (!SceneLoader.EnsureGameplayActiveScene())
-            {
-                var s = SceneManager.GetSceneByName(sceneToLoad);
-                if (s.IsValid())
-                    SceneManager.SetActiveScene(s);
-            }
+            var s = SceneManager.GetSceneByName(sceneToLoad);
+            if (s.IsValid()) SceneManager.SetActiveScene(s);
         }
 
         if (unloadOp != null) yield return unloadOp;

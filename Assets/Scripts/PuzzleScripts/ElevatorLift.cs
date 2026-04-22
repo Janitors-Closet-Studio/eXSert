@@ -610,12 +610,21 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     {
         if(currentFloor == 0 || isMoving) return;
         StartCoroutine(MoveElevatorToFirstFloor());
+        currentFloor = 0;
     }
 
     private IEnumerator MoveElevatorToFirstFloor()
     {
         Vector3 targetPosition = desiredLiftPosition[0];
         float moveSpeed = liftSpeed; // units per second
+
+        
+        AudioSource sfxSource = SoundManager.Instance != null ? SoundManager.Instance.sfxSource : null;
+        if (sfxSource != null)
+        {
+            sfxSource.clip = elevatorSFX;
+            sfxSource.Play();
+        }
 
         while (Vector3.Distance(elevatorLift.transform.localPosition, targetPosition) > 0.001f)
         {
@@ -625,7 +634,15 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             yield return null;
         }
 
+        if (sfxSource != null)
+        {
+            sfxSource.Stop();
+            if (elevatorStopSFX != null)
+                sfxSource.PlayOneShot(elevatorStopSFX);
+        }
+
     }
+
 
     private void TryTriggerGroundRecallFailsafe()
     {

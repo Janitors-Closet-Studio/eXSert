@@ -1,16 +1,27 @@
-
 using UnityEngine;
 using Singletons;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using System.Collections;
+using System.Timers;
 
 
 public class ActsManager : Singleton<ActsManager>
 {
     [SerializeField] private Button[] actsButton;
 
+    [SerializeField] private Color selectedColor;
+    [SerializeField] private Color highlightColor;
+    [SerializeField] private Color defaultColor;
+
     // Per-profile act completion: profileId -> (actNumber -> completed)
     private Dictionary<string, Dictionary<int, bool>> profileActCompletionMap = new Dictionary<string, Dictionary<int, bool>>();
+    public List<GameObject> mapLocationImages;
+
+    public List<GameObject> foundCheckpointZones; 
+
     private PauseManager pauseManager;
 
     private void Start()
@@ -20,12 +31,59 @@ public class ActsManager : Singleton<ActsManager>
         {
             pauseManager = PauseManager.Instance;
         }
+
+        mapLocationImages[0].SetActive(true);
+        ActivateAllImagesBefore();
+        
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        if (sceneNames.ContainsValue(currentSceneName))
+        {
+            foreach (var kvp in sceneNames)
+            {
+                if (kvp.Value == currentSceneName)
+                {
+                    if (kvp.Key > currentPulsingSceneIndex)
+                    {
+                        currentPulsingSceneIndex = kvp.Key;
+                        StopAllCoroutines();
+                        StartCoroutine(PulseColorForMapIfInRespectiveScene(2f, mapLocationImages[kvp.Key]));
+                    }
+                    break;
+                }
+            }
+        }
     }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        foreach (var img in mapLocationImages)
+        {
+            img.SetActive(false);
+        }
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+    }
+
+    internal Dictionary<int, string> sceneNames = new Dictionary<int, string>()
+    {
+        { 0, "Elevator" },
+        { 1, "CargoBay" },
+        { 2, "CrewQuarters" },
+        { 3, "Hangar" },
+        { 4, "ChargingStation" },
+        { 5, "Conservatory" },
+        { 6, "EngineCore" }
+    };
+
     internal Dictionary<int, string> actSceneMap = new Dictionary<int, string>()
     {
         { 0, "Elevator" },
         { 1, "Hangar" },
-        { 2, "Roomba" },
+        { 2, "ChargingStation" },
         { 3, "Conservatory" },
         { 4, "EngineCore" }
     };
@@ -38,7 +96,6 @@ public class ActsManager : Singleton<ActsManager>
         { 3, "ACT 2.2: CONSERVATORY" },
         { 4, "ACT 3.1: FINAL ENCOUNTER" }
     };
-
     protected override void Awake()
     {
         base.Awake();
@@ -49,6 +106,76 @@ public class ActsManager : Singleton<ActsManager>
         }
         // For editor preview, update using default profile
         UpdateActButtonsForProfile("default");
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        string sceneName = scene.name;
+        Debug.Log($"[ActsManager] Scene loaded: {sceneName}");       
+        if (sceneNames.ContainsValue(sceneName))
+        {
+            // Find map location image for this scene and activate it
+            foreach (var kvp in sceneNames)
+            {
+                if (kvp.Value == sceneName)
+                {
+                    mapLocationImages[kvp.Key].SetActive(true);
+                    
+                    // Only pulse if this is the highest index scene loaded
+                    if (kvp.Key > currentPulsingSceneIndex)
+                    {
+                        currentPulsingSceneIndex = kvp.Key;
+                        StopAllCoroutines(); // Stop any lower-indexed pulses
+                        StartCoroutine(PulseColorForMapIfInRespectiveScene(2f, mapLocationImages[kvp.Key]));
+                    }
+                    break;
+                }
+                else 
+                {
+                   mapLocationImages[kvp.Key].GetComponent<Image>().color = defaultColor; // Reset color for non-active scenes 
+                }
+            }
+        }
+    }
+
+    private IEnumerator PulseColorForMapIfInRespectiveScene(float pulseDuration, GameObject imageToPulse = null)
+    {
+        if (imageToPulse == null)
+            yield break;
+
+        Image imageComponent = imageToPulse.GetComponent<Image>();
+        if (imageComponent == null)
+        {
+            Debug.LogWarning($"[ActsManager] Map image '{imageToPulse.name}' does not have an Image component.");
+            yield break;
+        }
+
+        // Pulse indefinitely while the scene is active
+        float elapsedTime = 0f;
+        while (true)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            float t = (Mathf.Sin(elapsedTime / pulseDuration * Mathf.PI * 2) + 1f) / 2f; // Oscillates between 0 and 1
+            Color targetColor = Color.Lerp(defaultColor, highlightColor, t);
+            imageComponent.color = targetColor;
+            yield return null;
+        }
+    }
+
+    public void ActivateAllImagesBefore()
+    {
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        if (!sceneNames.ContainsValue(currentSceneName))        {
+            Debug.LogWarning($"[ActsManager] Current scene '{currentSceneName}' not found in sceneNames mapping. Cannot activate map location images.");
+            return;
+        }
+
+        int mapIndex = sceneNames.First(kvp => kvp.Value == currentSceneName).Key;
+
+        for (int i = 0; i < mapIndex; i++)
+        {
+            mapLocationImages[i].SetActive(true);
+        }
     }
 
     // Returns a new default act completion map (Act 0 unlocked, rest locked)
@@ -63,6 +190,7 @@ public class ActsManager : Singleton<ActsManager>
             { 4, false }
         };
     }
+
 
     // Get the farthest unlocked act name for a profile
     public string GetFarthestUnlockedActName(string profileId)
@@ -101,6 +229,8 @@ public class ActsManager : Singleton<ActsManager>
             Debug.LogWarning($"[ActsManager] Attempted to mark invalid act number {actNumber} as completed for profile '{profileId}'.");
         }
     }
+
+    
 
     // Update the UI buttons for the given profile
     public void UpdateActButtonsForProfile(string profileId)
@@ -190,4 +320,5 @@ public class ActsManager : Singleton<ActsManager>
         Player.TriggerRespawn();
     }
 
+    private int currentPulsingSceneIndex = -1;
 }
