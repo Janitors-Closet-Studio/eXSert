@@ -18,6 +18,13 @@ using UIandUXSystems.HUD;
 
 public class DoorInteractions : UnlockableInteraction
 {
+    private enum SpecialTransitionYawDirection
+    {
+        ShortestPath,
+        Clockwise,
+        CounterClockwise,
+    }
+
     [Tooltip("Place the gameObject with the DoorHandler component here, it may be on a different object or the same object as this script.")]
     [SerializeField] private List<DoorHandler> doorHandlers;
 
@@ -38,6 +45,8 @@ public class DoorInteractions : UnlockableInteraction
     [FormerlySerializedAs("puzzleCameraFailsafeSeconds")]
     [SerializeField, Min(0f)] private float specialTransitionFailsafeSeconds = 7f;
     [SerializeField, Min(0f)] private float specialTransitionPanDurationSeconds = 3f;
+    [SerializeField, Tooltip("Controls how the special transition camera travels around Y. Use Clockwise or CounterClockwise when the shortest path spins the wrong way.")]
+    private SpecialTransitionYawDirection specialTransitionYawDirection = SpecialTransitionYawDirection.ShortestPath;
     [SerializeField, Min(0f)] private float specialTransitionFadeDurationSeconds = 0.35f;
     [SerializeField, Min(0f)] private float specialTransitionRevealDurationSeconds = 0.5f;
     [SerializeField, Min(0f)] private float specialTransitionBlackHoldSeconds = 0.08f;
@@ -463,14 +472,14 @@ public class DoorInteractions : UnlockableInteraction
     private IEnumerator PanSpecialTransitionCamera(float durationSeconds)
     {
         Vector3 startPosition = transitionCinemachineCamera.transform.position;
-        Quaternion startRotation = transitionCinemachineCamera.transform.rotation;
+        Vector3 startEulerAngles = transitionCinemachineCamera.transform.rotation.eulerAngles;
 
         Vector3 endPosition = specialTransitionEndPose != null
             ? specialTransitionEndPose.position
             : startPosition;
-        Quaternion endRotation = specialTransitionEndPose != null
-            ? specialTransitionEndPose.rotation
-            : startRotation;
+        Vector3 endEulerAngles = specialTransitionEndPose != null
+            ? specialTransitionEndPose.rotation.eulerAngles
+            : startEulerAngles;
 
         float elapsed = 0f;
         while (elapsed < durationSeconds)
@@ -479,11 +488,53 @@ public class DoorInteractions : UnlockableInteraction
             float t = Mathf.Clamp01(elapsed / durationSeconds);
             transitionCinemachineCamera.transform.SetPositionAndRotation(
                 Vector3.Lerp(startPosition, endPosition, t),
-                Quaternion.Slerp(startRotation, endRotation, t));
+                GetSpecialTransitionRotation(startEulerAngles, endEulerAngles, t));
             yield return null;
         }
 
-        transitionCinemachineCamera.transform.SetPositionAndRotation(endPosition, endRotation);
+        transitionCinemachineCamera.transform.SetPositionAndRotation(
+            endPosition,
+            GetSpecialTransitionRotation(startEulerAngles, endEulerAngles, 1f));
+    }
+
+    private Quaternion GetSpecialTransitionRotation(Vector3 startEulerAngles, Vector3 endEulerAngles, float normalizedTime)
+    {
+        float pitch = Mathf.LerpAngle(startEulerAngles.x, endEulerAngles.x, normalizedTime);
+        float yaw = GetSpecialTransitionYaw(startEulerAngles.y, endEulerAngles.y, normalizedTime);
+        float roll = Mathf.LerpAngle(startEulerAngles.z, endEulerAngles.z, normalizedTime);
+        return Quaternion.Euler(pitch, yaw, roll);
+    }
+
+    private float GetSpecialTransitionYaw(float startYaw, float endYaw, float normalizedTime)
+    {
+        float wrappedStartYaw = Mathf.Repeat(startYaw, 360f);
+        float wrappedEndYaw = Mathf.Repeat(endYaw, 360f);
+
+        switch (specialTransitionYawDirection)
+        {
+            case SpecialTransitionYawDirection.Clockwise:
+                return wrappedStartYaw + GetClockwiseYawDelta(wrappedStartYaw, wrappedEndYaw) * normalizedTime;
+            case SpecialTransitionYawDirection.CounterClockwise:
+                return wrappedStartYaw + GetCounterClockwiseYawDelta(wrappedStartYaw, wrappedEndYaw) * normalizedTime;
+            default:
+                return Mathf.LerpAngle(wrappedStartYaw, wrappedEndYaw, normalizedTime);
+        }
+    }
+
+    private static float GetClockwiseYawDelta(float startYaw, float endYaw)
+    {
+        if (endYaw <= startYaw)
+            return endYaw - startYaw;
+
+        return (endYaw - 360f) - startYaw;
+    }
+
+    private static float GetCounterClockwiseYawDelta(float startYaw, float endYaw)
+    {
+        if (endYaw >= startYaw)
+            return endYaw - startYaw;
+
+        return (endYaw + 360f) - startYaw;
     }
 
     private void ApplySpecialTransitionPose(Transform pose)
