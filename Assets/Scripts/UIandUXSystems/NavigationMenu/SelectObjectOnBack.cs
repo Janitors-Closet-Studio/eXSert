@@ -20,7 +20,6 @@ public class SelectObjectOnBack : MonoBehaviour
         {
             if (EventSystem.current != null)
             {
-                EventSystem.current.SetSelectedGameObject(null); // Clear current selection
                 EventSystem.current.SetSelectedGameObject(objectToSelectOnBack); // Set new selection
             }
         }
