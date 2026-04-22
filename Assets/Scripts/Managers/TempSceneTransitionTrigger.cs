@@ -130,6 +130,7 @@ public class TempSceneTransitionTrigger : MonoBehaviour
             if (fallback.IsValid())
             {
                 SceneManager.SetActiveScene(fallback);
+                SceneLoader.EnsureGameplayActiveScene();
             }
             else
             {
@@ -155,6 +156,10 @@ public class TempSceneTransitionTrigger : MonoBehaviour
 
     private static Scene FindFallbackActiveScene(Scene excludedScene)
     {
+        Scene postProcessScene = SceneManager.GetSceneByName("PostProcessScene");
+        if (postProcessScene.IsValid() && postProcessScene.isLoaded && postProcessScene != excludedScene)
+            return postProcessScene;
+
         for (int i = 0; i < SceneManager.sceneCount; i++)
         {
             var candidate = SceneManager.GetSceneAt(i);
