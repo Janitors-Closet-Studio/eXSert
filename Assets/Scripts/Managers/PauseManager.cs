@@ -180,6 +180,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         SoundManager.Instance.sfxSource.Pause();
         SoundManager.Instance.puzzleSource.Pause();
+        SoundManager.Instance.ambienceSource.Pause();
 
         RumbleManager.Instance.StopControllerRumble();
 
@@ -353,7 +354,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.PauseMenu;
 
         if (menuListManager != null && pauseMenuHolder != null)
-            menuListManager.SwapToMenu(pauseMenuHolder);
+            menuListManager.AddToMenuList(pauseMenuHolder);
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
 
@@ -384,7 +385,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
         if (menuListManager != null && navigationMenuHolder != null)
-            menuListManager.SwapToMenu(navigationMenuHolder);
+            menuListManager.AddToMenuList(navigationMenuHolder);
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
 
@@ -407,7 +408,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.PauseMenu;
 
         if (menuListManager != null && pauseMenuHolder != null)
-            menuListManager.SwapToMenu(pauseMenuHolder);
+            menuListManager.AddToMenuList(pauseMenuHolder);
+
+        menuListManager.menusToManage.Remove(navigationMenuHolder);
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
 
@@ -419,7 +422,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
         if (menuListManager != null && navigationMenuHolder != null)
-            menuListManager.SwapToMenu(navigationMenuHolder);
+            menuListManager.AddToMenuList(navigationMenuHolder);
+
+        
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
 
@@ -446,6 +451,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         SoundManager.Instance.sfxSource.UnPause();
         SoundManager.Instance.puzzleSource.UnPause();
+        SoundManager.Instance.ambienceSource.UnPause();
 
         Debug.Log("Game Resumed");
         

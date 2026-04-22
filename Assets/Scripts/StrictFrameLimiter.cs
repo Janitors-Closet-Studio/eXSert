@@ -30,9 +30,15 @@ public class StrictFrameLimiter : MonoBehaviour
     IEnumerator FrameLimiter()
     {
         Debug.Log($"[StrictFrameLimiter] Starting frame limiter: targetFPS={targetFPS}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
-        float targetDelta = 1f / targetFPS;
         while (true)
         {
+            if (targetFPS <= 0)
+            {
+                yield return new WaitForEndOfFrame();
+                continue;
+            }
+
+            float targetDelta = 1f / targetFPS;
             float start = Time.realtimeSinceStartup;
             yield return new WaitForEndOfFrame();
             float elapsed = Time.realtimeSinceStartup - start;

@@ -213,23 +213,24 @@ public class GraphicsSettings : MonoBehaviour
 
     public void SetFPS(int framerate)
     {
-        fpsLevel = framerate;
+        int appliedFrameRate = framerate == 60 ? 60 : framerate == 30 ? 30 : -1;
+        fpsLevel = appliedFrameRate;
         if (framerate == 60)
         {
             fpsText.text = "60";
-            Application.targetFrameRate = 60;
+            Application.targetFrameRate = appliedFrameRate;
         }
         else if (framerate == 30)
         {
             fpsText.text = "30";
-            Application.targetFrameRate = 30;
+            Application.targetFrameRate = appliedFrameRate;
         }
         else
         {
             fpsText.text = "Unlimited";
-            Application.targetFrameRate = -1;
+            Application.targetFrameRate = appliedFrameRate;
         }
-        FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(framerate);
+        FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(appliedFrameRate);
         Debug.Log($"[GraphicsSettings] SetFPS called: framerate={framerate}, fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
     }
 
