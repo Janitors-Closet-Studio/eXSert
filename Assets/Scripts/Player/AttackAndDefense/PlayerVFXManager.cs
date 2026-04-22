@@ -29,8 +29,20 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private GameObject rightAttackVfx;
 
     [SerializeField]
+    [Tooltip("Rig-mounted idle fire VFX (enabled by IdleFire animation event).")]
+    private GameObject idleFireVfx;
+
+    [SerializeField]
     [Tooltip("Duration before attack VFX are disabled again.")]
     private float attackDuration = 1f;
+
+    [SerializeField]
+    [Tooltip("Duration before the idle fire event disables the right-hand fire again.")]
+    private float idleFireDuration = 0.35f;
+
+    [SerializeField]
+    [Tooltip("Extra time to wait after setting idle fire EmberRate to 0 before disabling the GameObject.")]
+    private float idleFireShutdownDelay = 1f;
 
     [SerializeField]
     [Tooltip("Audio clip played when attack VFX enable.")]
@@ -206,6 +218,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     private Coroutine leftAttackDeactivateRoutine;
     private Coroutine rightAttackDeactivateRoutine;
+    private Coroutine idleFireDeactivateRoutine;
     private Coroutine airMoveDeactivateRoutine;
     private Coroutine leftEmberDelayRoutine;
     private Coroutine rightEmberDelayRoutine;
@@ -219,6 +232,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     private VisualEffect leftAttackEffect;
     private VisualEffect rightAttackEffect;
+    private VisualEffect idleFireEffect;
     private VisualEffect[] piledriverExtendSparkFrontEffects = Array.Empty<VisualEffect>();
     private VisualEffect[] piledriverExtendSparkBackEffects = Array.Empty<VisualEffect>();
     private ParticleSystem[] dashDustParticles = Array.Empty<ParticleSystem>();
@@ -230,6 +244,8 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private ParticleSystem[] rightExhaustParticles = Array.Empty<ParticleSystem>();
     private bool leftAttackActive;
     private bool rightAttackActive;
+    private bool idleFireHasCachedEmberRate;
+    private float idleFireCachedEmberRate;
     private readonly Dictionary<Light, float> originalLightIntensity = new();
     private readonly Dictionary<ParticleSystem, float> originalExhaustEmissionRates = new();
 
@@ -261,6 +277,20 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
+        if (idleFireVfx != null)
+        {
+            idleFireEffect =
+                idleFireVfx.GetComponent<VisualEffect>()
+                ?? idleFireVfx.GetComponentInChildren<VisualEffect>(true);
+
+            if (idleFireEffect != null && idleFireEffect.HasFloat(emberRateProperty))
+            {
+                idleFireCachedEmberRate = idleFireEffect.GetFloat(emberRateProperty);
+                idleFireHasCachedEmberRate = true;
+            }
+
+            idleFireVfx.SetActive(false);
+        }
         StopAndClearParticleSystems(dashDustParticles);
         StopAndClearParticleSystems(leftPunchDustParticles);
         StopAndClearParticleSystems(rightPunchDustParticles);
@@ -307,6 +337,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         StopAndClearRoutine(ref leftAttackDeactivateRoutine);
         StopAndClearRoutine(ref rightAttackDeactivateRoutine);
+        StopAndClearRoutine(ref idleFireDeactivateRoutine);
         StopAndClearRoutine(ref airMoveDeactivateRoutine);
         StopAndClearRoutine(ref leftEmberDelayRoutine);
         StopAndClearRoutine(ref rightEmberDelayRoutine);
@@ -321,6 +352,8 @@ public sealed class PlayerVFXManager : MonoBehaviour
         rightAttackActive = false;
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
+        if (idleFireVfx != null)
+            idleFireVfx.SetActive(false);
         StopAndClearParticleSystems(dashDustParticles);
         StopAndClearParticleSystems(leftPunchDustParticles);
         StopAndClearParticleSystems(rightPunchDustParticles);
@@ -378,6 +411,9 @@ public sealed class PlayerVFXManager : MonoBehaviour
                 rightAttackVfx.GetComponent<VisualEffect>()
                 ?? rightAttackVfx.GetComponentInChildren<VisualEffect>(true);
         }
+
+        if (idleFireVfx != null)
+            idleFireVfx.SetActive(false);
 
         if (autoFindHandLights)
         {
@@ -533,6 +569,8 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     public void RightFire() => TriggerRightAttackVfx();
 
+    public void IdleFire() => TriggerIdleFireVfx();
+
     public void DashDust() => TriggerDashDustVfx();
 
     public void PunchDust_L() => TriggerLeftPunchDustVfx();
@@ -615,6 +653,11 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     private void TriggerRightAttackVfx()
     {
+        TriggerRightAttackVfx(attackDuration);
+    }
+
+    private void TriggerRightAttackVfx(float duration)
+    {
         if (rightAttackEffect == null && rightAttackVfx == null)
             return;
 
@@ -629,7 +672,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         RestartSingleRoutine(
             ref rightAttackDeactivateRoutine,
-            attackDuration,
+            duration,
             () =>
             {
                 rightAttackActive = false;
@@ -641,6 +684,51 @@ public sealed class PlayerVFXManager : MonoBehaviour
                 rightAttackDeactivateRoutine = null;
             }
         );
+    }
+
+    private void TriggerIdleFireVfx()
+    {
+        if (idleFireVfx == null)
+            return;
+
+        if (idleFireEffect == null)
+            idleFireEffect =
+                idleFireVfx.GetComponent<VisualEffect>()
+                ?? idleFireVfx.GetComponentInChildren<VisualEffect>(true);
+
+        if (idleFireEffect != null && idleFireHasCachedEmberRate)
+            TrySetFloat(idleFireEffect, emberRateProperty, idleFireCachedEmberRate);
+
+        idleFireVfx.SetActive(true);
+        PlayAudio(attackAudioClip);
+
+        RestartSingleRoutine(
+            ref idleFireDeactivateRoutine,
+            idleFireDuration,
+            () =>
+            {
+                idleFireDeactivateRoutine = StartCoroutine(DisableIdleFireAfterTail());
+            }
+        );
+    }
+
+    private IEnumerator DisableIdleFireAfterTail()
+    {
+        if (idleFireEffect == null && idleFireVfx != null)
+            idleFireEffect =
+                idleFireVfx.GetComponent<VisualEffect>()
+                ?? idleFireVfx.GetComponentInChildren<VisualEffect>(true);
+
+        TrySetFloat(idleFireEffect, emberRateProperty, emberRateOff);
+
+        float shutdownDelay = Mathf.Max(0f, idleFireShutdownDelay);
+        if (shutdownDelay > 0f)
+            yield return new WaitForSeconds(shutdownDelay);
+
+        if (idleFireVfx != null)
+            idleFireVfx.SetActive(false);
+
+        idleFireDeactivateRoutine = null;
     }
 
     private void TriggerDashDustVfx()
