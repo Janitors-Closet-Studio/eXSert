@@ -315,6 +315,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             if (interactionUI != null && interactionUI.currentInteractable == this)
             {
                 interactionUI.HideInteractPrompt();
+                interactionUI.currentInteractable = null;
+
             }
         }
     }
