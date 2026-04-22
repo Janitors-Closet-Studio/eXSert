@@ -541,9 +541,10 @@ public class MenuListManager : MonoBehaviour
         foreach(GameObject menu in menusToManage)
         {
             if (!IsProtectedMenu(menu))
-                menu.SetActive(false);
+                menusToManage.Remove(menu);
+            menu.SetActive(false);
         }
-        menusToManage.Clear();
+
         selectionHistory.Clear();
     }
 

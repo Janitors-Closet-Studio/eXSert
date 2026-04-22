@@ -10,6 +10,8 @@ using System.Timers;
 
 public class ActsManager : Singleton<ActsManager>
 {
+    [SerializeField] private GameObject actsHolder;
+
     [SerializeField] private Button[] actsButton;
 
     [SerializeField] private Color selectedColor;
@@ -297,16 +299,39 @@ public class ActsManager : Singleton<ActsManager>
     /// Loads the given scene, then respawns the player at a checkpoint in that scene.
     public void LoadSceneAndRespawnAtCheckpoint(string sceneName)
     {
-        StartCoroutine(LoadSceneAndRespawnCoroutine(sceneName));
+
+
+        // SceneAsset appears to support explicit casting from a string based on SceneLoader's usage
+        SceneAsset sceneAsset = (SceneAsset)sceneName;
+
+
+        // Load the selected scene using SceneLoader
+        InputReader.inputBusy = false;
+        if (InputReader.PlayerInput != null)
+            InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+
+        SceneLoader.LoadIntoGame(sceneAsset);
+        PauseManager.Instance.ResumeGame();
+        actsHolder.SetActive(false);
+
+        MenuListManager menuListManager = GetComponent<MenuListManager>();
+
+        if (menuListManager != null)
+        {
+            menuListManager.ClearMenuList();
+        }
+
+        Player.TriggerRespawn();
+        ActivateAllImagesBefore();
     }
 
-    private System.Collections.IEnumerator LoadSceneAndRespawnCoroutine(string sceneName)
+    private IEnumerator LoadSceneAndRespawnCoroutine(SceneAsset sceneName)
     {
         Debug.Log($"[ActsManager] Loading scene '{sceneName}' and will respawn at checkpoint.");
         PrepareForSceneLoad(resumeImmediately: false);
 
         // Start loading the scene
-        var asyncOp = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName);
+        var asyncOp = SceneManager.LoadSceneAsync(sceneName);
         while (!asyncOp.isDone)
             yield return null;
 
@@ -316,7 +341,6 @@ public class ActsManager : Singleton<ActsManager>
         // Find a checkpoint in the loaded scene and set it as current
         SetCheckpointForScene(sceneName);
 
-        // Respawn the player at the checkpoint
         Player.TriggerRespawn();
     }
 
