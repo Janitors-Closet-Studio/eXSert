@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 using Managers.TimeLord;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 
 [RequireComponent(typeof(BoxCollider))]
 
@@ -52,6 +54,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     [SerializeField] private float rumbleLowFrequency = 0.1f;
     [SerializeField] private float rumbleHighFrequency = 0.1f;
 
+    public List<GameObject> enemiesOnLift = new List<GameObject>();
     private GameObject playerReference;
     private PlayerMovement cachedPlayerMovement;
     private PlayerAnimationController cachedPlayerAnimationController;
@@ -133,11 +136,6 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         TryResolveLockCoordinates();
 
         CachePlayerReferences();
-    }
-
-    private void Update()
-    {
-        TryTriggerGroundRecallFailsafe();
     }
 
     private void TryResolveLockCoordinates()
@@ -317,6 +315,14 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         if (!HasValidLiftConfiguration())
             return;
 
+        RemoveDontDestroyFromList();
+
+        if (enemiesOnLift.Count > 0)
+        {
+            InteractionUI.Instance.OnCollectedItem("Elevator Load Exceeded", "Clear enemies to lighten load", priority: 10);
+            return;
+        }
+
         CachePlayerReferences();
 
         SubscribeToInputActions();
@@ -455,6 +461,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     {
         if (elevatorUI == null || elevatorUI.Length == 0)
             return;
+
+        
 
         HideElevatorUI();
         ElevatorMenuActive = true;
@@ -673,6 +681,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         return playerCC;
     }
 
+
     private IEnumerator MoveLift(int targetFloor, bool carryPlayerWithLift, bool restoreGameplayState = true)
     {
         if (!HasValidLiftConfiguration(targetFloor))
@@ -739,4 +748,47 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             menuActive = false;
     }
 
+    private void RemoveDontDestroyFromList()
+    {
+        // Collect all inactive enemies first
+        List<GameObject> toRemove = new List<GameObject>();
+        foreach (var enemy in enemiesOnLift)
+        {
+            if (enemy != null && !enemy.activeInHierarchy)
+            {
+                Debug.Log($"Removing inactive enemy from elevator list: {enemy.name}");
+                toRemove.Add(enemy);
+            }
+        }
+        // Remove them after the loop
+        foreach (var enemy in toRemove)
+        {
+            enemiesOnLift.Remove(enemy);
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log($"Collider entered elevator trigger: {other.name}");
+        if (other == null) return;
+        // Track the actual enemy GameObject (the collider's GameObject) if it or its root is tagged
+        if (other.CompareTag("Enemy") || other.transform.root.CompareTag("Enemy") && other.gameObject.scene.name != null)
+        {
+            GameObject enemyObj = other.gameObject;
+            Debug.Log($"Enemy entered elevator trigger: {enemyObj.name}");
+            if (!enemiesOnLift.Contains(enemyObj))
+                enemiesOnLift.Add(enemyObj);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other == null) return;
+        if (other.CompareTag("Enemy") || other.transform.root.CompareTag("Enemy"))
+        {
+            GameObject enemyObj = other.gameObject;
+            enemiesOnLift.Remove(enemyObj);
+            
+        }
+    }
 }
