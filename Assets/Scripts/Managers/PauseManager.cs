@@ -4,12 +4,16 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using Managers.TimeLord;
 using Unity.VisualScripting;
+using UnityEngine.Rendering;
+
 
 public class PauseManager : Singletons.Singleton<PauseManager>
 {
     private const string GameplayInputBlockOwnerId = "PauseManager";
 
     protected override bool ShouldPersistAcrossScenes => false;
+
+    [SerializeField] private VolumeProfile pauseMenuVolumeProfile; // Assign a profile with desired pause menu effects (e.g., blur) in inspector
 
     [Header("UI GameObjects")]
     [SerializeField] private GameObject pauseMenuHolder;
@@ -133,6 +137,29 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         HideAllMenus();
     }
 
+    private void EnableBlur()
+    {
+        pauseMenuVolumeProfile.TryGet(out UnityEngine.Rendering.Universal.DepthOfField dof);
+        if (dof != null)
+        {
+            dof.active = true;
+            Debug.Log("Depth of Field enabled for pause menu blur effect.");
+        }
+        else
+        {
+            Debug.LogWarning("No DepthOfField found in the assigned VolumeProfile. Please add one to enable blur effect on pause.");
+        }
+    }
+
+    private void DisableBlur()
+    {
+        pauseMenuVolumeProfile.TryGet(out UnityEngine.Rendering.Universal.DepthOfField dof);
+        if (dof != null)
+        {
+            dof.active = false;
+        }
+    }
+
 
     private void OnPause(InputAction.CallbackContext context)
     {
@@ -148,6 +175,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             return;
         }
+
+        EnableBlur();
 
         SoundManager.Instance.sfxSource.Pause();
         SoundManager.Instance.puzzleSource.Pause();
@@ -236,16 +265,29 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void GoBackOnce()
     {
-        if (menuListManager.menusToBlock.Contains(menuListManager.menusToManage[0]))
-        {
-            menuListManager.GoBackToPreviousMenu();
-            menuListManager.GoBackToPreviousMenu();
-        }
-        else 
+        menuListManager.GoBackToPreviousMenu();
+
+        // Only skip one extra layer if the newly revealed top menu is still blocked.
+        if (menuListManager.menusToManage.Count > 0
+            && menuListManager.menusToBlock.Contains(menuListManager.menusToManage[0]))
         {
             menuListManager.GoBackToPreviousMenu();
         }
 
+        SyncActiveMenuToStackTop();
+
+    }
+
+    private void SyncActiveMenuToStackTop()
+    {
+        if (menuListManager == null || menuListManager.menusToManage == null || menuListManager.menusToManage.Count == 0)
+            return;
+
+        GameObject topMenu = menuListManager.menusToManage[0];
+        if (topMenu == pauseMenuHolder)
+            currentActiveMenu = ActiveMenu.PauseMenu;
+        else if (topMenu == navigationMenuHolder)
+            currentActiveMenu = ActiveMenu.NavigationMenu;
     }
 
     /// <summary>
@@ -310,6 +352,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.PauseMenu;
 
+        if (menuListManager != null && pauseMenuHolder != null)
+            menuListManager.SwapToMenu(pauseMenuHolder);
+
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
 
         // Prevent same physical key press from immediately firing Back after action map switch.
@@ -338,6 +383,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
+        if (menuListManager != null && navigationMenuHolder != null)
+            menuListManager.SwapToMenu(navigationMenuHolder);
+
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
 
         // Prevent same physical key press from immediately firing Back after action map switch.
@@ -358,6 +406,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         currentActiveMenu = ActiveMenu.PauseMenu;
 
+        if (menuListManager != null && pauseMenuHolder != null)
+            menuListManager.SwapToMenu(pauseMenuHolder);
+
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
 
         Debug.Log("Swapped to Pause Menu");
@@ -366,6 +417,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void SwapToNavigationMenu()
     {
         currentActiveMenu = ActiveMenu.NavigationMenu;
+
+        if (menuListManager != null && navigationMenuHolder != null)
+            menuListManager.SwapToMenu(navigationMenuHolder);
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
 
@@ -382,6 +436,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.None;
 
         HideAllMenus();
+        DisableBlur();
 
         // Prevent immediate re-open from the same key press while returning to Gameplay.
         ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;

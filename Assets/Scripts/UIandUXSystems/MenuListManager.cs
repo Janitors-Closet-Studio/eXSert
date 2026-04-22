@@ -68,6 +68,11 @@ public class MenuListManager : MonoBehaviour
         }
     }
 
+    public void SwapToMenu(GameObject menuToSwapTo)
+    {
+        AddToMenuList(menuToSwapTo);
+    }
+
     public void SetAsLastSibling(GameObject menuToMove)
     {
         if (menuToMove != firstMenuToOpen && menuToMove != canvas)
@@ -80,6 +85,10 @@ public class MenuListManager : MonoBehaviour
             return;
 
         menuToDisable.SetActive(false);
+
+        // Keep the disabled menu in the stack so Back can restore it.
+        if (menusToManage != null && !menusToManage.Contains(menuToDisable))
+            menusToManage.Insert(Mathf.Min(1, menusToManage.Count), menuToDisable);
     }
 
     public void AddToMenuList(GameObject menuToAdd)
@@ -194,7 +203,23 @@ public class MenuListManager : MonoBehaviour
 
         // Ensure the new top menu is active
         if (menusToManage.Count > 0 && menusToManage[0] != null)
-            menusToManage[0].SetActive(true);
+        {
+            GameObject previousMenu = menusToManage[0];
+            EnsureHierarchyIsActive(previousMenu);
+
+            FadeMenus restoreFadeMenus = GetComponent<FadeMenus>();
+            if (restoreFadeMenus != null && !menusToBlock.Contains(previousMenu))
+            {
+                restoreFadeMenus.FadeMenuSafe(previousMenu, restoreFadeMenus.fadeDuration, true);
+            }
+            else
+            {
+                previousMenu.SetActive(true);
+                CanvasGroup canvasGroup = previousMenu.GetComponent<CanvasGroup>();
+                if (canvasGroup != null)
+                    canvasGroup.alpha = 1f;
+            }
+        }
 
         // On back, pop and select the first selectable in the history
         if (selectionHistory.Count > 0)
