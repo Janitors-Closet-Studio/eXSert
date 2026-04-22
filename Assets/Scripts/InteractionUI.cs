@@ -93,20 +93,34 @@ public class InteractionUI : Singleton<InteractionUI>
         HideInteractPrompt();
     }
 
-    public void OnCollectedItem(string collectID, string bottomText, float fadeDuration = 0.5f, float displayDuration = 1.5f)
+    private int currentCollectPriority = 0;
+    private Coroutine collectableUICoroutine;
+    public void OnCollectedItem(string collectID, string bottomText, float fadeDuration = 0.5f, float displayDuration = 1.5f, int priority = 0)
     {
-        ShowCollectableUIWithTyping(collectID, bottomText, fadeDuration, displayDuration);
+        // Only allow if priority is higher or equal, or nothing is showing
+        if (collectableUICoroutine != null && priority < currentCollectPriority)
+            return;
+        currentCollectPriority = priority;
+        ShowCollectableUIWithTyping(collectID, bottomText, fadeDuration, displayDuration, 0.03f, false, priority);
     }
 
-    private Coroutine collectableUICoroutine;
-    public void ShowCollectableUIWithTyping(string collectedLabel, string bottomFlavorText, float fadeDuration = 0.5f, float displayDuration = 1.5f, float typeSpeed = 0.03f, bool invisibleCharacters = false)
+    public void ClearNotice()
     {
+        _collectText.text = "";
+        _collectBottomText.text = "";
+    }
+
+    public void ShowCollectableUIWithTyping(string collectedLabel, string bottomFlavorText, float fadeDuration = 0.5f, float displayDuration = 1.5f, float typeSpeed = 0.03f, bool invisibleCharacters = false, int priority = 0)
+    {
+        // Ensure the InteractionUI GameObject is active before starting a coroutine
+        if (!gameObject.activeInHierarchy)
+            gameObject.SetActive(true);
         if (collectableUICoroutine != null)
         {
             StopCoroutine(collectableUICoroutine);
             collectableUICoroutine = null;
         }
-        collectableUICoroutine = StartCoroutine(FadeInTypeFadeOutRoutine(collectedLabel, bottomFlavorText, fadeDuration, displayDuration, typeSpeed, invisibleCharacters));
+        collectableUICoroutine = StartCoroutine(FadeInTypeFadeOutRoutine(collectedLabel, bottomFlavorText, fadeDuration, displayDuration, typeSpeed, invisibleCharacters, priority));
     }
 
 
@@ -177,7 +191,7 @@ public class InteractionUI : Singleton<InteractionUI>
     }
 
     // Coroutine to fade in, then type, then fade out
-    private IEnumerator FadeInTypeFadeOutRoutine(string collectedLabel, string bottomFlavorText, float fadeDuration, float displayDuration, float typeSpeed, bool invisibleCharacters)
+    private IEnumerator FadeInTypeFadeOutRoutine(string collectedLabel, string bottomFlavorText, float fadeDuration, float displayDuration, float typeSpeed, bool invisibleCharacters, int priority)
     {
         if (collectUI != null)
             collectUI.SetActive(true);
@@ -228,6 +242,9 @@ public class InteractionUI : Singleton<InteractionUI>
 
         // Fade out
         yield return StartCoroutine(FadeOutUI(fadeDuration));
+        // Only reset priority if this is the current one
+        if (priority == currentCollectPriority)
+            currentCollectPriority = 0;
     }
 
     /*
