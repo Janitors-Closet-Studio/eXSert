@@ -33,6 +33,7 @@ public class GameActionHandler : MonoBehaviour
         PrepareForSceneLoad(resumeImmediately: false);
         
         Player.TriggerRespawn();
+        ActsManager.Instance.ActivateAllImagesBefore();
     }
 
     public void RestartFromSelectedScene(SceneAsset sceneAsset)
@@ -42,6 +43,8 @@ public class GameActionHandler : MonoBehaviour
         PrepareForSceneLoad(resumeImmediately: false);
         
         SceneLoader.LoadIntoGame(sceneAsset);
+        ActsManager.Instance.ActivateAllImagesBefore();
+
     }
 
     /// <summary>
