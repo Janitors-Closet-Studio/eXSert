@@ -16,6 +16,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     [SerializeField] private VolumeProfile pauseMenuVolumeProfile; // Assign a profile with desired pause menu effects (e.g., blur) in inspector
 
     [Header("UI GameObjects")]
+    [SerializeField] private GameObject pauseOverlay;
     [SerializeField] private GameObject pauseMenuHolder;
     [SerializeField] private GameObject navigationMenuHolder;
     [SerializeField] private GameObject settingsMenuContainer;
@@ -43,6 +44,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private AudioClip sfxClipToPause;
     private AudioClip puzzleClipToPause;
+    FadeMenus fadeMenus;
 
 
     private MenuListManager menuListManager;
@@ -73,6 +75,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         CacheHudRootName();
         HideAllMenus();
         menuListManager = this.GetComponent<MenuListManager>();
+        pauseOverlay.SetActive(false);
+        fadeMenus = this.GetComponent<FadeMenus>();
     }
 
     private void OnEnable()
@@ -177,6 +181,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         }
 
         EnableBlur();
+
+        if (!pauseOverlay.activeInHierarchy)
+            StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, true));
 
         SoundManager.Instance.sfxSource.Pause();
         SoundManager.Instance.puzzleSource.Pause();
@@ -442,6 +449,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         HideAllMenus();
         DisableBlur();
+        
+        if (pauseOverlay.activeInHierarchy)
+            StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
+
 
         // Prevent immediate re-open from the same key press while returning to Gameplay.
         ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;

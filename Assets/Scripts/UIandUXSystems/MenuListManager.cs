@@ -87,9 +87,6 @@ public class MenuListManager : MonoBehaviour
 
         menuToDisable.SetActive(false);
 
-        // Keep the disabled menu in the stack so Back can restore it.
-        if (menusToManage != null && !menusToManage.Contains(menuToDisable))
-            menusToManage.Insert(Mathf.Min(1, menusToManage.Count), menuToDisable);
     }
 
     // Central function to add a menu to the stack and handle all related logic (selection, sibling order, fading, etc.)
