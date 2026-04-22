@@ -1,12 +1,20 @@
 using System;
 using System.Collections;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 
 public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 {
+    private static readonly FieldInfo UniversalRendererIndexField = typeof(UniversalAdditionalCameraData)
+        .GetField("m_RendererIndex", BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly FieldInfo UniversalDefaultRendererIndexField = typeof(UniversalRenderPipelineAsset)
+        .GetField("m_DefaultRendererIndex", BindingFlags.Instance | BindingFlags.NonPublic);
+
     protected enum DetectionResult
     {
         None,
@@ -62,6 +70,24 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     [SerializeField] private CinemachineCamera firstPuzzleCamera;
     [SerializeField] private CinemachineCamera secondPuzzleCamera;
 
+    [Header("Puzzle Transition")]
+    [SerializeField, Min(0f)] private float puzzleTransitionFadeDurationSeconds = 0.35f;
+    [SerializeField, Min(0f)] private float puzzleTransitionRevealDurationSeconds = 0.5f;
+    [SerializeField, Min(0f)] private float puzzleTransitionBlackHoldSeconds = 0.08f;
+    [SerializeField, Min(0f)] private float puzzleTransitionReturnBlackHoldSeconds = 0.2f;
+    [SerializeField, Tooltip("Temporarily enables a fullscreen renderer feature on the gameplay output camera while the crane puzzle is active.")]
+    private bool usePuzzleTransitionRenderer = false;
+    [SerializeField, Tooltip("Name of the renderer feature to toggle on the output renderer, for example 'FullScreenPassRendererFeature'.")]
+    private string puzzleTransitionRendererFeatureName = "FullScreenPassRendererFeature";
+    [SerializeField, Tooltip("Optional output camera to swap renderers on. If left empty, the script uses Camera.main, then the first CinemachineBrain camera.")]
+    private Camera puzzleTransitionOutputCamera;
+    [SerializeField, Tooltip("Loaded scene that contains the player prefab camera used for normal gameplay.")]
+    private string puzzleTransitionOutputSceneName = "PlayerScene";
+    [SerializeField, Tooltip("Camera object name to prefer inside the player scene when swapping the renderer.")]
+    private string puzzleTransitionOutputCameraName = "MainCamera";
+    [SerializeField, Tooltip("Camera tag to prefer inside the player scene when swapping the renderer.")]
+    private string puzzleTransitionOutputCameraTag = "PlayerCamera";
+
     [Header("Console Move Limits")]
     [SerializeField] private int zLimitPartIndex = 1;
     [SerializeField] private Vector2 firstConsoleZLimits = new Vector2(-3.69f, 19.42f);
@@ -82,6 +108,14 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     private bool indicatorActive;
     private int activeConsoleIndex;
     private readonly bool[] consoleCompleted = new bool[2];
+    private Coroutine puzzleTransitionRoutine;
+    private bool isPuzzleTransitionActive;
+    private bool pendingPuzzleExitAfterEntry;
+    private bool isPuzzleTransitionRendererApplied;
+    private Camera cachedPuzzleTransitionOutputCamera;
+    private UniversalAdditionalCameraData cachedPuzzleTransitionCameraData;
+    private ScriptableRendererFeature cachedPuzzleTransitionRendererFeature;
+    private bool cachedPuzzleTransitionRendererFeatureActive;
     
     private void Start()
     {
@@ -95,7 +129,13 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
     private void Update()
     {
+        SyncPuzzleTransitionRendererState();
         UpdateMagnetIndicator();
+    }
+
+    private void OnDisable()
+    {
+        RestorePuzzleTransitionRendererIfNeeded();
     }
 
     public override void ConsoleInteracted()
@@ -105,7 +145,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
         SetActiveConsole(0);
         indicatorActive = true;
-        base.ConsoleInteracted();
+        BeginPuzzleEntryTransition();
     }
 
     public void ConsoleInteracted(PuzzleInteraction interaction)
@@ -117,13 +157,20 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
         SetActiveConsole(consoleIndex);
         indicatorActive = true;
-        base.ConsoleInteracted();
+        BeginPuzzleEntryTransition();
     }
 
     public override void EndPuzzle()
     {
         indicatorActive = false;
-        base.EndPuzzle();
+
+        if (isPuzzleTransitionActive)
+        {
+            pendingPuzzleExitAfterEntry = true;
+            return;
+        }
+
+        BeginPuzzleExitTransition();
     }
 
     private void SetActiveConsole(int consoleIndex)
@@ -137,6 +184,290 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         SetPuzzleCamera(useSecond ? secondPuzzleCamera : firstPuzzleCamera);
 
         ApplyZLimits(useSecond ? secondConsoleZLimits : firstConsoleZLimits);
+    }
+
+    private void BeginPuzzleEntryTransition()
+    {
+        if (isPuzzleTransitionActive)
+            return;
+
+        if (puzzleTransitionRoutine != null)
+            StopCoroutine(puzzleTransitionRoutine);
+
+        puzzleTransitionRoutine = StartCoroutine(PuzzleEntryTransitionRoutine());
+    }
+
+    private void BeginPuzzleExitTransition()
+    {
+        if (isPuzzleTransitionActive)
+            return;
+
+        if (puzzleTransitionRoutine != null)
+            StopCoroutine(puzzleTransitionRoutine);
+
+        puzzleTransitionRoutine = StartCoroutine(PuzzleExitTransitionRoutine());
+    }
+
+    private IEnumerator PuzzleEntryTransitionRoutine()
+    {
+        isPuzzleTransitionActive = true;
+        pendingPuzzleExitAfterEntry = false;
+
+        yield return FadeTo(1f, puzzleTransitionFadeDurationSeconds);
+
+        float blackHoldDuration = Mathf.Max(0f, puzzleTransitionBlackHoldSeconds);
+        if (blackHoldDuration > 0f)
+            yield return new WaitForSecondsRealtime(blackHoldDuration);
+
+        base.ConsoleInteracted();
+        SyncPuzzleTransitionRendererState();
+
+        yield return FadeTo(0f, puzzleTransitionRevealDurationSeconds);
+
+        isPuzzleTransitionActive = false;
+        puzzleTransitionRoutine = null;
+
+        if (pendingPuzzleExitAfterEntry)
+            BeginPuzzleExitTransition();
+    }
+
+    private IEnumerator PuzzleExitTransitionRoutine()
+    {
+        isPuzzleTransitionActive = true;
+        pendingPuzzleExitAfterEntry = false;
+
+        yield return FadeTo(1f, puzzleTransitionFadeDurationSeconds);
+
+        CompletePuzzleExitWithoutStoppingCoroutines();
+        RestorePuzzleTransitionRendererIfNeeded();
+
+        float blackHoldDuration = Mathf.Max(0f, puzzleTransitionReturnBlackHoldSeconds);
+        if (blackHoldDuration > 0f)
+            yield return new WaitForSecondsRealtime(blackHoldDuration);
+
+        yield return FadeTo(0f, puzzleTransitionRevealDurationSeconds);
+
+        isPuzzleTransitionActive = false;
+        puzzleTransitionRoutine = null;
+    }
+
+    private static IEnumerator FadeTo(float targetAlpha, float durationSeconds)
+    {
+        if (ScreenFadeOverlay.Instance == null)
+            yield break;
+
+        yield return ScreenFadeOverlay.Instance.FadeTo(targetAlpha, durationSeconds);
+    }
+
+    private void SyncPuzzleTransitionRendererState()
+    {
+        if (!usePuzzleTransitionRenderer)
+        {
+            RestorePuzzleTransitionRendererIfNeeded();
+            return;
+        }
+
+        if (!IsCranePuzzleActive)
+        {
+            RestorePuzzleTransitionRendererIfNeeded();
+            return;
+        }
+
+        if (!isPuzzleTransitionRendererApplied)
+            ApplyPuzzleTransitionRendererIfNeeded();
+    }
+
+    private void ApplyPuzzleTransitionRendererIfNeeded()
+    {
+        if (!usePuzzleTransitionRenderer || isPuzzleTransitionRendererApplied)
+            return;
+
+        if (!TryGetPuzzleTransitionOutputCamera(out Camera outputCamera))
+        {
+            Debug.LogWarning("[CargoBayCrane] Could not find an output camera for the puzzle transition renderer swap.");
+            return;
+        }
+
+        UniversalAdditionalCameraData additionalCameraData = outputCamera.GetUniversalAdditionalCameraData();
+        if (additionalCameraData == null)
+        {
+            Debug.LogWarning($"[CargoBayCrane] Output camera '{outputCamera.name}' does not have UniversalAdditionalCameraData.");
+            return;
+        }
+
+        if (!TryGetRendererFeature(additionalCameraData, out ScriptableRendererFeature rendererFeature))
+        {
+            Debug.LogWarning($"[CargoBayCrane] Could not find renderer feature '{puzzleTransitionRendererFeatureName}' on the output renderer.");
+            return;
+        }
+
+        cachedPuzzleTransitionOutputCamera = outputCamera;
+        cachedPuzzleTransitionCameraData = additionalCameraData;
+        cachedPuzzleTransitionRendererFeature = rendererFeature;
+        cachedPuzzleTransitionRendererFeatureActive = rendererFeature.isActive;
+        rendererFeature.SetActive(true);
+        isPuzzleTransitionRendererApplied = true;
+    }
+
+    private void RestorePuzzleTransitionRendererIfNeeded()
+    {
+        if (!isPuzzleTransitionRendererApplied && cachedPuzzleTransitionRendererFeature == null)
+            return;
+
+        if (cachedPuzzleTransitionRendererFeature != null)
+            cachedPuzzleTransitionRendererFeature.SetActive(cachedPuzzleTransitionRendererFeatureActive);
+
+        isPuzzleTransitionRendererApplied = false;
+        cachedPuzzleTransitionOutputCamera = null;
+        cachedPuzzleTransitionCameraData = null;
+        cachedPuzzleTransitionRendererFeature = null;
+        cachedPuzzleTransitionRendererFeatureActive = false;
+    }
+
+    private bool TryGetPuzzleTransitionOutputCamera(out Camera outputCamera)
+    {
+        if (puzzleTransitionOutputCamera != null && puzzleTransitionOutputCamera.isActiveAndEnabled)
+        {
+            outputCamera = puzzleTransitionOutputCamera;
+            return true;
+        }
+
+        if (TryFindPuzzleTransitionOutputCameraInScene(out outputCamera))
+            return true;
+
+        outputCamera = Camera.main;
+        if (outputCamera != null && outputCamera.isActiveAndEnabled)
+            return true;
+
+        CinemachineBrain brain = FindFirstObjectByType<CinemachineBrain>();
+        if (brain != null)
+        {
+            outputCamera = brain.GetComponent<Camera>();
+            if (outputCamera != null && outputCamera.isActiveAndEnabled)
+                return true;
+        }
+
+        Camera[] cameras = Camera.allCameras;
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera candidate = cameras[i];
+            if (candidate == null || !candidate.isActiveAndEnabled)
+                continue;
+
+            outputCamera = candidate;
+            return true;
+        }
+
+        outputCamera = null;
+        return false;
+    }
+
+    private bool TryFindPuzzleTransitionOutputCameraInScene(out Camera outputCamera)
+    {
+        outputCamera = null;
+
+        if (string.IsNullOrWhiteSpace(puzzleTransitionOutputSceneName))
+            return false;
+
+        Scene playerScene = SceneManager.GetSceneByName(puzzleTransitionOutputSceneName);
+        if (!playerScene.IsValid() || !playerScene.isLoaded)
+            return false;
+
+        GameObject[] rootObjects = playerScene.GetRootGameObjects();
+        Camera fallbackCamera = null;
+
+        for (int rootIndex = 0; rootIndex < rootObjects.Length; rootIndex++)
+        {
+            Camera[] cameras = rootObjects[rootIndex].GetComponentsInChildren<Camera>(true);
+            for (int cameraIndex = 0; cameraIndex < cameras.Length; cameraIndex++)
+            {
+                Camera candidate = cameras[cameraIndex];
+                if (candidate == null || !candidate.isActiveAndEnabled)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(puzzleTransitionOutputCameraTag)
+                    && candidate.CompareTag(puzzleTransitionOutputCameraTag))
+                {
+                    outputCamera = candidate;
+                    return true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(puzzleTransitionOutputCameraName)
+                    && candidate.name == puzzleTransitionOutputCameraName)
+                {
+                    outputCamera = candidate;
+                    return true;
+                }
+
+                fallbackCamera ??= candidate;
+            }
+        }
+
+        outputCamera = fallbackCamera;
+        return outputCamera != null;
+    }
+
+    private bool TryGetRendererFeature(UniversalAdditionalCameraData additionalCameraData, out ScriptableRendererFeature rendererFeature)
+    {
+        rendererFeature = null;
+
+        ScriptableRendererData rendererData = GetRendererDataForCamera(additionalCameraData);
+        if (rendererData == null || rendererData.rendererFeatures == null)
+            return false;
+
+        for (int i = 0; i < rendererData.rendererFeatures.Count; i++)
+        {
+            ScriptableRendererFeature candidate = rendererData.rendererFeatures[i];
+            if (candidate == null)
+                continue;
+
+            if (string.Equals(candidate.name, puzzleTransitionRendererFeatureName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(candidate.GetType().Name, puzzleTransitionRendererFeatureName, StringComparison.OrdinalIgnoreCase))
+            {
+                rendererFeature = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static ScriptableRendererData GetRendererDataForCamera(UniversalAdditionalCameraData additionalCameraData)
+    {
+        UniversalRenderPipelineAsset pipelineAsset = UniversalRenderPipeline.asset;
+        if (pipelineAsset == null)
+            return null;
+
+        int rendererIndex = GetCurrentRendererIndex(additionalCameraData);
+        if (rendererIndex < 0)
+            rendererIndex = GetDefaultRendererIndex(pipelineAsset);
+
+        var rendererDataList = pipelineAsset.rendererDataList;
+        if (rendererIndex < 0 || rendererIndex >= rendererDataList.Length)
+            rendererIndex = GetDefaultRendererIndex(pipelineAsset);
+
+        if (rendererIndex < 0 || rendererIndex >= rendererDataList.Length)
+            return null;
+
+        return rendererDataList[rendererIndex];
+    }
+
+    private static int GetCurrentRendererIndex(UniversalAdditionalCameraData additionalCameraData)
+    {
+        if (additionalCameraData == null || UniversalRendererIndexField == null)
+            return -1;
+
+        object rendererIndexValue = UniversalRendererIndexField.GetValue(additionalCameraData);
+        return rendererIndexValue is int rendererIndex ? rendererIndex : -1;
+    }
+
+    private static int GetDefaultRendererIndex(UniversalRenderPipelineAsset pipelineAsset)
+    {
+        if (pipelineAsset == null || UniversalDefaultRendererIndexField == null)
+            return 0;
+
+        object defaultIndexValue = UniversalDefaultRendererIndexField.GetValue(pipelineAsset);
+        return defaultIndexValue is int defaultRendererIndex ? defaultRendererIndex : 0;
     }
 
     private bool CanUseConsole(int consoleIndex)

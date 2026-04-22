@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36baaa8bdcb9d8b49b9199833965d2c3, type: 3}
-  m_Name: CQBlend
+  m_Name: CameraBlend
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBlenderSettings
   CustomBlends:
   - From: '**ANY CAMERA**'
-    To: RedCardCamera
+    To: RedConsoleCamera
     Blend:
-      Style: 1
+      Style: 0
       Time: 0.5
       CustomCurve:
         serializedVersion: 2
@@ -79,10 +79,10 @@ MonoBehaviour:
         m_PreInfinity: 0
         m_PostInfinity: 0
         m_RotationOrder: 0
-  - From: RedCardCamera
+  - From: RedConsoleCamera
     To: '**ANY CAMERA**'
     Blend:
-      Style: 1
+      Style: 0
       Time: 0
       CustomCurve:
         serializedVersion: 2
@@ -138,6 +138,50 @@ MonoBehaviour:
     To: '**ANY CAMERA**'
     Blend:
       Style: 1
+      Time: 0
+      CustomCurve:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 0
+        m_PostInfinity: 0
+        m_RotationOrder: 0
+  - From: '**ANY CAMERA**'
+    To: Camera1
+    Blend:
+      Style: 0
+      Time: 0
+      CustomCurve:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 0
+        m_PostInfinity: 0
+        m_RotationOrder: 0
+  - From: '**ANY CAMERA**'
+    To: Camera2
+    Blend:
+      Style: 0
+      Time: 0
+      CustomCurve:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 0
+        m_PostInfinity: 0
+        m_RotationOrder: 0
+  - From: Camera1
+    To: '**ANY CAMERA**'
+    Blend:
+      Style: 0
+      Time: 0
+      CustomCurve:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 0
+        m_PostInfinity: 0
+        m_RotationOrder: 0
+  - From: Camera2
+    To: '**ANY CAMERA**'
+    Blend:
+      Style: 0
       Time: 0
       CustomCurve:
         serializedVersion: 2

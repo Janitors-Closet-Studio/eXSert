@@ -131,6 +131,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: CrewQuartersVolume
       objectReference: {fileID: 0}
+    - target: {fileID: 1492978167663088126, guid: 3434398b477be2f4a9055b51633ff494, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4622172513938410383, guid: 3434398b477be2f4a9055b51633ff494, type: 3}
+      propertyPath: weight
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6474833841775849445, guid: 3434398b477be2f4a9055b51633ff494, type: 3}
       propertyPath: m_LocalPosition.x
       value: -7
@@ -176,6 +184,55 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3434398b477be2f4a9055b51633ff494, type: 3}
+--- !u!1 &1795659781
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1795659783}
+  - component: {fileID: 1795659782}
+  m_Layer: 17
+  m_Name: Global_Blur
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1795659782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1795659781}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: 08a9fe77c57fa8c48901d3e4e5b1bd69, type: 2}
+--- !u!4 &1795659783
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1795659781}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -146.6843, y: 0, z: 90.21243}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &3391115034995747035
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -224,9 +281,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1364167131481151470, guid: cccba1ccd2f1a99498daa760bbd578c9, type: 3}
+      propertyPath: weight
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8331080339687529239, guid: cccba1ccd2f1a99498daa760bbd578c9, type: 3}
       propertyPath: m_Name
       value: Global_Bloom
+      objectReference: {fileID: 0}
+    - target: {fileID: 8331080339687529239, guid: cccba1ccd2f1a99498daa760bbd578c9, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -487,5 +552,5 @@ SceneRoots:
   - {fileID: 3391115034995747035}
   - {fileID: 7323171003355055721}
   - {fileID: 7954440891305164856}
-  - {fileID: 8742299730694271858}
   - {fileID: 1260722186}
+  - {fileID: 8742299730694271858}
