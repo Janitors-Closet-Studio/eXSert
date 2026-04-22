@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: abec9550062b6804482e1abd63839bc3
+guid: 9f61b1b26db328f499e0e6413ce21249
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -38,7 +38,7 @@ ModelImporter:
       takeName: AC2
       internalID: 5282041389539160222
       firstFrame: 2
-      lastFrame: 32
+      lastFrame: 16
       wrapMode: 0
       orientationOffsetY: -13
       level: 0
@@ -58,29 +58,29 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0.31476322
-        functionName: GenerateHitbox
+      - time: 0.5473613
+        functionName: LeftFire
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.5703094
-        functionName: CancelWindowStart
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.1006192
+      - time: 0.54791516
         functionName: RightFire
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.29411763
-        functionName: LeftFire
+      - time: 0.5779078
+        functionName: GenerateHitbox
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.81419164
+        functionName: CancelWindowStart
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0

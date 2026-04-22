@@ -101,6 +101,60 @@ public sealed class PlayerVFXManager : MonoBehaviour
     [Tooltip("Dash dust root triggered by the DashDust animation event.")]
     private GameObject dashDustVfx;
 
+    [Header("Punch Dust VFX")]
+    [SerializeField]
+    [Tooltip("Left punch ring root triggered by the PunchDust_L animation event.")]
+    private GameObject leftPunchDustVfx;
+
+    [SerializeField]
+    [Tooltip("Right punch ring root triggered by the PunchDust_R animation event.")]
+    private GameObject rightPunchDustVfx;
+
+    [Header("Gauntlet Piledriver")]
+    [SerializeField]
+    [Tooltip("Piledriver transform on the player gauntlet that slides along local X.")]
+    private Transform gauntletPiledriver;
+
+    [SerializeField]
+    [Tooltip("Front spark VFX root triggered by the ExtendSpark_F animation event.")]
+    private GameObject piledriverExtendSparkFrontVfx;
+
+    [SerializeField]
+    [Tooltip("Back spark VFX root triggered by the ExtendSpark_B animation event.")]
+    private GameObject piledriverExtendSparkBackVfx;
+
+    [SerializeField]
+    [Tooltip("How long the front piledriver spark should stay active before stopping.")]
+    private float piledriverExtendSparkFrontDuration = 0.12f;
+
+    [SerializeField]
+    [Tooltip("How long the back piledriver spark should stay active before stopping.")]
+    private float piledriverExtendSparkBackDuration = 0.12f;
+
+    [SerializeField]
+    [Tooltip("Resting local X position for the piledriver.")]
+    private float piledriverRestingLocalX = 0.08f;
+
+    [SerializeField]
+    [Tooltip("Retracted local X position for the piledriver.")]
+    private float piledriverRetractedLocalX = 0.16f;
+
+    [SerializeField]
+    [Tooltip("Fully extended local X position for the piledriver.")]
+    private float piledriverFullExtensionLocalX = -0.11f;
+
+    [SerializeField]
+    [Tooltip("How long the piledriver takes to move to the retracted position.")]
+    private float piledriverRetractDuration = 0.05f;
+
+    [SerializeField]
+    [Tooltip("How long the piledriver takes to move to the fully extended position.")]
+    private float piledriverExtendDuration = 0.04f;
+
+    [SerializeField]
+    [Tooltip("How long the piledriver takes to return to the resting position after full extension.")]
+    private float piledriverReturnDuration = 0.08f;
+
     [Header("Exhaust Flame VFX")]
     [SerializeField]
     [Tooltip("Left-hand exhaust flame root triggered by the LExhaust animation event.")]
@@ -158,11 +212,20 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private Coroutine fireShockWaveDisableRoutine;
     private Coroutine leftExhaustRoutine;
     private Coroutine rightExhaustRoutine;
+    private Coroutine piledriverRoutine;
+    private Coroutine piledriverExtendSparkFrontRoutine;
+    private Coroutine piledriverExtendSparkBackRoutine;
     private bool airMoveCallbacksRegistered;
 
     private VisualEffect leftAttackEffect;
     private VisualEffect rightAttackEffect;
+    private VisualEffect[] piledriverExtendSparkFrontEffects = Array.Empty<VisualEffect>();
+    private VisualEffect[] piledriverExtendSparkBackEffects = Array.Empty<VisualEffect>();
     private ParticleSystem[] dashDustParticles = Array.Empty<ParticleSystem>();
+    private ParticleSystem[] leftPunchDustParticles = Array.Empty<ParticleSystem>();
+    private ParticleSystem[] rightPunchDustParticles = Array.Empty<ParticleSystem>();
+    private ParticleSystem[] piledriverExtendSparkFrontParticles = Array.Empty<ParticleSystem>();
+    private ParticleSystem[] piledriverExtendSparkBackParticles = Array.Empty<ParticleSystem>();
     private ParticleSystem[] leftExhaustParticles = Array.Empty<ParticleSystem>();
     private ParticleSystem[] rightExhaustParticles = Array.Empty<ParticleSystem>();
     private bool leftAttackActive;
@@ -185,8 +248,11 @@ public sealed class PlayerVFXManager : MonoBehaviour
         audioSource = SoundManager.Instance?.sfxSource;
 
         EnsureAttackVfxWired();
-    EnsureDashDustVfxWired();
+        EnsureDashDustVfxWired();
+        EnsurePunchDustVfxWired();
         EnsureExhaustVfxWired();
+        EnsurePiledriverVfxWired();
+        SetGauntletPiledriverLocalX(piledriverRestingLocalX);
 
         SetVfxActive(airMoveVfxObjects, false);
 
@@ -196,6 +262,20 @@ public sealed class PlayerVFXManager : MonoBehaviour
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
         StopAndClearParticleSystems(dashDustParticles);
+        StopAndClearParticleSystems(leftPunchDustParticles);
+        StopAndClearParticleSystems(rightPunchDustParticles);
+        StopAndClearParticleSystems(piledriverExtendSparkFrontParticles);
+        StopAndClearParticleSystems(piledriverExtendSparkBackParticles);
+        SetPiledriverSparkIdle(
+            piledriverExtendSparkFrontVfx,
+            piledriverExtendSparkFrontParticles,
+            piledriverExtendSparkFrontEffects
+        );
+        SetPiledriverSparkIdle(
+            piledriverExtendSparkBackVfx,
+            piledriverExtendSparkBackParticles,
+            piledriverExtendSparkBackEffects
+        );
         SetExhaustVfxIdle(leftExhaustVfx, leftExhaustParticles, hideRoot: true);
         SetExhaustVfxIdle(rightExhaustVfx, rightExhaustParticles, hideRoot: true);
         SetLeftLightsActive(false);
@@ -233,18 +313,36 @@ public sealed class PlayerVFXManager : MonoBehaviour
         StopAndClearRoutine(ref fireShockWaveDisableRoutine);
         StopAndClearRoutine(ref leftExhaustRoutine);
         StopAndClearRoutine(ref rightExhaustRoutine);
+        StopAndClearRoutine(ref piledriverRoutine);
+        StopAndClearRoutine(ref piledriverExtendSparkFrontRoutine);
+        StopAndClearRoutine(ref piledriverExtendSparkBackRoutine);
 
         leftAttackActive = false;
         rightAttackActive = false;
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
         StopAndClearParticleSystems(dashDustParticles);
+        StopAndClearParticleSystems(leftPunchDustParticles);
+        StopAndClearParticleSystems(rightPunchDustParticles);
+        StopAndClearParticleSystems(piledriverExtendSparkFrontParticles);
+        StopAndClearParticleSystems(piledriverExtendSparkBackParticles);
+        SetPiledriverSparkIdle(
+            piledriverExtendSparkFrontVfx,
+            piledriverExtendSparkFrontParticles,
+            piledriverExtendSparkFrontEffects
+        );
+        SetPiledriverSparkIdle(
+            piledriverExtendSparkBackVfx,
+            piledriverExtendSparkBackParticles,
+            piledriverExtendSparkBackEffects
+        );
         SetExhaustVfxIdle(leftExhaustVfx, leftExhaustParticles, hideRoot: true);
         SetExhaustVfxIdle(rightExhaustVfx, rightExhaustParticles, hideRoot: true);
         SetLeftLightsActive(false);
         SetRightLightsActive(false);
 
         SetVfxActive(airMoveVfxObjects, false);
+        SetGauntletPiledriverLocalX(piledriverRestingLocalX);
 
         if (fireShockWaveVfx != null)
             fireShockWaveVfx.SetActive(false);
@@ -299,6 +397,12 @@ public sealed class PlayerVFXManager : MonoBehaviour
         dashDustParticles = CollectParticleSystems(dashDustVfx);
     }
 
+    private void EnsurePunchDustVfxWired()
+    {
+        leftPunchDustParticles = CollectParticleSystems(leftPunchDustVfx);
+        rightPunchDustParticles = CollectParticleSystems(rightPunchDustVfx);
+    }
+
     private void EnsureExhaustVfxWired()
     {
         leftExhaustParticles = CollectParticleSystems(leftExhaustVfx);
@@ -306,6 +410,14 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         CacheOriginalExhaustEmissionRates(leftExhaustParticles);
         CacheOriginalExhaustEmissionRates(rightExhaustParticles);
+    }
+
+    private void EnsurePiledriverVfxWired()
+    {
+        piledriverExtendSparkFrontParticles = CollectParticleSystems(piledriverExtendSparkFrontVfx);
+        piledriverExtendSparkBackParticles = CollectParticleSystems(piledriverExtendSparkBackVfx);
+        piledriverExtendSparkFrontEffects = CollectVisualEffects(piledriverExtendSparkFrontVfx);
+        piledriverExtendSparkBackEffects = CollectVisualEffects(piledriverExtendSparkBackVfx);
     }
 
     private static Light[] CollectLights(GameObject root)
@@ -322,6 +434,14 @@ public sealed class PlayerVFXManager : MonoBehaviour
             return Array.Empty<ParticleSystem>();
 
         return root.GetComponentsInChildren<ParticleSystem>(true) ?? Array.Empty<ParticleSystem>();
+    }
+
+    private static VisualEffect[] CollectVisualEffects(GameObject root)
+    {
+        if (root == null)
+            return Array.Empty<VisualEffect>();
+
+        return root.GetComponentsInChildren<VisualEffect>(true) ?? Array.Empty<VisualEffect>();
     }
 
     private void CacheOriginalLightIntensities(Light[] lights)
@@ -383,6 +503,8 @@ public sealed class PlayerVFXManager : MonoBehaviour
         if (attack == null)
             return;
 
+        ResetPiledriverToRestingPosition();
+
         bool isAerial =
             attack.attackType == AttackType.LightAerial
             || attack.attackType == AttackType.HeavyAerial;
@@ -401,11 +523,25 @@ public sealed class PlayerVFXManager : MonoBehaviour
             PlayAudio(airMoveAudioClip);
     }
 
+    private void ResetPiledriverToRestingPosition()
+    {
+        StopAndClearRoutine(ref piledriverRoutine);
+        SetGauntletPiledriverLocalX(piledriverRestingLocalX);
+    }
+
     public void LeftFire() => TriggerLeftAttackVfx();
 
     public void RightFire() => TriggerRightAttackVfx();
 
     public void DashDust() => TriggerDashDustVfx();
+
+    public void PunchDust_L() => TriggerLeftPunchDustVfx();
+
+    public void PunchDust_R() => TriggerRightPunchDustVfx();
+
+    public void RetractPile() => TriggerPileRetract();
+
+    public void FullExtension() => TriggerPileFullExtension();
 
     public void LExhaust() => TriggerLeftExhaustVfx();
 
@@ -516,6 +652,250 @@ public sealed class PlayerVFXManager : MonoBehaviour
             dashDustParticles = CollectParticleSystems(dashDustVfx);
 
         PlayParticleSystemsOnce(dashDustVfx, dashDustParticles);
+    }
+
+    private void TriggerLeftPunchDustVfx()
+    {
+        if (leftPunchDustVfx == null)
+            return;
+
+        if (leftPunchDustParticles == null || leftPunchDustParticles.Length == 0)
+            leftPunchDustParticles = CollectParticleSystems(leftPunchDustVfx);
+
+        PlayParticleSystemsOnce(leftPunchDustVfx, leftPunchDustParticles);
+    }
+
+    private void TriggerRightPunchDustVfx()
+    {
+        if (rightPunchDustVfx == null)
+            return;
+
+        if (rightPunchDustParticles == null || rightPunchDustParticles.Length == 0)
+            rightPunchDustParticles = CollectParticleSystems(rightPunchDustVfx);
+
+        PlayParticleSystemsOnce(rightPunchDustVfx, rightPunchDustParticles);
+    }
+
+    private void TriggerPileRetract()
+    {
+        if (gauntletPiledriver == null)
+            return;
+
+        TriggerPiledriverExtendSparkBackVfx();
+
+        StopAndClearRoutine(ref piledriverRoutine);
+        piledriverRoutine = StartCoroutine(
+            MovePiledriverToLocalX(
+                piledriverRetractedLocalX,
+                piledriverRetractDuration,
+                () => piledriverRoutine = null
+            )
+        );
+    }
+
+    private void TriggerPileFullExtension()
+    {
+        if (gauntletPiledriver == null)
+            return;
+
+        TriggerPiledriverExtendSparkFrontVfx();
+
+        StopAndClearRoutine(ref piledriverRoutine);
+        piledriverRoutine = StartCoroutine(PiledriverFullExtensionRoutine());
+    }
+
+    private void TriggerPiledriverExtendSparkFrontVfx()
+    {
+        if (piledriverExtendSparkFrontVfx == null)
+            return;
+
+        if (piledriverExtendSparkFrontParticles == null || piledriverExtendSparkFrontParticles.Length == 0)
+            piledriverExtendSparkFrontParticles = CollectParticleSystems(piledriverExtendSparkFrontVfx);
+
+        if (piledriverExtendSparkFrontEffects == null || piledriverExtendSparkFrontEffects.Length == 0)
+            piledriverExtendSparkFrontEffects = CollectVisualEffects(piledriverExtendSparkFrontVfx);
+
+        RestartPiledriverSparkRoutine(
+            piledriverExtendSparkFrontVfx,
+            piledriverExtendSparkFrontParticles,
+            piledriverExtendSparkFrontEffects,
+            piledriverExtendSparkFrontDuration,
+            ref piledriverExtendSparkFrontRoutine,
+            () => piledriverExtendSparkFrontRoutine = null
+        );
+    }
+
+    private void TriggerPiledriverExtendSparkBackVfx()
+    {
+        if (piledriverExtendSparkBackVfx == null)
+            return;
+
+        if (piledriverExtendSparkBackParticles == null || piledriverExtendSparkBackParticles.Length == 0)
+            piledriverExtendSparkBackParticles = CollectParticleSystems(piledriverExtendSparkBackVfx);
+
+        if (piledriverExtendSparkBackEffects == null || piledriverExtendSparkBackEffects.Length == 0)
+            piledriverExtendSparkBackEffects = CollectVisualEffects(piledriverExtendSparkBackVfx);
+
+        RestartPiledriverSparkRoutine(
+            piledriverExtendSparkBackVfx,
+            piledriverExtendSparkBackParticles,
+            piledriverExtendSparkBackEffects,
+            piledriverExtendSparkBackDuration,
+            ref piledriverExtendSparkBackRoutine,
+            () => piledriverExtendSparkBackRoutine = null
+        );
+    }
+
+    private void RestartPiledriverSparkRoutine(
+        GameObject root,
+        ParticleSystem[] particleSystems,
+        VisualEffect[] visualEffects,
+        float duration,
+        ref Coroutine routine,
+        Action onComplete
+    )
+    {
+        bool hasParticles = particleSystems != null && particleSystems.Length > 0;
+        bool hasVisualEffects = visualEffects != null && visualEffects.Length > 0;
+
+        if (root == null || (!hasParticles && !hasVisualEffects))
+            return;
+
+        StopAndClearRoutine(ref routine);
+        SetPiledriverSparkActive(root, particleSystems, visualEffects);
+        routine = StartCoroutine(RunPiledriverSpark(root, particleSystems, visualEffects, duration, onComplete));
+    }
+
+    private IEnumerator RunPiledriverSpark(
+        GameObject root,
+        ParticleSystem[] particleSystems,
+        VisualEffect[] visualEffects,
+        float duration,
+        Action onComplete
+    )
+    {
+        float clampedDuration = Mathf.Max(0f, duration);
+        if (clampedDuration > 0f)
+            yield return new WaitForSeconds(clampedDuration);
+
+        SetPiledriverSparkIdle(root, particleSystems, visualEffects);
+        onComplete?.Invoke();
+    }
+
+    private void SetPiledriverSparkActive(GameObject root, ParticleSystem[] particleSystems, VisualEffect[] visualEffects)
+    {
+        if (root != null && !root.activeSelf)
+            root.SetActive(true);
+
+        if (particleSystems != null)
+        {
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                if (!particleSystem.gameObject.activeSelf)
+                    particleSystem.gameObject.SetActive(true);
+
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particleSystem.Clear(true);
+                particleSystem.Play(true);
+            }
+        }
+
+        if (visualEffects != null)
+        {
+            for (int i = 0; i < visualEffects.Length; i++)
+            {
+                VisualEffect visualEffect = visualEffects[i];
+                if (visualEffect == null)
+                    continue;
+
+                if (!visualEffect.gameObject.activeSelf)
+                    visualEffect.gameObject.SetActive(true);
+
+                visualEffect.Reinit();
+                visualEffect.Play();
+            }
+        }
+    }
+
+    private void SetPiledriverSparkIdle(GameObject root, ParticleSystem[] particleSystems, VisualEffect[] visualEffects)
+    {
+        StopAndClearParticleSystems(particleSystems);
+
+        if (visualEffects != null)
+        {
+            for (int i = 0; i < visualEffects.Length; i++)
+            {
+                VisualEffect visualEffect = visualEffects[i];
+                if (visualEffect == null)
+                    continue;
+
+                visualEffect.Stop();
+                visualEffect.Reinit();
+            }
+        }
+
+        if (root != null && root.activeSelf)
+            root.SetActive(false);
+    }
+
+    private IEnumerator PiledriverFullExtensionRoutine()
+    {
+        yield return MovePiledriverToLocalX(piledriverFullExtensionLocalX, piledriverExtendDuration);
+        yield return MovePiledriverToLocalX(piledriverRestingLocalX, piledriverReturnDuration);
+        piledriverRoutine = null;
+    }
+
+    private IEnumerator MovePiledriverToLocalX(float targetLocalX, float duration, Action onComplete = null)
+    {
+        if (gauntletPiledriver == null)
+        {
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        Vector3 startLocalPosition = gauntletPiledriver.localPosition;
+        Vector3 targetLocalPosition = new Vector3(
+            targetLocalX,
+            startLocalPosition.y,
+            startLocalPosition.z
+        );
+
+        float clampedDuration = Mathf.Max(0f, duration);
+        if (clampedDuration <= 0f)
+        {
+            gauntletPiledriver.localPosition = targetLocalPosition;
+            onComplete?.Invoke();
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < clampedDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / clampedDuration);
+            gauntletPiledriver.localPosition = Vector3.Lerp(
+                startLocalPosition,
+                targetLocalPosition,
+                t
+            );
+            yield return null;
+        }
+
+        gauntletPiledriver.localPosition = targetLocalPosition;
+        onComplete?.Invoke();
+    }
+
+    private void SetGauntletPiledriverLocalX(float localX)
+    {
+        if (gauntletPiledriver == null)
+            return;
+
+        Vector3 localPosition = gauntletPiledriver.localPosition;
+        gauntletPiledriver.localPosition = new Vector3(localX, localPosition.y, localPosition.z);
     }
 
     private void TriggerLeftExhaustVfx()
