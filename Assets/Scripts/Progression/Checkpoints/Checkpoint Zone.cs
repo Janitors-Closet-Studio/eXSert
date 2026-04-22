@@ -288,6 +288,7 @@ namespace Progression.Checkpoints
                 return; // Already the current checkpoint, no need to update
 
             currentCheckpoint = this;
+            ActsManager.Instance.foundCheckpointZones.Add(this.gameObject);
 
             Debug.Log($"Checkpoint triggered: {this}");
 

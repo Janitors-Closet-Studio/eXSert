@@ -3,6 +3,7 @@ using UnityEngine;
 using Singletons;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 
 public class ActsManager : Singleton<ActsManager>
@@ -11,6 +12,10 @@ public class ActsManager : Singleton<ActsManager>
 
     // Per-profile act completion: profileId -> (actNumber -> completed)
     private Dictionary<string, Dictionary<int, bool>> profileActCompletionMap = new Dictionary<string, Dictionary<int, bool>>();
+    public List<GameObject> mapLocationImages;
+
+    public List<GameObject> foundCheckpointZones; 
+
     private PauseManager pauseManager;
 
     private void Start()
@@ -20,12 +25,41 @@ public class ActsManager : Singleton<ActsManager>
         {
             pauseManager = PauseManager.Instance;
         }
+
+        mapLocationImages[0].SetActive(true);
+
     }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        foreach (var img in mapLocationImages)
+        {
+            img.SetActive(false);
+        }
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+    }
+
+    internal Dictionary<int, string> sceneNames = new Dictionary<int, string>()
+    {
+        { 0, "Elevator" },
+        { 1, "CargoBay" },
+        { 2, "CrewQuarters" },
+        { 3, "Hangar" },
+        { 4, "ChargingStation" },
+        { 5, "Conservatory" },
+        { 6, "EngineCore" }
+    };
+
     internal Dictionary<int, string> actSceneMap = new Dictionary<int, string>()
     {
         { 0, "Elevator" },
         { 1, "Hangar" },
-        { 2, "Roomba" },
+        { 2, "ChargingStation" },
         { 3, "Conservatory" },
         { 4, "EngineCore" }
     };
@@ -38,7 +72,6 @@ public class ActsManager : Singleton<ActsManager>
         { 3, "ACT 2.2: CONSERVATORY" },
         { 4, "ACT 3.1: FINAL ENCOUNTER" }
     };
-
     protected override void Awake()
     {
         base.Awake();
@@ -49,6 +82,25 @@ public class ActsManager : Singleton<ActsManager>
         }
         // For editor preview, update using default profile
         UpdateActButtonsForProfile("default");
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        string sceneName = scene.name;
+        Debug.Log($"[ActsManager] Scene loaded: {sceneName}");
+        
+        if (sceneNames.ContainsValue(sceneName))
+        {
+            // Find map location image for this scene and activate it
+            foreach (var kvp in sceneNames)
+            {
+                if (kvp.Value == sceneName)
+                {
+                    mapLocationImages[kvp.Key].SetActive(true);
+                    break;
+                }
+            }
+        }
     }
 
     // Returns a new default act completion map (Act 0 unlocked, rest locked)
@@ -63,6 +115,7 @@ public class ActsManager : Singleton<ActsManager>
             { 4, false }
         };
     }
+
 
     // Get the farthest unlocked act name for a profile
     public string GetFarthestUnlockedActName(string profileId)
@@ -101,6 +154,8 @@ public class ActsManager : Singleton<ActsManager>
             Debug.LogWarning($"[ActsManager] Attempted to mark invalid act number {actNumber} as completed for profile '{profileId}'.");
         }
     }
+
+    
 
     // Update the UI buttons for the given profile
     public void UpdateActButtonsForProfile(string profileId)
