@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_DashDust 1
+  m_Name: M_PunchDust
   m_Shader: {fileID: -6465566751694194690, guid: 85691c6317355b04e92d281a3bb40e45, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -42,17 +42,23 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Direction: 0.1
-    - _DissolveScale: 35
+    - _Direction: 1.22
+    - _DissolveScale: 50.25
+    - _Gap: 0
+    - _Invisible: 7.4
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _Thickness: 0.43
+    - _SliceCount: -0.1
+    - _Softness: 0.96
+    - _Thickness: 0.49
+    - _Visible: 0.1
     m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Color01: {r: 1, g: 1, b: 1, a: 1}
     - _Color02: {r: 1, g: 1, b: 1, a: 1}
     - _DissolveSpeed: {r: -0.5, g: 0, b: 0, a: 0}
     - _MainTexSpeed: {r: -0.1, g: 0, b: 0, a: 0}
-    - _Spike_Stretch: {r: 2.16, g: 0.1, b: 0, a: 0}
+    - _Spike_Stretch: {r: 10.79, g: 0.1, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &2784348133631128763
