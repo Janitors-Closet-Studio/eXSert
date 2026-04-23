@@ -23,6 +23,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [Space(10)]
     [Header("Interaction Animation and ID")]
     [SerializeField] private AnimationClip _interactAnimation;
+    [SerializeField, Min(0f)] private float _interactBusyFallbackDuration = 0.6f;
     [SerializeField] private string _interactId;
     [SerializeField] internal AudioClip _interactionSFX;
     [SerializeField] private string _interactionPrompt = "Press to Interact";
@@ -38,6 +39,9 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [SerializeField] private float _rumbleDuration = 0.5f;
 
     private PlayerCombatIdleController _combatIdleController;
+    private PlayerAnimationController _playerAnimationController;
+    private Coroutine _interactionBusyRoutine;
+    private bool _interactionBusyOwned;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
     {
@@ -71,6 +75,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     {
         if (_interactInputAction != null)
             _interactInputAction.action.performed -= OnInteract;
+
+        if (_interactionBusyRoutine != null)
+        {
+            StopCoroutine(_interactionBusyRoutine);
+            _interactionBusyRoutine = null;
+        }
+
+        if (_interactionBusyOwned)
+        {
+            InputReader.inputBusy = false;
+            _interactionBusyOwned = false;
+        }
 
         InteractionUI interactionUI = GetInteractionUIIfAvailable();
         if (isPlayerNearby && interactionUI != null)
@@ -114,6 +130,67 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         if (_combatIdleController == null)
             _combatIdleController = FindFirstObjectByType<PlayerCombatIdleController>();
+    }
+
+    private void CachePlayerAnimationController()
+    {
+        if (_playerAnimationController != null && _playerAnimationController.isActiveAndEnabled)
+            return;
+
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            _playerAnimationController = player.GetComponent<PlayerAnimationController>()
+                ?? player.GetComponentInChildren<PlayerAnimationController>(true)
+                ?? player.GetComponentInParent<PlayerAnimationController>();
+        }
+
+        if (_playerAnimationController == null)
+            _playerAnimationController = FindFirstObjectByType<PlayerAnimationController>();
+    }
+
+    protected void PlayPlayerInteractAnimation()
+    {
+        CachePlayerAnimationController();
+        _playerAnimationController?.PlayInteract();
+        BeginInteractionBusyWindow();
+    }
+
+    private void BeginInteractionBusyWindow()
+    {
+        if (_interactionBusyRoutine != null)
+            StopCoroutine(_interactionBusyRoutine);
+
+        _interactionBusyRoutine = StartCoroutine(InteractionBusyWindowCoroutine());
+    }
+
+    private IEnumerator InteractionBusyWindowCoroutine()
+    {
+        bool alreadyBusy = InputReader.inputBusy;
+        if (!alreadyBusy)
+        {
+            InputReader.inputBusy = true;
+            _interactionBusyOwned = true;
+        }
+        else
+        {
+            _interactionBusyOwned = false;
+        }
+
+        float duration = _interactAnimation != null
+            ? Mathf.Max(0f, _interactAnimation.length)
+            : Mathf.Max(0f, _interactBusyFallbackDuration);
+
+        if (duration > 0f)
+            yield return new WaitForSecondsRealtime(duration);
+
+        if (_interactionBusyOwned)
+        {
+            InputReader.inputBusy = false;
+            _interactionBusyOwned = false;
+        }
+
+        _interactionBusyRoutine = null;
     }
 
     public void DeactivateInteractable(MonoBehaviour interactable)
@@ -209,7 +286,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         RumbleManager.Instance.RumblePulse(_rumbleLowFrequency, _rumbleHighFrequency, _rumbleDuration);
 
         Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
-        Interact();
+        if (Interact())
+            PlayPlayerInteractAnimation();
     }
 
     private bool IsPlayerBusyForInteraction()
@@ -230,7 +308,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         return attackManager != null && attackManager.IsAttackInProgress;
     }
 
-    protected abstract void Interact();
+    protected abstract bool Interact();
     public void SwapBasedOnInputMethod()
     {
         InteractionUI interactionUI = GetInteractionUIIfAvailable();

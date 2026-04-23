@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 using Utilities.Combat;
-using UnityEngine.VFX;
 using Managers.TimeLord;
 
 #if UNITY_EDITOR
@@ -12,8 +11,9 @@ public class Parry : MonoBehaviour
 {
     [Header("Parry Effects")]
     [SerializeField] private AudioClip parrySoundEffect;
-    [SerializeField] private VisualEffectAsset parryEffect;
+    [SerializeField] private GameObject parryEffectPrefab;
     [SerializeField, Range(.5f, 2f)] private float parryEffectDuration = 1f;
+    [SerializeField] private Transform parryEffectSpawnPoint;
 
     [Space(10)]
     [Header("Time Pause Settings")]
@@ -67,14 +67,15 @@ public class Parry : MonoBehaviour
         if (parrySoundEffect != null)
             AudioSource.PlayClipAtPoint(parrySoundEffect, transform.position);
 
-        if (parryEffect != null)
-        {
-            GameObject vfxInstance = new GameObject("ParryEffect");
-            vfxInstance.transform.position = transform.position;
+        Transform spawnPoint = parryEffectSpawnPoint != null ? parryEffectSpawnPoint : transform;
 
-            VisualEffect visualEffect = vfxInstance.AddComponent<VisualEffect>();
-            visualEffect.visualEffectAsset = parryEffect;
-            visualEffect.Play();
+        if (parryEffectPrefab != null)
+        {
+            GameObject vfxInstance = Instantiate(
+                parryEffectPrefab,
+                spawnPoint.position,
+                spawnPoint.rotation
+            );
             DestroyVFX(vfxInstance, parryEffectDuration);
         }
 

@@ -26,7 +26,7 @@ public class HintInteractions : InteractionManager
     [Tooltip("Insert the ID of the item needed to unlock this hint; leave empty if none is needed")]
     [SerializeField] private string requiredItemID = "";
 
-    protected override void Interact()
+    protected override bool Interact()
         
     {
         Debug.Log($"[HintInteractions] Interact called on {gameObject.name}");
@@ -38,7 +38,7 @@ public class HintInteractions : InteractionManager
         {
             Debug.Log("[HintInteractions] Player does not have the required item. Interaction blocked.");
             // Optionally play error SFX or show a message here
-            return;
+            return false;
         }
 
         if (hint != null)
@@ -59,6 +59,8 @@ public class HintInteractions : InteractionManager
                 }
             }
         }
+
+        return hint != null;
     }
 
 }

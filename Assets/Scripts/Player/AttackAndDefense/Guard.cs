@@ -39,6 +39,13 @@ public class Guard : MonoBehaviour
     [Header("Guard SFX")]
     [SerializeField] private AudioClip guardUpSFX;
 
+    [Header("Guard Hit VFX")]
+    [SerializeField] private GameObject guardHitVfxPrefab;
+    [SerializeField] private Transform guardHitVfxSpawnPoint;
+    [SerializeField, Range(0f, 1.5f)] private float guardHitVfxRightOffsetRange = 0.2f;
+    [SerializeField, Range(0f, 1.5f)] private float guardHitVfxUpOffsetRange = 0.2f;
+    [SerializeField, Range(0.1f, 5f)] private float guardHitVfxLifetime = 1f;
+
     private CameraManager cameraManager;
     private bool guardActive;
     private bool guardDashActive;
@@ -70,6 +77,7 @@ public class Guard : MonoBehaviour
     private void OnEnable()
     {
         cameraManager = cameraOverride != null ? cameraOverride : CameraManager.Instance;
+        PlayerHealthBarManager.OnPlayerDamaged += HandlePlayerDamagedWhileGuarding;
     }
 
     private void Update()
@@ -105,8 +113,18 @@ public class Guard : MonoBehaviour
 
     private void OnDisable()
     {
+        PlayerHealthBarManager.OnPlayerDamaged -= HandlePlayerDamagedWhileGuarding;
+
         if (guardActive)
             ExitGuard();
+    }
+
+    private void HandlePlayerDamagedWhileGuarding(float damage)
+    {
+        if (!guardActive || damage <= 0f)
+            return;
+
+        SpawnGuardHitVfx();
     }
 
     private void EnterGuard()
@@ -285,6 +303,35 @@ public class Guard : MonoBehaviour
         bool hadLock = attackLockSystem.IsHardLockActive;
         attackLockSystem.EnsureHardLock(instant);
         return !hadLock;
+    }
+
+    private void SpawnGuardHitVfx()
+    {
+        if (guardHitVfxPrefab == null)
+            return;
+
+        Transform spawnPoint = guardHitVfxSpawnPoint != null ? guardHitVfxSpawnPoint : GuardRoot;
+        Vector3 spawnPosition = GetRandomizedGuardHitVfxPosition(spawnPoint);
+        Quaternion spawnRotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
+
+        GameObject instance = Instantiate(guardHitVfxPrefab, spawnPosition, spawnRotation);
+        Destroy(instance, guardHitVfxLifetime);
+    }
+
+    private Vector3 GetRandomizedGuardHitVfxPosition(Transform spawnPoint)
+    {
+        Vector3 basePosition = spawnPoint != null ? spawnPoint.position : GuardRoot.position;
+        Vector3 rightAxis = Vector3.ProjectOnPlane(GuardRoot.right, Vector3.up);
+        Vector3 upAxis = Vector3.up;
+
+        if (rightAxis.sqrMagnitude < 0.0001f)
+            rightAxis = GuardRoot.right;
+
+        rightAxis.Normalize();
+
+        float rightOffset = Random.Range(-guardHitVfxRightOffsetRange, guardHitVfxRightOffsetRange);
+        float upOffset = Random.Range(-guardHitVfxUpOffsetRange, guardHitVfxUpOffsetRange);
+        return basePosition + rightAxis * rightOffset + upAxis * upOffset;
     }
 
     private void AlignGuardRotation(Vector2 moveInput)

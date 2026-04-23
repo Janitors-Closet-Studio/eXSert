@@ -202,7 +202,11 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayWalkStrafeRight(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkStrafeRight, -1f, forceRestart);
     public void PlayJog(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Jog, -1f, forceRestart);
     public void PlaySprint(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Sprint, -1f, forceRestart);
-    public void PlayDash(float transition = 0.08f) => CrossFade(PlayerAnim.Locomotion.Dash, transition, true);
+    public void PlayDash(float transition = 0.08f)
+    {
+        StartHardLock(PlayerAnim.Locomotion.Dash);
+        CrossFade(PlayerAnim.Locomotion.Dash, transition, true);
+    }
 
     public void PlayLocomotion(float moveAmount01)
     {
@@ -292,7 +296,23 @@ public class PlayerAnimationController : MonoBehaviour
 
     public void PlayPlunge() => CrossFade(PlayerAnim.Specials.Plunge, 0.04f, true);
 
-    public void PlayInteract() => CrossFade(PlayerAnim.Specials.Interact, 0.04f, true);
+    public void PlayInteract()
+    {
+        if (animator == null)
+            return;
+
+        StartHardLock(PlayerAnim.Specials.Interact);
+
+        if (!StateExists(PlayerAnim.Specials.Interact))
+        {
+            Debug.LogWarning($"[PlayerAnimationController] State '{PlayerAnim.Specials.Interact}' not found on Animator layer {layerIndex}.", this);
+            ClearHardLock();
+            return;
+        }
+
+        animator.Play(PlayerAnim.Specials.Interact, layerIndex, 0f);
+        currentState = PlayerAnim.Specials.Interact;
+    }
 
     public void PlayComboChain(int step)
     {
@@ -323,7 +343,10 @@ public class PlayerAnimationController : MonoBehaviour
             }
             else if (stateName != hardLockedState)
             {
-                return;
+                if (CanOverrideHardLock(stateName))
+                    ClearHardLock();
+                else
+                    return;
             }
         }
 
@@ -339,6 +362,25 @@ public class PlayerAnimationController : MonoBehaviour
         float crossFade = transition >= 0f ? transition : defaultTransition;
         animator.CrossFadeInFixedTime(stateName, crossFade, layerIndex, 0f);
         currentState = stateName;
+    }
+
+    private bool CanOverrideHardLock(string requestedState)
+    {
+        if (string.IsNullOrEmpty(hardLockedState))
+            return true;
+
+        if (hardLockedState == PlayerAnim.Specials.Interact
+            || hardLockedState == PlayerAnim.Locomotion.Dash)
+        {
+            return requestedState != PlayerAnim.SingleTarget.Breathing
+            && requestedState != PlayerAnim.SingleTarget.IdleWorld
+            && requestedState != PlayerAnim.SingleTarget.IdleCombat
+            && requestedState != PlayerAnim.AreaOfEffect.Breathing
+            && requestedState != PlayerAnim.AreaOfEffect.IdleWorld
+            && requestedState != PlayerAnim.AreaOfEffect.IdleCombat;
+        }
+
+        return false;
     }
 
     private void CrossFadeOrReplayIfFinished(string stateName, float transition = -1f)
