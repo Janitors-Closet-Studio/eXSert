@@ -310,8 +310,14 @@ public class ActsManager : Singleton<ActsManager>
         if (InputReader.PlayerInput != null)
             InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
 
-        SceneLoader.LoadIntoGame(sceneAsset);
+        StartCoroutine(SoundManager.Instance.FadeOutGameplayAudio(1f)); // Fade out music over 1 second
+
+        Player.TriggerRespawn();
+        SceneLoader.Load(sceneAsset, forceReload: false);
         PauseManager.Instance.ResumeGame();
+
+        InteractionUI.Instance.ForceStopNoticeCoroutines();
+
         actsHolder.SetActive(false);
 
         MenuListManager menuListManager = GetComponent<MenuListManager>();
@@ -321,9 +327,10 @@ public class ActsManager : Singleton<ActsManager>
             menuListManager.ClearMenuList();
         }
 
-        Player.TriggerRespawn();
+        
         ActivateAllImagesBefore();
     }
+
 
     private IEnumerator LoadSceneAndRespawnCoroutine(SceneAsset sceneName)
     {
