@@ -146,22 +146,25 @@ public class DoorInteractions : UnlockableInteraction
         base.SetInteractionEnabled(isEnabled);
     }
 
-    protected override void Interact()
+    protected override bool Interact()
     {
 
-        base.Interact();  
+        bool didInteract = base.Interact();
+        if (!didInteract)
+            return false;
+
         // Only allow interaction if player has the required item or can otherwise execute
         if (!canExecuteInteraction)
         {
             // Optionally, play error SFX or show locked prompt here if needed
-            return;
+            return false;
         }
 
         // Block repeat execution at the interaction entrypoint so base class events do not fire again.
         if (onlyInteractableOnce && hasInteracted)
         {
             SetInteractionEnabled(false);
-            return;
+            return false;
         }
 
         
@@ -177,6 +180,8 @@ public class DoorInteractions : UnlockableInteraction
             hasInteracted = true;
             SetInteractionEnabled(false);
         }
+
+        return true;
     }
 
     protected override bool IsUnlockedWithoutRequiredItem()

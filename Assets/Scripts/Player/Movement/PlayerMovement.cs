@@ -66,6 +66,7 @@ public class PlayerMovement : MonoBehaviour
     public event Action DoubleJumpPerformed;
     public event Action DashPerformed;
     public event Action AirDashPerformed;
+        public event Action Landed;
     public bool HasPerformedDoubleJumpSinceGrounded { get; private set; }
     public bool IsPlunging => isPlunging;
 
@@ -2956,6 +2957,7 @@ public class PlayerMovement : MonoBehaviour
             else
             {
                 animationController?.PlayLand();
+                Landed?.Invoke();
             }
             ResetMoveState();
             doubleJumpAvailable = canDoubleJump;

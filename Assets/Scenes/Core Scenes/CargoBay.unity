@@ -13574,6 +13574,10 @@ PrefabInstance:
       value: CrewQuarterDoor
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: displayName
+      value: Door Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _rumbleDuration
       value: 0.1
       objectReference: {fileID: 0}
@@ -26381,6 +26385,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 1529443241}
     m_Modifications:
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: _interactId
+      value: CrewQuarterDoor
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: _showHitbox
       value: 0
       objectReference: {fileID: 0}
@@ -26394,7 +26402,7 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: requiredItemID
-      value: 
+      value: CrewQuarterDoor
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: _interactionPrompt
@@ -26407,6 +26415,10 @@ PrefabInstance:
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: doorHandlers.Array.size
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Door Keycard
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: 'doorHandlers.Array.data[0]'
@@ -31105,7 +31117,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: displayName
-      value: Second Computer Key
+      value: Crane Computer Key
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _rumbleDuration
@@ -33161,7 +33173,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: displayName
-      value: First Computer Key
+      value: Crane Computer Key
       objectReference: {fileID: 0}
     - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: m_LocalPosition.x
@@ -48332,6 +48344,7 @@ MonoBehaviour:
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: 
@@ -48356,6 +48369,7 @@ MonoBehaviour:
   cameraTransitionDurationSeconds: 3
   specialTransitionFailsafeSeconds: 7
   specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
   specialTransitionFadeDurationSeconds: 0.35
   specialTransitionRevealDurationSeconds: 0.5
   specialTransitionBlackHoldSeconds: 0.08
