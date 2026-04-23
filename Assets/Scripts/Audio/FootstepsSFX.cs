@@ -4,6 +4,7 @@ public class FootstepsSFX : MonoBehaviour
 {
     private AudioSource audioSource;
     [SerializeField] private AudioClip[] walkClip;
+    [SerializeField] private AudioClip[] walkDirtClip;
 
     private void Start()
     {
@@ -31,7 +32,29 @@ public class FootstepsSFX : MonoBehaviour
         if (!TryResolveAudioSource())
             return;
 
-        int randomIndex = Random.Range(0, walkClip.Length);
-        audioSource.PlayOneShot(walkClip[randomIndex]);
+        if (PlayDirtFootstepIfOnDirt())
+        {
+            AudioClip clip = walkDirtClip[Random.Range(0, walkDirtClip.Length)];
+            audioSource.PlayOneShot(clip);
+        }
+        else
+        {
+            AudioClip clip = walkClip[Random.Range(0, walkClip.Length)];
+            audioSource.PlayOneShot(clip);
+        }
     }
+
+    private bool PlayDirtFootstepIfOnDirt()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, 1f))
+        {
+            if (hit.collider.CompareTag("Dirt"))
+                return true;
+            else
+                return false;
+        }
+        return false;
+    }
+
 }

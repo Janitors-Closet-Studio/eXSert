@@ -14,6 +14,9 @@ public class ResetDeviceBindings : MonoBehaviour
     [SerializeField] private InputActionAsset _inputActions;
     [SerializeField] private InputActionReference _resetBindingsActionReference;
 
+    [SerializeField] private GameObject _keyboardAndMousePanel;
+    [SerializeField] private GameObject _gamepadPanel;
+
     //Assign this string in the editor to the control scheme name you wish to reset
     private string _targetControlScheme;
 
@@ -39,6 +42,7 @@ public class ResetDeviceBindings : MonoBehaviour
         }
         controlsAreOpen = false;
     }
+    
 
 
     [ContextMenu("Reset All Bindings (Inspector)")]

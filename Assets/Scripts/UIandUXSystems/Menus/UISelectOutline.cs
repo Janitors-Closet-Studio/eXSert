@@ -38,6 +38,10 @@ public class UISelectOutline : MonoBehaviour,
 
     private void SetVisualState(bool selected)
     {
+        Selectable selectable = GetComponent<Selectable>();
+        if (selectable != null && !selectable.IsInteractable())
+            return;
+            
         // Toggle outline
         if (focusOutline)
             focusOutline.SetActive(selected);

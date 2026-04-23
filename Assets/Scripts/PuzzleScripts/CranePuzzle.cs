@@ -289,7 +289,7 @@ public class CranePuzzle : PuzzlePart
         return null;
     }
 
-    protected void HandleGameplayMap(bool enable)
+    private void HandleGameplayMap(bool enable)
     {
         if (InputReader.PlayerInput == null)
             return;
@@ -530,14 +530,6 @@ public class CranePuzzle : PuzzlePart
         ReleasePuzzleControl(stopRunningCoroutines: true, clearAutomationState: true);
         HandleGameplayMap(true); // Re-enable gameplay map after puzzle
         RumbleManager.Instance.StopControllerRumble(); // Stop any ongoing rumble when puzzle ends
-        isCompleted = false;
-    }
-
-    protected void CompletePuzzleExitWithoutStoppingCoroutines()
-    {
-        ReleasePuzzleControl(stopRunningCoroutines: false, clearAutomationState: true);
-        HandleGameplayMap(true);
-        RumbleManager.Instance.StopControllerRumble();
         isCompleted = false;
     }
 
