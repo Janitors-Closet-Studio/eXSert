@@ -49839,6 +49839,10 @@ PrefabInstance:
       value: cq.bluekeycard
       objectReference: {fileID: 0}
     - target: {fileID: 5036990525669058420, guid: 408feccde03244d4aa628920bb0770f4, type: 3}
+      propertyPath: displayName
+      value: Blue Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 5036990525669058420, guid: 408feccde03244d4aa628920bb0770f4, type: 3}
       propertyPath: puzzleCinemachineCamera
       value: 
       objectReference: {fileID: 875919502}
@@ -79393,6 +79397,7 @@ MonoBehaviour:
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
@@ -79401,7 +79406,7 @@ MonoBehaviour:
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
   requiredItemID: cq.greenkeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -203681,6 +203686,7 @@ MonoBehaviour:
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
@@ -203689,7 +203695,7 @@ MonoBehaviour:
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
   requiredItemID: cq.redkeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Red Keycard
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -210206,6 +210212,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Green Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.659
@@ -252418,6 +252428,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Blue Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6630219465920783818, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -287613,6 +287627,10 @@ PrefabInstance:
       value: cq.redkeycard
       objectReference: {fileID: 0}
     - target: {fileID: 1110335751090762034, guid: 3e4a7347c8242af438016dc7b9a97c0a, type: 3}
+      propertyPath: displayName
+      value: Red Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 1110335751090762034, guid: 3e4a7347c8242af438016dc7b9a97c0a, type: 3}
       propertyPath: puzzleCinemachineCamera
       value: 
       objectReference: {fileID: 0}
@@ -297473,6 +297491,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 72932965}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Red Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: 14.531357
@@ -317262,6 +317284,10 @@ PrefabInstance:
       value: cq.orangekeycard
       objectReference: {fileID: 0}
     - target: {fileID: 2990226564898442599, guid: e55b00d1958aeb3459dbcae45105adbc, type: 3}
+      propertyPath: displayName
+      value: Orange Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 2990226564898442599, guid: e55b00d1958aeb3459dbcae45105adbc, type: 3}
       propertyPath: puzzleCinemachineCamera
       value: 
       objectReference: {fileID: 0}
@@ -317577,6 +317603,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 72932965}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Orange Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: 21.643
@@ -320888,6 +320918,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 72932965}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Orange Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: -8.561
@@ -322818,6 +322852,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 72932965}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Orange Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 788580226970741485, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalRotation.w
       value: -0.7086553
@@ -334466,52 +334504,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 6288e0fdc7059a743816927723b48f54, type: 3}
   m_PrefabInstance: {fileID: 1749494860}
   m_PrefabAsset: {fileID: 0}
---- !u!28 &1751359793
-Texture2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Lightning2_PositionMap
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 4
-  m_Width: 4
-  m_Height: 1
-  m_CompleteImageSize: 64
-  m_MipsStripped: 0
-  m_TextureFormat: 20
-  m_MipCount: 1
-  m_IsReadable: 1
-  m_IsPreProcessed: 0
-  m_IgnoreMipmapLimit: 1
-  m_MipmapLimitGroupName: 
-  m_StreamingMipmaps: 0
-  m_StreamingMipmapsPriority: 0
-  m_VTOnly: 0
-  m_AlphaIsTransparency: 0
-  m_ImageCount: 1
-  m_TextureDimension: 2
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 0
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_LightmapFormat: 0
-  m_ColorSpace: 1
-  m_PlatformBlob: 
-  image data: 64
-  _typelessdata: 2ec9653e72c5863ffd6a35bd0000803f8ad7523e856cc73f613199be0000803fb31c1abfe43dd13f7e468bbd0000803f1faec7be6486a03fe3eb5ebc0000803f
-  m_StreamData:
-    serializedVersion: 2
-    offset: 0
-    size: 0
-    path: 
 --- !u!1001 &1751385936
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -350081,6 +350073,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 72932965}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Red Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: -27.810644
@@ -365711,52 +365707,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.031391628, y: 0.018271342, z: 0.032519944}
   m_Center: {x: -0.0000000074505473, y: -0.0000000038557273, z: -0.032344185}
---- !u!28 &1933193757
-Texture2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Lightning_PositionMap
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_IsAlphaChannelOptional: 0
-  serializedVersion: 4
-  m_Width: 3
-  m_Height: 1
-  m_CompleteImageSize: 48
-  m_MipsStripped: 0
-  m_TextureFormat: 20
-  m_MipCount: 1
-  m_IsReadable: 1
-  m_IsPreProcessed: 0
-  m_IgnoreMipmapLimit: 1
-  m_MipmapLimitGroupName: 
-  m_StreamingMipmaps: 0
-  m_StreamingMipmapsPriority: 0
-  m_VTOnly: 0
-  m_AlphaIsTransparency: 0
-  m_ImageCount: 1
-  m_TextureDimension: 2
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 0
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_LightmapFormat: 0
-  m_ColorSpace: 1
-  m_PlatformBlob: 
-  image data: 48
-  _typelessdata: b39d6f3e255ab43f7885eb3d0000803fdc471dbc4492ab3f6277cd3e0000803fe1ceb7be95edac3f607b943e0000803f
-  m_StreamData:
-    serializedVersion: 2
-    offset: 0
-    size: 0
-    path: 
 --- !u!1 &1933485852
 GameObject:
   m_ObjectHideFlags: 0
@@ -374159,6 +374109,7 @@ MonoBehaviour:
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
@@ -374167,7 +374118,7 @@ MonoBehaviour:
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
   requiredItemID: cq.orangekeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Orange Keycard
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -395585,6 +395536,7 @@ MonoBehaviour:
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
@@ -395593,7 +395545,7 @@ MonoBehaviour:
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
   requiredItemID: cq.bluekeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Blue Keycard
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -401127,6 +401079,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Green Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: -46.9996
@@ -413074,6 +413030,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 72932965}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Orange Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 788580226970741485, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalRotation.w
       value: 1
@@ -415065,6 +415025,10 @@ PrefabInstance:
       propertyPath: _interactInputAction
       value: 
       objectReference: {fileID: 72932965}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Red Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 6752007114636858674, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: m_LocalPosition.x
       value: -6.5934863

@@ -18,6 +18,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
     [SerializeField]
     private PlayerMovement playerMovement;
     private AudioSource audioSource;
+    private CharacterController characterController;
 
     [Header("Attack VFX")]
     [SerializeField]
@@ -29,8 +30,20 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private GameObject rightAttackVfx;
 
     [SerializeField]
+    [Tooltip("Rig-mounted idle fire VFX (enabled by IdleFire animation event).")]
+    private GameObject idleFireVfx;
+
+    [SerializeField]
     [Tooltip("Duration before attack VFX are disabled again.")]
     private float attackDuration = 1f;
+
+    [SerializeField]
+    [Tooltip("Duration before the idle fire event disables the right-hand fire again.")]
+    private float idleFireDuration = 0.35f;
+
+    [SerializeField]
+    [Tooltip("Extra time to wait after setting idle fire EmberRate to 0 before disabling the GameObject.")]
+    private float idleFireShutdownDelay = 1f;
 
     [SerializeField]
     [Tooltip("Audio clip played when attack VFX enable.")]
@@ -100,6 +113,31 @@ public sealed class PlayerVFXManager : MonoBehaviour
     [SerializeField]
     [Tooltip("Dash dust root triggered by the DashDust animation event.")]
     private GameObject dashDustVfx;
+
+    [Header("Landing Dust VFX")]
+    [SerializeField]
+    [Tooltip("Smoke/dust root triggered when the player lands after being airborne. Falls back to Dash Dust when unassigned.")]
+    private GameObject landingDustVfx;
+
+    [SerializeField]
+    [Tooltip("Audio clip played when landing dust VFX enable. Falls back to air-move audio when unassigned.")]
+    private AudioClip landingDustAudioClip;
+
+    [SerializeField]
+    [Tooltip("Layers considered valid ground when snapping landing dust to the floor.")]
+    private LayerMask landingDustGroundLayers = Physics.DefaultRaycastLayers;
+
+    [SerializeField]
+    [Tooltip("How high above the player base the landing dust ground probe starts.")]
+    private float landingDustProbeStartHeight = 1f;
+
+    [SerializeField]
+    [Tooltip("How far downward to probe for ground when placing landing dust.")]
+    private float landingDustProbeDistance = 3f;
+
+    [SerializeField]
+    [Tooltip("Final vertical offset applied after snapping landing dust to the hit point.")]
+    private float landingDustVerticalOffset = 0f;
 
     [Header("Punch Dust VFX")]
     [SerializeField]
@@ -206,6 +244,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     private Coroutine leftAttackDeactivateRoutine;
     private Coroutine rightAttackDeactivateRoutine;
+    private Coroutine idleFireDeactivateRoutine;
     private Coroutine airMoveDeactivateRoutine;
     private Coroutine leftEmberDelayRoutine;
     private Coroutine rightEmberDelayRoutine;
@@ -219,9 +258,13 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     private VisualEffect leftAttackEffect;
     private VisualEffect rightAttackEffect;
+    private VisualEffect idleFireEffect;
+    private VisualEffect[] dashDustEffects = Array.Empty<VisualEffect>();
+    private VisualEffect[] landingDustEffects = Array.Empty<VisualEffect>();
     private VisualEffect[] piledriverExtendSparkFrontEffects = Array.Empty<VisualEffect>();
     private VisualEffect[] piledriverExtendSparkBackEffects = Array.Empty<VisualEffect>();
     private ParticleSystem[] dashDustParticles = Array.Empty<ParticleSystem>();
+    private ParticleSystem[] landingDustParticles = Array.Empty<ParticleSystem>();
     private ParticleSystem[] leftPunchDustParticles = Array.Empty<ParticleSystem>();
     private ParticleSystem[] rightPunchDustParticles = Array.Empty<ParticleSystem>();
     private ParticleSystem[] piledriverExtendSparkFrontParticles = Array.Empty<ParticleSystem>();
@@ -230,6 +273,8 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private ParticleSystem[] rightExhaustParticles = Array.Empty<ParticleSystem>();
     private bool leftAttackActive;
     private bool rightAttackActive;
+    private bool idleFireHasCachedEmberRate;
+    private float idleFireCachedEmberRate;
     private readonly Dictionary<Light, float> originalLightIntensity = new();
     private readonly Dictionary<ParticleSystem, float> originalExhaustEmissionRates = new();
 
@@ -245,6 +290,10 @@ public sealed class PlayerVFXManager : MonoBehaviour
             GetComponentInChildren<PlayerMovement>()
             ?? GetComponent<PlayerMovement>()
             ?? GetComponentInParent<PlayerMovement>();
+        characterController ??=
+            GetComponent<CharacterController>()
+            ?? GetComponentInChildren<CharacterController>()
+            ?? GetComponentInParent<CharacterController>();
         audioSource = SoundManager.Instance?.sfxSource;
 
         EnsureAttackVfxWired();
@@ -261,7 +310,22 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
+        if (idleFireVfx != null)
+        {
+            idleFireEffect =
+                idleFireVfx.GetComponent<VisualEffect>()
+                ?? idleFireVfx.GetComponentInChildren<VisualEffect>(true);
+
+            if (idleFireEffect != null && idleFireEffect.HasFloat(emberRateProperty))
+            {
+                idleFireCachedEmberRate = idleFireEffect.GetFloat(emberRateProperty);
+                idleFireHasCachedEmberRate = true;
+            }
+
+            idleFireVfx.SetActive(false);
+        }
         StopAndClearParticleSystems(dashDustParticles);
+            StopAndClearParticleSystems(landingDustParticles);
         StopAndClearParticleSystems(leftPunchDustParticles);
         StopAndClearParticleSystems(rightPunchDustParticles);
         StopAndClearParticleSystems(piledriverExtendSparkFrontParticles);
@@ -296,6 +360,10 @@ public sealed class PlayerVFXManager : MonoBehaviour
             GetComponentInChildren<PlayerMovement>()
             ?? GetComponent<PlayerMovement>()
             ?? GetComponentInParent<PlayerMovement>();
+        characterController ??=
+            GetComponent<CharacterController>()
+            ?? GetComponentInChildren<CharacterController>()
+            ?? GetComponentInParent<CharacterController>();
         PlayerAttackManager.OnAttack += HandleAttackStarted;
         RegisterAirMoveCallbacks();
     }
@@ -307,6 +375,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         StopAndClearRoutine(ref leftAttackDeactivateRoutine);
         StopAndClearRoutine(ref rightAttackDeactivateRoutine);
+        StopAndClearRoutine(ref idleFireDeactivateRoutine);
         StopAndClearRoutine(ref airMoveDeactivateRoutine);
         StopAndClearRoutine(ref leftEmberDelayRoutine);
         StopAndClearRoutine(ref rightEmberDelayRoutine);
@@ -321,7 +390,10 @@ public sealed class PlayerVFXManager : MonoBehaviour
         rightAttackActive = false;
         DisableHandAttackVfx(leftAttackEffect, ref leftEmberDelayRoutine, leftHandPointLights);
         DisableHandAttackVfx(rightAttackEffect, ref rightEmberDelayRoutine, rightHandPointLights);
+        if (idleFireVfx != null)
+            idleFireVfx.SetActive(false);
         StopAndClearParticleSystems(dashDustParticles);
+            StopAndClearParticleSystems(landingDustParticles);
         StopAndClearParticleSystems(leftPunchDustParticles);
         StopAndClearParticleSystems(rightPunchDustParticles);
         StopAndClearParticleSystems(piledriverExtendSparkFrontParticles);
@@ -379,6 +451,9 @@ public sealed class PlayerVFXManager : MonoBehaviour
                 ?? rightAttackVfx.GetComponentInChildren<VisualEffect>(true);
         }
 
+        if (idleFireVfx != null)
+            idleFireVfx.SetActive(false);
+
         if (autoFindHandLights)
         {
             if (leftHandPointLights == null || leftHandPointLights.Length == 0)
@@ -395,6 +470,9 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private void EnsureDashDustVfxWired()
     {
         dashDustParticles = CollectParticleSystems(dashDustVfx);
+        dashDustEffects = CollectVisualEffects(dashDustVfx);
+        landingDustParticles = CollectParticleSystems(landingDustVfx);
+        landingDustEffects = CollectVisualEffects(landingDustVfx);
     }
 
     private void EnsurePunchDustVfxWired()
@@ -498,6 +576,81 @@ public sealed class PlayerVFXManager : MonoBehaviour
         );
     }
 
+    private void HandleLandingTriggered()
+    {
+        GameObject landingRoot = landingDustVfx != null ? landingDustVfx : dashDustVfx;
+        if (landingRoot == null)
+            return;
+
+        SnapLandingVfxToGround(landingRoot);
+
+        ParticleSystem[] landingParticles = landingDustVfx != null
+            ? landingDustParticles
+            : dashDustParticles;
+        VisualEffect[] landingEffects = landingDustVfx != null
+            ? landingDustEffects
+            : dashDustEffects;
+
+        if (landingParticles == null || landingParticles.Length == 0)
+        {
+            landingParticles = CollectParticleSystems(landingRoot);
+
+            if (landingDustVfx != null)
+                landingDustParticles = landingParticles;
+            else
+                dashDustParticles = landingParticles;
+        }
+
+        if (landingEffects == null || landingEffects.Length == 0)
+        {
+            landingEffects = CollectVisualEffects(landingRoot);
+
+            if (landingDustVfx != null)
+                landingDustEffects = landingEffects;
+            else
+                dashDustEffects = landingEffects;
+        }
+
+        PlayOneShotVfx(landingRoot, landingParticles, landingEffects);
+        PlayAudio(landingDustAudioClip != null ? landingDustAudioClip : airMoveAudioClip);
+    }
+
+    private void SnapLandingVfxToGround(GameObject landingRoot)
+    {
+        if (landingRoot == null)
+            return;
+
+        Vector3 worldPosition = landingRoot.transform.position;
+        Vector3 probeOrigin = characterController != null
+            ? characterController.bounds.center
+            : transform.position;
+        probeOrigin.y += Mathf.Max(0f, landingDustProbeStartHeight);
+
+        if (
+            Physics.Raycast(
+                probeOrigin,
+                Vector3.down,
+                out RaycastHit hit,
+                Mathf.Max(0.1f, landingDustProbeDistance),
+                landingDustGroundLayers,
+                QueryTriggerInteraction.Ignore
+            )
+        )
+        {
+            worldPosition.y = hit.point.y + landingDustVerticalOffset;
+        }
+        else if (characterController != null)
+        {
+            worldPosition.y = characterController.bounds.min.y + landingDustVerticalOffset;
+        }
+        else
+        {
+            worldPosition.y = transform.position.y + landingDustVerticalOffset;
+        }
+
+        landingRoot.transform.position = worldPosition;
+    }
+
     private void HandleAttackStarted(PlayerAttack attack)
     {
         if (attack == null)
@@ -532,6 +685,8 @@ public sealed class PlayerVFXManager : MonoBehaviour
     public void LeftFire() => TriggerLeftAttackVfx();
 
     public void RightFire() => TriggerRightAttackVfx();
+
+    public void IdleFire() => TriggerIdleFireVfx();
 
     public void DashDust() => TriggerDashDustVfx();
 
@@ -615,6 +770,11 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     private void TriggerRightAttackVfx()
     {
+        TriggerRightAttackVfx(attackDuration);
+    }
+
+    private void TriggerRightAttackVfx(float duration)
+    {
         if (rightAttackEffect == null && rightAttackVfx == null)
             return;
 
@@ -629,7 +789,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
         RestartSingleRoutine(
             ref rightAttackDeactivateRoutine,
-            attackDuration,
+            duration,
             () =>
             {
                 rightAttackActive = false;
@@ -643,6 +803,51 @@ public sealed class PlayerVFXManager : MonoBehaviour
         );
     }
 
+    private void TriggerIdleFireVfx()
+    {
+        if (idleFireVfx == null)
+            return;
+
+        if (idleFireEffect == null)
+            idleFireEffect =
+                idleFireVfx.GetComponent<VisualEffect>()
+                ?? idleFireVfx.GetComponentInChildren<VisualEffect>(true);
+
+        if (idleFireEffect != null && idleFireHasCachedEmberRate)
+            TrySetFloat(idleFireEffect, emberRateProperty, idleFireCachedEmberRate);
+
+        idleFireVfx.SetActive(true);
+        PlayAudio(attackAudioClip);
+
+        RestartSingleRoutine(
+            ref idleFireDeactivateRoutine,
+            idleFireDuration,
+            () =>
+            {
+                idleFireDeactivateRoutine = StartCoroutine(DisableIdleFireAfterTail());
+            }
+        );
+    }
+
+    private IEnumerator DisableIdleFireAfterTail()
+    {
+        if (idleFireEffect == null && idleFireVfx != null)
+            idleFireEffect =
+                idleFireVfx.GetComponent<VisualEffect>()
+                ?? idleFireVfx.GetComponentInChildren<VisualEffect>(true);
+
+        TrySetFloat(idleFireEffect, emberRateProperty, emberRateOff);
+
+        float shutdownDelay = Mathf.Max(0f, idleFireShutdownDelay);
+        if (shutdownDelay > 0f)
+            yield return new WaitForSeconds(shutdownDelay);
+
+        if (idleFireVfx != null)
+            idleFireVfx.SetActive(false);
+
+        idleFireDeactivateRoutine = null;
+    }
+
     private void TriggerDashDustVfx()
     {
         if (dashDustVfx == null)
@@ -651,7 +856,10 @@ public sealed class PlayerVFXManager : MonoBehaviour
         if (dashDustParticles == null || dashDustParticles.Length == 0)
             dashDustParticles = CollectParticleSystems(dashDustVfx);
 
-        PlayParticleSystemsOnce(dashDustVfx, dashDustParticles);
+        if (dashDustEffects == null || dashDustEffects.Length == 0)
+            dashDustEffects = CollectVisualEffects(dashDustVfx);
+
+        PlayOneShotVfx(dashDustVfx, dashDustParticles, dashDustEffects);
     }
 
     private void TriggerLeftPunchDustVfx()
@@ -662,7 +870,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
         if (leftPunchDustParticles == null || leftPunchDustParticles.Length == 0)
             leftPunchDustParticles = CollectParticleSystems(leftPunchDustVfx);
 
-        PlayParticleSystemsOnce(leftPunchDustVfx, leftPunchDustParticles);
+        PlayOneShotVfx(leftPunchDustVfx, leftPunchDustParticles, Array.Empty<VisualEffect>());
     }
 
     private void TriggerRightPunchDustVfx()
@@ -673,7 +881,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
         if (rightPunchDustParticles == null || rightPunchDustParticles.Length == 0)
             rightPunchDustParticles = CollectParticleSystems(rightPunchDustVfx);
 
-        PlayParticleSystemsOnce(rightPunchDustVfx, rightPunchDustParticles);
+        PlayOneShotVfx(rightPunchDustVfx, rightPunchDustParticles, Array.Empty<VisualEffect>());
     }
 
     private void TriggerPileRetract()
@@ -1018,26 +1226,51 @@ public sealed class PlayerVFXManager : MonoBehaviour
         routine = StartCoroutine(RunExhaustVfx(root, particleSystems, onComplete));
     }
 
-    private void PlayParticleSystemsOnce(GameObject root, ParticleSystem[] particleSystems)
+    private void PlayOneShotVfx(
+        GameObject root,
+        ParticleSystem[] particleSystems,
+        VisualEffect[] visualEffects
+    )
     {
-        if (root == null || particleSystems == null || particleSystems.Length == 0)
+        bool hasParticles = particleSystems != null && particleSystems.Length > 0;
+        bool hasVisualEffects = visualEffects != null && visualEffects.Length > 0;
+        if (root == null || (!hasParticles && !hasVisualEffects))
             return;
 
         if (!root.activeSelf)
             root.SetActive(true);
 
-        for (int i = 0; i < particleSystems.Length; i++)
+        if (particleSystems != null)
         {
-            ParticleSystem particleSystem = particleSystems[i];
-            if (particleSystem == null)
-                continue;
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
 
-            if (!particleSystem.gameObject.activeSelf)
-                particleSystem.gameObject.SetActive(true);
+                if (!particleSystem.gameObject.activeSelf)
+                    particleSystem.gameObject.SetActive(true);
 
-            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            particleSystem.Clear(true);
-            particleSystem.Play(true);
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particleSystem.Clear(true);
+                particleSystem.Play(true);
+            }
+        }
+
+        if (visualEffects != null)
+        {
+            for (int i = 0; i < visualEffects.Length; i++)
+            {
+                VisualEffect visualEffect = visualEffects[i];
+                if (visualEffect == null)
+                    continue;
+
+                if (!visualEffect.gameObject.activeSelf)
+                    visualEffect.gameObject.SetActive(true);
+
+                visualEffect.Reinit();
+                visualEffect.Play();
+            }
         }
     }
 
@@ -1287,8 +1520,10 @@ public sealed class PlayerVFXManager : MonoBehaviour
         if (playerMovement == null || airMoveCallbacksRegistered)
             return;
 
+        playerMovement.DashPerformed += HandleLandingTriggered;
         playerMovement.DoubleJumpPerformed += HandleAirMoveTriggered;
         playerMovement.AirDashPerformed += HandleAirMoveTriggered;
+        playerMovement.Landed += HandleLandingTriggered;
         airMoveCallbacksRegistered = true;
     }
 
@@ -1297,8 +1532,10 @@ public sealed class PlayerVFXManager : MonoBehaviour
         if (playerMovement == null || !airMoveCallbacksRegistered)
             return;
 
+        playerMovement.DashPerformed -= HandleLandingTriggered;
         playerMovement.DoubleJumpPerformed -= HandleAirMoveTriggered;
         playerMovement.AirDashPerformed -= HandleAirMoveTriggered;
+        playerMovement.Landed -= HandleLandingTriggered;
         airMoveCallbacksRegistered = false;
     }
 
