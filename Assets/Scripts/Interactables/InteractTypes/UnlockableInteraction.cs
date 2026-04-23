@@ -114,7 +114,7 @@ public abstract class UnlockableInteraction : InteractionManager
         InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 0.5f, 2f);
     }
 
-    protected override void Interact()    
+    protected override bool Interact()    
     {
         RefreshExecutionState();
         
@@ -123,14 +123,14 @@ public abstract class UnlockableInteraction : InteractionManager
         if (needsItem && InternalPlayerInventory.Instance == null && !canExecuteWithoutItem)
         {
             Debug.LogWarning("[UnlockableInteraction] InternalPlayerInventory.Instance is null. Cannot check for required item.");
-            return;
+            return false;
         }
 
         if (!canExecuteInteraction)
         {
             FailedInteract();
             Debug.Log($"[UnlockableInteraction] Interaction failed on {gameObject.name} due to unmet conditions.");
-            return;
+            return false;
         }
 
         if (onInteractionExecuted == null)
@@ -153,5 +153,7 @@ public abstract class UnlockableInteraction : InteractionManager
 
         if (interactOnce)
             interactable = false;
+
+        return true;
     }
 }

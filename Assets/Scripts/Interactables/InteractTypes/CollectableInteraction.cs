@@ -22,7 +22,7 @@ public abstract class CollectableInteraction : InteractionManager
 
     }
 
-    protected override void Interact()
+    protected override bool Interact()
     {
 
         AudioSource interactionSfxSource = GetInteractionSfxSourceIfAvailable();
@@ -34,6 +34,8 @@ public abstract class CollectableInteraction : InteractionManager
         InteractionUI.Instance.OnCollectedItem(displayName, bottomFlavorText, uiFadeDuration, uiDisplayDuration);
         
         StartCoroutine(DeactivateInteractableCoroutine(this));
+
+        return true;
     }
     protected abstract void ExecuteInteraction();
     protected virtual void AfterExecuteInteraction() { }
