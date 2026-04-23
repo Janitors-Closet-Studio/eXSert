@@ -190,6 +190,20 @@ public class InteractionUI : Singleton<InteractionUI>
         fadeOutComplete = true;
     }
 
+    public void ForceStopNoticeCoroutines()
+    {
+        if (collectableUICoroutine != null)
+        {
+            StopCoroutine(collectableUICoroutine);
+            collectableUICoroutine = null;
+        }
+
+        ClearNotice();
+        _collectBottomText.gameObject.SetActive(false);
+        _collectText.gameObject.SetActive(false);
+        collectUI.SetActive(false);
+    }
+
     // Coroutine to fade in, then type, then fade out
     private IEnumerator FadeInTypeFadeOutRoutine(string collectedLabel, string bottomFlavorText, float fadeDuration, float displayDuration, float typeSpeed, bool invisibleCharacters, int priority)
     {
