@@ -22,6 +22,7 @@ public class MenuEventSystemHandler : MonoBehaviour
     [SerializeField] protected float _selectedAnimationScale = 1.0f;
     [SerializeField] protected float _scaleDuration = 0.25f;
     [SerializeField] protected List<GameObject> _animationExclusions = new List<GameObject>();
+    [SerializeField] protected bool _putallSelectablesInExclusions = false;
 
     [Header("Sounds")]
     [SerializeField] protected UnityEvent SoundEvent;
@@ -47,6 +48,17 @@ public class MenuEventSystemHandler : MonoBehaviour
             else
             {
                 Debug.LogWarning("A selectable in the Selectables list is null or already exists in the dictionary.");
+            }
+        }
+
+        if (_putallSelectablesInExclusions)
+        {
+            foreach (var selectable in Selectables)
+            {
+                if (selectable != null && !_animationExclusions.Contains(selectable.gameObject))
+                {
+                    _animationExclusions.Add(selectable.gameObject);
+                }
             }
         }
     }

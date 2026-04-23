@@ -1,4 +1,5 @@
 using System.Collections;
+using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -70,6 +71,8 @@ public class SelectFirstOnLoad : MonoBehaviour
         if (firstSelectedObject != null && firstSelectedObject.activeInHierarchy)
         {
             toSelect = firstSelectedObject;
+            toSelect.GetComponent<Button>().enabled = false;
+            toSelect.GetComponent<Button>().enabled = true;
         }
         else if (eventSystem.firstSelectedGameObject != null && eventSystem.firstSelectedGameObject.activeInHierarchy)
         {

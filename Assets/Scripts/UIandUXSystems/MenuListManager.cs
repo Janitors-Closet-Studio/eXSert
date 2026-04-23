@@ -345,10 +345,6 @@ public class MenuListManager : MonoBehaviour
         if (selectable == null)
             return;
 
-        if (EventSystem.current != null)
-        {
-            SelectionDebugger.SetSelected(selectable.gameObject);
-        }
 
         selectable.Select();
     }
@@ -360,7 +356,7 @@ public class MenuListManager : MonoBehaviour
         if (ShouldIgnoreMenuSwap())
             return;
 
-        if (numberOfMenusToGoBack > 2)
+        if (numberOfMenusToGoBack < 2)
             return;
 
         if (menusToManage.Count >= numberOfMenusToGoBack)
@@ -564,7 +560,6 @@ public class MenuListManager : MonoBehaviour
             selectable = target.GetComponentInChildren<Selectable>(true);
         if (selectable != null)
         {
-            SelectionDebugger.SetSelected(selectable.gameObject);
             selectable.Select();
         }
     }
