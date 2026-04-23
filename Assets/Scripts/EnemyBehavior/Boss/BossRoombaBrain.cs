@@ -463,6 +463,7 @@ namespace EnemyBehavior.Boss
         private bool alarmDestroyed;
         private Animator animator;
         private BossAnimationEventMediator animMediator;
+        private AugurVfxManager augurVfxManager;
 
         private bool playerOnTop;
         public bool IsPlayerMountedOnTop => playerOnTop;
@@ -527,6 +528,8 @@ namespace EnemyBehavior.Boss
         private float lastKnockbackAppliedTime = -999f;
         private Coroutine playerRefRetryRoutine;
         private const float PlayerRefRetryIntervalSeconds = 0.5f;
+
+        public event System.Action<int, Transform> SidePanelDestroyed;
 
         #region IQueuedAttacker Implementation
         
@@ -702,6 +705,7 @@ namespace EnemyBehavior.Boss
             animator = GetComponentInChildren<Animator>();
             // Mediator must be on same GameObject as Animator (or child of it) for Animation Events
             animMediator = GetComponentInChildren<BossAnimationEventMediator>(true);
+            augurVfxManager = GetComponentInChildren<AugurVfxManager>(true);
             // Player ejector is on same GameObject - disable during dashes
             playerEjector = GetComponent<BossPlayerEjector>();
             
@@ -2619,6 +2623,7 @@ namespace EnemyBehavior.Boss
             currentAttack = a;
             attackDamageAppliedThisAttack = false;
             PushAction($"Attack: {a.Id}");
+            augurVfxManager?.NotifyAttackWindup();
 
             if (a != ArmPoke && form == RoombaForm.DuelistSummoner)
             {
@@ -2870,6 +2875,8 @@ namespace EnemyBehavior.Boss
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Player ejector DISABLED for dash");
             }
 
+            augurVfxManager?.NotifyDashLungeStarted();
+
             // CRITICAL: Enable dash hitbox (charge hitbox with dash parameters)
             // This allows the boss to deal damage and knockback when hitting the player during dash
             if (animMediator != null)
@@ -2980,6 +2987,8 @@ namespace EnemyBehavior.Boss
                 playerEjector.StartGracePeriod(); // Start grace period to prevent immediate strong ejection
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Player ejector RE-ENABLED after dash (with grace period)");
             }
+
+            augurVfxManager?.NotifyDashLungeEnded();
 
             // Restore agent settings
             agent.speed = originalSpeed;
@@ -3255,6 +3264,9 @@ namespace EnemyBehavior.Boss
             {
                 Instantiate(panel.breakVFXPrefab, panelPos, panelRot);
             }
+
+            Transform panelAnchor = panel.panelVisualMesh != null ? panel.panelVisualMesh.transform : transform;
+            SidePanelDestroyed?.Invoke(panelIndex, panelAnchor);
 
             // Check if this is a Skinned Mesh Renderer (animated mesh)
             var skinnedRenderer = panel.panelVisualMesh.GetComponent<SkinnedMeshRenderer>();
