@@ -220,6 +220,8 @@ namespace EnemyBehavior.Boss
         [Header("Attack Indicator VFX")]
         [Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
         [SerializeField] private GameObject attackIndicatorPrefab;
+        [Tooltip("Optional anchor used for attack indicator placement. Falls back to the boss transform when not assigned.")]
+        [SerializeField] private Transform attackIndicatorSpawnTarget;
         [Tooltip("Position offset from the boss's transform where the indicator spawns (local space).")]
         [SerializeField] private Vector3 attackIndicatorOffset = new Vector3(0f, 0.5f, 3f);
         [Tooltip("Seconds before the attack lands that the indicator appears.")]
@@ -463,6 +465,7 @@ namespace EnemyBehavior.Boss
         private bool alarmDestroyed;
         private Animator animator;
         private BossAnimationEventMediator animMediator;
+        private AugurVfxManager augurVfxManager;
 
         private bool playerOnTop;
         public bool IsPlayerMountedOnTop => playerOnTop;
@@ -527,6 +530,8 @@ namespace EnemyBehavior.Boss
         private float lastKnockbackAppliedTime = -999f;
         private Coroutine playerRefRetryRoutine;
         private const float PlayerRefRetryIntervalSeconds = 0.5f;
+
+        public event System.Action<int, Transform> SidePanelDestroyed;
 
         #region IQueuedAttacker Implementation
         
@@ -702,6 +707,7 @@ namespace EnemyBehavior.Boss
             animator = GetComponentInChildren<Animator>();
             // Mediator must be on same GameObject as Animator (or child of it) for Animation Events
             animMediator = GetComponentInChildren<BossAnimationEventMediator>(true);
+            augurVfxManager = GetComponentInChildren<AugurVfxManager>(true);
             // Player ejector is on same GameObject - disable during dashes
             playerEjector = GetComponent<BossPlayerEjector>();
             
@@ -775,9 +781,10 @@ namespace EnemyBehavior.Boss
 
             HideAttackIndicator();
 
+            Transform indicatorAnchor = attackIndicatorSpawnTarget != null ? attackIndicatorSpawnTarget : transform;
             Vector3 offset = customOffset ?? attackIndicatorOffset;
-            Vector3 spawnPos = transform.TransformPoint(offset);
-            Quaternion spawnRot = transform.rotation;
+            Vector3 spawnPos = indicatorAnchor.TransformPoint(offset);
+            Quaternion spawnRot = indicatorAnchor.rotation;
 
             attackIndicatorInstance = Instantiate(attackIndicatorPrefab, spawnPos, spawnRot);
             
@@ -788,7 +795,7 @@ namespace EnemyBehavior.Boss
 
             if (attackIndicatorFollowsBoss)
             {
-                attackIndicatorInstance.transform.SetParent(transform);
+                attackIndicatorInstance.transform.SetParent(indicatorAnchor);
                 attackIndicatorInstance.transform.localPosition = offset;
                 attackIndicatorInstance.transform.localRotation = Quaternion.identity;
             }
@@ -800,7 +807,7 @@ namespace EnemyBehavior.Boss
             }
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Attack indicator shown at offset {offset}");
+        EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Attack indicator shown at offset {offset} from {(indicatorAnchor != null ? indicatorAnchor.name : transform.name)}");
 #endif
         }
 
@@ -1960,6 +1967,23 @@ namespace EnemyBehavior.Boss
 
                 if (isStunned || isDefeated) break;
 
+                float staticChargeWindupDuration = StaticCharge.WindupSpeedMultiplier * GetClipLength(animator, StaticCharge.WindupClipName);
+                float staticChargeDashDuration = Mathf.Clamp(
+                    Vector3.Distance(transform.position, end) / Mathf.Max(0.01f, StaticChargeTopSpeed),
+                    0.01f,
+                    5f
+                );
+                augurVfxManager?.ShowDashTelegraph(end, staticChargeWindupDuration);
+                augurVfxManager?.ShowDashRing(staticChargeWindupDuration + staticChargeDashDuration);
+
+                if (animator != null && !string.IsNullOrEmpty(StaticCharge.AnimatorTriggerOnWindup))
+                    animator.SetTrigger(StaticCharge.AnimatorTriggerOnWindup);
+
+                if (staticChargeWindupDuration > 0f)
+                    yield return WaitForSecondsCache.Get(staticChargeWindupDuration);
+
+                if (isStunned || isDefeated) break;
+
                 // Charge to end
                 yield return ExecuteChargeDash(end, isTargeted: false);
 
@@ -2233,6 +2257,11 @@ namespace EnemyBehavior.Boss
             if (animator != null && !string.IsNullOrEmpty(chargeAttack.AnimatorTriggerOnActive))
                 animator.SetTrigger(chargeAttack.AnimatorTriggerOnActive);
 
+            float dashDistance = Vector3.Distance(transform.position, destination);
+            float dashSpeed = Mathf.Max(0.01f, agent != null ? agent.speed : BaseSpeed);
+            float dashVfxDuration = Mathf.Clamp(dashDistance / dashSpeed, 0.01f, 5f);
+            augurVfxManager?.NotifyDashLungeStarted(dashVfxDuration);
+
             if (isTargeted)
             {
                 // TARGETED CHARGE: Completely bypass NavMeshAgent pathfinding
@@ -2287,6 +2316,7 @@ namespace EnemyBehavior.Boss
                     // If we overlap an active pillar while targeted-charging, treat this as a valid pillar impact.
                     if (TryHandleTargetedChargePillarImpact())
                     {
+                        augurVfxManager?.NotifyDashLungeEnded();
                         PushAction("Targeted charge HIT pillar (proximity fallback)");
                         yield break;
                     }
@@ -2389,6 +2419,8 @@ namespace EnemyBehavior.Boss
                 }
             }
 
+            augurVfxManager?.NotifyDashLungeEnded();
+
             // Restore settings
             RestoreAgentSettings();
             agent.isStopped = true;
@@ -2417,28 +2449,35 @@ namespace EnemyBehavior.Boss
             PushAction("Targeted charge START (with overshoot)");
             currentAttack = TargetedCharge;
 
+            Vector3 playerPos = player.position;
+            Vector3 dirToPlayer = (playerPos - transform.position).normalized;
+            Vector3 overshootTarget = playerPos + dirToPlayer * ChargeOvershootDistance;
+            float distToTarget = Vector3.Distance(transform.position, overshootTarget);
+            if (distToTarget < 2f)
+            {
+                PushAction("Overshoot target too close - charging directly at player");
+                overshootTarget = playerPos;
+            }
+
+            float targetedChargeWindupDuration = TargetedCharge.WindupSpeedMultiplier * GetClipLength(animator, TargetedCharge.WindupClipName);
+            float targetedChargeTurnDuration = EstimateTurnDuration(playerPos, baseAgentAngularSpeed * TargetedChargeTurnSpeedMultiplier);
+            float targetedChargeDashDuration = Mathf.Clamp(
+                Vector3.Distance(transform.position, overshootTarget) / Mathf.Max(0.01f, TargetedChargeTopSpeed),
+                0.01f,
+                5f
+            );
+            augurVfxManager?.ShowDashTelegraph(overshootTarget, targetedChargeWindupDuration + targetedChargeTurnDuration);
+            augurVfxManager?.ShowDashRing(targetedChargeWindupDuration + targetedChargeTurnDuration + targetedChargeDashDuration);
+
 
             // Windup animation
             if (animator != null && !string.IsNullOrEmpty(TargetedCharge.AnimatorTriggerOnWindup))
                 animator.SetTrigger(TargetedCharge.AnimatorTriggerOnWindup);
 
-            yield return WaitForSecondsCache.Get(TargetedCharge.WindupSpeedMultiplier * GetClipLength(animator, TargetedCharge.WindupClipName));
+            if (targetedChargeWindupDuration > 0f)
+                yield return WaitForSecondsCache.Get(targetedChargeWindupDuration);
 
             if (isStunned) yield break;
-
-            // Calculate overshoot target (past player position)
-            Vector3 playerPos = player.position;
-            Vector3 dirToPlayer = (playerPos - transform.position).normalized;
-            Vector3 overshootTarget = playerPos + dirToPlayer * ChargeOvershootDistance;
-            
-            // Check if the target is reachable - if not, try charging directly at the player
-            float distToTarget = Vector3.Distance(transform.position, overshootTarget);
-            if (distToTarget < 2f)
-            {
-                // Too close to overshoot target, charge directly at player instead
-                PushAction("Overshoot target too close - charging directly at player");
-                overshootTarget = playerPos;
-            }
 
             // Turn to face player using Cage Bull turn speed
             yield return TurnToFacePositionWithSpeed(playerPos, baseAgentAngularSpeed * TargetedChargeTurnSpeedMultiplier);
@@ -2449,6 +2488,23 @@ namespace EnemyBehavior.Boss
             yield return ExecuteChargeDash(overshootTarget, isTargeted: true);
 
             MarkCooldown(TargetedCharge);
+        }
+
+        private float EstimateTurnDuration(Vector3 targetPosition, float angularSpeed)
+        {
+            Vector3 dirToTarget = targetPosition - transform.position;
+            dirToTarget.y = 0f;
+
+            if (dirToTarget.sqrMagnitude < 0.001f)
+                return 0f;
+
+            Quaternion targetRotation = Quaternion.LookRotation(dirToTarget.normalized, Vector3.up);
+            float angle = Quaternion.Angle(transform.rotation, targetRotation);
+            if (angle <= 0.01f)
+                return 0f;
+
+            float safeAngularSpeed = Mathf.Max(1f, angularSpeed);
+            return Mathf.Min(1f, angle / safeAngularSpeed);
         }
 
         /// <summary>
@@ -2619,6 +2675,7 @@ namespace EnemyBehavior.Boss
             currentAttack = a;
             attackDamageAppliedThisAttack = false;
             PushAction($"Attack: {a.Id}");
+            augurVfxManager?.NotifyAttackWindup();
 
             if (a != ArmPoke && form == RoombaForm.DuelistSummoner)
             {
@@ -2766,35 +2823,6 @@ namespace EnemyBehavior.Boss
             if (isStunned || a == null) yield break;
             if (player == null) yield break;
 
-            // Pre-calculate the overshoot target to validate if it's on NavMesh
-            Vector3 dirToPlayer = (player.position - transform.position).normalized;
-            Vector3 overshootTarget = player.position + dirToPlayer * DashOvershootDistance;
-            
-            // Validate dash destination is on NavMesh
-            if (ValidateDashDestination)
-            {
-                if (!NavMesh.SamplePosition(overshootTarget, out var hit, DashNavMeshSampleRadius, NavMesh.AllAreas))
-                {
-                    // Dash target is off NavMesh - fall back to a melee attack instead
-                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash target {overshootTarget} is OFF NavMesh - falling back to melee");
-                    PushAction("Dash blocked (off NavMesh) - using melee");
-                    
-                    // Pick a melee attack instead
-                    var meleeAttack = SelectCloseRangeAttack(Vector3.Distance(transform.position, player.position));
-                    if (meleeAttack != null)
-                    {
-                        yield return ExecuteAttackChain(meleeAttack);
-                    }
-                    yield break;
-                }
-                else
-                {
-                    // Adjust target to the valid NavMesh position
-                    overshootTarget = hit.position;
-                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash target adjusted to NavMesh position: {overshootTarget}");
-                }
-            }
-
             currentAttack = a;
             attackDamageAppliedThisAttack = false;
             PushAction($"Attack: {a.Id}");
@@ -2832,24 +2860,41 @@ namespace EnemyBehavior.Boss
                 }
             }
 
+            // Commit the dash target before windup so the telegraph matches the actual dash distance.
+            Vector3 dirToPlayer = (player.position - transform.position).normalized;
+            Vector3 overshootTarget = player.position + dirToPlayer * DashOvershootDistance;
+            if (ValidateDashDestination)
+            {
+                if (!NavMesh.SamplePosition(overshootTarget, out var hit, DashNavMeshSampleRadius, NavMesh.AllAreas))
+                {
+                    EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash target {overshootTarget} is OFF NavMesh - falling back to melee");
+                    PushAction("Dash blocked (off NavMesh) - using melee");
+
+                    var meleeAttack = SelectCloseRangeAttack(Vector3.Distance(transform.position, player.position));
+                    if (meleeAttack != null)
+                    {
+                        yield return ExecuteAttackChain(meleeAttack);
+                    }
+                    yield break;
+                }
+
+                overshootTarget = hit.position;
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash target adjusted to NavMesh position: {overshootTarget}");
+            }
+
+            float windupDuration = a.WindupSpeedMultiplier * GetClipLength(animator, a.WindupClipName);
+            float dashTime = Mathf.Max(0.01f, a.ActiveSpeedMultiplier * GetClipLength(animator, a.ActiveClipName));
+            augurVfxManager?.ShowDashTelegraph(overshootTarget, windupDuration);
+            augurVfxManager?.ShowDashRing(windupDuration + dashTime);
+
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnWindup)) animator.SetTrigger(a.AnimatorTriggerOnWindup);
             PlayAttackSFX(a); // Attack SFX
-            yield return WaitForSecondsCache.Get(a.WindupSpeedMultiplier * GetClipLength(animator, a.WindupClipName));
-
-            // Recalculate direction to player at dash moment (they may have moved during windup)
-            dirToPlayer = (player.position - transform.position).normalized;
-            overshootTarget = player.position + dirToPlayer * DashOvershootDistance;
+            yield return WaitForSecondsCache.Get(windupDuration);
             
             // Store the attack direction for directional knockback
-            currentAttackDirection = dirToPlayer;
+            currentAttackDirection = (overshootTarget - transform.position).normalized;
             currentAttackDirection.y = 0f;
             currentAttackDirection.Normalize();
-            
-            // Re-validate NavMesh position
-            if (ValidateDashDestination && NavMesh.SamplePosition(overshootTarget, out var navHit, DashNavMeshSampleRadius, NavMesh.AllAreas))
-            {
-                overshootTarget = navHit.position;
-            }
             
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Dash: boss at {transform.position}, player at {player.position}, overshoot target at {overshootTarget}, attackDir={currentAttackDirection}");
 
@@ -2897,7 +2942,7 @@ namespace EnemyBehavior.Boss
             agent.SetDestination(overshootTarget);
             
             // Wait for dash to complete - either animation time OR arrival, whichever is longer
-            float dashTime = a.ActiveSpeedMultiplier * GetClipLength(animator, a.ActiveClipName);
+            augurVfxManager?.NotifyDashLungeStarted(Mathf.Max(0.01f, dashTime));
             float elapsed = 0f;
             float maxDashTime = Mathf.Max(dashTime, 3f); // At least animation time, max 3 seconds
             
@@ -2980,6 +3025,8 @@ namespace EnemyBehavior.Boss
                 playerEjector.StartGracePeriod(); // Start grace period to prevent immediate strong ejection
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Player ejector RE-ENABLED after dash (with grace period)");
             }
+
+            augurVfxManager?.NotifyDashLungeEnded();
 
             // Restore agent settings
             agent.speed = originalSpeed;
@@ -3255,6 +3302,9 @@ namespace EnemyBehavior.Boss
             {
                 Instantiate(panel.breakVFXPrefab, panelPos, panelRot);
             }
+
+            Transform panelAnchor = panel.panelVisualMesh != null ? panel.panelVisualMesh.transform : transform;
+            SidePanelDestroyed?.Invoke(panelIndex, panelAnchor);
 
             // Check if this is a Skinned Mesh Renderer (animated mesh)
             var skinnedRenderer = panel.panelVisualMesh.GetComponent<SkinnedMeshRenderer>();

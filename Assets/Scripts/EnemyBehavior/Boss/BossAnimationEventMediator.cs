@@ -29,6 +29,9 @@ namespace EnemyBehavior.Boss
         [SerializeField, Tooltip("Boss brain for arm deploy/retract callbacks (auto-found if null)")]
         private BossRoombaBrain bossBrain;
 
+        [Header("Optional Boss VFX")]
+        [SerializeField] private AugurVfxManager augurVfxManager;
+
         [Header("Audio (Optional)")]
         [SerializeField] private AudioSource audioSource;
         [SerializeField] private AudioClip windupSound;
@@ -41,6 +44,11 @@ namespace EnemyBehavior.Boss
             if (bossBrain == null)
             {
                 bossBrain = GetComponentInParent<BossRoombaBrain>();
+            }
+
+            if (augurVfxManager == null)
+            {
+                augurVfxManager = GetComponentInParent<AugurVfxManager>();
             }
         }
 
@@ -70,6 +78,9 @@ namespace EnemyBehavior.Boss
             
             if (bossBrain == null)
                 bossBrain = GetComponentInParent<BossRoombaBrain>();
+
+            if (augurVfxManager == null)
+                augurVfxManager = GetComponentInParent<AugurVfxManager>();
         }
 
         #region Left Arm Events
@@ -332,6 +343,36 @@ namespace EnemyBehavior.Boss
         public void SpawnRecoveryEffect()
         {
             EnemyBehaviorDebugLogBools.Log(nameof(BossAnimationEventMediator), "[AnimMediator] Recovery effect triggered");
+        }
+
+        public void TriggerAugurExhaustBurst()
+        {
+            augurVfxManager?.TriggerExhaustBurst();
+        }
+
+        public void TriggerAugurEnragedExhaust()
+        {
+            augurVfxManager?.TriggerEnragedExhaust();
+        }
+
+        public void StartAugurDashTravelVfx()
+        {
+            augurVfxManager?.NotifyDashLungeStarted();
+        }
+
+        public void StopAugurDashTravelVfx()
+        {
+            augurVfxManager?.NotifyDashLungeEnded();
+        }
+
+        public void ShowAugurDashTelegraph()
+        {
+            bossBrain?.ShowAttackIndicator();
+        }
+
+        public void HideAugurDashTelegraph()
+        {
+            augurVfxManager?.HideDashTelegraph();
         }
         #endregion
 
