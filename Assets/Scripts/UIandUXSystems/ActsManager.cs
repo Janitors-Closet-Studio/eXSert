@@ -18,6 +18,10 @@ public class ActsManager : Singleton<ActsManager>
     [SerializeField] private Color highlightColor;
     [SerializeField] private Color defaultColor;
 
+    public Color SelectedColor => selectedColor;
+    public Color HighlightColor => highlightColor;
+    public Color DefaultColor => defaultColor;
+
     // Per-profile act completion: profileId -> (actNumber -> completed)
     private Dictionary<string, Dictionary<int, bool>> profileActCompletionMap = new Dictionary<string, Dictionary<int, bool>>();
     public List<GameObject> mapLocationImages;
@@ -25,6 +29,7 @@ public class ActsManager : Singleton<ActsManager>
     public List<GameObject> foundCheckpointZones; 
 
     private PauseManager pauseManager;
+    private Coroutine pulseCoroutine;
 
     private void Start()
     {
@@ -44,12 +49,7 @@ public class ActsManager : Singleton<ActsManager>
             {
                 if (kvp.Value == currentSceneName)
                 {
-                    if (kvp.Key > currentPulsingSceneIndex)
-                    {
-                        currentPulsingSceneIndex = kvp.Key;
-                        StopAllCoroutines();
-                        StartCoroutine(PulseColorForMapIfInRespectiveScene(2f, mapLocationImages[kvp.Key]));
-                    }
+                    StartPulsingLocation(kvp.Key);
                     break;
                 }
             }
@@ -63,9 +63,12 @@ public class ActsManager : Singleton<ActsManager>
 
     private void OnDisable()
     {
+        StopPulsingLocation();
+
         foreach (var img in mapLocationImages)
         {
             img.SetActive(false);
+            ResetLocationVisual(img);
         }
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
@@ -122,21 +125,13 @@ public class ActsManager : Singleton<ActsManager>
                 if (kvp.Value == sceneName)
                 {
                     mapLocationImages[kvp.Key].SetActive(true);
-                    
-                    // Only pulse if this is the highest index scene loaded
-                    if (kvp.Key > currentPulsingSceneIndex)
-                    {
-                        currentPulsingSceneIndex = kvp.Key;
-                        StopAllCoroutines(); // Stop any lower-indexed pulses
-                        StartCoroutine(PulseColorForMapIfInRespectiveScene(2f, mapLocationImages[kvp.Key]));
-                    }
+
+                    StartPulsingLocation(kvp.Key);
                     break;
                 }
-                else 
-                {
-                   mapLocationImages[kvp.Key].GetComponent<Image>().color = defaultColor; // Reset color for non-active scenes 
-                }
             }
+
+            ResetNonCurrentLocationVisuals(sceneName);
         }
     }
 
@@ -152,6 +147,8 @@ public class ActsManager : Singleton<ActsManager>
             yield break;
         }
 
+        imageToPulse.SetActive(true);
+
         // Pulse indefinitely while the scene is active
         float elapsedTime = 0f;
         while (true)
@@ -162,6 +159,70 @@ public class ActsManager : Singleton<ActsManager>
             imageComponent.color = targetColor;
             yield return null;
         }
+    }
+
+    private void StartPulsingLocation(int locationIndex)
+    {
+        currentPulsingSceneIndex = locationIndex;
+        StopPulsingLocation();
+
+        if (locationIndex < 0 || locationIndex >= mapLocationImages.Count)
+            return;
+
+        GameObject pulseTarget = GetPulseTarget(mapLocationImages[locationIndex]);
+        if (pulseTarget == null)
+            return;
+
+        pulseCoroutine = StartCoroutine(PulseColorForMapIfInRespectiveScene(2f, pulseTarget));
+    }
+
+    private void StopPulsingLocation()
+    {
+        if (pulseCoroutine == null)
+            return;
+
+        StopCoroutine(pulseCoroutine);
+        pulseCoroutine = null;
+    }
+
+    private void ResetNonCurrentLocationVisuals(string currentSceneName)
+    {
+        foreach (var kvp in sceneNames)
+        {
+            if (kvp.Value == currentSceneName)
+                continue;
+
+            ResetLocationVisual(mapLocationImages[kvp.Key]);
+        }
+    }
+
+    private void ResetLocationVisual(GameObject locationRoot)
+    {
+        if (locationRoot == null)
+            return;
+
+        Image pulseImage = GetPulseTarget(locationRoot)?.GetComponent<Image>();
+        if (pulseImage != null)
+            pulseImage.color = defaultColor;
+    }
+
+    private GameObject GetPulseTarget(GameObject locationRoot)
+    {
+        if (locationRoot == null)
+            return null;
+
+        Transform rootTransform = locationRoot.transform;
+        Image[] images = locationRoot.GetComponentsInChildren<Image>(true);
+        foreach (Image image in images)
+        {
+            if (image == null)
+                continue;
+
+            if (image.transform != rootTransform)
+                return image.gameObject;
+        }
+
+        return locationRoot;
     }
 
     public void ActivateAllImagesBefore()
