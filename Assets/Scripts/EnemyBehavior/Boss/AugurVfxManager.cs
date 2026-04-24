@@ -25,11 +25,24 @@ namespace EnemyBehavior.Boss
         [SerializeField] private float exhaustShutdownDelay = 0.2f;
         [SerializeField] private AudioClip exhaustAudioClip;
 
-        [Header("Dash Travel")]
-        [SerializeField, Tooltip("Root VFX that should stay active while Augur is lunging/charging forward.")]
-        private GameObject dashTravelVfxRoot;
-        [SerializeField] private float dashTravelShutdownDelay = 0.25f;
-        [SerializeField] private AudioClip dashTravelAudioClip;
+        [Header("Dash Indicator")]
+        [SerializeField, Tooltip("Anchor used as the spawn origin for the dash indicator prefab.")]
+        private Transform dashVfxTargetLocation;
+        [SerializeField, Tooltip("Prefab spawned before a dash to show the committed dash distance.")]
+        private GameObject dashIndicatorVfxPrefab;
+        [SerializeField, Tooltip("Applied to the computed dash distance before sizing the telegraph. Use this to compensate for authored prefab length.")]
+        private float dashIndicatorLengthOffset = -10f;
+        [SerializeField, Tooltip("Extra lifetime after the dash telegraph is hidden before the prefab is destroyed.")]
+        private float dashIndicatorDestroyDelay = 0.05f;
+        [SerializeField] private AudioClip dashIndicatorAudioClip;
+
+        [Header("Dash Ring")]
+        [SerializeField, Tooltip("Optional anchor used to spawn the dash-start ring on the boss. Falls back to the dash telegraph anchor or boss transform.")]
+        private Transform dashRingVfxTargetLocation;
+        [SerializeField, Tooltip("Prefab spawned when a dash starts. Its particle lifetime is set from the planned dash duration.")]
+        private GameObject dashRingVfxPrefab;
+        [SerializeField, Tooltip("Extra lifetime after the dash ring is hidden before the prefab is destroyed.")]
+        private float dashRingDestroyDelay = 0.05f;
 
         [Header("Panel Break")]
         [SerializeField, Tooltip("Optional electricity prefab spawned when a side panel breaks.")]
@@ -49,12 +62,15 @@ namespace EnemyBehavior.Boss
         [SerializeField] private AudioClip deathAudioClip;
 
         private Coroutine exhaustRoutine;
-        private Coroutine dashShutdownRoutine;
-        private bool dashTrailRequested;
-        private bool chargeTrailRequested;
+        private Coroutine dashIndicatorRoutine;
         private bool deathTriggered;
+        private bool dashExhaustActive;
         private bool cachedFormInitialized;
         private RoombaForm cachedForm;
+        private GameObject activeDashIndicatorInstance;
+        private GameObject activeDashRingInstance;
+        private ParticleSystem[] activeDashIndicatorParticles = Array.Empty<ParticleSystem>();
+        private ParticleSystem[] activeDashRingParticles = Array.Empty<ParticleSystem>();
 
         private void Awake()
         {
@@ -107,10 +123,10 @@ namespace EnemyBehavior.Boss
                 exhaustRoutine = null;
             }
 
-            if (dashShutdownRoutine != null)
+            if (dashIndicatorRoutine != null)
             {
-                StopCoroutine(dashShutdownRoutine);
-                dashShutdownRoutine = null;
+                StopCoroutine(dashIndicatorRoutine);
+                dashIndicatorRoutine = null;
             }
 
             ResetManagedState();
@@ -134,15 +150,6 @@ namespace EnemyBehavior.Boss
                     TriggerEnragedExhaust();
             }
 
-            bool nextChargeTrailRequested = bossBrain.IsCharging;
-            if (nextChargeTrailRequested != chargeTrailRequested)
-            {
-                chargeTrailRequested = nextChargeTrailRequested;
-                if (chargeTrailRequested)
-                    TriggerExhaustBurst(actionExhaustDuration);
-
-                RefreshDashTrailState();
-            }
         }
 
         public void NotifyAttackWindup()
@@ -155,21 +162,25 @@ namespace EnemyBehavior.Boss
 
         public void NotifyDashLungeStarted()
         {
+            NotifyDashLungeStarted(actionExhaustDuration);
+        }
+
+        public void NotifyDashLungeStarted(float dashDuration)
+        {
             if (deathTriggered)
                 return;
 
-            dashTrailRequested = true;
-            TriggerExhaustBurst(actionExhaustDuration);
-            RefreshDashTrailState();
+            HideDashTelegraph();
+            StartDashExhaust();
         }
 
         public void NotifyDashLungeEnded()
         {
-            dashTrailRequested = false;
-            RefreshDashTrailState();
-
             if (!deathTriggered)
-                TriggerExhaustBurst(actionExhaustDuration);
+            {
+                StopDashExhaust();
+                HideDashRing();
+            }
         }
 
         public void TriggerExhaustBurst()
@@ -182,20 +193,80 @@ namespace EnemyBehavior.Boss
             TriggerExhaustBurst(enragedExhaustDuration);
         }
 
-        public void ShowDashTelegraph()
+        public void ShowDashTelegraph(Vector3 dashDestination, float windupDelay)
         {
-            if (!deathTriggered)
-                bossBrain?.ShowAttackIndicator();
+            if (deathTriggered || dashIndicatorVfxPrefab == null)
+                return;
+
+            HideDashTelegraph();
+
+            Transform spawnAnchor = dashVfxTargetLocation != null ? dashVfxTargetLocation : transform;
+            Vector3 spawnPosition = spawnAnchor.position;
+            Quaternion spawnRotation = GetDashIndicatorRotation(spawnAnchor, dashDestination);
+            float dashDistance = Mathf.Max(0.01f, GetFlatDistance(spawnPosition, dashDestination) + dashIndicatorLengthOffset);
+            float telegraphLifetime = Mathf.Max(0.01f, windupDelay);
+
+            activeDashIndicatorInstance = Instantiate(dashIndicatorVfxPrefab, spawnPosition, spawnRotation);
+            activeDashIndicatorParticles = activeDashIndicatorInstance.GetComponentsInChildren<ParticleSystem>(true);
+            ConfigureDashIndicator(activeDashIndicatorParticles, dashDistance, telegraphLifetime);
+            RestartObject(activeDashIndicatorInstance);
+            PlayClip(dashIndicatorAudioClip);
+            dashIndicatorRoutine = StartCoroutine(HideDashTelegraphAfterDelay(telegraphLifetime));
         }
 
         public void HideDashTelegraph()
         {
-            bossBrain?.HideAttackIndicator();
+            if (dashIndicatorRoutine != null)
+            {
+                StopCoroutine(dashIndicatorRoutine);
+                dashIndicatorRoutine = null;
+            }
+
+            if (activeDashIndicatorInstance == null)
+                return;
+
+            StopEffects(activeDashIndicatorInstance);
+            Destroy(activeDashIndicatorInstance, Mathf.Max(0f, dashIndicatorDestroyDelay));
+            activeDashIndicatorInstance = null;
+            activeDashIndicatorParticles = Array.Empty<ParticleSystem>();
+        }
+
+        public void ShowDashRing(float dashDuration)
+        {
+            if (deathTriggered || dashRingVfxPrefab == null)
+                return;
+
+            HideDashRing();
+
+            Transform spawnAnchor = dashRingVfxTargetLocation != null
+                ? dashRingVfxTargetLocation
+                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform);
+            float ringLifetime = Mathf.Max(5f, dashDuration);
+
+            activeDashRingInstance = Instantiate(dashRingVfxPrefab, spawnAnchor.position, spawnAnchor.rotation);
+            activeDashRingInstance.transform.SetParent(spawnAnchor, worldPositionStays: true);
+            activeDashRingParticles = activeDashRingInstance.GetComponentsInChildren<ParticleSystem>(true);
+            ConfigureParticleLifetime(activeDashRingParticles, ringLifetime);
+            RestartObject(activeDashRingInstance);
+        }
+
+        public void HideDashRing()
+        {
+            if (activeDashRingInstance == null)
+                return;
+
+            StopEffects(activeDashRingInstance);
+            Destroy(activeDashRingInstance, Mathf.Max(0f, dashRingDestroyDelay));
+            activeDashRingInstance = null;
+            activeDashRingParticles = Array.Empty<ParticleSystem>();
         }
 
         private void TriggerExhaustBurst(float duration)
         {
             if (exhaustVfxRoots == null || exhaustVfxRoots.Length == 0)
+                return;
+
+            if (dashExhaustActive)
                 return;
 
             if (exhaustRoutine != null)
@@ -204,6 +275,46 @@ namespace EnemyBehavior.Boss
             RestartObjects(exhaustVfxRoots);
             PlayClip(exhaustAudioClip);
             exhaustRoutine = StartCoroutine(DisableObjectsAfterDelay(exhaustVfxRoots, Mathf.Max(0f, duration), Mathf.Max(0f, exhaustShutdownDelay), clearRoutine: true));
+        }
+
+        private void StartDashExhaust()
+        {
+            if (exhaustVfxRoots == null || exhaustVfxRoots.Length == 0)
+                return;
+
+            dashExhaustActive = true;
+
+            if (exhaustRoutine != null)
+            {
+                StopCoroutine(exhaustRoutine);
+                exhaustRoutine = null;
+            }
+
+            RestartObjects(exhaustVfxRoots);
+            PlayClip(exhaustAudioClip);
+        }
+
+        private void StopDashExhaust()
+        {
+            if (!dashExhaustActive)
+                return;
+
+            dashExhaustActive = false;
+
+            if (exhaustRoutine != null)
+            {
+                StopCoroutine(exhaustRoutine);
+                exhaustRoutine = null;
+            }
+
+            exhaustRoutine = StartCoroutine(
+                DisableObjectsAfterDelay(
+                    exhaustVfxRoots,
+                    0f,
+                    Mathf.Max(0f, exhaustShutdownDelay),
+                    clearRoutine: true
+                )
+            );
         }
 
         private void HandleSidePanelDestroyed(int panelIndex, Transform panelAnchor)
@@ -222,9 +333,8 @@ namespace EnemyBehavior.Boss
                 return;
 
             deathTriggered = true;
-            dashTrailRequested = false;
-            chargeTrailRequested = false;
-            RefreshDashTrailState();
+            HideDashTelegraph();
+            HideDashRing();
             StopExhaustImmediately();
 
             Transform anchor = deathVfxAnchor != null ? deathVfxAnchor : transform;
@@ -233,42 +343,33 @@ namespace EnemyBehavior.Boss
             PlayClip(deathAudioClip);
         }
 
-        private void RefreshDashTrailState()
+        private IEnumerator HideDashTelegraphAfterDelay(float delay)
         {
-            bool shouldBeActive = (dashTrailRequested || chargeTrailRequested) && !deathTriggered;
-            if (shouldBeActive)
-            {
-                if (dashShutdownRoutine != null)
-                {
-                    StopCoroutine(dashShutdownRoutine);
-                    dashShutdownRoutine = null;
-                }
-
-                RestartObject(dashTravelVfxRoot);
-                PlayClip(dashTravelAudioClip);
-                return;
-            }
-
-            if (dashTravelVfxRoot == null)
-                return;
-
-            if (dashShutdownRoutine != null)
-                StopCoroutine(dashShutdownRoutine);
-
-            dashShutdownRoutine = StartCoroutine(DisableDashTrailAfterDelay());
-        }
-
-        private IEnumerator DisableDashTrailAfterDelay()
-        {
-            StopEffects(dashTravelVfxRoot);
-            float delay = Mathf.Max(0f, dashTravelShutdownDelay);
             if (delay > 0f)
                 yield return WaitForSecondsCache.Get(delay);
 
-            if (dashTravelVfxRoot != null)
-                dashTravelVfxRoot.SetActive(false);
+            dashIndicatorRoutine = null;
+            HideDashTelegraph();
+        }
 
-            dashShutdownRoutine = null;
+        private static float GetFlatDistance(Vector3 from, Vector3 to)
+        {
+            from.y = 0f;
+            to.y = 0f;
+            return Vector3.Distance(from, to);
+        }
+
+        private static Quaternion GetDashIndicatorRotation(Transform spawnAnchor, Vector3 dashDestination)
+        {
+            Vector3 origin = spawnAnchor.position;
+            Vector3 flatDirection = dashDestination - origin;
+            flatDirection.y = 0f;
+
+            if (flatDirection.sqrMagnitude <= 0.0001f)
+                return Quaternion.Euler(90f, spawnAnchor.eulerAngles.y, 0f);
+
+            float yaw = Quaternion.LookRotation(flatDirection.normalized, Vector3.up).eulerAngles.y;
+            return Quaternion.Euler(90f, yaw, 0f);
         }
 
         private IEnumerator DisableObjectsAfterDelay(GameObject[] roots, float activeDuration, float shutdownDelay, bool clearRoutine)
@@ -295,6 +396,8 @@ namespace EnemyBehavior.Boss
 
         private void StopExhaustImmediately()
         {
+            dashExhaustActive = false;
+
             if (exhaustRoutine != null)
             {
                 StopCoroutine(exhaustRoutine);
@@ -331,6 +434,9 @@ namespace EnemyBehavior.Boss
 
         private void ResetManagedState()
         {
+            HideDashTelegraph();
+            HideDashRing();
+            dashExhaustActive = false;
             StopEffects(exhaustVfxRoots);
 
             if (exhaustVfxRoots != null)
@@ -342,13 +448,42 @@ namespace EnemyBehavior.Boss
                 }
             }
 
-            StopEffects(dashTravelVfxRoot);
-            if (dashTravelVfxRoot != null)
-                dashTravelVfxRoot.SetActive(false);
-
-            dashTrailRequested = false;
-            chargeTrailRequested = false;
             deathTriggered = false;
+        }
+
+        private static void ConfigureDashIndicator(ParticleSystem[] particleSystems, float dashDistance, float lifetime)
+        {
+            if (particleSystems == null)
+                return;
+
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                var main = particleSystem.main;
+                main.startSize3D = true;
+                main.startSizeY = new ParticleSystem.MinMaxCurve(dashDistance);
+                main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime);
+            }
+        }
+
+        private static void ConfigureParticleLifetime(ParticleSystem[] particleSystems, float lifetime)
+        {
+            if (particleSystems == null)
+                return;
+
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                var main = particleSystem.main;
+                main.duration = lifetime;
+                main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime);
+            }
         }
 
         private void PlayClip(AudioClip clip)

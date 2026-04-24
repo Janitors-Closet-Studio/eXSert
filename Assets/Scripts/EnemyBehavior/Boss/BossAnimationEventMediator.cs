@@ -367,7 +367,7 @@ namespace EnemyBehavior.Boss
 
         public void ShowAugurDashTelegraph()
         {
-            augurVfxManager?.ShowDashTelegraph();
+            bossBrain?.ShowAttackIndicator();
         }
 
         public void HideAugurDashTelegraph()
