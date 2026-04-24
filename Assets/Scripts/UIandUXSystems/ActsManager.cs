@@ -41,10 +41,12 @@ public class ActsManager : Singleton<ActsManager>
 
         mapLocationImages[0].SetActive(true);
         ActivateAllImagesBefore();
-        
-        string currentSceneName = SceneManager.GetActiveScene().name;
-        if (sceneNames.ContainsValue(currentSceneName))
+
+        string currentSceneName = GetHighestLoadedTrackedSceneName();
+        if (!string.IsNullOrEmpty(currentSceneName))
         {
+            SyncActButtonsForScene(currentSceneName);
+
             foreach (var kvp in sceneNames)
             {
                 if (kvp.Value == currentSceneName)
@@ -115,8 +117,12 @@ public class ActsManager : Singleton<ActsManager>
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        string sceneName = scene.name;
-        Debug.Log($"[ActsManager] Scene loaded: {sceneName}");       
+        string sceneName = GetHighestLoadedTrackedSceneName();
+        Debug.Log($"[ActsManager] Scene loaded: {scene.name}. Highest tracked scene: {sceneName}");
+
+        if (!string.IsNullOrEmpty(sceneName))
+            SyncActButtonsForScene(sceneName);
+
         if (sceneNames.ContainsValue(sceneName))
         {
             // Find map location image for this scene and activate it
@@ -135,19 +141,19 @@ public class ActsManager : Singleton<ActsManager>
         }
     }
 
-    private IEnumerator PulseColorForMapIfInRespectiveScene(float pulseDuration, GameObject imageToPulse = null)
+    private IEnumerator PulseColorForMapIfInRespectiveScene(float pulseDuration, GameObject locationRoot = null)
     {
-        if (imageToPulse == null)
+        if (locationRoot == null)
             yield break;
 
-        Image imageComponent = imageToPulse.GetComponent<Image>();
-        if (imageComponent == null)
+        List<Image> pulseImages = GetPulseImages(locationRoot);
+        if (pulseImages.Count == 0)
         {
-            Debug.LogWarning($"[ActsManager] Map image '{imageToPulse.name}' does not have an Image component.");
+            Debug.LogWarning($"[ActsManager] Map location '{locationRoot.name}' does not have any Image components to pulse.");
             yield break;
         }
 
-        imageToPulse.SetActive(true);
+        locationRoot.SetActive(true);
 
         // Pulse indefinitely while the scene is active
         float elapsedTime = 0f;
@@ -156,7 +162,13 @@ public class ActsManager : Singleton<ActsManager>
             elapsedTime += Time.unscaledDeltaTime;
             float t = (Mathf.Sin(elapsedTime / pulseDuration * Mathf.PI * 2) + 1f) / 2f; // Oscillates between 0 and 1
             Color targetColor = Color.Lerp(defaultColor, highlightColor, t);
-            imageComponent.color = targetColor;
+
+            foreach (Image pulseImage in pulseImages)
+            {
+                if (pulseImage != null)
+                    pulseImage.color = targetColor;
+            }
+
             yield return null;
         }
     }
@@ -169,7 +181,7 @@ public class ActsManager : Singleton<ActsManager>
         if (locationIndex < 0 || locationIndex >= mapLocationImages.Count)
             return;
 
-        GameObject pulseTarget = GetPulseTarget(mapLocationImages[locationIndex]);
+        GameObject pulseTarget = mapLocationImages[locationIndex];
         if (pulseTarget == null)
             return;
 
@@ -201,34 +213,44 @@ public class ActsManager : Singleton<ActsManager>
         if (locationRoot == null)
             return;
 
-        Image pulseImage = GetPulseTarget(locationRoot)?.GetComponent<Image>();
-        if (pulseImage != null)
-            pulseImage.color = defaultColor;
+        foreach (Image pulseImage in GetPulseImages(locationRoot))
+        {
+            if (pulseImage != null)
+                pulseImage.color = defaultColor;
+        }
     }
 
-    private GameObject GetPulseTarget(GameObject locationRoot)
+    private List<Image> GetPulseImages(GameObject locationRoot)
     {
-        if (locationRoot == null)
-            return null;
+        List<Image> pulseImages = new List<Image>();
 
-        Transform rootTransform = locationRoot.transform;
+        if (locationRoot == null)
+            return pulseImages;
+
         Image[] images = locationRoot.GetComponentsInChildren<Image>(true);
         foreach (Image image in images)
         {
             if (image == null)
                 continue;
 
-            if (image.transform != rootTransform)
-                return image.gameObject;
+            pulseImages.Add(image);
         }
 
-        return locationRoot;
+        if (pulseImages.Count == 0)
+        {
+            Image rootImage = locationRoot.GetComponent<Image>();
+            if (rootImage != null)
+                pulseImages.Add(rootImage);
+        }
+
+        return pulseImages;
     }
 
     public void ActivateAllImagesBefore()
     {
-        string currentSceneName = SceneManager.GetActiveScene().name;
-        if (!sceneNames.ContainsValue(currentSceneName))        {
+        string currentSceneName = GetHighestLoadedTrackedSceneName();
+        if (!sceneNames.ContainsValue(currentSceneName))
+        {
             Debug.LogWarning($"[ActsManager] Current scene '{currentSceneName}' not found in sceneNames mapping. Cannot activate map location images.");
             return;
         }
@@ -239,6 +261,83 @@ public class ActsManager : Singleton<ActsManager>
         {
             mapLocationImages[i].SetActive(true);
         }
+
+        mapLocationImages[mapIndex].SetActive(true);
+        SyncActButtonsForScene(currentSceneName);
+    }
+
+    private string GetCurrentProfileId()
+    {
+        string profileId = "default";
+        if (DataPersistenceManager.Instance != null)
+        {
+            var getIdMethod = DataPersistenceManager.Instance.GetType().GetMethod("GetSelectedProfileId");
+            if (getIdMethod != null)
+                profileId = (string)getIdMethod.Invoke(DataPersistenceManager.Instance, null);
+        }
+
+        return string.IsNullOrEmpty(profileId) ? "default" : profileId;
+    }
+
+    private string GetHighestLoadedTrackedSceneName()
+    {
+        int highestSceneIndex = -1;
+        string highestSceneName = null;
+
+        for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
+        {
+            Scene loadedScene = SceneManager.GetSceneAt(sceneIndex);
+            if (!loadedScene.IsValid() || !loadedScene.isLoaded)
+                continue;
+
+            foreach (var kvp in sceneNames)
+            {
+                if (!string.Equals(kvp.Value, loadedScene.name, System.StringComparison.Ordinal))
+                    continue;
+
+                if (kvp.Key > highestSceneIndex)
+                {
+                    highestSceneIndex = kvp.Key;
+                    highestSceneName = kvp.Value;
+                }
+
+                break;
+            }
+        }
+
+        return highestSceneName;
+    }
+
+    private void SyncActButtonsForScene(string sceneName)
+    {
+        if (string.IsNullOrEmpty(sceneName))
+            return;
+
+        int highestUnlockedAct = -1;
+        foreach (var kvp in actSceneMap)
+        {
+            if (string.Equals(kvp.Value, sceneName, System.StringComparison.Ordinal))
+            {
+                highestUnlockedAct = kvp.Key;
+                break;
+            }
+        }
+
+        if (highestUnlockedAct < 0)
+            return;
+
+        string profileId = GetCurrentProfileId();
+        if (!profileActCompletionMap.ContainsKey(profileId))
+            profileActCompletionMap[profileId] = GetDefaultActCompletionMap();
+
+        var map = profileActCompletionMap[profileId];
+        for (int actIndex = 0; actIndex <= highestUnlockedAct; actIndex++)
+        {
+            if (map.ContainsKey(actIndex))
+                map[actIndex] = true;
+        }
+
+        UpdateActButtonsForProfile(profileId);
     }
 
     // Returns a new default act completion map (Act 0 unlocked, rest locked)

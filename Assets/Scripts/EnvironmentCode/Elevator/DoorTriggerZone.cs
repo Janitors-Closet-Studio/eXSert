@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Events;
 
 /*
 Written by Kyle
@@ -19,12 +20,16 @@ public class DoorTriggerZone : MonoBehaviour
     [SerializeField] private float bottomOpenDistance = 2.0f;  // meters downward
     [SerializeField] private float moveDuration = 0.75f;       // seconds per open/close
     [SerializeField] private AnimationCurve ease = AnimationCurve.EaseInOut(0,0,1,1);
+    [SerializeField] private bool stayOpened = false;
 
     [Header("Player Filter")]
     [SerializeField] private string playerTag = "Player";       // set your player’s tag
 
     [Header("Disable Zone")]
     [SerializeField] private BoxCollider disableTriggerZone;
+
+    [Header("Events")]
+    [SerializeField] private UnityEvent onEnteredTrigger;
 
     // cached start/end positions (local space to avoid parent movement jumps)
     private Vector3 _topClosedLocal, _bottomClosedLocal;
@@ -59,6 +64,8 @@ public class DoorTriggerZone : MonoBehaviour
     {
         if (!other.CompareTag(playerTag)) return;
 
+        onEnteredTrigger?.Invoke();
+
         if (disableTriggerZone != null && IsInsideDisableZone(other))
         {
             DisableDoorTrigger();
@@ -76,6 +83,8 @@ public class DoorTriggerZone : MonoBehaviour
         if (!enabled) return;
 
         _overlapCount = Mathf.Max(0, _overlapCount - 1);
+        if (stayOpened) return;
+
         if (_overlapCount == 0) StartMove(open: false);
     }
 
