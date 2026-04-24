@@ -2,11 +2,13 @@ using UnityEngine;
 using UnityEngine.Video;
 using Managers.TimeLord;
 using Singletons;
+using System;
 
 [RequireComponent(typeof(VideoPlayer))]
 public class CutsceneManager : Singleton<CutsceneManager>
 {
     public static bool IsCutscenePlaying { get; private set; } = false;
+    public static event Action CutsceneFinished;
     private const string GameplayInputBlockOwnerId = "CutsceneManager";
 
     [SerializeField]
@@ -95,18 +97,32 @@ public class CutsceneManager : Singleton<CutsceneManager>
         SoundManager.Instance?.PauseAllMusic(false); // Unpause music if SoundManager exists
         IsCutscenePlaying = false;
         source.loopPointReached -= OnCutsceneFinished; // Unsubscribe from the event
+        CutsceneFinished?.Invoke();
     }
 
-    public static void PlayCutscene(VideoClip clip)
+    public static void PlayCutscene(VideoClip clip, Action onFinished = null)
     {
         if (clip == null)
         {
             Debug.LogError("[Cutscene Player] Cannot play a null VideoClip.");
             return;
         }
+
+        if (onFinished != null)
+        {
+            void HandleFinished()
+            {
+                CutsceneFinished -= HandleFinished;
+                onFinished();
+            }
+
+            CutsceneFinished += HandleFinished;
+        }
+
         VideoPlayer.clip = clip;
 
-        VideoPlayer.started +=  OnCutsceneStarted; // Manually trigger the start event to pause the game
+        // Apply cutscene side-effects immediately so gameplay does not flash in before the first video frame.
+        OnCutsceneStarted(VideoPlayer);
         VideoPlayer.loopPointReached += OnCutsceneFinished; // Subscribe to the event to know when the cutscene finishes
         
         VideoPlayer.Play();

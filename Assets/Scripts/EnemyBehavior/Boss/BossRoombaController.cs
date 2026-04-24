@@ -56,6 +56,7 @@ public class BossRoombaController : MonoBehaviour
     private bool alarmActivated;
     private bool alarmDestroyed;
     private Coroutine alarmActivationDelayRoutine;
+    public event System.Action<Transform> AlarmDestroyed;
 
     [Header("Spawn Pockets")]
     [Tooltip("Pockets for drone spawns (flying)")]
@@ -676,9 +677,12 @@ public class BossRoombaController : MonoBehaviour
     public void DestroyAlarm()
     {
         if (alarmDestroyed) return;
+
+        Transform alarmAnchor = alarm != null ? alarm.transform : transform;
         
         alarmDestroyed = true;
         alarmActivated = false;
+        AlarmDestroyed?.Invoke(alarmAnchor);
         
         EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "[BossRoombaController] ALARM DESTROYED - No more adds will spawn!");
         
@@ -738,7 +742,7 @@ public class BossRoombaController : MonoBehaviour
             brain.OnAlarmDestroyed();
         }
     }
-    
+
     #region Debug Methods
     
     /// <summary>

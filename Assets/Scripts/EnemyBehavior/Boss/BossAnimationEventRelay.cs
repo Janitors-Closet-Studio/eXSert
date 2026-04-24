@@ -42,5 +42,13 @@ namespace EnemyBehavior.Boss
         // Arms Deploy Events
         public void OnArmsDeployComplete() => mediator?.OnArmsDeployComplete();
         public void OnArmsRetractComplete() => mediator?.OnArmsRetractComplete();
+
+        // Boss VFX Events
+        public void TriggerAugurExhaustBurst() => mediator?.TriggerAugurExhaustBurst();
+        public void TriggerAugurEnragedExhaust() => mediator?.TriggerAugurEnragedExhaust();
+        public void StartAugurDashTravelVfx() => mediator?.StartAugurDashTravelVfx();
+        public void StopAugurDashTravelVfx() => mediator?.StopAugurDashTravelVfx();
+        public void ShowAugurDashTelegraph() => mediator?.ShowAugurDashTelegraph();
+        public void HideAugurDashTelegraph() => mediator?.HideAugurDashTelegraph();
     }
 }

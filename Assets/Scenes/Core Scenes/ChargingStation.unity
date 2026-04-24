@@ -10697,6 +10697,32 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 290673843}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &290798996 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -756589265274142187, guid: 7feda08fa8190854eadca6c09154d966, type: 3}
+  m_PrefabInstance: {fileID: 1286962948}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &290799000
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 290798996}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.9265845, y: 2.926586, z: 9.909974}
+  m_Center: {x: 0, y: -0.000005722046, z: -0.0000019073486}
 --- !u!1 &298426637
 GameObject:
   m_ObjectHideFlags: 0
@@ -11481,59 +11507,6 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0.2, z: 0}
   m_TimeToStationary: 0.5
---- !u!1 &333368910
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 333368911}
-  - component: {fileID: 333368912}
-  m_Layer: 8
-  m_Name: RoombaCenter
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &333368911
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 333368910}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1556584614}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!135 &333368912
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 333368910}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 2.32
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &341894581
 GameObject:
   m_ObjectHideFlags: 0
@@ -15184,13 +15157,18 @@ MonoBehaviour:
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: loadC
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -15204,6 +15182,7 @@ MonoBehaviour:
   cameraTransitionDurationSeconds: 3
   specialTransitionFailsafeSeconds: 7
   specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
   specialTransitionFadeDurationSeconds: 0.35
   specialTransitionRevealDurationSeconds: 0.5
   specialTransitionBlackHoldSeconds: 0.08
@@ -52303,6 +52282,52 @@ Transform:
   - {fileID: 793086884}
   m_Father: {fileID: 157958679}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!28 &1226049379
+Texture2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Lightning_PositionMap
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 4
+  m_Width: 8
+  m_Height: 1
+  m_CompleteImageSize: 128
+  m_MipsStripped: 0
+  m_TextureFormat: 20
+  m_MipCount: 1
+  m_IsReadable: 1
+  m_IsPreProcessed: 0
+  m_IgnoreMipmapLimit: 1
+  m_MipmapLimitGroupName: 
+  m_StreamingMipmaps: 0
+  m_StreamingMipmapsPriority: 0
+  m_VTOnly: 0
+  m_AlphaIsTransparency: 0
+  m_ImageCount: 1
+  m_TextureDimension: 2
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 0
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 1
+    m_WrapV: 1
+    m_WrapW: 1
+  m_LightmapFormat: 0
+  m_ColorSpace: 1
+  m_PlatformBlob: 
+  image data: 128
+  _typelessdata: 6f933040a045b63f000090400000803fb072ac40a045b63f01fa06400000803fd8ce7740c87616400380153e0000803f00aa5140500ca23f000486bf0000803f7fe9a63f60e518400096833f0000803ff0a716401058214080e584400000803f3b37343c80c02a3f006811400000803fff26313f205ab43f012466bf0000803f
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
 --- !u!1 &1227512657
 GameObject:
   m_ObjectHideFlags: 0
@@ -53686,6 +53711,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5162820104835090806, guid: 7feda08fa8190854eadca6c09154d966, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1286962950}
+    - targetCorrespondingSourceObject: {fileID: -756589265274142187, guid: 7feda08fa8190854eadca6c09154d966, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 290799000}
   m_SourcePrefab: {fileID: 100100000, guid: 7feda08fa8190854eadca6c09154d966, type: 3}
 --- !u!1 &1286962949 stripped
 GameObject:
@@ -71625,7 +71653,7 @@ MonoBehaviour:
   bossHealth: {fileID: 4051711074320609378}
   bossDropTransform: {fileID: 1556584614}
   cardToEnable: {fileID: 1292998026}
-  cardSpawnOffset: {x: 0, y: 0.05, z: 0}
+  cardSpawnOffset: {x: 0, y: -1, z: 0}
   detachCardOnDrop: 1
   loadSceneOnDrop: 0
   preloadSceneOnEnable: 0
@@ -83896,14 +83924,6 @@ PrefabInstance:
       propertyPath: healthBar
       value: 
       objectReference: {fileID: 968268077}
-    - target: {fileID: 1977997027462636150, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
-      propertyPath: maxHealth
-      value: 500
-      objectReference: {fileID: 0}
-    - target: {fileID: 1977997027462636150, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
-      propertyPath: currentHealth
-      value: 500
-      objectReference: {fileID: 0}
     - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: ArenaManager
       value: 
@@ -83920,18 +83940,14 @@ PrefabInstance:
       propertyPath: ArenaCenterBounds
       value: 
       objectReference: {fileID: 1966718067}
-    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
-      propertyPath: roombaDeathSinkSpeed
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
-      propertyPath: playerLockTargetTransform
-      value: 
-      objectReference: {fileID: 333368911}
     - target: {fileID: 3308009278746904747, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_Name
       value: Boss_Augur
       objectReference: {fileID: 0}
+    - target: {fileID: 4320465231272679973, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: m_PropertySheet.m_NamedObject.m_Array.Array.data[0].m_Value
+      value: 
+      objectReference: {fileID: 1226049379}
     - target: {fileID: 4930849861261429573, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: 'droneSpawnPoints.Array.data[0]'
       value: 
@@ -83996,16 +84012,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8918884346469448604, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
-      propertyPath: RepulsionRadius
-      value: 2.8
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 8773002588802439141, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
-      insertIndex: 0
-      addedObject: {fileID: 333368911}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
 --- !u!114 &4051711074320609378 stripped

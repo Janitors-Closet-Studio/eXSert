@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using EnemyBehavior.Boss;
 using Progression.SceneManagement;
+using UnityEngine.Video;
 
 public class BossDropAndLoadOnDeath : MonoBehaviour
 {
@@ -19,6 +20,12 @@ public class BossDropAndLoadOnDeath : MonoBehaviour
     [SerializeField] private bool preloadSceneOnEnable = true;
     [SerializeField] private SceneAsset sceneToActivate;
     [SerializeField] private SceneLoadZone sceneLoadZone;
+
+    [Header("Ending Flow")]
+    [SerializeField] private bool playEndingCutsceneOnDefeat = false;
+    [SerializeField] private string endingCutsceneName = "Final Cutscene";
+    [SerializeField] private SceneAsset creditsScene;
+    [SerializeField] private bool loadCreditsAfterEndingCutscene = false;
 
     private bool triggered;
     private Coroutine preloadRoutine;
@@ -59,8 +66,36 @@ public class BossDropAndLoadOnDeath : MonoBehaviour
         triggered = true;
         SpawnCard();
 
-        if (loadSceneOnDrop)
-            ActivateScene();
+        if (loadSceneOnDrop || playEndingCutsceneOnDefeat || loadCreditsAfterEndingCutscene)
+            StartCoroutine(HandlePostDefeatSceneFlow());
+    }
+
+    private IEnumerator HandlePostDefeatSceneFlow()
+    {
+        if (playEndingCutsceneOnDefeat)
+        {
+            VideoClip endingClip = Cutscene.GetCutscene(endingCutsceneName);
+            if (endingClip != null)
+            {
+                bool cutsceneFinished = false;
+                CutsceneManager.PlayCutscene(endingClip, () => cutsceneFinished = true);
+
+                while (!cutsceneFinished)
+                    yield return null;
+            }
+            else
+            {
+                Debug.LogWarning($"[BossDropAndLoadOnDeath] Ending cutscene '{endingCutsceneName}' was not found. Continuing with scene flow.");
+            }
+        }
+
+        if (loadCreditsAfterEndingCutscene && creditsScene != null)
+        {
+            yield return SceneLoader.LoadCoroutine(creditsScene, loadScreen: false);
+            yield break;
+        }
+
+        ActivateScene();
     }
 
     private void SpawnCard()
