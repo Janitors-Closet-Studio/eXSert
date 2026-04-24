@@ -1,4 +1,5 @@
 using System.Collections;
+using Managers.TimeLord;
 using UnityEngine;
 
 /// <summary>
@@ -128,6 +129,43 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Coroutine hardLockCoroutine;
     private string hardLockedState;
+
+    // Saved animator state for pause/resume — preserves the exact normalized time so
+    // the animation resumes from the same pose rather than restarting from frame 0.
+    private string savedStateOnPause;
+    private float savedNormalizedTimeOnPause;
+    private bool hasSavedStateForResume;
+
+    private void OnEnable()
+    {
+        PauseCoordinator.OnPaused += OnGamePaused;
+        PauseCoordinator.OnResumed += OnGameResumed;
+    }
+
+    private void OnDisable()
+    {
+        PauseCoordinator.OnPaused -= OnGamePaused;
+        PauseCoordinator.OnResumed -= OnGameResumed;
+    }
+
+    private void OnGamePaused()
+    {
+        if (animator != null)
+        {
+            AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(layerIndex);
+            Debug.Log($"[DIAG-Pause] Animator paused | currentState={currentState} | normTime={info.normalizedTime:F4} | animSpeed={animator.speed:F3} | frame={Time.frameCount}");
+        }
+    }
+
+    private void OnGameResumed()
+    {
+        if (animator != null)
+        {
+            AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(layerIndex);
+            Debug.Log($"[DIAG-Pause] Animator resumed | currentState={currentState} | normTime={info.normalizedTime:F4} | animSpeed={animator.speed:F3} | frame={Time.frameCount}");
+        }
+        hasSavedStateForResume = false;
+    }
 
     private void Awake()
     {
