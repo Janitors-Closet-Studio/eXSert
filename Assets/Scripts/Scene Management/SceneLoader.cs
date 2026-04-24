@@ -22,11 +22,13 @@ public static class SceneLoader
     }
 
     private const string PLAYER_SCENE = "PlayerScene"; // The name of the player scene
+    private const string POST_PROCESS_SCENE = "PostProcessScene";
     private const string MAIN_MENU_SCENE = "MainMenu"; // The name of the main menu scene
     private const string LOADING_SCENE = "LoadingScene";
     public const string EditorBootstrapLoadingScreenOwnerId = "ProgressionManager.EditorIsolatedLoad";
     private static readonly HashSet<string> loadingScreenSuppressionOwners = new(StringComparer.Ordinal);
     private static readonly Dictionary<string, PreparedSceneLoad> preparedSceneLoads = new(StringComparer.Ordinal);
+    private static bool initialized;
 
     /// <summary>Number of currently loaded scenes.</summary>
     public static int LoadedSceneCount => SceneManager.sceneCount;
@@ -63,15 +65,94 @@ public static class SceneLoader
                 Debug.LogError("[Scene Loader] Player object not found in the scene after loading the player scene. " +
                                "Ensure that the player scene contains a GameObject tagged 'Player' and that SceneAsset points to the correct scene.");
         }
-        else
+
+        if (!EnsureGameplayActiveScene())
         {
             SceneManager.SetActiveScene(scene);
         }
     }
 
+    public static bool EnsureGameplayActiveScene()
+    {
+        if (!IsGameplayRuntimeLoaded())
+            return false;
+
+        Scene postProcessScene = SceneManager.GetSceneByName(POST_PROCESS_SCENE);
+        if (!postProcessScene.IsValid() || !postProcessScene.isLoaded)
+            return false;
+
+        return SceneManager.SetActiveScene(postProcessScene);
+    }
+
+    private static bool IsGameplayRuntimeLoaded()
+    {
+        Scene playerScene = SceneManager.GetSceneByName(PLAYER_SCENE);
+        if (!playerScene.IsValid() || !playerScene.isLoaded)
+            return false;
+
+        Scene mainMenuScene = SceneManager.GetSceneByName(MAIN_MENU_SCENE);
+        return !mainMenuScene.IsValid() || !mainMenuScene.isLoaded;
+    }
+
+    private static bool IsSceneLoadedByName(string sceneName)
+    {
+        Scene scene = SceneManager.GetSceneByName(sceneName);
+        return scene.IsValid() && scene.isLoaded;
+    }
+
+    private static IEnumerator EnsurePostProcessSceneLoadedCoroutine(bool forceReload = false)
+    {
+        bool isLoaded = IsSceneLoadedByName(POST_PROCESS_SCENE);
+        if (isLoaded && !forceReload)
+        {
+            EnsureGameplayActiveScene();
+            yield break;
+        }
+
+        if (isLoaded && forceReload)
+        {
+            AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(POST_PROCESS_SCENE);
+            if (unloadOperation != null)
+                yield return unloadOperation;
+        }
+
+        AsyncOperation loadOperation;
+        try
+        {
+            loadOperation = SceneManager.LoadSceneAsync(POST_PROCESS_SCENE, LoadSceneMode.Additive);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[Scene Loader] Exception starting async load for '{POST_PROCESS_SCENE}': {ex.Message}\n{ex.StackTrace}");
+            yield break;
+        }
+
+        if (loadOperation == null)
+        {
+            Debug.LogError($"[Scene Loader] Failed to start async load for '{POST_PROCESS_SCENE}'.");
+            yield break;
+        }
+
+        yield return loadOperation;
+        EnsureGameplayActiveScene();
+    }
+
     public static void Initialize()
     {
+        if (initialized)
+            return;
+
         SceneManager.sceneLoaded += OnSceneLoaded;
+        SceneManager.activeSceneChanged += OnActiveSceneChanged;
+        initialized = true;
+    }
+
+    private static void OnActiveSceneChanged(Scene previousScene, Scene newScene)
+    {
+        if (!newScene.IsValid() || newScene.name == POST_PROCESS_SCENE)
+            return;
+
+        EnsureGameplayActiveScene();
     }
 
     public static string RequestLoadingScreenSuppression(string ownerId = null)
@@ -383,6 +464,9 @@ public static class SceneLoader
         // Load player scene, wait for it
         yield return LoadPlayerSceneCoroutine();
 
+        // Load the shared post-process scene and keep it active during gameplay.
+        yield return EnsurePostProcessSceneLoadedCoroutine();
+
         // Unload main menu (string overload)
         var mainMenuAsset = (SceneAsset)MAIN_MENU_SCENE;
         if (mainMenuAsset != null && mainMenuAsset.IsLoaded())
@@ -431,6 +515,8 @@ public static class SceneLoader
         operation.completed += _ =>
         {
             Debug.Log($"[Scene Loader] Player scene '{PLAYER_SCENE}' load completed callback fired. LoadedSceneCount now: {LoadedSceneCount}.");
+
+            CoroutineRunner.Run(EnsurePostProcessSceneLoadedCoroutine(forceReload));
 
             GameObject player = Player.PlayerObject;
 
@@ -483,6 +569,8 @@ public static class SceneLoader
 
             Debug.Log($"[Scene Loader] Player scene '{PLAYER_SCENE}' coroutine load completed. LoadedSceneCount now: {LoadedSceneCount}.");
         }
+
+        yield return EnsurePostProcessSceneLoadedCoroutine(forceReload);
 
         GameObject player = Player.PlayerObject;
 
@@ -569,7 +657,7 @@ public static class SceneLoader
         for (int i = 0; i < SceneManager.sceneCount; i++)
         {
             Scene scene = SceneManager.GetSceneAt(i);
-            if (scene.name != PLAYER_SCENE)
+            if (scene.name != PLAYER_SCENE && scene.name != POST_PROCESS_SCENE)
                 SceneManager.UnloadSceneAsync(scene);
         }
     }
