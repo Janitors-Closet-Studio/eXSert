@@ -146,6 +146,22 @@ public class PlayerAttackManager : MonoBehaviour
 
     public bool IsAttackInProgress => currentAttack != null;
 
+    /// <summary>
+    /// True when the current attack in progress is a grounded (non-aerial) attack type.
+    /// Single-target and AoE attacks are grounded; aerial attacks should not be interrupted by jumping.
+    /// </summary>
+    public bool CurrentAttackIsGroundedType
+    {
+        get
+        {
+            if (currentAttack == null) return false;
+            return currentAttack.attackType == AttackType.LightSingle
+                || currentAttack.attackType == AttackType.LightAOE
+                || currentAttack.attackType == AttackType.HeavySingle
+                || currentAttack.attackType == AttackType.HeavyAOE;
+        }
+    }
+
     [Header("Input Buffering")]
     [SerializeField, Range(0.05f, 0.6f)] private float inputBufferWindow = 0.25f;
 
@@ -561,8 +577,21 @@ public class PlayerAttackManager : MonoBehaviour
         PlayerAttack attackData;
         string attackId;
 
-        if (ShouldTreatAsGroundedForAttackSelection())
+        bool treatedAsGrounded = ShouldTreatAsGroundedForAttackSelection();
+        bool jumpPending = playerMovement != null && playerMovement.IsJumpPending;
+        Debug.Log($"[DIAG-Attack] AttemptAttack | light={lightAttack} | treatedAsGrounded={treatedAsGrounded} | jumpPending={jumpPending} | IsGrounded={PlayerMovement.isGrounded} | frame={Time.frameCount} | Time={Time.time:F4}");
+
+        if (treatedAsGrounded)
         {
+            // Block grounded-only attacks while the player has just pressed jump but hasn't
+            // left the ground yet. This guard is here (not in OnLightAttack/OnHeavyAttack) so
+            // it also covers the buffered-attack path. Timestamp-based check makes it
+            // independent of script execution order.
+            if (jumpPending)
+            {
+                Debug.Log($"[DIAG-Attack] BLOCKED by jump-pending guard | frame={Time.frameCount}");
+                return;
+            }
             attackId = ResolveGroundAttackId(lightAttack);
             if (string.IsNullOrEmpty(attackId))
                 return;
@@ -927,12 +956,21 @@ public class PlayerAttackManager : MonoBehaviour
 
     private void UpdateGroundedAttackGraceState()
     {
+        // Do not refresh the grounded grace window while a jump is pending.
+        // If we did, the grace window would keep the player "grounded-eligible" for attacks
+        // even after the jump input has been registered, which is exactly what we want to block.
+        if (playerMovement != null && playerMovement.IsJumpPending)
+            return;
+
         if (IsGrounded() || IsNearGroundForAttackSelection())
             lastGroundedAttackEligibleTime = Time.time;
     }
 
     private bool ShouldTreatAsGroundedForAttackSelection()
     {
+        // Never treat as grounded when a jump has been initiated.
+        if (playerMovement != null && playerMovement.IsJumpPending)
+            return false;
         if (IsGrounded())
             return true;
 

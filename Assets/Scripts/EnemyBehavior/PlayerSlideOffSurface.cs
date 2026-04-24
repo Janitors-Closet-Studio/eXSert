@@ -21,6 +21,7 @@ public class PlayerSlideOffSurface : MonoBehaviour
     private Transform playerTransform;
     private Rigidbody playerRigidbody;
     private CharacterController playerCharacterController;
+    private PlayerAttackManager playerAttackManager;
     
     private void Awake()
     {
@@ -37,12 +38,16 @@ public class PlayerSlideOffSurface : MonoBehaviour
         
         // Check if it's the player
         if (!collision.gameObject.CompareTag("Player")) return;
-        
+
         // Cache player components on first contact
         if (playerTransform == null || playerTransform.gameObject != collision.gameObject)
         {
             CachePlayerComponents(collision.gameObject);
         }
+
+        // Don't push the player while they are attacking; the slide force interrupts grounded attack animations.
+        if (playerAttackManager != null && playerAttackManager.IsAttackInProgress)
+            return;
         
         // Check if the player is on top of us
         if (!IsPlayerOnTop(collision)) return;
@@ -63,6 +68,11 @@ public class PlayerSlideOffSurface : MonoBehaviour
         if (playerCharacterController == null)
         {
             playerCharacterController = playerObject.GetComponentInParent<CharacterController>();
+        }
+        playerAttackManager = playerObject.GetComponent<PlayerAttackManager>();
+        if (playerAttackManager == null)
+        {
+            playerAttackManager = playerObject.GetComponentInParent<PlayerAttackManager>();
         }
     }
     

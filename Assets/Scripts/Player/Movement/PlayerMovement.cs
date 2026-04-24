@@ -465,6 +465,7 @@ public class PlayerMovement : MonoBehaviour
     private float nextDashAllowedTime;
     private Vector3 dashVelocity = Vector3.zero;
     private bool wasGrounded;
+    private bool justResumedFromPause;
     private float jogToSprintTimer;
     private bool sprintChargeActive;
     private bool wasMoving;
@@ -473,6 +474,15 @@ public class PlayerMovement : MonoBehaviour
     private bool doubleJumpAvailable;
     private enum PendingJumpType { None, Ground, Double }
     private PendingJumpType pendingJump = PendingJumpType.None;
+    private float jumpPendingStartTime = -1f;
+
+    /// <summary>
+    /// True during the window between when the player presses jump and when the jump velocity
+    /// is actually applied (i.e. the jump animation event fires). Use this to block grounded
+    /// attacks from starting while the character is mid-jump-startup.
+    /// Checked via timestamp so it is reliable regardless of script execution order.
+    /// </summary>
+    public bool IsJumpPending => pendingJump != PendingJumpType.None || (jumpPendingStartTime >= 0f && Time.time - jumpPendingStartTime < 0.4f);
     private Coroutine pendingJumpTimeoutRoutine;
     private bool airborneAnimationLocked;
     private bool fallingAnimationPlaying;
@@ -824,6 +834,7 @@ public class PlayerMovement : MonoBehaviour
     {
         PlayerAttackManager.OnAttack += AerialAttackHop;
         HitboxDamageManager.AttackHitConfirmed += HandleAttackHitConfirmed;
+        Managers.TimeLord.PauseCoordinator.OnResumed += OnGameResumed;
         if (dashChargesRemaining <= 0)
             ResetDashCharges();
     }
@@ -832,6 +843,7 @@ public class PlayerMovement : MonoBehaviour
     {
         PlayerAttackManager.OnAttack -= AerialAttackHop;
         HitboxDamageManager.AttackHitConfirmed -= HandleAttackHitConfirmed;
+        Managers.TimeLord.PauseCoordinator.OnResumed -= OnGameResumed;
 
         StopPendingJumpTimeout();
 
@@ -940,6 +952,11 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        // At timeScale=0 (paused) Update still runs with deltaTime=0. Skip all game-logic
+        // so failsafes cannot queue CrossFade transitions or mutate state while paused.
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return;
+
         DebugStateTransitions();
 
         if (InputReader.LightAttackTriggered)
@@ -991,6 +1008,14 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     public void FixedUpdate()
     {
+        // PauseCoordinator sets fixedDeltaTime to 0.0001 (not zero) when paused so that
+        // fixedDeltaTime * timeScale stays well-formed. That means FixedUpdate keeps ticking
+        // at a very high rate in real-time while paused. If we let it run, characterController.Move
+        // accumulates hundreds of tiny steps per second, visibly bouncing the player. We also
+        // prevent HandleAirborneAnimations from firing the Falling transition while paused.
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return;
+
         // Debug checks
         if (ResolveCameraTransform() == null)
         {
@@ -1420,6 +1445,11 @@ public class PlayerMovement : MonoBehaviour
         if (!characterController.isGrounded && !IsGroundedNow())
             return Vector3.zero;
 
+        // Don't slide the player off enemies while they are mid-attack; the slide force
+        // interrupts grounded attack animations when the player is standing close to an enemy.
+        if (attackManager != null && attackManager.IsAttackInProgress)
+            return Vector3.zero;
+
         Bounds bounds = characterController.bounds;
         float probeDistance = Mathf.Max(0.05f, enemyTopSlideProbeDistance);
         float footprintScale = Mathf.Max(0.5f, enemyTopSlideFootprintScale);
@@ -1778,7 +1808,18 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         if (InputReader.inputBusy)
-            attackManager?.ForceCancelCurrentAttack(resetCombo: false);
+        {
+            // Only cancel grounded (non-aerial) attacks when the player jumps.
+            // Aerial attacks should not be interrupted, and jumping mid-aerial-attack should be blocked.
+            bool attackingGrounded = attackManager != null && attackManager.CurrentAttackIsGroundedType;
+            bool attackingAerial = attackManager != null && attackManager.IsAttackInProgress && !attackManager.CurrentAttackIsGroundedType;
+
+            if (attackingAerial)
+                return; // don't allow jumping during an aerial attack
+
+            if (attackingGrounded)
+                attackManager.ForceCancelCurrentAttack(resetCombo: false);
+        }
 
         if (characterController == null)
             return;
@@ -1795,6 +1836,8 @@ public class PlayerMovement : MonoBehaviour
             highFallActive = false;
             HasPerformedDoubleJumpSinceGrounded = false;
             pendingJump = PendingJumpType.Ground;
+            jumpPendingStartTime = Time.time;
+            Debug.Log($"[DIAG-Jump] Jump input registered at Time={Time.time:F4} | pendingJump=Ground | jumpPendingStartTime={jumpPendingStartTime:F4} | frame={Time.frameCount}");
             StartPendingJumpTimeout();
             animationController?.PlayJump();
             if (animationController == null || jumpEventTimeout <= 0f)
@@ -1836,6 +1879,10 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.y = jumpForce;
             doubleJumpAvailable = canDoubleJump;
             pendingJump = PendingJumpType.None;
+            // Do NOT clear jumpPendingStartTime here — let it expire naturally after 0.4 s.
+            // Clearing it early was causing IsJumpPending to become false the moment the jump
+            // velocity was applied, which let the grounded-attack grace window re-enable
+            // grounded attacks in the first frames while the character was still near the ground.
             PlaySFX(jumpSFX, priority: 1);
             DebugMovementLog($"Ground jump applied | currentY={currentMovement.y:F2} doubleJumpAvailable={doubleJumpAvailable}");
             return;
@@ -2921,6 +2968,18 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
+        // Skip the landing/takeoff transition check for exactly one FixedUpdate after unpausing.
+        // When timeScale=0 the CharacterController stops updating, so isGrounded can go stale
+        // during the pause. The first FixedUpdate after resume runs Move() which restores the
+        // correct grounded state, but if wasGrounded was false during the pause we would
+        // incorrectly see a !wasGrounded→grounded transition and call PlayLand().
+        if (justResumedFromPause)
+        {
+            justResumedFromPause = false;
+            wasGrounded = grounded;
+            return;
+        }
+
         if (forceFaceplateGrounded)
         {
             airborneAnimationLocked = false;
@@ -2956,6 +3015,7 @@ public class PlayerMovement : MonoBehaviour
             }
             else
             {
+                Debug.Log($"[DIAG-Pause] PlayLand triggered | wasGrounded={wasGrounded} | grounded={grounded} | pendingJump={pendingJump} | airborneAnimLocked={airborneAnimationLocked} | currentY={currentMovement.y:F4} | frame={Time.frameCount} | Time={Time.time:F4}");
                 animationController?.PlayLand();
                 Landed?.Invoke();
             }
@@ -3516,6 +3576,22 @@ public class PlayerMovement : MonoBehaviour
             attackFacingAnchorFrozenByHit = true;
     }
 
+    private void OnGameResumed()
+    {
+        // Set a one-shot flag so HandleAirborneAnimations skips the landing/takeoff transition
+        // check on the very first FixedUpdate after unpausing. The CharacterController does not
+        // update at timeScale=0, so isGrounded can be stale while paused; the first FixedUpdate
+        // restores the real grounded state, but wasGrounded may not match it, causing a false
+        // PlayLand() call. Skipping that one frame prevents the visible "standing on toes" twitch.
+        bool groundedNow = characterController != null && IsGroundedNow();
+        Debug.Log($"[DIAG-Pause] OnGameResumed | wasGrounded_before={wasGrounded} | IsGroundedNow={groundedNow} | currentMovement.y={currentMovement.y:F4} | pendingJump={pendingJump} | airborneAnimLocked={airborneAnimationLocked} | frame={Time.frameCount}");
+        justResumedFromPause = true;
+
+        // Also clear any stale positive y-velocity while grounded to prevent an upward nudge.
+        if (groundedNow && currentMovement.y > 0f)
+            currentMovement.y = -1f;
+    }
+
     private bool IsAnalogControlSchemeActive()
     {
         if (InputReader.Instance == null)
@@ -3735,8 +3811,6 @@ public class PlayerMovement : MonoBehaviour
     {
         wasMoving = false;
     }
-
-    public bool IsJumpPending => pendingJump != PendingJumpType.None;
 
     public void SetMovementSpeedOverride(float speed)
     {
