@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
+using UnityEngine.Video;
 using Utilities.Combat;
 using Managers.TimeLord; // For pause event handling
 #pragma warning disable CS0414
@@ -95,10 +96,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Ending Flow")]
         [Tooltip("If true, runs ending flow after death animation completes.")]
         [SerializeField] private bool playEndingFlowOnDefeat = false;
-        [Tooltip("Cutscene asset to play after death animation.")]
-        [SerializeField] private Cutscene endingCutscene;
-        [Tooltip("Scene to load after ending cutscene finishes (for example, credits).")]
-        [SerializeField] private SceneAsset creditsScene;
+        [Tooltip("Video clip to play after death animation.")]
+        [SerializeField] private VideoClip endingCutsceneClip;
+        [Tooltip("If true, loads the configured credits scene after the ending cutscene. If false, returns to main menu.")]
+        [SerializeField] private bool loadCreditsSceneAfterEndingCutscene = false;
+        [Tooltip("Scene name to load after ending cutscene finishes when credits loading is enabled.")]
+        [SerializeField] private string creditsSceneName;
         [Tooltip("Fallback wait if death animation state cannot be detected.")]
         [SerializeField, Min(0f)] private float deathAnimationFallbackDuration = 3f;
         
@@ -5207,10 +5210,10 @@ namespace EnemyBehavior.Boss.Cleanser
             float fallbackWait = Mathf.Max(0f, deathAnimationFallbackDuration);
             yield return WaitForAnimationStateToFinish(triggerDeath, fallbackWait);
 
-            if (endingCutscene != null)
+            if (endingCutsceneClip != null)
             {
                 bool cutsceneFinished = false;
-                CutsceneManager.PlayCutscene(endingCutscene, () => cutsceneFinished = true);
+                CutsceneManager.PlayCutscene(endingCutsceneClip, () => cutsceneFinished = true);
 
                 while (!cutsceneFinished)
                     yield return null;
@@ -5220,13 +5223,30 @@ namespace EnemyBehavior.Boss.Cleanser
                 Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no ending cutscene is assigned. Continuing to credits load.", this);
             }
 
-            if (creditsScene != null)
+            if (loadCreditsSceneAfterEndingCutscene)
             {
-                yield return SceneLoader.LoadCoroutine(creditsScene, loadScreen: false);
+                if (!string.IsNullOrWhiteSpace(creditsSceneName))
+                {
+                    AsyncOperation loadCreditsOp = SceneManager.LoadSceneAsync(creditsSceneName, LoadSceneMode.Additive);
+                    if (loadCreditsOp != null)
+                    {
+                        yield return loadCreditsOp;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[CleanserBrain] Failed to start loading credits scene '{creditsSceneName}'. Returning to main menu instead.", this);
+                        SceneLoader.LoadMainMenu();
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[CleanserBrain] Credits scene loading is enabled but no scene name is assigned. Returning to main menu instead.", this);
+                    SceneLoader.LoadMainMenu();
+                }
             }
             else
             {
-                Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no credits scene is assigned.", this);
+                SceneLoader.LoadMainMenu();
             }
 
             endingFlowCoroutine = null;
