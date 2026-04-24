@@ -52,6 +52,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Optional fallback spawn points used when none are provided by CleanserBrain.")]
         [SerializeField] private List<Transform> fallbackSpawnPoints = new List<Transform>();
 
+        [Header("Sink Despawn (Parry / Ultimate)")]
+        [Tooltip("How fast spare weapons sink into the ground when despawned via parry or ultimate (units per second).")]
+        [SerializeField, Min(0.05f)] private float sinkDespawnSpeed = 1.6f;
+        [Tooltip("How far spare weapons sink before being returned to the pool.")]
+        [SerializeField, Min(0.1f)] private float sinkDespawnDistance = 2.25f;
+
         [Header("Stockpile Hover")]
         [Tooltip("Local anchor around the Cleanser where stockpiled weapons hover.")]
         public Vector3 HoverAnchorLocal = new Vector3(0.8f, 1.8f, -0.2f);
@@ -800,6 +806,93 @@ namespace EnemyBehavior.Boss.Cleanser
                 StartMagneticReturn(weapon);
             }
             lodgedWeapons.Clear();
+        }
+
+        /// <summary>
+        /// Sinks every currently lodged AND stockpiled spare weapon into the ground (Roomba-panel
+        /// style) and then returns each one to the pool. Used when the Cleanser's spin dash is
+        /// parried or when his ultimate triggers — both moments where the spares should visibly
+        /// disappear instead of magnetically returning to rest.
+        /// </summary>
+        public void SinkAndDespawnAllSpareWeapons()
+        {
+            // Snapshot the lists because the coroutines mutate the source collections via
+            // ReturnWeaponToPool when they finish.
+            if (lodgedWeapons.Count > 0)
+            {
+                var lodgedSnapshot = new List<SpareWeapon>(lodgedWeapons);
+                lodgedWeapons.Clear();
+                for (int i = 0; i < lodgedSnapshot.Count; i++)
+                {
+                    var weapon = lodgedSnapshot[i];
+                    if (weapon == null || weapon.WeaponObject == null)
+                        continue;
+                    StartCoroutine(SinkAndReturnWeaponRoutine(weapon));
+                }
+            }
+
+            if (stockpiledWeapons.Count > 0)
+            {
+                var stockpileSnapshot = new List<SpareWeapon>(stockpiledWeapons);
+                stockpiledWeapons.Clear();
+                for (int i = 0; i < stockpileSnapshot.Count; i++)
+                {
+                    var weapon = stockpileSnapshot[i];
+                    if (weapon == null || weapon.WeaponObject == null)
+                        continue;
+                    weapon.IsHeld = false;
+                    StartCoroutine(SinkAndReturnWeaponRoutine(weapon));
+                }
+                UpdateStockpileLayoutImmediate();
+            }
+        }
+
+        private IEnumerator SinkAndReturnWeaponRoutine(SpareWeapon weapon)
+        {
+            if (weapon == null || weapon.WeaponObject == null)
+                yield break;
+
+            GameObject obj = weapon.WeaponObject;
+
+            // Disable colliders so the sinking visual passes cleanly through the floor.
+            Collider[] colliders = obj.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = false;
+            }
+
+            // Pin any rigidbody so physics doesn't fight the lerp.
+            Rigidbody[] bodies = obj.GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i] == null) continue;
+                bodies[i].linearVelocity = Vector3.zero;
+                bodies[i].angularVelocity = Vector3.zero;
+                bodies[i].isKinematic = true;
+            }
+
+            Vector3 startPos = obj.transform.position;
+            float sinkDistance = Mathf.Max(0.1f, sinkDespawnDistance);
+            float sinkSpeed = Mathf.Max(0.05f, sinkDespawnSpeed);
+
+            while (obj != null && Vector3.Distance(startPos, obj.transform.position) < sinkDistance)
+            {
+                obj.transform.position += Vector3.down * (sinkSpeed * Time.deltaTime);
+                yield return null;
+            }
+
+            if (obj == null)
+                yield break;
+
+            // Re-enable colliders before pooling so the next reuse starts clean.
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = true;
+            }
+
+            ReturnWeaponToPool(weapon);
         }
 
         /// <summary>
