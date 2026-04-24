@@ -3862,6 +3862,133 @@ namespace EnemyBehavior.Boss.Cleanser
             SpawnCrescentArcProjectiles(sourceConfig, targetPos, 0f);
         }
 
+        private void ApplySweepProjectileVisualFlipIfNeeded(GameObject projectile, CrescentArcProjectileConfig config)
+        {
+            if (projectile == null || !ShouldFlipSweepProjectileVisual(config))
+                return;
+
+            projectile.transform.Rotate(0f, 180f, 0f, Space.Self);
+        }
+
+        private bool ShouldFlipSweepProjectileVisual(CrescentArcProjectileConfig config)
+        {
+            if (UltimateSettings == null || config == null)
+                return false;
+
+            return ReferenceEquals(config, UltimateSettings.LowSweepProjectile)
+                || ReferenceEquals(config, UltimateSettings.MidSweepProjectile);
+        }
+
+        private static void ActivateProjectileSpawnVfx(GameObject projectile)
+        {
+            if (projectile == null)
+                return;
+
+            if (!projectile.activeSelf)
+                projectile.SetActive(true);
+
+            ParticleSystem[] particleSystems = projectile.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                if (!particleSystem.gameObject.activeSelf)
+                    particleSystem.gameObject.SetActive(true);
+
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particleSystem.Play(true);
+            }
+
+            TrailRenderer[] trailRenderers = projectile.GetComponentsInChildren<TrailRenderer>(true);
+            for (int i = 0; i < trailRenderers.Length; i++)
+            {
+                TrailRenderer trailRenderer = trailRenderers[i];
+                if (trailRenderer == null)
+                    continue;
+
+                if (!trailRenderer.gameObject.activeSelf)
+                    trailRenderer.gameObject.SetActive(true);
+
+                trailRenderer.Clear();
+                trailRenderer.emitting = true;
+            }
+        }
+
+        private static void ApplyProjectileScalePreservingVfx(GameObject projectile, float scale)
+        {
+            if (projectile == null)
+                return;
+
+            ParticleSystem[] particleSystems = projectile.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                switch (particleSystem.gameObject.name)
+                {
+                    case "Edge":
+                    case "Bright":
+                    case "DarkTrail":
+                        MultiplyParticleStartSize(particleSystem, scale);
+                        break;
+                    case "StretchedParticle":
+                    case "StretchedParticleDark":
+                        MultiplyParticleShapeScaleX(particleSystem, scale);
+                        break;
+                }
+            }
+
+            Transform crescentTrail = FindChildTransformByName(projectile.transform, "CrescentTrail");
+            if (crescentTrail != null)
+            {
+                Vector3 localScale = crescentTrail.localScale;
+                localScale.y *= scale;
+                crescentTrail.localScale = localScale;
+            }
+        }
+
+        private static void MultiplyParticleStartSize(ParticleSystem particleSystem, float scale)
+        {
+            var main = particleSystem.main;
+            if (main.startSize3D)
+            {
+                main.startSizeXMultiplier *= scale;
+                main.startSizeYMultiplier *= scale;
+                main.startSizeZMultiplier *= scale;
+                return;
+            }
+
+            main.startSizeMultiplier *= scale;
+        }
+
+        private static void MultiplyParticleShapeScaleX(ParticleSystem particleSystem, float scale)
+        {
+            var shape = particleSystem.shape;
+            Vector3 shapeScale = shape.scale;
+            shapeScale.x *= scale;
+            shape.scale = shapeScale;
+        }
+
+        private static Transform FindChildTransformByName(Transform root, string childName)
+        {
+            if (root == null || string.IsNullOrEmpty(childName))
+                return null;
+
+            Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform current = transforms[i];
+                if (current != null && current.name == childName)
+                    return current;
+            }
+
+            return null;
+        }
+
         private bool CanSpawnUltimateSweep(CrescentArcProjectileConfig config)
         {
             return config != null && config.ProjectilePrefab != null;
@@ -3954,11 +4081,12 @@ namespace EnemyBehavior.Boss.Cleanser
                 float tiltAngle = Random.Range(config.TiltAngleRange.x, config.TiltAngleRange.y);
                 Quaternion spawnRot = Quaternion.LookRotation(dir) * Quaternion.AngleAxis(tiltAngle, Vector3.forward);
                 GameObject projectile = Instantiate(prefabToSpawn, spawnPos, spawnRot);
+                ActivateProjectileSpawnVfx(projectile);
 
                 float scale = Random.Range(config.ScaleRange.x, config.ScaleRange.y);
                 if (Mathf.Abs(scale - 1f) > 0.001f)
                 {
-                    projectile.transform.localScale *= scale;
+                    ApplyProjectileScalePreservingVfx(projectile, scale);
                 }
 
                 var arcProjectile = projectile.GetComponent<CleanserCrescentArcProjectile>();
@@ -3973,6 +4101,7 @@ namespace EnemyBehavior.Boss.Cleanser
                         config.CanBeParried,
                         config.CanBeGuarded,
                         config.GuardDamageMultiplier);
+                    ApplySweepProjectileVisualFlipIfNeeded(projectile, config);
                     continue;
                 }
 
@@ -3990,6 +4119,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     };
 
                     cleanserProjectile.Initialize(player, transform, straightConfig, dualWieldSystem);
+                    ApplySweepProjectileVisualFlipIfNeeded(projectile, config);
                     continue;
                 }
 
@@ -4013,6 +4143,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     config.CanBeParried,
                     config.CanBeGuarded,
                     config.GuardDamageMultiplier);
+                ApplySweepProjectileVisualFlipIfNeeded(projectile, config);
             }
         }
 
