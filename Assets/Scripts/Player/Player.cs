@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using Progression.Checkpoints;
 using UnityEngine.SceneManagement;
+using Unity.AppUI.UI;
 
 /// <summary>
 /// Static class for managing the player.
@@ -46,6 +47,7 @@ public static class Player
 
     public static void SpawnPlayerAtCheckpoint()
     {
+
         if (currentCheckpoint == null)
         {
             Debug.LogError("[Player] Cannot spawn at checkpoint because no checkpoint is currently set.");
