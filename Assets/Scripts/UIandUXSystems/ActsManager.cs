@@ -233,6 +233,18 @@ public class ActsManager : Singleton<ActsManager>
             if (image == null)
                 continue;
 
+            if (image.gameObject.name.EndsWith("_Image", System.StringComparison.Ordinal))
+                pulseImages.Add(image);
+        }
+
+        if (pulseImages.Count > 0)
+            return pulseImages;
+
+        foreach (Image image in images)
+        {
+            if (image == null)
+                continue;
+
             pulseImages.Add(image);
         }
 
@@ -472,7 +484,6 @@ public class ActsManager : Singleton<ActsManager>
 
         StartCoroutine(SoundManager.Instance.FadeOutGameplayAudio(1f)); // Fade out music over 1 second
 
-        Player.TriggerRespawn();
         SceneLoader.Load(sceneAsset, forceReload: false);
         PauseManager.Instance.ResumeGame();
 
@@ -508,7 +519,6 @@ public class ActsManager : Singleton<ActsManager>
         // Find a checkpoint in the loaded scene and set it as current
         SetCheckpointForScene(sceneName);
 
-        Player.TriggerRespawn();
     }
 
     private int currentPulsingSceneIndex = -1;
