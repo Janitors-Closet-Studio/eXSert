@@ -91,6 +91,16 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("How quickly the health bar animates to the current value.")]
         [SerializeField] private float healthBarLerpSpeed = 8f;
         private float displayedHealth;
+
+        [Header("Ending Flow")]
+        [Tooltip("If true, runs ending flow after death animation completes.")]
+        [SerializeField] private bool playEndingFlowOnDefeat = false;
+        [Tooltip("Cutscene asset to play after death animation.")]
+        [SerializeField] private Cutscene endingCutscene;
+        [Tooltip("Scene to load after ending cutscene finishes (for example, credits).")]
+        [SerializeField] private SceneAsset creditsScene;
+        [Tooltip("Fallback wait if death animation state cannot be detected.")]
+        [SerializeField, Min(0f)] private float deathAnimationFallbackDuration = 3f;
         
         [Header("Attack Queue Settings")]
         [Tooltip("If true, this boss is exempt from the EnemyAttackQueueManager and attacks freely.")]
@@ -411,6 +421,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField, Min(0.1f)] private float playerRefRetryIntervalSeconds = 0.5f;
         private Coroutine playerRefRetryCoroutine;
         private float lastUltimateDiagnosticLogTime = -999f;
+        private Coroutine endingFlowCoroutine;
 
         private void LogCriticalDiagnostic(string message, bool warning = false)
         {
@@ -836,6 +847,12 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 StopCoroutine(currentAttackCoroutine);
                 currentAttackCoroutine = null;
+            }
+
+            if (endingFlowCoroutine != null)
+            {
+                StopCoroutine(endingFlowCoroutine);
+                endingFlowCoroutine = null;
             }
 
             EndSpinDashHitboxPhase();
@@ -5171,10 +5188,48 @@ namespace EnemyBehavior.Boss.Cleanser
             EndWhirlwindDamagePhase();
             aggressionSystem?.SetAggressionProcessingPaused(false);
             UnregisterFromAttackQueue();
+
+            if (playEndingFlowOnDefeat)
+            {
+                if (endingFlowCoroutine != null)
+                    StopCoroutine(endingFlowCoroutine);
+
+                endingFlowCoroutine = StartCoroutine(RunEndingFlowAfterDeathAnimation());
+            }
             
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Defeated!");
 #endif
+        }
+
+        private IEnumerator RunEndingFlowAfterDeathAnimation()
+        {
+            float fallbackWait = Mathf.Max(0f, deathAnimationFallbackDuration);
+            yield return WaitForAnimationStateToFinish(triggerDeath, fallbackWait);
+
+            if (endingCutscene != null)
+            {
+                bool cutsceneFinished = false;
+                CutsceneManager.PlayCutscene(endingCutscene, () => cutsceneFinished = true);
+
+                while (!cutsceneFinished)
+                    yield return null;
+            }
+            else
+            {
+                Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no ending cutscene is assigned. Continuing to credits load.", this);
+            }
+
+            if (creditsScene != null)
+            {
+                yield return SceneLoader.LoadCoroutine(creditsScene, loadScreen: false);
+            }
+            else
+            {
+                Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no credits scene is assigned.", this);
+            }
+
+            endingFlowCoroutine = null;
         }
 
         private void TryReturnPlayerToPlayerScene()
