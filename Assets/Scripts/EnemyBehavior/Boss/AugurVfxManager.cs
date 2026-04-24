@@ -14,8 +14,29 @@ namespace EnemyBehavior.Boss
     {
         [Header("References")]
         [SerializeField] private BossRoombaBrain bossBrain;
+        [SerializeField] private BossRoombaController bossController;
         [SerializeField] private BossHealth bossHealth;
         [SerializeField] private AudioSource audioSource;
+
+        [Header("Alarm Whistle")]
+        [SerializeField, Tooltip("Optional renderer used for alarm flashing. If left empty, the VFX manager will look for a child named 'whistle_low'.")]
+        private Renderer alarmFlashRenderer;
+        [SerializeField, Tooltip("Renderer material property used for emission color.")]
+        private string alarmFlashEmissionProperty = "_EmissionColor";
+        [SerializeField, Tooltip("Base emission color used for the whistle alarm flash.")]
+        private Color alarmFlashEmissionColor = Color.red;
+        [SerializeField, Tooltip("Minimum emission multiplier while the alarm is idle between flashes.")]
+        private float alarmFlashMinIntensity = 0f;
+        [SerializeField, Tooltip("Maximum emission multiplier while adds are actively spawning.")]
+        private float alarmFlashMaxIntensity = 10f;
+        [SerializeField, Tooltip("How quickly the whistle emission pulses while the alarm is active.")]
+        private float alarmFlashSpeed = 5f;
+        [SerializeField, Tooltip("Optional transform rotated while the alarm is active. If left empty, the VFX manager will look for a child named 'Lights'.")]
+        private Transform alarmLightsTransform;
+        [SerializeField, Tooltip("Y-axis rotation speed for the alarm lights while the alarm is active.")]
+        private float alarmLightsRotationSpeed = 240f;
+        [SerializeField, Tooltip("When the alarm lights rotation passes this Y angle, it snaps back to 0 and continues rotating.")]
+        private float alarmLightsSnapThreshold = 260f;
 
         [Header("Exhaust Fire")]
         [SerializeField, Tooltip("Roots that pulse when Augur gets aggressive or starts an action.")]
@@ -47,6 +68,12 @@ namespace EnemyBehavior.Boss
         [Header("Panel Break")]
         [SerializeField, Tooltip("Optional electricity prefab spawned when a side panel breaks.")]
         private GameObject panelBreakElectricityPrefab;
+        [SerializeField, Tooltip("Optional shared explosion prefab spawned when the alarm or a panel breaks.")]
+        private GameObject breakExplosionPrefab;
+        [SerializeField, Tooltip("Optional spawn location for the alarm break explosion.")]
+        private Transform alarmBreakExplosionLocation;
+        [SerializeField, Tooltip("Optional spawn locations for panel break explosions. Array index should match panel index.")]
+        private Transform[] panelBreakExplosionLocations = Array.Empty<Transform>();
         [SerializeField] private Vector3 panelBreakOffset = Vector3.zero;
         [SerializeField] private float panelBreakScale = 1f;
         [SerializeField] private float panelBreakLifetime = 5f;
@@ -59,23 +86,37 @@ namespace EnemyBehavior.Boss
         [SerializeField] private Vector3 deathVfxOffset = Vector3.zero;
         [SerializeField] private float deathVfxScale = 1f;
         [SerializeField] private float deathVfxLifetime = 8f;
+        [SerializeField] private float deathExplosionRepeatInterval = 1f;
+        [SerializeField] private Vector2 deathExplosionRandomScaleRange = new Vector2(1.5f, 2.5f);
         [SerializeField] private AudioClip deathAudioClip;
 
         private Coroutine exhaustRoutine;
         private Coroutine dashIndicatorRoutine;
+        private Coroutine alarmFlashRoutine;
+        private Coroutine deathExplosionRoutine;
         private bool deathTriggered;
         private bool dashExhaustActive;
+        private bool alarmFlashActive;
         private bool cachedFormInitialized;
         private RoombaForm cachedForm;
         private GameObject activeDashIndicatorInstance;
         private GameObject activeDashRingInstance;
         private ParticleSystem[] activeDashIndicatorParticles = Array.Empty<ParticleSystem>();
         private ParticleSystem[] activeDashRingParticles = Array.Empty<ParticleSystem>();
+        private MaterialPropertyBlock alarmFlashPropertyBlock;
+        private int alarmFlashEmissionPropertyId;
+        private Color alarmFlashOriginalEmissionColor = Color.black;
+        private bool alarmFlashHasOriginalEmission;
+        private Vector3 alarmLightsInitialLocalEulerAngles;
+        private bool alarmLightsHasInitialRotation;
 
         private void Awake()
         {
             if (bossBrain == null)
                 bossBrain = GetComponentInParent<BossRoombaBrain>();
+
+            if (bossController == null)
+                bossController = GetComponentInParent<BossRoombaController>();
 
             if (bossHealth == null)
                 bossHealth = GetComponentInParent<BossHealth>();
@@ -95,6 +136,9 @@ namespace EnemyBehavior.Boss
                 cachedFormInitialized = true;
             }
 
+            InitializeAlarmFlashRenderer();
+            InitializeAlarmLightsTransform();
+
             ResetManagedState();
         }
 
@@ -105,6 +149,9 @@ namespace EnemyBehavior.Boss
 
             if (bossBrain != null)
                 bossBrain.SidePanelDestroyed += HandleSidePanelDestroyed;
+
+            if (bossController != null)
+                bossController.AlarmDestroyed += HandleAlarmDestroyed;
 
             ResetManagedState();
         }
@@ -117,6 +164,9 @@ namespace EnemyBehavior.Boss
             if (bossBrain != null)
                 bossBrain.SidePanelDestroyed -= HandleSidePanelDestroyed;
 
+            if (bossController != null)
+                bossController.AlarmDestroyed -= HandleAlarmDestroyed;
+
             if (exhaustRoutine != null)
             {
                 StopCoroutine(exhaustRoutine);
@@ -128,6 +178,14 @@ namespace EnemyBehavior.Boss
                 StopCoroutine(dashIndicatorRoutine);
                 dashIndicatorRoutine = null;
             }
+
+            if (deathExplosionRoutine != null)
+            {
+                StopCoroutine(deathExplosionRoutine);
+                deathExplosionRoutine = null;
+            }
+
+            StopAlarmFlash();
 
             ResetManagedState();
         }
@@ -149,6 +207,17 @@ namespace EnemyBehavior.Boss
                 if (previousForm != RoombaForm.CageBull && cachedForm == RoombaForm.CageBull)
                     TriggerEnragedExhaust();
             }
+
+            bool shouldFlashAlarm = ShouldFlashAlarmWhistle();
+            if (shouldFlashAlarm != alarmFlashActive)
+            {
+                if (shouldFlashAlarm)
+                    StartAlarmFlash();
+                else
+                    StopAlarmFlash();
+            }
+
+            UpdateAlarmLightsRotation(shouldFlashAlarm);
 
         }
 
@@ -324,7 +393,16 @@ namespace EnemyBehavior.Boss
 
             Transform anchor = panelAnchor != null ? panelAnchor : transform;
             SpawnDetachedEffect(panelBreakElectricityPrefab, anchor, panelBreakOffset, panelBreakScale, panelBreakLifetime);
+            SpawnBreakExplosion(GetPanelBreakExplosionAnchor(panelIndex, anchor));
             PlayClip(panelBreakAudioClip);
+        }
+
+        private void HandleAlarmDestroyed(Transform alarmAnchor)
+        {
+            if (deathTriggered)
+                return;
+
+            SpawnBreakExplosion(alarmBreakExplosionLocation != null ? alarmBreakExplosionLocation : alarmAnchor);
         }
 
         private void HandleBossDefeated()
@@ -335,12 +413,33 @@ namespace EnemyBehavior.Boss
             deathTriggered = true;
             HideDashTelegraph();
             HideDashRing();
+            StopAlarmFlash();
             StopExhaustImmediately();
 
-            Transform anchor = deathVfxAnchor != null ? deathVfxAnchor : transform;
-            SpawnDetachedEffect(deathElectricityPrefab, anchor, deathVfxOffset, deathVfxScale, deathVfxLifetime);
-            SpawnDetachedEffect(deathExplosionPrefab, anchor, deathVfxOffset, deathVfxScale, deathVfxLifetime);
+            Transform explosionAnchor = deathVfxAnchor != null ? deathVfxAnchor : transform;
+            RestartObject(deathElectricityPrefab);
+            deathExplosionRoutine = StartCoroutine(RepeatDeathExplosions(explosionAnchor));
             PlayClip(deathAudioClip);
+        }
+
+        private IEnumerator RepeatDeathExplosions(Transform anchor)
+        {
+            float repeatInterval = Mathf.Max(0.01f, deathExplosionRepeatInterval);
+
+            while (deathTriggered)
+            {
+                SpawnDetachedEffect(
+                    deathExplosionPrefab,
+                    anchor,
+                    deathVfxOffset,
+                    deathVfxScale * GetRandomDeathExplosionScale(),
+                    deathVfxLifetime
+                );
+
+                yield return WaitForSecondsCache.Get(repeatInterval);
+            }
+
+            deathExplosionRoutine = null;
         }
 
         private IEnumerator HideDashTelegraphAfterDelay(float delay)
@@ -432,12 +531,44 @@ namespace EnemyBehavior.Boss
                 Destroy(instance, destroyDelay);
         }
 
+        private void SpawnBreakExplosion(Transform anchor)
+        {
+            if (breakExplosionPrefab == null || anchor == null)
+                return;
+
+            SpawnDetachedEffect(breakExplosionPrefab, anchor, Vector3.zero, panelBreakScale, panelBreakLifetime);
+        }
+
+        private Transform GetPanelBreakExplosionAnchor(int panelIndex, Transform fallbackAnchor)
+        {
+            if (panelBreakExplosionLocations != null && panelIndex >= 0 && panelIndex < panelBreakExplosionLocations.Length)
+            {
+                Transform configuredAnchor = panelBreakExplosionLocations[panelIndex];
+                if (configuredAnchor != null)
+                    return configuredAnchor;
+            }
+
+            return fallbackAnchor;
+        }
+
         private void ResetManagedState()
         {
+            if (deathExplosionRoutine != null)
+            {
+                StopCoroutine(deathExplosionRoutine);
+                deathExplosionRoutine = null;
+            }
+
             HideDashTelegraph();
             HideDashRing();
+            StopAlarmFlash();
+            RestoreAlarmLightsRotation();
             dashExhaustActive = false;
             StopEffects(exhaustVfxRoots);
+            StopEffects(deathElectricityPrefab);
+
+            if (deathElectricityPrefab != null)
+                deathElectricityPrefab.SetActive(false);
 
             if (exhaustVfxRoots != null)
             {
@@ -449,6 +580,13 @@ namespace EnemyBehavior.Boss
             }
 
             deathTriggered = false;
+        }
+
+        private float GetRandomDeathExplosionScale()
+        {
+            float minScale = Mathf.Min(deathExplosionRandomScaleRange.x, deathExplosionRandomScaleRange.y);
+            float maxScale = Mathf.Max(deathExplosionRandomScaleRange.x, deathExplosionRandomScaleRange.y);
+            return UnityEngine.Random.Range(minScale, maxScale);
         }
 
         private static void ConfigureDashIndicator(ParticleSystem[] particleSystems, float dashDistance, float lifetime)
@@ -484,6 +622,189 @@ namespace EnemyBehavior.Boss
                 main.duration = lifetime;
                 main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime);
             }
+        }
+
+        private void InitializeAlarmFlashRenderer()
+        {
+            alarmFlashPropertyBlock ??= new MaterialPropertyBlock();
+            alarmFlashEmissionPropertyId = Shader.PropertyToID(
+                string.IsNullOrWhiteSpace(alarmFlashEmissionProperty) ? "_EmissionColor" : alarmFlashEmissionProperty
+            );
+
+            if (alarmFlashRenderer == null)
+            {
+                Transform searchRoot = bossBrain != null ? bossBrain.transform : transform.root;
+                Transform whistle = searchRoot.Find("Roomba_Model/RoombaLoPoly/Body/whistle_low");
+                if (whistle != null)
+                    alarmFlashRenderer = whistle.GetComponent<Renderer>();
+
+                if (alarmFlashRenderer == null)
+                {
+                    Renderer[] renderers = searchRoot.GetComponentsInChildren<Renderer>(true);
+                    for (int i = 0; i < renderers.Length; i++)
+                    {
+                        if (renderers[i] != null && renderers[i].name == "whistle_low")
+                        {
+                            alarmFlashRenderer = renderers[i];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            CacheAlarmFlashOriginalEmission();
+            RestoreAlarmFlashEmission();
+        }
+
+        private void InitializeAlarmLightsTransform()
+        {
+            if (alarmLightsTransform == null)
+            {
+                Transform searchRoot = bossBrain != null ? bossBrain.transform : transform.root;
+                Transform lights = searchRoot.Find("Roomba_Model/CTRL_BodyBase/DoombaRoot/D_BodyBase/D_BodyTop/D_Alarm/Lights");
+                if (lights != null)
+                    alarmLightsTransform = lights;
+
+                if (alarmLightsTransform == null)
+                {
+                    Transform[] allChildren = searchRoot.GetComponentsInChildren<Transform>(true);
+                    for (int i = 0; i < allChildren.Length; i++)
+                    {
+                        if (allChildren[i] != null && allChildren[i].name == "Lights")
+                        {
+                            alarmLightsTransform = allChildren[i];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (alarmLightsTransform != null)
+            {
+                alarmLightsInitialLocalEulerAngles = alarmLightsTransform.localEulerAngles;
+                alarmLightsHasInitialRotation = true;
+            }
+        }
+
+        private bool ShouldFlashAlarmWhistle()
+        {
+            if (deathTriggered || bossController == null || !bossController.IsAlarmAlive || bossController.alarm == null)
+                return false;
+
+            return bossController.alarm.activeInHierarchy;
+        }
+
+        private void CacheAlarmFlashOriginalEmission()
+        {
+            if (alarmFlashRenderer == null)
+                return;
+
+            Material sharedMaterial = alarmFlashRenderer.sharedMaterial;
+            if (sharedMaterial != null && sharedMaterial.HasProperty(alarmFlashEmissionPropertyId))
+            {
+                alarmFlashOriginalEmissionColor = sharedMaterial.GetColor(alarmFlashEmissionPropertyId);
+                alarmFlashHasOriginalEmission = true;
+                return;
+            }
+
+            alarmFlashOriginalEmissionColor = Color.black;
+            alarmFlashHasOriginalEmission = false;
+        }
+
+        private void StartAlarmFlash()
+        {
+            if (alarmFlashRenderer == null)
+                InitializeAlarmFlashRenderer();
+
+            if (alarmFlashRenderer == null)
+                return;
+
+            alarmFlashActive = true;
+
+            if (alarmFlashRoutine != null)
+                StopCoroutine(alarmFlashRoutine);
+
+            alarmFlashRoutine = StartCoroutine(AlarmFlashRoutine());
+        }
+
+        private void StopAlarmFlash()
+        {
+            alarmFlashActive = false;
+
+            if (alarmFlashRoutine != null)
+            {
+                StopCoroutine(alarmFlashRoutine);
+                alarmFlashRoutine = null;
+            }
+
+            RestoreAlarmFlashEmission();
+        }
+
+        private IEnumerator AlarmFlashRoutine()
+        {
+            while (alarmFlashActive && ShouldFlashAlarmWhistle())
+            {
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * Mathf.Max(0.01f, alarmFlashSpeed) * Mathf.PI * 2f);
+                float intensity = Mathf.Lerp(alarmFlashMinIntensity, alarmFlashMaxIntensity, pulse);
+                ApplyAlarmFlashEmission(alarmFlashEmissionColor * intensity);
+                yield return null;
+            }
+
+            alarmFlashRoutine = null;
+            alarmFlashActive = false;
+            RestoreAlarmFlashEmission();
+        }
+
+        private void RestoreAlarmFlashEmission()
+        {
+            if (alarmFlashRenderer == null)
+                return;
+
+            ApplyAlarmFlashEmission(alarmFlashHasOriginalEmission ? alarmFlashOriginalEmissionColor : Color.black);
+        }
+
+        private void UpdateAlarmLightsRotation(bool shouldRotate)
+        {
+            if (alarmLightsTransform == null)
+                return;
+
+            if (!shouldRotate)
+            {
+                RestoreAlarmLightsRotation();
+                return;
+            }
+
+            Vector3 euler = alarmLightsTransform.localEulerAngles;
+            float nextY = euler.y + Mathf.Max(0f, alarmLightsRotationSpeed) * Time.deltaTime;
+            if (nextY > alarmLightsSnapThreshold)
+                nextY = 0f;
+
+            alarmLightsTransform.localEulerAngles = new Vector3(euler.x, nextY, euler.z);
+        }
+
+        private void RestoreAlarmLightsRotation()
+        {
+            if (alarmLightsTransform == null || !alarmLightsHasInitialRotation)
+                return;
+
+            alarmLightsTransform.localEulerAngles = alarmLightsInitialLocalEulerAngles;
+        }
+
+        private void ApplyAlarmFlashEmission(Color emissionColor)
+        {
+            if (alarmFlashRenderer == null)
+                return;
+
+            Material sharedMaterial = alarmFlashRenderer.sharedMaterial;
+            if (sharedMaterial == null || !sharedMaterial.HasProperty(alarmFlashEmissionPropertyId))
+                return;
+
+            if (!sharedMaterial.IsKeywordEnabled("_EMISSION"))
+                sharedMaterial.EnableKeyword("_EMISSION");
+
+            alarmFlashRenderer.GetPropertyBlock(alarmFlashPropertyBlock);
+            alarmFlashPropertyBlock.SetColor(alarmFlashEmissionPropertyId, emissionColor);
+            alarmFlashRenderer.SetPropertyBlock(alarmFlashPropertyBlock);
         }
 
         private void PlayClip(AudioClip clip)
