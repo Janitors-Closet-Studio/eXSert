@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 /*
     Written by Brandon Wahl
@@ -23,25 +24,37 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     [SerializeField] private Color hoverMapImageColor;
     [SerializeField] private Color selectedMapImageColor;
 
-    private Image mapLocationImageRenderer;
+    private Image highlightedMapLocationImageRenderer;
     private bool isHovered;
     private bool isSelected;
 
     private Button thisButton;
+    private ActsManager actsManager;
+    private Coroutine activeColorRoutine;
 
     private void Awake()
     {
+        actsManager = ActsManager.Instance;
+        ApplyActsManagerColorsIfAvailable();
+
         if (mapLocationImage != null)
         {
             for (int i = 0; i < mapLocationImage.Length; i++)
             {
                 if (mapLocationImage[i] != null)
                 {
-                    mapLocationImageRenderer = mapLocationImage[i].GetComponent<Image>();
-                    if (mapLocationImageRenderer != null)
-                    {
-                        defaultMapImageColor = mapLocationImageRenderer.color;
-                    }
+                    Image targetRenderer = ResolveTargetImageRenderer(mapLocationImage[i]);
+                    if (targetRenderer == null)
+                        continue;
+
+                    if (highlightedMapLocationImageRenderer == null)
+                        highlightedMapLocationImageRenderer = targetRenderer;
+
+                    if (actsManager == null)
+                        defaultMapImageColor = targetRenderer.color;
+
+                    if (highlightedMapLocationImageRenderer != null)
+                        break;
                 }
             }
         }
@@ -75,11 +88,13 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     private void OnEnable()
     {
+        ApplyActsManagerColorsIfAvailable();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void OnDisable()
     {
+        StopActiveColorRoutine();
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
@@ -124,11 +139,13 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     private void UpdateMapLocationImageColor()
     {
-        if (mapLocationImageRenderer == null)
+        if (highlightedMapLocationImageRenderer == null)
             return;
 
         if (!thisButton.interactable)
             return;
+
+        StopActiveColorRoutine();
 
         if (isSelected)
             FadeToHighlightedColor();
@@ -140,49 +157,58 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     private void FadeToDefaultColor()
     {
-        StartCoroutine(FadeToDefaultCoroutine(0.5f));
+        activeColorRoutine = StartCoroutine(FadeToDefaultCoroutine(0.5f));
     }
 
     private void FadeToHighlightedColor()
     {
-        StartCoroutine(FadeToHighlightedColor(0.5f));
-        StartCoroutine(PulseColorWhileHighlighted(1f));
+        activeColorRoutine = StartCoroutine(FadeAndPulseToHighlightedColor(0.5f, 1f));
     }
 
-    private IEnumerator FadeToHighlightedColor(float duration)
+    private IEnumerator FadeAndPulseToHighlightedColor(float fadeDuration, float pulseDuration)
     {
-        if (mapLocationImageRenderer == null)
+        if (highlightedMapLocationImageRenderer == null)
         {
-            Debug.LogWarning("[ActButton] Cannot fade to highlighted color because mapLocationImageRenderer is not assigned.");
+            Debug.LogWarning("[ActButton] Cannot fade to highlighted color because no highlighted map location image renderer is assigned.");
             yield break;
         }
-            
 
-        Color startColor = mapLocationImageRenderer.color;
+        Color startColor = highlightedMapLocationImageRenderer.color;
         Color targetColor = isSelected ? selectedMapImageColor : hoverMapImageColor;
         float elapsedTime = 0f;
 
-        while (elapsedTime < duration)
+        while (elapsedTime < fadeDuration)
         {
             elapsedTime += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsedTime / duration);
-            mapLocationImageRenderer.color = Color.Lerp(startColor, targetColor, t);
+            float t = Mathf.Clamp01(elapsedTime / fadeDuration);
+            highlightedMapLocationImageRenderer.color = Color.Lerp(startColor, targetColor, t);
             yield return null;
         }
 
-        mapLocationImageRenderer.color = targetColor;
-        Debug.Log(mapLocationImageRenderer.color);
+        highlightedMapLocationImageRenderer.color = targetColor;
+
+        float pulseElapsedTime = 0f;
+        while (isHovered || isSelected)
+        {
+            pulseElapsedTime += Time.unscaledDeltaTime;
+            float pulseT = (Mathf.Sin(pulseElapsedTime / pulseDuration * Mathf.PI * 2) + 1f) / 2f;
+            Color pulseColor = Color.Lerp(isSelected ? selectedMapImageColor : hoverMapImageColor, defaultMapImageColor, pulseT);
+            highlightedMapLocationImageRenderer.color = pulseColor;
+            yield return null;
+        }
+
+        activeColorRoutine = null;
     }
 
     private IEnumerator FadeToDefaultCoroutine(float duration)
     {
-        if (mapLocationImageRenderer == null)
+        if (highlightedMapLocationImageRenderer == null)
         {
-            Debug.LogWarning("[ActButton] Cannot fade to default color because mapLocationImageRenderer is not assigned.");
+            Debug.LogWarning("[ActButton] Cannot fade to default color because no highlighted map location image renderer is assigned.");
             yield break;
         }
 
-        Color startColor = mapLocationImageRenderer.color;
+        Color startColor = highlightedMapLocationImageRenderer.color;
         Color targetColor = defaultMapImageColor;
         float elapsedTime = 0f;
 
@@ -190,31 +216,54 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         {
             elapsedTime += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsedTime / duration);
-            mapLocationImageRenderer.color = Color.Lerp(startColor, targetColor, t);
+            highlightedMapLocationImageRenderer.color = Color.Lerp(startColor, targetColor, t);
             yield return null;
         }
 
-        mapLocationImageRenderer.color = targetColor;
+        highlightedMapLocationImageRenderer.color = targetColor;
+        activeColorRoutine = null;
     }
 
-    private IEnumerator PulseColorWhileHighlighted(float pulseDuration)
+    private void ApplyActsManagerColorsIfAvailable()
     {
-        if (mapLocationImageRenderer == null)
-        {
-            Debug.LogWarning("[ActButton] Cannot pulse color because mapLocationImageRenderer is not assigned.");
-            yield break;
-        }
+        if (actsManager == null)
+            actsManager = ActsManager.Instance;
 
-        float pulseElapsedTime = 0f;
+        if (actsManager == null)
+            return;
 
-        while (isHovered || isSelected)
-        {
-            pulseElapsedTime += Time.unscaledDeltaTime;
-            float pulseT = (Mathf.Sin(pulseElapsedTime / pulseDuration * Mathf.PI * 2) + 1f) / 2f; // Oscillates between 0 and 1
-            Color targetColor = Color.Lerp(isSelected ? selectedMapImageColor : hoverMapImageColor, defaultMapImageColor, pulseT);
-            mapLocationImageRenderer.color = targetColor;
-            yield return null;
-        }
+        defaultMapImageColor = actsManager.DefaultColor;
+        hoverMapImageColor = actsManager.HighlightColor;
+        selectedMapImageColor = actsManager.SelectedColor;
+
+        hoverMapImageColor.a = 1f;
+        selectedMapImageColor.a = 1f;
     }
-    
+
+    private Image ResolveTargetImageRenderer(GameObject locationRoot)
+    {
+        if (locationRoot == null)
+            return null;
+
+        Image[] images = locationRoot.GetComponentsInChildren<Image>(true);
+        foreach (Image image in images)
+        {
+            if (image == null)
+                continue;
+
+            if (image.gameObject.name.EndsWith("_Image", System.StringComparison.Ordinal))
+                return image;
+        }
+
+        return null;
+    }
+
+    private void StopActiveColorRoutine()
+    {
+        if (activeColorRoutine == null)
+            return;
+
+        StopCoroutine(activeColorRoutine);
+        activeColorRoutine = null;
+    }
 }

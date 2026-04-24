@@ -773,5 +773,9 @@ public enum KeybindAction
     // Credits Page
 
     PreviousPage = 24,
-    NextPage = 25
+    NextPage = 25,
+
+    // UI page/selection helpers
+    UI_Left = 26,
+    UI_Right = 27
 }
