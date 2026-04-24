@@ -78,6 +78,19 @@ public class InteractionUI : Singleton<InteractionUI>
         currentInteractable = null;
     }
 
+    public void ShowInteractIconImmediate()
+    {
+        if (_interactIcon == null)
+            return;
+
+        _interactIcon.enabled = true;
+        _interactIcon.gameObject.SetActive(true);
+
+        KeybindIconSwapper keybindIconSwapper = _interactIcon.GetComponent<KeybindIconSwapper>();
+        if (keybindIconSwapper != null)
+            keybindIconSwapper.RefreshIcon();
+    }
+
     public void HideCollectUI()
     {
         if (collectUI != null)
@@ -97,11 +110,30 @@ public class InteractionUI : Singleton<InteractionUI>
     private Coroutine collectableUICoroutine;
     public void OnCollectedItem(string collectID, string bottomText, float fadeDuration = 0.5f, float displayDuration = 1.5f, int priority = 0)
     {
-        // Only allow if priority is higher or equal, or nothing is showing
-        if (collectableUICoroutine != null && priority < currentCollectPriority)
-            return;
+        // Always replace the current notice when a new collect event arrives.
+        CancelCurrentCollectNotice();
         currentCollectPriority = priority;
         ShowCollectableUIWithTyping(collectID, bottomText, fadeDuration, displayDuration, 0.03f, false, priority);
+    }
+
+    public void CancelCurrentCollectNotice(bool turnOffUI = false)
+    {
+        if (collectableUICoroutine != null)
+        {
+            StopCoroutine(collectableUICoroutine);
+            collectableUICoroutine = null;
+        }
+
+        if (_collectText is TextMeshProUGUI collectTextMesh)
+            WritingTextUI.RemoveWriter_Static(collectTextMesh);
+
+        if (_collectBottomText is TextMeshProUGUI collectBottomTextMesh)
+            WritingTextUI.RemoveWriter_Static(collectBottomTextMesh);
+
+        ClearNotice();
+
+        if (turnOffUI && collectUI != null)
+            collectUI.SetActive(false);
     }
 
     public void ClearNotice()
@@ -115,11 +147,7 @@ public class InteractionUI : Singleton<InteractionUI>
         // Ensure the InteractionUI GameObject is active before starting a coroutine
         if (!gameObject.activeInHierarchy)
             gameObject.SetActive(true);
-        if (collectableUICoroutine != null)
-        {
-            StopCoroutine(collectableUICoroutine);
-            collectableUICoroutine = null;
-        }
+        CancelCurrentCollectNotice();
         collectableUICoroutine = StartCoroutine(FadeInTypeFadeOutRoutine(collectedLabel, bottomFlavorText, fadeDuration, displayDuration, typeSpeed, invisibleCharacters, priority));
     }
 
@@ -192,16 +220,11 @@ public class InteractionUI : Singleton<InteractionUI>
 
     public void ForceStopNoticeCoroutines()
     {
-        if (collectableUICoroutine != null)
-        {
-            StopCoroutine(collectableUICoroutine);
-            collectableUICoroutine = null;
-        }
-
-        ClearNotice();
+        CancelCurrentCollectNotice();
         _collectBottomText.gameObject.SetActive(false);
         _collectText.gameObject.SetActive(false);
         collectUI.SetActive(false);
+
     }
 
     // Coroutine to fade in, then type, then fade out

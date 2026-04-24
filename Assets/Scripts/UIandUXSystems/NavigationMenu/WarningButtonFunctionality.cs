@@ -201,10 +201,16 @@ public class WarningButtonFunctionality : MonoBehaviour
     {
         Debug.Log($"[WarningButtonFunctionality] Executing action: {action}");
         RumbleManager.Instance.StopControllerRumble();
+        PauseManager.Instance.pauseOverlay.SetActive(false);
+        InteractionUI.Instance.CancelCurrentCollectNotice(turnOffUI: true);
+        var start = transform.parent?.parent?.parent;
+        var menuListManager = start != null ? start.GetComponentInParent<MenuListManager>() : null;
+
+        menuListManager.menusToManage.RemoveAt(0);
         switch (action)
         {
             case WarningAction.RestartCheckpoint:
-                // FadeOutLevelMusic();
+                FadeOutLevelMusic();
                 Debug.Log("[WarningButtonFunctionality] Restarting from checkpoint.");
                 GameActionHandler restartHandler = ResolveActionHandler();
                 if (restartHandler != null)
@@ -214,7 +220,7 @@ public class WarningButtonFunctionality : MonoBehaviour
                 break;
 
             case WarningAction.ReturnToMainMenu:
-                // FadeOutLevelMusic();
+                FadeOutLevelMusic();
                 GameActionHandler handler = ResolveActionHandler();
                 if (handler != null)
                     handler.ReturnToMainMenu();

@@ -106,11 +106,14 @@ public class WritingTextUI : MonoBehaviour
                 yield break;
             }
 
+            while (Time.timeScale == 0f)
+                yield return null;
+
             Debug.Log($"[WritingTextUI] WriteTextCoroutine started for '{fullText}'");
 
             while (true)
             {
-                timer -= Time.unscaledDeltaTime;
+                timer -= Time.deltaTime;
 
                 if (timer <= 0f && characterIndex < fullText.Length)
                 {
