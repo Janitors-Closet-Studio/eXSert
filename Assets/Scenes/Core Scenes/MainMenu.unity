@@ -2167,7 +2167,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KeybindIconSwapper
   targetImage: {fileID: 372170707}
-  action: 24
+  action: 26
   deviceMode: 0
   useCraneMoveIcon: 0
   craneDirection: 0
@@ -2592,7 +2592,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1193, y: -73.8855}
+  m_AnchoredPosition: {x: 1171, y: -72.845}
   m_SizeDelta: {x: 164.697, y: 75.555}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &467173998
@@ -4225,7 +4225,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 925201346597380136, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
       propertyPath: m_Spacing
-      value: -150
+      value: 35
       objectReference: {fileID: 0}
     - target: {fileID: 1624698775441436221, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
       propertyPath: m_AnchorMax.y
@@ -4237,7 +4237,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1624698775441436221, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 291.7527
+      value: 282.0455
       objectReference: {fileID: 0}
     - target: {fileID: 1624698775441436221, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -4292,8 +4292,20 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7890617719682748701, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 336.0205
+      objectReference: {fileID: 0}
+    - target: {fileID: 7890617719682748701, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 75.555
+      objectReference: {fileID: 0}
+    - target: {fileID: 7890617719682748701, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 793.04675
+      value: 651
+      objectReference: {fileID: 0}
+    - target: {fileID: 7890617719682748701, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 20.041
       objectReference: {fileID: 0}
     - target: {fileID: 9059512239238773875, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
       propertyPath: m_Pivot.x
@@ -4381,7 +4393,7 @@ PrefabInstance:
     - {fileID: 2554944576769597291, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2508091740719156710, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
-      insertIndex: 3
+      insertIndex: 4
       addedObject: {fileID: 467173997}
     - targetCorrespondingSourceObject: {fileID: 7890617719682748701, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
       insertIndex: 0
@@ -11305,7 +11317,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KeybindIconSwapper
   targetImage: {fileID: 1543328739}
-  action: 25
+  action: 27
   deviceMode: 0
   useCraneMoveIcon: 0
   craneDirection: 0
