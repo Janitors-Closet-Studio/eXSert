@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using Managers.TimeLord;
 using Unity.VisualScripting;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 
 public class PauseManager : Singletons.Singleton<PauseManager>
@@ -13,7 +14,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     protected override bool ShouldPersistAcrossScenes => false;
 
-    [SerializeField] private VolumeProfile pauseMenuVolumeProfile; // Assign a profile with desired pause menu effects (e.g., blur) in inspector
+    [SerializeField, Tooltip("Assign the pause blur global volume profile here. PauseManager will toggle that profile's Depth Of Field during pause.")]
+    private VolumeProfile pauseMenuVolumeProfile;
 
     [Header("UI GameObjects")]
     [SerializeField] private GameObject pauseOverlay;
@@ -69,6 +71,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     // Music muffling state
     private bool musicIsMuffled = false;
     private float? originalMusicVolume = null;
+    private bool blurEnabled;
+    private bool blurProfileWarningLogged;
+    private bool blurOverrideWarningLogged;
 
     protected override void Awake()
     {
@@ -78,6 +83,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         menuListManager = this.GetComponent<MenuListManager>();
         pauseOverlay.SetActive(false);
         fadeMenus = this.GetComponent<FadeMenus>();
+        SetBlurEnabled(false);
     }
 
     private void OnEnable()
@@ -109,6 +115,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             _backActionReference.action.performed += OnBack;
 
         SceneManager.sceneLoaded += HandleSceneLoaded;
+        SetBlurEnabled(false);
     }
 
     private void OnDisable()
@@ -140,31 +147,41 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         TryResolveHudRoot();
         HideAllMenus();
+        SetBlurEnabled(false);
     }
 
-    private void EnableBlur()
+    private void SetBlurEnabled(bool enabled)
     {
-        pauseMenuVolumeProfile.TryGet(out UnityEngine.Rendering.Universal.DepthOfField dof);
-        if (dof != null)
+        if (pauseMenuVolumeProfile == null)
         {
-            dof.active = true;
-            Debug.Log("Depth of Field enabled for pause menu blur effect.");
-        }
-        else
-        {
-            Debug.LogWarning("No DepthOfField found in the assigned VolumeProfile. Please add one to enable blur effect on pause.");
-        }
-    }
+            if (!blurProfileWarningLogged)
+            {
+                Debug.LogWarning("PauseManager pauseMenuVolumeProfile is not assigned. Assign the global blur volume profile from PostProcessScene.");
+                blurProfileWarningLogged = true;
+            }
 
-    private void DisableBlur()
-    {
-        pauseMenuVolumeProfile.TryGet(out UnityEngine.Rendering.Universal.DepthOfField dof);
-        if (dof != null)
-        {
-            dof.active = false;
+            blurEnabled = false;
+            return;
         }
-    }
 
+        if (!pauseMenuVolumeProfile.TryGet(out DepthOfField dof) || dof == null)
+        {
+            if (!blurOverrideWarningLogged)
+            {
+                Debug.LogWarning("No DepthOfField override found in the assigned pauseMenuVolumeProfile. Add one to the selected global blur profile to enable pause blur.");
+                blurOverrideWarningLogged = true;
+            }
+
+            blurEnabled = false;
+            return;
+        }
+
+        if (blurEnabled == enabled && dof.active == enabled)
+            return;
+
+        dof.active = enabled;
+        blurEnabled = enabled;
+    }
 
     private void OnPause(InputAction.CallbackContext context)
     {
@@ -180,9 +197,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             return;
         }
-
-        EnableBlur();
-
         if (!pauseOverlay.activeInHierarchy)
             StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, true));
 
@@ -365,6 +379,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             menuListManager.AddToMenuList(pauseMenuHolder);
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
+        SetBlurEnabled(true);
 
         // Prevent same physical key press from immediately firing Back after action map switch.
         ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
@@ -396,6 +411,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             menuListManager.AddToMenuList(navigationMenuHolder);
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
+        SetBlurEnabled(true);
 
         // Prevent same physical key press from immediately firing Back after action map switch.
         ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
@@ -421,6 +437,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         menuListManager.menusToManage.Remove(navigationMenuHolder);
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
+        SetBlurEnabled(true);
 
         Debug.Log("Swapped to Pause Menu");
     }
@@ -435,6 +452,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
+            SetBlurEnabled(true);
 
         Debug.Log("Swapped to Navigation Menu");
     }
@@ -449,7 +467,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.None;
 
         HideAllMenus();
-        DisableBlur();
+        SetBlurEnabled(false);
         
         if (pauseOverlay.activeInHierarchy)
             StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
@@ -502,6 +520,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
+        SetBlurEnabled(false);
 
         if (InputReader.PlayerInput != null)
         {
