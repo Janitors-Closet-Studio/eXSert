@@ -392,14 +392,14 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         // Debug.Log($"{weaponName} processing potential hit on {other.gameObject.name} (Tag: {other.tag}, Layer: {LayerMask.LayerToName(other.gameObject.layer)})");
         // Debug.Log($"  - Root object: {other.transform.root.name} (Tag: {other.transform.root.tag})");
         // Debug.Log($"  - All components on this object: {string.Join(", ", other.GetComponents<Component>().Select(c => c.GetType().Name))}");
-        
+
         // IMPORTANT: Only damage enemies/bosses, never the player or player's components
         if (!IsDamageableTag(other)) 
         {
             // Debug.Log($"{weaponName} hit non-enemy object: {other.gameObject.name} with tag '{other.tag}' - ignoring");
             return;
         }
-        
+
         if (maxTargetsPerActivation > 0 && hitThisActivation.Count >= maxTargetsPerActivation)
         {
             return;
@@ -411,7 +411,40 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             // Debug.LogWarning($"{weaponName} blocked attempt to damage player object: {other.gameObject.name}");
             return;
         }
-        
+
+        // Hurtbox gate: if the enemy hierarchy opts in via EnemyHurtbox markers, only the
+        // exact collider that sits on the same GameObject as the EnemyHurtbox component is a
+        // valid target.  GetComponentInParent would match any parent (including the root) from
+        // every child collider, which lets weapon meshes, rig bones and lodged-weapon triggers
+        // register hits — that's wrong.  We use GetComponent (same object only) so only colliders
+        // on the EnemyHurtbox GameObject can be struck.
+        //
+        // Additionally, even when EnemyHurtbox lives on the same GameObject as the body capsule,
+        // other systems may dynamically AddComponent more colliders to that same root (e.g. the
+        // Cleanser's aggression detection SphereCollider with radius 10 — see
+        // CleanserAggressionSystem.SetupAggressionRangeCollider).  Those are always triggers and
+        // are NOT damage targets, so we explicitly reject any trigger collider here even when the
+        // GameObject otherwise has a hurtbox marker.
+        bool rootHasHurtbox = other.transform.root.GetComponentInChildren<EnemyHurtbox>() != null;
+        bool colliderHasHurtbox = other.GetComponent<EnemyHurtbox>() != null;
+
+        if (rootHasHurtbox)
+        {
+            if (!colliderHasHurtbox)
+            {
+                Debug.Log($"[HurtboxGate] BLOCKED  weapon='{weaponName}'  collider='{other.gameObject.name}' on root='{other.transform.root.name}' — root uses EnemyHurtbox but this collider doesn't carry one.");
+                return;
+            }
+
+            if (other.isTrigger)
+            {
+                Debug.Log($"[HurtboxGate] BLOCKED  weapon='{weaponName}'  collider='{other.gameObject.name}' (trigger) on root='{other.transform.root.name}' — trigger colliders on the hurtbox object are not damage targets (e.g. aggression sphere).");
+                return;
+            }
+
+            Debug.Log($"[HurtboxGate] ALLOWED  weapon='{weaponName}'  collider='{other.gameObject.name}' on root='{other.transform.root.name}' — collider carries EnemyHurtbox.");
+        }
+
         // Find IHealthSystem on the enemy (could be on root or any parent)
         var health = other.GetComponentInParent<IHealthSystem>();
         if (health == null) 
@@ -419,7 +452,7 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             // Debug.LogWarning($"{weaponName} hit enemy {other.gameObject.name} but no IHealthSystem found!");
             return;
         }
-        
+
         // Additional safety: Make sure this is actually an enemy component, not player
         var healthComp = health as Component;
         if (healthComp.CompareTag("Player"))
@@ -427,7 +460,7 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
             // Debug.LogWarning($"{weaponName} tried to damage player - blocked for safety");
             return;
         }
-        
+
         TryApplyDamageToTarget(healthComp, other, false);
     }
 
@@ -469,7 +502,10 @@ public class HitboxDamageManager : MonoBehaviour, IAttackSystem
         hitThisActivation.Add(enemyId);
 
         float beforeHP = health.currentHP;
+        Debug.Log($"[HitboxDamage] Applying damage={damageAmount:F2} attackType={currentAttackType} weapon='{weaponName}' target='{(health as Component)?.name}' collider='{sourceCollider?.gameObject.name}' playerPos={transform.root.position} targetPos={(health as Component)?.transform.position}");
+        PlayerAttackContext.Set(currentAttackType);
         health.LoseHP(damageAmount, rumbleDuration, lowFrequency, highFrequency);
+        PlayerAttackContext.Clear();
             
         float afterHP = health.currentHP;
 

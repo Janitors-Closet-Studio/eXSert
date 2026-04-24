@@ -4,6 +4,7 @@ namespace EnemyBehavior.Boss.Cleanser
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(CleanserBrain))]
+    [RequireComponent(typeof(EnemyHurtbox))]
     public class CleanserEnemyCoreAdapter : BaseEnemyCore
     {
         [SerializeField] private CleanserBrain brain;

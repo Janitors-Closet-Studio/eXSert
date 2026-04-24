@@ -31,3 +31,4 @@ public abstract class BaseEnemyCore : MonoBehaviour, IHealthSystem
     {
     }
 }
+

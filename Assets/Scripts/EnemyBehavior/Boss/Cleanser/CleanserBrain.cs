@@ -389,6 +389,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private Coroutine spinDashHitboxRearmCoroutine;
         private int spinDashRemainingHits;
         private float spinDashTriggerDamage;
+        private bool spinDashParried;
         private bool whirlwindDamagePhaseActive;
         private bool whirlwindDamageArmed;
         private Collider whirlwindDamageCollider;
@@ -492,9 +493,42 @@ namespace EnemyBehavior.Boss.Cleanser
         public void LoseHP(float damage, float rumbleDuration = 0.15f, float lowFrequency = 0.35f, float highFrequency = 0.35f)
         {
             if (isDefeated) return;
-            
+
             // Invulnerable in dummy mode
             if (betaDummyMode) return;
+
+            // During the ultimate, grounded attacks (single/AoE) deal no damage.
+            // Light aerials can damage but cannot kill — only the plunge (HeavyAerial) can kill.
+            // These restrictions are lifted as soon as the ultimate is canceled (player aerial combo),
+            // so the Cleanser can take normal damage during the crash-down and stun window.
+            if (isExecutingUltimate && !ultimateCanceledByAerial)
+            {
+                var attackType = PlayerAttackContext.Current;
+                bool isGrounded = attackType == Utilities.Combat.Attacks.AttackType.LightSingle
+                               || attackType == Utilities.Combat.Attacks.AttackType.LightAOE
+                               || attackType == Utilities.Combat.Attacks.AttackType.HeavySingle
+                               || attackType == Utilities.Combat.Attacks.AttackType.HeavyAOE;
+
+                if (isGrounded)
+                {
+                    LogCriticalDiagnostic($"LoseHP ignored during ultimate (grounded attack). attackType={attackType}, damage={damage:F2}");
+                    return;
+                }
+
+                bool isLightAerial = attackType == Utilities.Combat.Attacks.AttackType.LightAerial;
+                if (isLightAerial)
+                {
+                    // Light aerials land but cannot reduce HP below 1.
+                    damage = Mathf.Min(damage, Mathf.Max(0f, currentHealth - 1f));
+                    if (damage <= 0f)
+                    {
+                        LogCriticalDiagnostic($"LoseHP clamped to 0 during ultimate (light aerial cannot kill). currentHealth={currentHealth:F2}");
+                        // Still fire aerial-hit signals so hover timer/cancel still work.
+                        if (isInUltimateHoverPhase) OnAerialHitReceived();
+                        return;
+                    }
+                }
+            }
 
             if (isExecutingUltimate && invulnerableDuringUltimate && isInUltimatePreSweepPhase)
             {
@@ -629,6 +663,13 @@ namespace EnemyBehavior.Boss.Cleanser
             SetAllMeleeHitboxesEnabled(false);
             EndSpinDashHitboxPhase();
             EndWhirlwindDamagePhase();
+
+            // Safety: re-enable NavMeshAgent if any movement attack left it disabled mid-execution.
+            if (agent != null && !agent.enabled)
+            {
+                agent.enabled = true;
+                agent.Warp(transform.position);
+            }
         }
         
         #endregion
@@ -2481,9 +2522,17 @@ namespace EnemyBehavior.Boss.Cleanser
             BeginSpinDashHitboxPhase();
             spinDashHitStopTimer = 0f;
             spinDashMoveSlowTimer = 0f;
+            spinDashParried = false;
             float dashMoveSpeed = Mathf.Max(0.01f, SpinDashSettings.MoveSpeed);
+            bool spinDashInterrupted = false;
             for (int i = 0; i < dashPoints.Count; i++)
             {
+                if (ultimateAttackLockActive || isExecutingUltimate || spinDashParried)
+                {
+                    spinDashInterrupted = true;
+                    break;
+                }
+
                 ResetDashHitAllowance(SpinDashSettings.MaxHitCount);
 
                 // Consume the previous lodged point as we depart from it toward the next one.
@@ -2505,6 +2554,12 @@ namespace EnemyBehavior.Boss.Cleanser
 
                 while (true)
                 {
+                    if (ultimateAttackLockActive || isExecutingUltimate || spinDashParried)
+                    {
+                        spinDashInterrupted = true;
+                        break;
+                    }
+
                     if (spinDashHitStopTimer > 0f)
                     {
                         spinDashHitStopTimer = Mathf.Max(0f, spinDashHitStopTimer - Time.deltaTime);
@@ -2537,83 +2592,106 @@ namespace EnemyBehavior.Boss.Cleanser
 
                     yield return null;
                 }
+
+                if (spinDashInterrupted)
+                    break;
             }
 
-            // Consume the final lodged point before departing into the player finisher dash.
-            if (dashPoints.Count > 0)
+            if (!spinDashInterrupted)
             {
-                dualWieldSystem?.ConsumeClosestLodgedWeapon(dashPoints[dashPoints.Count - 1], 6f);
-            }
-
-            // Final dash ends at the player.
-            if (player != null)
-            {
-                ResetDashHitAllowance(SpinDashSettings.MaxHitCount);
-
-                Vector3 playerSnapshot = player.position;
-                playerSnapshot.y = transform.position.y;
-
-                Vector3 committedDir = playerSnapshot - transform.position;
-                committedDir.y = 0f;
-                if (committedDir.sqrMagnitude <= 0.0001f)
-                    committedDir = transform.forward;
-                committedDir.Normalize();
-
-                float overshoot = Mathf.Max(0f, SpinDashSettings.FinalPlayerOvershootDistance);
-                Vector3 finalTarget = playerSnapshot + committedDir * overshoot;
-
-                if (logSpinDashDiagnostics)
-                    Debug.Log($"[Cleanser][SpinDash] Final dash committed. PlayerSnapshot={playerSnapshot}, Direction={committedDir}, FinalTarget={finalTarget}", this);
-
-                while (true)
+                // Consume the final lodged point before departing into the player finisher dash.
+                if (dashPoints.Count > 0)
                 {
-                    if (spinDashHitStopTimer > 0f)
-                    {
-                        spinDashHitStopTimer = Mathf.Max(0f, spinDashHitStopTimer - Time.deltaTime);
-                        if (spinDashMoveSlowTimer > 0f)
-                            spinDashMoveSlowTimer = Mathf.Max(0f, spinDashMoveSlowTimer - Time.deltaTime);
-                        yield return null;
-                        continue;
-                    }
-
-                    if (spinDashMoveSlowTimer > 0f)
-                        spinDashMoveSlowTimer = Mathf.Max(0f, spinDashMoveSlowTimer - Time.deltaTime);
-
-                    Vector3 toTarget = finalTarget - transform.position;
-                    toTarget.y = 0f;
-                    float remaining = toTarget.magnitude;
-                    if (remaining <= 0.01f)
-                        break;
-
-                    Vector3 moveDir = toTarget / Mathf.Max(remaining, 0.0001f);
-                    transform.forward = moveDir;
-
-                    float speedMultiplier = spinDashMoveSlowTimer > 0f
-                        ? Mathf.Clamp(SpinDashSettings.MoveSpeedMultiplierOnPlayerHit, 0.1f, 1f)
-                        : 1f;
-                    float step = dashMoveSpeed * speedMultiplier * Time.deltaTime;
-                    if (step >= remaining)
-                    {
-                        transform.position = finalTarget;
-                        break;
-                    }
-
-                    transform.position += moveDir * step;
-                    yield return null;
+                    dualWieldSystem?.ConsumeClosestLodgedWeapon(dashPoints[dashPoints.Count - 1], 6f);
                 }
 
-                if (logSpinDashDiagnostics)
-                    Debug.Log($"[Cleanser][SpinDash] Final dash reached target. Position={transform.position}", this);
+                // Final dash ends at the player.
+                if (player != null)
+                {
+                    ResetDashHitAllowance(SpinDashSettings.MaxHitCount);
+
+                    Vector3 playerSnapshot = player.position;
+                    playerSnapshot.y = transform.position.y;
+
+                    Vector3 committedDir = playerSnapshot - transform.position;
+                    committedDir.y = 0f;
+                    if (committedDir.sqrMagnitude <= 0.0001f)
+                        committedDir = transform.forward;
+                    committedDir.Normalize();
+
+                    float overshoot = Mathf.Max(0f, SpinDashSettings.FinalPlayerOvershootDistance);
+                    Vector3 finalTarget = playerSnapshot + committedDir * overshoot;
+
+                    if (logSpinDashDiagnostics)
+                        Debug.Log($"[Cleanser][SpinDash] Final dash committed. PlayerSnapshot={playerSnapshot}, Direction={committedDir}, FinalTarget={finalTarget}", this);
+
+                    while (true)
+                    {
+                        if (ultimateAttackLockActive || isExecutingUltimate || spinDashParried)
+                        {
+                            spinDashInterrupted = true;
+                            break;
+                        }
+
+                        if (spinDashHitStopTimer > 0f)
+                        {
+                            spinDashHitStopTimer = Mathf.Max(0f, spinDashHitStopTimer - Time.deltaTime);
+                            if (spinDashMoveSlowTimer > 0f)
+                                spinDashMoveSlowTimer = Mathf.Max(0f, spinDashMoveSlowTimer - Time.deltaTime);
+                            yield return null;
+                            continue;
+                        }
+
+                        if (spinDashMoveSlowTimer > 0f)
+                            spinDashMoveSlowTimer = Mathf.Max(0f, spinDashMoveSlowTimer - Time.deltaTime);
+
+                        Vector3 toTarget = finalTarget - transform.position;
+                        toTarget.y = 0f;
+                        float remaining = toTarget.magnitude;
+                        if (remaining <= 0.01f)
+                            break;
+
+                        Vector3 moveDir = toTarget / Mathf.Max(remaining, 0.0001f);
+                        transform.forward = moveDir;
+
+                        float speedMultiplier = spinDashMoveSlowTimer > 0f
+                            ? Mathf.Clamp(SpinDashSettings.MoveSpeedMultiplierOnPlayerHit, 0.1f, 1f)
+                            : 1f;
+                        float step = dashMoveSpeed * speedMultiplier * Time.deltaTime;
+                        if (step >= remaining)
+                        {
+                            transform.position = finalTarget;
+                            break;
+                        }
+
+                        transform.position += moveDir * step;
+                        yield return null;
+                    }
+
+                    if (!spinDashInterrupted && logSpinDashDiagnostics)
+                        Debug.Log($"[Cleanser][SpinDash] Final dash reached target. Position={transform.position}", this);
+                }
             }
 
+            // Always clean up regardless of whether we were interrupted.
             EndSpinDashHitboxPhase();
 
             agent.enabled = true;
             agent.Warp(transform.position);
 
-            if (dualWieldSystem != null && dualWieldSystem.LodgedWeaponCount > 0)
+            // On interrupt (parry / ultimate trigger) the spares should visibly disappear by sinking
+            // into the floor like the Roomba's armor panels. On a clean dash finish, keep the original
+            // magnetic-return-to-rest behavior.
+            if (dualWieldSystem != null)
             {
-                dualWieldSystem.ReturnAllLodgedWeaponsToRest();
+                if (spinDashInterrupted)
+                {
+                    dualWieldSystem.SinkAndDespawnAllSpareWeapons();
+                }
+                else if (dualWieldSystem.LodgedWeaponCount > 0)
+                {
+                    dualWieldSystem.ReturnAllLodgedWeaponsToRest();
+                }
             }
 
             if (spinVfxInstance != null)
@@ -2621,14 +2699,23 @@ namespace EnemyBehavior.Boss.Cleanser
                 Destroy(spinVfxInstance);
             }
 
-            ApplyAnimationSpeedMultiplier(SpinDashSettings.WindDownAnimSpeedMultiplier);
-            TriggerAnimation(SpinDashSettings.WindDownTrigger);
-            PlaySFX(SpinDashSettings.WindDownSFX);
-            yield return WaitForAnimationStateToFinish(SpinDashSettings.WindDownTrigger, 0.7f);
-            ResetAnimationSpeed();
+            // Skip the wind-down animation when interrupted so the ultimate can begin immediately.
+            if (!spinDashInterrupted)
+            {
+                ApplyAnimationSpeedMultiplier(SpinDashSettings.WindDownAnimSpeedMultiplier);
+                TriggerAnimation(SpinDashSettings.WindDownTrigger);
+                PlaySFX(SpinDashSettings.WindDownSFX);
+                yield return WaitForAnimationStateToFinish(SpinDashSettings.WindDownTrigger, 0.7f);
+                ResetAnimationSpeed();
+            }
+            else
+            {
+                ResetAnimationSpeed();
+            }
 
             HideAttackIndicator();
         }
+
 
         private IEnumerator ExecuteHighDive()
         {
@@ -3699,7 +3786,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 TryRestoreAgentToNavMesh(transform.position, 6f);
             }
 
-            // Reset spare stockpile/lodged state after ultimate.
+            // Reset spare stockpile/lodged state after ultimate. Use the sinking despawn so any
+            // remaining spares visibly disappear into the floor (Roomba-panel style) instead of
+            // magnetically returning to rest.
             if (dualWieldSystem != null)
             {
                 while (dualWieldSystem.IsHoldingSpareWeapon)
@@ -3707,10 +3796,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     dualWieldSystem.ReleaseCurrentWeapon();
                 }
 
-                if (dualWieldSystem.LodgedWeaponCount > 0)
-                {
-                    dualWieldSystem.ReturnAllLodgedWeaponsToRest();
-                }
+                dualWieldSystem.SinkAndDespawnAllSpareWeapons();
             }
 
             ResetAnimationSpeed();
@@ -4524,6 +4610,18 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (CombatManager.isParrying)
                 {
                     CombatManager.ParrySuccessful();
+
+                    // If the parry happened during a spin-dash, signal the dash coroutine to bail out
+                    // after this hit so the remaining sequential dashes are canceled (mirrors the
+                    // ultimate-trigger interrupt behavior).
+                    if (spinDashHitboxPhaseActive)
+                    {
+                        spinDashParried = true;
+#if UNITY_EDITOR
+                        EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] SpinDash parried — flagging dash for interrupt.");
+#endif
+                    }
+
 #if UNITY_EDITOR
                     EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Attack parried!");
 #endif
