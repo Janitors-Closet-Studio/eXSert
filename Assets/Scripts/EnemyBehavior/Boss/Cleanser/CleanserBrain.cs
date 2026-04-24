@@ -100,6 +100,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private VideoClip endingCutsceneClip;
         [Tooltip("If true, loads the configured credits scene after the ending cutscene. If false, returns to main menu.")]
         [SerializeField] private bool loadCreditsSceneAfterEndingCutscene = false;
+        [Tooltip("Optional transition scene to show during ending cutscene while gameplay scenes unload (for example, a solid color background scene).")]
+        [SerializeField] private string endingTransitionSceneName;
         [Tooltip("Scene name to load after ending cutscene finishes when credits loading is enabled.")]
         [SerializeField] private string creditsSceneName;
         [Tooltip("Fallback wait if death animation state cannot be detected.")]
@@ -3548,6 +3550,17 @@ namespace EnemyBehavior.Boss.Cleanser
 
             StartCoroutine(ExecuteUltimateAttack());
         }
+
+        [ContextMenu("DEBUG/Kill Cleanser Instantly")]
+        private void DebugKillCleanserInstantly()
+        {
+            if (!Application.isPlaying || isDefeated)
+                return;
+
+            currentHealth = 0f;
+            pendingUltimateByHealth = false;
+            OnDefeated();
+        }
 #endif
 
         private IEnumerator ExecuteUltimateAttack()
@@ -5210,37 +5223,32 @@ namespace EnemyBehavior.Boss.Cleanser
             float fallbackWait = Mathf.Max(0f, deathAnimationFallbackDuration);
             yield return WaitForAnimationStateToFinish(triggerDeath, fallbackWait);
 
+            bool shouldLoadCredits = loadCreditsSceneAfterEndingCutscene && !string.IsNullOrWhiteSpace(creditsSceneName);
+            string ownerSceneName = gameObject.scene.IsValid() ? gameObject.scene.name : string.Empty;
+
             if (endingCutsceneClip != null)
             {
-                bool cutsceneFinished = false;
-                CutsceneManager.PlayCutscene(endingCutsceneClip, () => cutsceneFinished = true);
+                CutsceneManager.PlayCutscene(endingCutsceneClip);
+                CoroutineRunner.Run(FinishEndingFlowAfterCutscene(shouldLoadCredits, creditsSceneName, ownerSceneName, endingTransitionSceneName));
 
-                while (!cutsceneFinished)
-                    yield return null;
+                endingFlowCoroutine = null;
+                yield break;
             }
             else
             {
-                Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no ending cutscene is assigned. Continuing to credits load.", this);
+                Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no ending cutscene is assigned.", this);
             }
 
-            if (loadCreditsSceneAfterEndingCutscene)
+            if (shouldLoadCredits)
             {
-                if (!string.IsNullOrWhiteSpace(creditsSceneName))
+                AsyncOperation loadCreditsOp = SceneManager.LoadSceneAsync(creditsSceneName, LoadSceneMode.Additive);
+                if (loadCreditsOp != null)
                 {
-                    AsyncOperation loadCreditsOp = SceneManager.LoadSceneAsync(creditsSceneName, LoadSceneMode.Additive);
-                    if (loadCreditsOp != null)
-                    {
-                        yield return loadCreditsOp;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[CleanserBrain] Failed to start loading credits scene '{creditsSceneName}'. Returning to main menu instead.", this);
-                        SceneLoader.LoadMainMenu();
-                    }
+                    yield return loadCreditsOp;
                 }
                 else
                 {
-                    Debug.LogWarning("[CleanserBrain] Credits scene loading is enabled but no scene name is assigned. Returning to main menu instead.", this);
+                    Debug.LogWarning($"[CleanserBrain] Failed to start loading credits scene '{creditsSceneName}'. Returning to main menu instead.", this);
                     SceneLoader.LoadMainMenu();
                 }
             }
@@ -5250,6 +5258,81 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             endingFlowCoroutine = null;
+        }
+
+        private static IEnumerator FinishEndingFlowAfterCutscene(bool loadCreditsScene, string creditsScene, string ownerSceneName, string transitionSceneName)
+        {
+            // Load the transition scene so there is always a valid active scene when we unload gameplay scenes.
+            bool transitionSceneLoaded = false;
+            if (!string.IsNullOrWhiteSpace(transitionSceneName))
+            {
+                Scene transitionScene = SceneManager.GetSceneByName(transitionSceneName);
+                if (!transitionScene.IsValid() || !transitionScene.isLoaded)
+                {
+                    AsyncOperation loadTransitionOp = SceneManager.LoadSceneAsync(transitionSceneName, LoadSceneMode.Additive);
+                    if (loadTransitionOp != null)
+                    {
+                        yield return loadTransitionOp;
+                        transitionScene = SceneManager.GetSceneByName(transitionSceneName);
+                    }
+                    else
+                    {
+                        Debug.LogError($"[CleanserBrain] Failed to load ending transition scene '{transitionSceneName}'. " +
+                                       "Ensure it is added to Build Settings. Proceeding without it.");
+                    }
+                }
+
+                if (transitionScene.IsValid() && transitionScene.isLoaded)
+                {
+                    SceneManager.SetActiveScene(transitionScene);
+                    transitionSceneLoaded = true;
+                }
+            }
+
+            // Unload the EngineCore (boss) scene.
+            if (!string.IsNullOrWhiteSpace(ownerSceneName))
+                yield return UnloadSceneIfLoaded(ownerSceneName);
+
+            // Only pre-unload PlayerScene here if the transition scene is present to hold us up.
+            // Without a safe active scene, Unity refuses to unload the last scene.
+            // If there is no transition scene, SceneLoader.LoadMainMenu() will handle it safely
+            // because it loads the main menu first before unloading everything else.
+            if (transitionSceneLoaded)
+                yield return UnloadSceneIfLoaded(PlayerSceneName);
+
+            while (CutsceneManager.IsCutscenePlaying)
+                yield return null;
+
+            if (loadCreditsScene && !string.IsNullOrWhiteSpace(creditsScene))
+            {
+                AsyncOperation loadCreditsOp = SceneManager.LoadSceneAsync(creditsScene, LoadSceneMode.Additive);
+                if (loadCreditsOp != null)
+                    yield return loadCreditsOp;
+                else
+                {
+                    Debug.LogError($"[CleanserBrain] Failed to load credits scene '{creditsScene}'. " +
+                                   "Ensure it is added to Build Settings. Returning to main menu instead.");
+                    SceneLoader.LoadMainMenu();
+                }
+            }
+            else
+            {
+                SceneLoader.LoadMainMenu();
+            }
+        }
+
+        private static IEnumerator UnloadSceneIfLoaded(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+                yield break;
+
+            Scene scene = SceneManager.GetSceneByName(sceneName);
+            if (!scene.IsValid() || !scene.isLoaded)
+                yield break;
+
+            AsyncOperation unloadOp = SceneManager.UnloadSceneAsync(scene);
+            if (unloadOp != null)
+                yield return unloadOp;
         }
 
         private void TryReturnPlayerToPlayerScene()
