@@ -134,6 +134,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private bool dashInvincibilityActive;
     private float dashInvincibilityFailsafeUntilUnscaledTime;
     private bool attackManagerDisabledByDeath;
+    private bool hasLoadedPersistentHealth;
     private float defaultMaxHealth;
     private float defaultCurrentHealth;
     private int lastKnownSceneHandle = -1;
@@ -422,9 +423,13 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     public void LoadData(GameData data)
     {
+        if (hasLoadedPersistentHealth)
+            return;
+
         maxHealth = data.maxHealth > 0 ? data.maxHealth : maxHealth;
         currentHealth = Mathf.Clamp(data.health, 0f, maxHealth);
         isDead = currentHealth <= 0f;
+        hasLoadedPersistentHealth = true;
         if (!isDead)
         {
             ResetDeathSequenceState();

@@ -20,6 +20,7 @@ public class MenuListManager : MonoBehaviour
 
     // Tracks the last selected element before opening each menu (acts as a stack)
     public List<Selectable> selectionHistory = new List<Selectable>();
+    private readonly Dictionary<GameObject, List<GameObject>> temporarilyHiddenMenusByOwner = new Dictionary<GameObject, List<GameObject>>();
     private readonly WaitForSecondsRealtime controlsPollInterval = new WaitForSecondsRealtime(0.1f);
 
     // Guard flag to prevent double back
@@ -85,8 +86,51 @@ public class MenuListManager : MonoBehaviour
         if (menuToDisable == null)
             return;
 
+        GameObject currentTopMenu = menusToManage != null && menusToManage.Count > 0 ? menusToManage[0] : null;
+        if (currentTopMenu != null && currentTopMenu != menuToDisable)
+            RegisterTemporarilyHiddenMenu(currentTopMenu, menuToDisable);
+
         menuToDisable.SetActive(false);
 
+    }
+
+    private void RegisterTemporarilyHiddenMenu(GameObject ownerMenu, GameObject hiddenMenu)
+    {
+        if (ownerMenu == null || hiddenMenu == null)
+            return;
+
+        if (!temporarilyHiddenMenusByOwner.TryGetValue(ownerMenu, out List<GameObject> hiddenMenus))
+        {
+            hiddenMenus = new List<GameObject>();
+            temporarilyHiddenMenusByOwner[ownerMenu] = hiddenMenus;
+        }
+
+        if (!hiddenMenus.Contains(hiddenMenu))
+            hiddenMenus.Add(hiddenMenu);
+    }
+
+    private void RestoreTemporarilyHiddenMenusFor(GameObject ownerMenu)
+    {
+        if (ownerMenu == null)
+            return;
+
+        if (!temporarilyHiddenMenusByOwner.TryGetValue(ownerMenu, out List<GameObject> hiddenMenus))
+            return;
+
+        foreach (GameObject hiddenMenu in hiddenMenus)
+        {
+            if (hiddenMenu == null)
+                continue;
+
+            EnsureHierarchyIsActive(hiddenMenu);
+            hiddenMenu.SetActive(true);
+
+            CanvasGroup canvasGroup = hiddenMenu.GetComponent<CanvasGroup>();
+            if (canvasGroup != null)
+                canvasGroup.alpha = 1f;
+        }
+
+        temporarilyHiddenMenusByOwner.Remove(ownerMenu);
     }
 
     // Central function to add a menu to the stack and handle all related logic (selection, sibling order, fading, etc.)
@@ -284,6 +328,7 @@ public class MenuListManager : MonoBehaviour
 
         // Remove outgoing menu from stack first, then resolve a valid selection for the revealed menu.
         menusToManage.RemoveAt(0);
+        RestoreTemporarilyHiddenMenusFor(currentTop);
         EnsureSelectionForMenu(previousMenu);
 
         // Fade out only the outgoing menu.
@@ -527,6 +572,7 @@ public class MenuListManager : MonoBehaviour
             return;
 
         GameObject menu = menusToManage[index];
+        RestoreTemporarilyHiddenMenusFor(menu);
         CloseMenu(menu);
         menusToManage.RemoveAt(index);
     }
@@ -534,6 +580,8 @@ public class MenuListManager : MonoBehaviour
     // Clears the whole stack if not protected
     public void ClearMenuList()
     {
+        temporarilyHiddenMenusByOwner.Clear();
+
         foreach(GameObject menu in menusToManage)
         {
             if (!IsProtectedMenu(menu))

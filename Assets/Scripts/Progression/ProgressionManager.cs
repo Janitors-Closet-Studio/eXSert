@@ -109,7 +109,6 @@ namespace Progression
                     playerLoad.completed += _ =>
                     {
                         Player.SpawnPlayerAtCheckpoint();
-                        PlayerHealthBarManager.Instance?.RestoreDesignTimeDefaults();
                         StartCoroutine(ReleaseEditorBootstrapLoadingScreenSuppressionNextFrame());
                     };
                 }

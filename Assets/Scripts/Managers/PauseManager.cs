@@ -551,6 +551,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         FadeMenus fadeMenus = this.GetComponent<FadeMenus>();
         settingsMenuOpen = showSettings;
 
+        if (!showNavigation)
+            SetNavigationBlockingChildrenVisible(false);
+
         if (pauseMenuHolder != null)
             StartCoroutine(fadeMenus.FadeMenu(pauseMenuHolder, fadeMenus.fadeDuration, showPause));
 
@@ -566,6 +569,20 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
 
         SetHUDVisible(showHUD);
+    }
+
+    private void SetNavigationBlockingChildrenVisible(bool visible)
+    {
+        if (navigationMenuBlockingChildren == null)
+            return;
+
+        foreach (GameObject child in navigationMenuBlockingChildren)
+        {
+            if (child == null)
+                continue;
+
+            child.SetActive(visible);
+        }
     }
 
     private void SetHUDVisible(bool visible)
