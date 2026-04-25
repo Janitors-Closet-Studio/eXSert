@@ -17,7 +17,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [SerializeField] private bool _showHitbox;
     // Prevent prompt when player is attacking or dashing
     [Header("Interaction Blocking")]
-    [SerializeField] protected bool blockPromptWhenAttackingOrDashing = true;
+    [SerializeField] protected bool blockPromptWhenAttackingOrDashing = false;
     public bool interactable = true;
 
     [Space(10)]
@@ -219,16 +219,9 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         // Only show prompt if enabled AND player is nearby
         if (isEnabled && isPlayerNearby)
         {
-            SwapBasedOnInputMethod();
             if (interactionUI != null)
             {
-                if (interactionUI._interactText != null)
-                {
-                    interactionUI._interactText.gameObject.SetActive(true);
-                    if (interactionUI._interactText.transform.parent != null)
-                        interactionUI._interactText.transform.parent.gameObject.SetActive(true);
-                }
-                interactionUI.ShowInteractIconImmediate();
+                SwapBasedOnInputMethod();
                 // Set currentInteractable if prompt is shown
                 interactionUI.currentInteractable = this;
             }
@@ -316,10 +309,14 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         if (interactionUI._interactText != null)
         {
-            interactionUI._interactText.gameObject.SetActive(true);
+            string promptToShow = string.IsNullOrWhiteSpace(_interactionPrompt)
+                ? "Press to Interact"
+                : _interactionPrompt;
+
+            interactionUI._interactText.text = promptToShow;
         }
 
-        interactionUI.ShowInteractIconImmediate();
+        interactionUI.ShowInteractPromptImmediate();
     }
 
     protected virtual void OnTriggerEnter(Collider other)
@@ -367,14 +364,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                 return;
             // Set this as the current interactable only if prompt is shown
             interactionUI.currentInteractable = this;
-            if (interactionUI._interactText != null && interactable)
-            {
-                interactionUI._interactText.gameObject.SetActive(true);
-                if (interactionUI._interactText.transform.parent != null)
-                    interactionUI._interactText.transform.parent.gameObject.SetActive(true);
-            }
-            if (interactable)
-                interactionUI.ShowInteractIconImmediate();
         }
     }
 
@@ -418,15 +407,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         SwapBasedOnInputMethod();
         interactionUI.currentInteractable = this;
-
-        if (interactionUI._interactText != null)
-        {
-            interactionUI._interactText.gameObject.SetActive(true);
-            if (interactionUI._interactText.transform.parent != null)
-                interactionUI._interactText.transform.parent.gameObject.SetActive(true);
-        }
-
-        interactionUI.ShowInteractIconImmediate();
     }
 
     private void OnDrawGizmos()
