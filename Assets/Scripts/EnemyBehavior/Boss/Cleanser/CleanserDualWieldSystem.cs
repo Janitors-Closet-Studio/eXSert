@@ -172,6 +172,24 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Impact VFX spawned when each weapon lodges in the ground.")]
         public GameObject TossImpactVFX;
 
+        [Tooltip("Extra Y offset applied only to the toss impact VFX spawn position.")]
+        public float TossImpactVfxHeightOffset = 0.2f;
+
+        [Tooltip("Warning-zone VFX spawned at each Spare Toss landing point before the weapon lands.")]
+        public GameObject TossWarningZoneVfx;
+
+        [Tooltip("Absolute world Y position used for Spare Toss warning zones.")]
+        public float TossWarningZoneWorldY = 8.7f;
+
+        [Tooltip("Extra amount added to warning-zone Start Size beyond the hit radius conversion.")]
+        public float TossWarningZoneSizePadding = 1f;
+
+        [Tooltip("Multiplier used to derive the GrowingOne start size from the final warning-zone start size.")]
+        public float TossWarningZoneGrowingScaleMultiplier = 0.175f;
+
+        [Tooltip("Constant value added after scaling to derive the GrowingOne start size.")]
+        public float TossWarningZoneGrowingScaleOffset = 0.2f;
+
         [Header("References")]
         [Tooltip("Audio source for SFX (uses SoundManager if null).")]
         public AudioSource SFXSource;
@@ -388,6 +406,8 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             weapon.IsAtRest = false;
+
+            SetWeaponControlledVfxActive(weapon, true);
             
             // Spawn VFX
             GameObject vfx = null;
@@ -707,6 +727,7 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.StockpileRollOffset = 0f;
             weapon.StockpileRollSpeed = 0f;
             weapon.StockpileFollowVelocity = Vector3.zero;
+            SetWeaponControlledVfxActive(weapon, false);
             weapon.WeaponObject.transform.SetParent(transform);
             weapon.WeaponObject.SetActive(false);
 
@@ -853,6 +874,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield break;
 
             GameObject obj = weapon.WeaponObject;
+            SetWeaponControlledVfxActive(weapon, false);
 
             // Disable colliders so the sinking visual passes cleanly through the floor.
             Collider[] colliders = obj.GetComponentsInChildren<Collider>(true);
@@ -893,6 +915,15 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             ReturnWeaponToPool(weapon);
+        }
+
+        public void SetWeaponControlledVfxActive(SpareWeapon weapon, bool isActive)
+        {
+            if (weapon?.WeaponObject == null)
+                return;
+
+            var vfxController = weapon.WeaponObject.GetComponentInChildren<CleanserSpareWeaponVfxController>(true);
+            vfxController?.SetControlledState(isActive);
         }
 
         /// <summary>

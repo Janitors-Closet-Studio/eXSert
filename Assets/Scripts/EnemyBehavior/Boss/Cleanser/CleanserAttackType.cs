@@ -249,6 +249,9 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Short delay inserted after circling and before each dash-through begins (circular pattern only).")]
         [Min(0f)] public float PreDashThroughDelay = 0.05f;
 
+        [Tooltip("How long the regular attack indicator should appear before each circular-pattern inward dash-through begins.")]
+        [Min(0f)] public float DashThroughAttackIndicatorLeadTime = 0.3f;
+
         [Tooltip("How long to remain at each target before moving to the next (legacy pattern).")]
         public float PauseAtTargetDuration = 0.1f;
 
@@ -371,6 +374,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Playback speed multiplier for the spare toss animation clip.")]
         public float AnimationSpeedMultiplier = 1f;
+
+        [Header("Dash Telegraph")]
+        [Tooltip("If true, Spare Toss also spawns the dash telegraph during its forward commit toward the player.")]
+        public bool ShowDashTelegraph = false;
 
         [Header("Legacy Projectile Path Settings (Unused by current Spare Toss volley)")]
         [HideInInspector]

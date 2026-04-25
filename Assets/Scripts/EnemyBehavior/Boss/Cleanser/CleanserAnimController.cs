@@ -57,6 +57,8 @@ namespace EnemyBehavior.Boss.Cleanser
             internal static class GeneralStates
             {
                 internal const string GrabWeapon = "GrabWeapon";
+                internal const string Hit1 = "Hit1";
+                internal const string Hit2 = "Hit2";
                 internal const string Death = "Death";
 
                 // TODO: Add when animation exists in the current Animator.
@@ -137,6 +139,8 @@ namespace EnemyBehavior.Boss.Cleanser
             { "JumpArc_Resolution", CleanserAnim.Ultimate.JumpArcResolution },
             { "JumpArc_Cancellation", CleanserAnim.Ultimate.JumpArcCancel },
             { "JumpArcCancellation", CleanserAnim.Ultimate.JumpArcCancel },
+            { "Attack_Hit1", CleanserAnim.GeneralStates.Hit1 },
+            { "Attack_Hit2", CleanserAnim.GeneralStates.Hit2 },
             { "GapClose", "GapCloseDash" },
             { "Attack_GapCloseDash", "GapCloseDash" },
         };
@@ -220,6 +224,8 @@ namespace EnemyBehavior.Boss.Cleanser
     #region General State Animations
 
         public void PlayGrabWeapon() => CrossFade(CleanserAnim.GeneralStates.GrabWeapon, attackTransition, true);
+    public void PlayHit1() => CrossFade(CleanserAnim.GeneralStates.Hit1, 0.02f, true);
+    public void PlayHit2() => CrossFade(CleanserAnim.GeneralStates.Hit2, 0.02f, true);
         public void PlayDeath() => CrossFade(CleanserAnim.GeneralStates.Death, 0.02f, true);
 
         // TODO: Uncomment when animation exists in the current Animator.

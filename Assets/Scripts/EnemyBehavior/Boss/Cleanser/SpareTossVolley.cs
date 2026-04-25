@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using Utilities.Combat;
 
@@ -77,6 +78,7 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             Transform wt = weapon.WeaponObject.transform;
             wt.SetParent(null);
+            owner.SetWeaponControlledVfxActive(weapon, true);
 
             Vector3 startPos = wt.position;
             float launchHeight = Mathf.Max(0f, owner.TossLaunchHeight);
@@ -89,6 +91,8 @@ namespace EnemyBehavior.Boss.Cleanser
             float launchPortion = Mathf.Clamp(owner.TossLaunchPortion, 0.05f, 0.95f);
             float launchDuration = totalDuration * launchPortion;
             float rainDuration = Mathf.Max(0.01f, totalDuration - launchDuration);
+
+            SpawnWarningZone(landingPos, totalDuration, owner);
 
             float elapsed = 0f;
             bool appliedFallingHit = false;
@@ -130,14 +134,63 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.IsHeld = false;
             weapon.IsAtRest = false;
             weapon.IsReturning = false;
+            owner.SetWeaponControlledVfxActive(weapon, false);
 
             owner.RegisterWeaponLodged(weapon);
 
             if (owner.TossImpactVFX != null)
-                Instantiate(owner.TossImpactVFX, landingPos, Quaternion.identity);
+            {
+                Vector3 impactVfxPosition = landingPos + Vector3.up * owner.TossImpactVfxHeightOffset;
+                Instantiate(owner.TossImpactVFX, impactVfxPosition, Quaternion.identity);
+            }
 
             owner.PlaySpareTossImpactSfx();
             onComplete?.Invoke();
+        }
+
+        private void SpawnWarningZone(Vector3 landingPos, float warningLifetime, CleanserDualWieldSystem owner)
+        {
+            if (owner == null || owner.TossWarningZoneVfx == null)
+                return;
+
+            float zoneStartSize = Mathf.Max(0f, (fallingHitRadius * 4f) + owner.TossWarningZoneSizePadding);
+            float lifetime = Mathf.Max(0.05f, warningLifetime);
+            Vector3 warningPosition = new Vector3(landingPos.x, owner.TossWarningZoneWorldY, landingPos.z);
+            GameObject warningInstance = Instantiate(owner.TossWarningZoneVfx, warningPosition, Quaternion.identity);
+
+            ConfigureWarningZone(warningInstance, zoneStartSize, lifetime, owner);
+            Destroy(warningInstance, lifetime + 0.5f);
+        }
+
+        private static void ConfigureWarningZone(GameObject warningInstance, float zoneStartSize, float lifetime, CleanserDualWieldSystem owner)
+        {
+            if (warningInstance == null || owner == null)
+                return;
+
+            ParticleSystem[] particleSystems = warningInstance.GetComponentsInChildren<ParticleSystem>(true);
+            if (particleSystems == null || particleSystems.Length == 0)
+                return;
+
+            float growingStartSize = Mathf.Max(
+                0f,
+                (zoneStartSize * owner.TossWarningZoneGrowingScaleMultiplier) + owner.TossWarningZoneGrowingScaleOffset);
+            for (int index = 0; index < particleSystems.Length; index++)
+            {
+                ParticleSystem particleSystem = particleSystems[index];
+                if (particleSystem == null)
+                    continue;
+
+                var main = particleSystem.main;
+                main.startLifetime = lifetime;
+
+                bool isGrowingZone = particleSystem.gameObject.name.IndexOf("GrowingOne", System.StringComparison.OrdinalIgnoreCase) >= 0;
+                main.startSize = isGrowingZone ? growingStartSize : zoneStartSize;
+
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particleSystem.Clear(true);
+                particleSystem.Simulate(0f, true, true, true);
+                particleSystem.Play(true);
+            }
         }
 
         private bool TryApplyFallingHit(Vector3 weaponPos)

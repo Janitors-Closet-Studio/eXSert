@@ -64,10 +64,27 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Header("Dash VFX Objects")]
         [SerializeField]
-        [Tooltip(
-            "Particle-system roots that should toggle on at DashOn and off at DashOff."
-        )]
+        [Tooltip("Particle-system roots that should toggle on at DashOn and off at DashOff.")]
         private GameObject[] dashVfxObjects = Array.Empty<GameObject>();
+
+        [Header("Phase Break / Death VFX")]
+        [SerializeField]
+        [Tooltip("Electricity, sparks, or other VFX roots shared by both the second-phase break/stun state and Cleanser's death.")]
+        private GameObject[] phaseBreakDeathVfxObjects = Array.Empty<GameObject>();
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Delay before the shared phase-break/death VFX actually turns on.")]
+        private float phaseBreakDeathVfxDelay = 1f;
+
+        [Header("Airborne VFX")]
+        [SerializeField]
+        [Tooltip("VFX roots that stay active while Cleanser is airborne during the second-phase ultimate hover and shut off when he lands.")]
+        private GameObject[] airborneVfxObjects = Array.Empty<GameObject>();
+
+        [SerializeField]
+        [Tooltip("Optional target transform used as the spawn anchor for airborne VFX roots when they turn on.")]
+        private Transform airborneVfxTarget;
 
         [Header("AfterImageTrail")]
         [SerializeField]
@@ -115,6 +132,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private Coroutine pommelSparkRoutine;
         private Coroutine wingSparkRoutine;
+        private Coroutine delayedPhaseBreakDeathVfxRoutine;
 
         private void Awake()
         {
@@ -126,6 +144,8 @@ namespace EnemyBehavior.Boss.Cleanser
             SetWeaponTrailActive(false);
             SetWingTrailActive(false);
             SetDashVfxActive(false);
+            SetEffectObjectsActive(phaseBreakDeathVfxObjects, false);
+            SetEffectObjectsActive(airborneVfxObjects, false);
             SetSparkIdle(bladeSparkVfx, bladeSparkEffects);
             SetSparkIdle(pommelSparkVfx, pommelSparkEffects);
             SetSparkIdle(wingSparkVfx, wingSparkEffects);
@@ -190,6 +210,39 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             StopAttackLoopingVfx();
             EndAnimeDashMeshTrail();
+            StopDelayedPhaseBreakDeathVfx();
+            SetEffectObjectsActive(phaseBreakDeathVfxObjects, false);
+            SetEffectObjectsActive(airborneVfxObjects, false);
+        }
+
+        public void BeginPhaseBreakVfx()
+        {
+            StartDelayedPhaseBreakDeathVfx();
+        }
+
+        public void EndPhaseBreakVfx()
+        {
+            StopDelayedPhaseBreakDeathVfx();
+            SetEffectObjectsActive(phaseBreakDeathVfxObjects, false);
+        }
+
+        public void PlayDeathVfx()
+        {
+            StopAttackLoopingVfx();
+            EndAnimeDashMeshTrail();
+            SetEffectObjectsActive(airborneVfxObjects, false);
+            StartDelayedPhaseBreakDeathVfx();
+        }
+
+        public void BeginAirborneVfx()
+        {
+            Transform airborneAnchor = airborneVfxTarget != null ? airborneVfxTarget : transform;
+            SetEffectObjectsActive(airborneVfxObjects, true, airborneAnchor);
+        }
+
+        public void EndAirborneVfx()
+        {
+            SetEffectObjectsActive(airborneVfxObjects, false);
         }
 
         public void BladeSpark()
@@ -292,6 +345,62 @@ namespace EnemyBehavior.Boss.Cleanser
             SetTrailObjectsActive(dashVfxObjects, isActive);
         }
 
+        private void StartDelayedPhaseBreakDeathVfx()
+        {
+            StopDelayedPhaseBreakDeathVfx();
+            delayedPhaseBreakDeathVfxRoutine = StartCoroutine(RunDelayedPhaseBreakDeathVfx());
+        }
+
+        private void StopDelayedPhaseBreakDeathVfx()
+        {
+            if (delayedPhaseBreakDeathVfxRoutine == null)
+                return;
+
+            StopCoroutine(delayedPhaseBreakDeathVfxRoutine);
+            delayedPhaseBreakDeathVfxRoutine = null;
+        }
+
+        private IEnumerator RunDelayedPhaseBreakDeathVfx()
+        {
+            float delay = Mathf.Max(0f, phaseBreakDeathVfxDelay);
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+
+            delayedPhaseBreakDeathVfxRoutine = null;
+            SetEffectObjectsActive(phaseBreakDeathVfxObjects, true);
+        }
+
+        private static void SetEffectObjectsActive(GameObject[] effectObjects, bool isActive)
+        {
+            SetEffectObjectsActive(effectObjects, isActive, null);
+        }
+
+        private static void SetEffectObjectsActive(GameObject[] effectObjects, bool isActive, Transform targetAnchor)
+        {
+            for (int index = 0; index < effectObjects.Length; index++)
+            {
+                GameObject effectObject = effectObjects[index];
+                if (effectObject == null)
+                    continue;
+
+                if (isActive)
+                {
+                    if (targetAnchor != null)
+                        effectObject.transform.SetPositionAndRotation(targetAnchor.position, targetAnchor.rotation);
+
+                    effectObject.SetActive(true);
+                    PlayParticles(effectObject);
+                    PlayVisualEffects(effectObject);
+                }
+                else
+                {
+                    StopVisualEffects(effectObject);
+                    StopParticles(effectObject);
+                    effectObject.SetActive(false);
+                }
+            }
+        }
+
         private static void SetTrailObjectsActive(GameObject[] trailObjects, bool isActive)
         {
             for (int index = 0; index < trailObjects.Length; index++)
@@ -304,9 +413,11 @@ namespace EnemyBehavior.Boss.Cleanser
                 {
                     trailObject.SetActive(true);
                     PlayParticles(trailObject);
+                    PlayVisualEffects(trailObject);
                 }
                 else
                 {
+                    StopVisualEffects(trailObject);
                     StopParticles(trailObject);
                     trailObject.SetActive(false);
                 }
@@ -425,6 +536,23 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
+        private static void PlayVisualEffects(GameObject root)
+        {
+            VisualEffect[] visualEffects = root.GetComponentsInChildren<VisualEffect>(true);
+            for (int index = 0; index < visualEffects.Length; index++)
+            {
+                VisualEffect visualEffect = visualEffects[index];
+                if (visualEffect == null)
+                    continue;
+
+                if (!visualEffect.gameObject.activeSelf)
+                    visualEffect.gameObject.SetActive(true);
+
+                visualEffect.Reinit();
+                visualEffect.Play();
+            }
+        }
+
         private static void StopParticles(GameObject root)
         {
             ParticleSystem[] particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
@@ -435,6 +563,20 @@ namespace EnemyBehavior.Boss.Cleanser
                     continue;
 
                 particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+
+        private static void StopVisualEffects(GameObject root)
+        {
+            VisualEffect[] visualEffects = root.GetComponentsInChildren<VisualEffect>(true);
+            for (int index = 0; index < visualEffects.Length; index++)
+            {
+                VisualEffect visualEffect = visualEffects[index];
+                if (visualEffect == null)
+                    continue;
+
+                visualEffect.Stop();
+                visualEffect.Reinit();
             }
         }
     }
