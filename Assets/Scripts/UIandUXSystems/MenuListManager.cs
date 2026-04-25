@@ -27,19 +27,34 @@ public class MenuListManager : MonoBehaviour
     internal bool backGuardActive = false;
     private float backGuardCooldown = 0.15f; // seconds
     private FadeMenus _fadeMenus;
+    private FooterManager _footerManager;
 
     private FadeMenus FadeMenusComponent => _fadeMenus != null ? _fadeMenus : (_fadeMenus = GetComponent<FadeMenus>());
+    private FooterManager FooterManagerComponent => _footerManager != null ? _footerManager : (_footerManager = GetComponent<FooterManager>());
     
 
     private void Start()
     {
+        FooterManager footerManager = FooterManagerComponent;
+        footerManager?.BeginSilentFooterInitialization();
+
         AddToMenuList(canvas); // Add this menu to the list on start
         if (firstMenuToOpen != null)
         {
             AddToMenuList(firstMenuToOpen);
         }
 
+        footerManager?.EndSilentFooterInitialization();
         StartCoroutine(ListenForChangesInControls());
+    }
+
+    private void UpdateFooterForCurrentTopMenu()
+    {
+        FooterManager footerManager = FooterManagerComponent;
+        if (footerManager == null || menusToManage == null || menusToManage.Count == 0)
+            return;
+
+        footerManager.UpdateFooterForMenu(menusToManage[0]);
     }
 
     private IEnumerator ListenForChangesInControls()
@@ -166,6 +181,11 @@ public class MenuListManager : MonoBehaviour
             firstSelectable = menuToAdd.GetComponentInChildren<Selectable>();
         if (firstSelectable != null && !sliderSelected)
             SetSelected(firstSelectable);
+
+        FooterManager footerManager = GetComponent<FooterManager>();
+        UpdateFooterForCurrentTopMenu();
+
+        footerManager?.SetToLastSibling();
 
         DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, "Menu added to list. Current menus in list: " + menusToManage.Count);
     }
@@ -319,6 +339,8 @@ public class MenuListManager : MonoBehaviour
         GameObject currentTop = menusToManage[0];
         GameObject previousMenu = menusToManage[1];
 
+        MenuSelectionSuppression.SuppressForFrames(3);
+
         // Keep the revealed menu fully visible during back transitions to prevent self-fades.
         EnsureHierarchyIsActive(previousMenu);
         previousMenu.SetActive(true);
@@ -329,7 +351,9 @@ public class MenuListManager : MonoBehaviour
         // Remove outgoing menu from stack first, then resolve a valid selection for the revealed menu.
         menusToManage.RemoveAt(0);
         RestoreTemporarilyHiddenMenusFor(currentTop);
-        EnsureSelectionForMenu(previousMenu);
+        if (!TryRestoreSelectionFromHistory(previousMenu))
+            EnsureSelectionForMenu(previousMenu);
+        UpdateFooterForCurrentTopMenu();
 
         // Fade out only the outgoing menu.
         CloseMenu(currentTop);
@@ -362,6 +386,31 @@ public class MenuListManager : MonoBehaviour
         Selectable fallback = GetFirstValidSelectable(menu);
         if (fallback != null)
             SetSelected(fallback);
+    }
+
+    private bool TryRestoreSelectionFromHistory(GameObject menu)
+    {
+        if (menu == null || selectionHistory == null || selectionHistory.Count == 0)
+            return false;
+
+        for (int i = 0; i < selectionHistory.Count; i++)
+        {
+            Selectable candidate = selectionHistory[i];
+            if (candidate == null)
+                continue;
+
+            if (!candidate.gameObject.activeInHierarchy)
+                continue;
+
+            if (!candidate.transform.IsChildOf(menu.transform))
+                continue;
+
+            selectionHistory.RemoveAt(i);
+            SetSelected(candidate);
+            return true;
+        }
+
+        return false;
     }
 
     // Finds the first selectable component in the menu hierarchy that is active and interactable, or returns null if none found.
@@ -575,6 +624,7 @@ public class MenuListManager : MonoBehaviour
         RestoreTemporarilyHiddenMenusFor(menu);
         CloseMenu(menu);
         menusToManage.RemoveAt(index);
+        UpdateFooterForCurrentTopMenu();
     }
 
     // Clears the whole stack if not protected
@@ -590,6 +640,7 @@ public class MenuListManager : MonoBehaviour
         }
 
         selectionHistory.Clear();
+        UpdateFooterForCurrentTopMenu();
     }
 
     // Checks if menu is protected

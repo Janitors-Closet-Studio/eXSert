@@ -11,6 +11,9 @@ public class SelectFirstButtonInEntryList : MonoBehaviour
 
     private void OnEnable()
     {
+        if (MenuSelectionSuppression.IsSuppressed)
+            return;
+
         // Wait a frame to ensure all buttons are initialized
         StartCoroutine(SelectFirstButtonNextFrame());
     }
@@ -18,6 +21,9 @@ public class SelectFirstButtonInEntryList : MonoBehaviour
     private System.Collections.IEnumerator SelectFirstButtonNextFrame()
     {
         yield return null; // Wait one frame
+
+        if (MenuSelectionSuppression.IsSuppressed)
+            yield break;
 
         // Find the first active button in the content
         buttonToSelect = contentRectTransform.GetComponentInChildren<Button>(true);

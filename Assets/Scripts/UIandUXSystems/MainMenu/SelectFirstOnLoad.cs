@@ -10,6 +10,9 @@ public class SelectFirstOnLoad : MonoBehaviour
 
     private void OnEnable()
     {
+        if (MenuSelectionSuppression.IsSuppressed)
+            return;
+
         // Start coroutine to select for several frames after UI is fully active
         StartCoroutine(SelectForMultipleFrames(5));
     }
@@ -19,6 +22,10 @@ public class SelectFirstOnLoad : MonoBehaviour
         for (int i = 0; i < frames; i++)
         {
             yield return null;
+
+            if (MenuSelectionSuppression.IsSuppressed)
+                yield break;
+
             SelectFirstButton();
         }
     }
@@ -49,6 +56,9 @@ public class SelectFirstOnLoad : MonoBehaviour
 
     private void SelectFirstButton()
     {
+        if (MenuSelectionSuppression.IsSuppressed)
+            return;
+
         EventSystem eventSystem = FindEventSystem();
         if (eventSystem == null)
             return;
