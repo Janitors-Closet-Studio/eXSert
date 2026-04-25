@@ -117,6 +117,8 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     private ScriptableRendererFeature cachedPuzzleTransitionRendererFeature;
     private bool cachedPuzzleTransitionRendererFeatureActive;
     
+    private PuzzleInteraction activeConsoleInteraction;
+
     private void Start()
     {
         if(playCraneAmbience != null)
@@ -151,10 +153,10 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     public void ConsoleInteracted(PuzzleInteraction interaction)
     {
         int consoleIndex = interaction != null ? interaction.ConsoleIndex : 0;
-
         if (!CanUseConsole(consoleIndex))
             return;
 
+        activeConsoleInteraction = interaction;
         SetActiveConsole(consoleIndex);
         indicatorActive = true;
         BeginPuzzleEntryTransition();
@@ -249,6 +251,8 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 
         isPuzzleTransitionActive = false;
         puzzleTransitionRoutine = null;
+
+
     }
 
     private static IEnumerator FadeTo(float targetAlpha, float durationSeconds)
@@ -828,6 +832,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
             return;
 
         consoleCompleted[activeConsoleIndex] = true;
+        activeConsoleInteraction?.SetInteractionEnabled(false);
     }
 
     // Checks for confirm input to start magnet extension
@@ -1074,24 +1079,6 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
             Gizmos.DrawLine(originD, originD + castDir * magnetDetectLength);
         }
     }
-
-    private string GetLayerMaskNames(LayerMask mask)
-    {
-        System.Collections.Generic.List<string> layers = new System.Collections.Generic.List<string>();
-        for (int i = 0; i < 32; i++)
-        {
-            if ((mask.value & (1 << i)) != 0)
-            {
-                string layerName = LayerMask.LayerToName(i);
-                if (!string.IsNullOrEmpty(layerName))
-                {
-                    layers.Add(layerName);
-                }
-            }
-        }
-        return layers.Count > 0 ? string.Join(", ", layers) : "None";
-    }
-
     private int GetDropSurfaceMask()
     {
         if (dropSurfaceMask.value != 0)

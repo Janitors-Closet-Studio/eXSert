@@ -31,7 +31,7 @@ public abstract class CollectableInteraction : InteractionManager
         ExecuteInteraction();
         AfterExecuteInteraction();
         
-        InteractionUI.Instance.OnCollectedItem(displayName, bottomFlavorText, uiFadeDuration, uiDisplayDuration);
+        InteractionUI.Instance.OnCollectedItem(displayName, bottomFlavorText, uiFadeDuration, uiDisplayDuration, priority: 9);
         
         StartCoroutine(DeactivateInteractableCoroutine(this));
 
@@ -95,5 +95,20 @@ public abstract class CollectableInteraction : InteractionManager
         return true;
     }
 
+    protected override void OnTriggerEnter(Collider other)
+    {
+        base.OnTriggerEnter(other);
+
+        if (!other.transform.root.CompareTag("Player"))
+            return;
+
+        // Show collect prompt if player is in range
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI != null && interactionUI._interactText != null)
+        {
+            interactionUI._interactText.text = this._interactionPrompt;
+            interactionUI._interactText.gameObject.SetActive(true);
+        }
+    }
     
 }

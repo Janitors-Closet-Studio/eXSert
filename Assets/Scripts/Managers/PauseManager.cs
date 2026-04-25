@@ -18,7 +18,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private VolumeProfile pauseMenuVolumeProfile;
 
     [Header("UI GameObjects")]
-    [SerializeField] private GameObject pauseOverlay;
+    [SerializeField] internal GameObject pauseOverlay;
     
     [SerializeField] private GameObject pauseMenuHolder;
     [SerializeField] private GameObject navigationMenuHolder;
@@ -44,9 +44,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     [SerializeField] private InputActionReference _backActionReference;
     [SerializeField, Tooltip("Small debounce to prevent one key press from triggering Pause then Back after action map switch.")]
     private float inputDebounceSeconds = 0.15f;
-
-    private AudioClip sfxClipToPause;
-    private AudioClip puzzleClipToPause;
     FadeMenus fadeMenus;
 
 
@@ -189,6 +186,11 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
 
         if(Hint.isHintActive)
+        {
+            return;
+        }
+
+        if (CutsceneManager.IsCutscenePlaying)
         {
             return;
         }
@@ -366,7 +368,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
-        Debug.Log(Time.timeScale + "is the current timescale when showing pause menu.");  
 
         // Request pause through the coordinator (centralized time scale authority).
         PauseCoordinator.RequestPause(GameplayInputBlockOwnerId);

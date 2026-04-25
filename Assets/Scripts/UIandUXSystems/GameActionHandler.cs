@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Progression.Checkpoints;
+using Unity.AppUI.UI;
 
 /// <summary>
 /// Handles common game actions like restarting, returning to menu, quitting.
@@ -13,6 +14,8 @@ public class GameActionHandler : MonoBehaviour
     [SerializeField, Tooltip("Reference to PauseManager (optional)")]
     private PauseManager pauseManager;
 
+    private MenuListManager menuListManager;
+
     private void Start()
     {
         // Try to find PauseManager if not assigned
@@ -20,6 +23,8 @@ public class GameActionHandler : MonoBehaviour
         {
             pauseManager = PauseManager.Instance;
         }
+
+        menuListManager = pauseManager.GetComponent<MenuListManager>();
     }
 
     /// <summary>
@@ -31,6 +36,7 @@ public class GameActionHandler : MonoBehaviour
         Debug.Log("[GameActionHandler] Restarting from checkpoint...");
 
         PrepareForSceneLoad(resumeImmediately: false);
+
         
         Player.TriggerRespawn();
         ActsManager.Instance.ActivateAllImagesBefore();
@@ -56,7 +62,8 @@ public class GameActionHandler : MonoBehaviour
         Debug.Log("[GameActionHandler] Returning to main menu...");
         
         PrepareForSceneLoad(resumeImmediately: false);
-        
+
+
         SceneLoader.LoadMainMenu();
     }
 
@@ -66,7 +73,7 @@ public class GameActionHandler : MonoBehaviour
     public void QuitGame()
     {
         Debug.Log("[GameActionHandler] Quitting game...");
-        
+
     #if UNITY_EDITOR
         // Stop playing in editor
         UnityEditor.EditorApplication.isPlaying = false;

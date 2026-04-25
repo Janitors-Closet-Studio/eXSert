@@ -3653,8 +3653,9 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
+  displayName: Platform Extender
   requiredItemID: hgreenkeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -41035,6 +41036,10 @@ PrefabInstance:
       propertyPath: entryData
       value: 
       objectReference: {fileID: 11400000, guid: f206f8762753a994b89d06974bde1120, type: 2}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: displayName
+      value: DATAFILE ENTRY #008
+      objectReference: {fileID: 0}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.7053118
@@ -45713,10 +45718,11 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
+  displayName: South Crane Console
   requiredItemID: hgreenkeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED
-  interactOnce: 1
+  interactOnce: 0
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -60964,7 +60970,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6216200123784054398, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
       propertyPath: displayName
-      value: Door
+      value: Charging Station Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 6216200123784054398, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7039949267367733273, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -62692,10 +62702,11 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
+  displayName: North Crane Console
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: White Keycard
   lockedInteractionPrompt: LOCKED
-  interactOnce: 1
+  interactOnce: 0
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -67927,6 +67938,10 @@ PrefabInstance:
       propertyPath: entryData
       value: 
       objectReference: {fileID: 11400000, guid: fb112e16f3792cc4eab167d6035a2e30, type: 2}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: displayName
+      value: DATAFILE ENTRY #010
+      objectReference: {fileID: 0}
     - target: {fileID: 7735384276254331190, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_Intensity
       value: 0.1
@@ -69914,6 +69929,10 @@ PrefabInstance:
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: _interactId
       value: hyellowkeycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: displayName
+      value: Yellow Control Console
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: errorSFXClip
@@ -73696,6 +73715,10 @@ PrefabInstance:
       value: hbosskeycard
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: displayName
+      value: Charging Station Verification Console
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: errorSFXClip
       value: 
       objectReference: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -73713,7 +73736,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: requiredItemDisplayName
-      value: Boss KeyCard
+      value: Charging Station Keycard
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: 'doorHandlers.Array.data[0]'
@@ -83761,6 +83784,10 @@ PrefabInstance:
       value: hbluekeycard
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: displayName
+      value: Blue Control Console
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: errorSFXClip
       value: 
       objectReference: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -83784,6 +83811,10 @@ PrefabInstance:
       propertyPath: puzzleCinemachineCamera
       value: 
       objectReference: {fileID: 323333627}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: requiredItemDisplayName
+      value: Blue Keycard
+      objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: 'doorHandlers.Array.data[0]'
       value: 
@@ -100580,6 +100611,10 @@ PrefabInstance:
       value: hredkeycard
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: displayName
+      value: Red Control Console
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: errorSFXClip
       value: 
       objectReference: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -115252,6 +115287,7 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
+  displayName: Elevator Lift
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: Lift Keycard
   lockedInteractionPrompt: LOCKED
@@ -117203,6 +117239,10 @@ PrefabInstance:
       propertyPath: entryData
       value: 
       objectReference: {fileID: 11400000, guid: ea74a546135fc8f489825e54171a2118, type: 2}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: displayName
+      value: DATAFILE ENTRY #009
+      objectReference: {fileID: 0}
     - target: {fileID: 7735384276254331190, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_Intensity
       value: 0.1
@@ -123054,6 +123094,10 @@ PrefabInstance:
       propertyPath: displayName
       value: Yellow Keycard
       objectReference: {fileID: 0}
+    - target: {fileID: 2990226564898442599, guid: e55b00d1958aeb3459dbcae45105adbc, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -125906,10 +125950,11 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
+  displayName: Lift Return Console
   requiredItemID: 
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
-  interactOnce: 1
+  interactOnce: 0
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -128869,8 +128914,9 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
+  displayName: Platform Rotator
   requiredItemID: hgreenkeycard
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -132462,7 +132508,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5036990525669058420, guid: 408feccde03244d4aa628920bb0770f4, type: 3}
       propertyPath: bottomFlavorText
-      value: Console Unlocked
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7488575300607664572, guid: 408feccde03244d4aa628920bb0770f4, type: 3}
       propertyPath: m_Name
@@ -136388,6 +136434,10 @@ PrefabInstance:
     - target: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
       propertyPath: displayName
       value: Green Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7209843438162953288, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
       propertyPath: m_Name
@@ -152095,7 +152145,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6216200123784054398, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
       propertyPath: bottomFlavorText
-      value: Lift Console unlocked
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7039949267367733273, guid: 4a8ebf07a662d3343a3c2cc5c03d910e, type: 3}
       propertyPath: m_LocalPosition.x

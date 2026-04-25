@@ -3902,7 +3902,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorHandler
   currentDoorState: 1
-  doorLockState: 1
+  doorLockState: 0
   doorType: 0
   doorParts:
   - partObject: {fileID: 355597685}
@@ -42099,6 +42099,10 @@ PrefabInstance:
       value: 'Tutorial Log '
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: displayName
+      value: DATAFILE ENTRY #001
+      objectReference: {fileID: 0}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: _interactionPrompt
       value: Press to Pick Up
       objectReference: {fileID: 0}
@@ -46418,6 +46422,10 @@ PrefabInstance:
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: displayName
       value: Elavator Keycard
+      objectReference: {fileID: 0}
+    - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: _interactionPrompt
+      value: Press to PIck Up
       objectReference: {fileID: 0}
     - target: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: m_LocalPosition.x
@@ -64772,6 +64780,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1556879918}
     m_Modifications:
+    - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
+      propertyPath: displayName
+      value: Elevator Door
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
+      propertyPath: interactOnce
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: requiredItemDisplayName
       value: Elevator Keycard
