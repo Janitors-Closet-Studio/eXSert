@@ -15165,6 +15165,7 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
+  displayName: 
   requiredItemID: loadC
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -49418,7 +49419,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!215 &1175262291
 ReflectionProbe:
   m_ObjectHideFlags: 0
@@ -49434,8 +49435,8 @@ ReflectionProbe:
   m_TimeSlicingMode: 0
   m_Resolution: 128
   m_UpdateFrequency: 0
-  m_BoxSize: {x: 49.1, y: 16.32, z: 60}
-  m_BoxOffset: {x: 0, y: 0, z: 0}
+  m_BoxSize: {x: 43.829346, y: 11.938492, z: 54.71411}
+  m_BoxOffset: {x: 0.11603546, y: -0.041461945, z: -2.2357178}
   m_NearClip: 0.3
   m_FarClip: 1000
   m_ShadowDistance: 100
@@ -49444,7 +49445,7 @@ ReflectionProbe:
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IntensityMultiplier: 1
+  m_IntensityMultiplier: 2
   m_BlendDistance: 1
   m_HDR: 1
   m_BoxProjection: 0
@@ -49461,7 +49462,7 @@ Transform:
   m_GameObject: {fileID: 1175262290}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3.66296, y: 3.6755886, z: 14.817749}
+  m_LocalPosition: {x: 3.66296, y: 3.6755886, z: 16.76}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -71659,6 +71660,10 @@ MonoBehaviour:
   preloadSceneOnEnable: 0
   sceneToActivate: {fileID: 0}
   sceneLoadZone: {fileID: 0}
+  playEndingCutsceneOnDefeat: 0
+  endingCutsceneName: Final Cutscene
+  creditsScene: {fileID: 0}
+  loadCreditsAfterEndingCutscene: 0
 --- !u!4 &1789049215
 Transform:
   m_ObjectHideFlags: 0
