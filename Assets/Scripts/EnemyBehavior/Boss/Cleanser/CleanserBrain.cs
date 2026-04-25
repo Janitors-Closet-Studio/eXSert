@@ -4045,10 +4045,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
             float hoverBaseY = (ultimateArenaCenterPoint != null ? ultimateArenaCenterPoint.position.y : arenaCenter.y) + UltimateSettings.HoverHeightOffset;
             Vector3 floatPos = new Vector3(arenaCenter.x, hoverBaseY, arenaCenter.z);
-            cleanserVfxManager?.BeginAirborneVfx();
             TriggerJumpArcBaseAnimation();
             yield return WaitForJumpArcMovementEventOrFallback();
             yield return JumpToPosition(floatPos, 0.8f, false);
+            cleanserVfxManager?.BeginAirborneVfx();
             TriggerAnimation(UltimateSettings.JumpArcHoldTrigger);
             SetFloatingAerialAssistActive(true);
 

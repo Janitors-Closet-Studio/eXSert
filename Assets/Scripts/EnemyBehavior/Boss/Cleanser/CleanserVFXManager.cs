@@ -72,6 +72,11 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Electricity, sparks, or other VFX roots shared by both the second-phase break/stun state and Cleanser's death.")]
         private GameObject[] phaseBreakDeathVfxObjects = Array.Empty<GameObject>();
 
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Delay before the shared phase-break/death VFX actually turns on.")]
+        private float phaseBreakDeathVfxDelay = 1f;
+
         [Header("Airborne VFX")]
         [SerializeField]
         [Tooltip("VFX roots that stay active while Cleanser is airborne during the second-phase ultimate hover and shut off when he lands.")]
@@ -127,6 +132,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private Coroutine pommelSparkRoutine;
         private Coroutine wingSparkRoutine;
+        private Coroutine delayedPhaseBreakDeathVfxRoutine;
 
         private void Awake()
         {
@@ -204,17 +210,19 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             StopAttackLoopingVfx();
             EndAnimeDashMeshTrail();
+            StopDelayedPhaseBreakDeathVfx();
             SetEffectObjectsActive(phaseBreakDeathVfxObjects, false);
             SetEffectObjectsActive(airborneVfxObjects, false);
         }
 
         public void BeginPhaseBreakVfx()
         {
-            SetEffectObjectsActive(phaseBreakDeathVfxObjects, true);
+            StartDelayedPhaseBreakDeathVfx();
         }
 
         public void EndPhaseBreakVfx()
         {
+            StopDelayedPhaseBreakDeathVfx();
             SetEffectObjectsActive(phaseBreakDeathVfxObjects, false);
         }
 
@@ -223,7 +231,7 @@ namespace EnemyBehavior.Boss.Cleanser
             StopAttackLoopingVfx();
             EndAnimeDashMeshTrail();
             SetEffectObjectsActive(airborneVfxObjects, false);
-            SetEffectObjectsActive(phaseBreakDeathVfxObjects, true);
+            StartDelayedPhaseBreakDeathVfx();
         }
 
         public void BeginAirborneVfx()
@@ -335,6 +343,31 @@ namespace EnemyBehavior.Boss.Cleanser
         private void SetDashVfxActive(bool isActive)
         {
             SetTrailObjectsActive(dashVfxObjects, isActive);
+        }
+
+        private void StartDelayedPhaseBreakDeathVfx()
+        {
+            StopDelayedPhaseBreakDeathVfx();
+            delayedPhaseBreakDeathVfxRoutine = StartCoroutine(RunDelayedPhaseBreakDeathVfx());
+        }
+
+        private void StopDelayedPhaseBreakDeathVfx()
+        {
+            if (delayedPhaseBreakDeathVfxRoutine == null)
+                return;
+
+            StopCoroutine(delayedPhaseBreakDeathVfxRoutine);
+            delayedPhaseBreakDeathVfxRoutine = null;
+        }
+
+        private IEnumerator RunDelayedPhaseBreakDeathVfx()
+        {
+            float delay = Mathf.Max(0f, phaseBreakDeathVfxDelay);
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+
+            delayedPhaseBreakDeathVfxRoutine = null;
+            SetEffectObjectsActive(phaseBreakDeathVfxObjects, true);
         }
 
         private static void SetEffectObjectsActive(GameObject[] effectObjects, bool isActive)
