@@ -81,8 +81,10 @@ public abstract class UnlockableInteraction : InteractionManager
                 ? "Press to Interact"
                 : promptToShow;
 
-            InteractionUI.Instance._interactText.gameObject.SetActive(true);
-            InteractionUI.Instance.ShowInteractIconImmediate();
+            if (InteractionUI.Instance.currentInteractable != this)
+                return;
+
+            InteractionUI.Instance.ShowInteractPromptImmediate();
         }
     }
 

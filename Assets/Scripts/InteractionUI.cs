@@ -76,6 +76,8 @@ public class InteractionUI : Singleton<InteractionUI>
             _interactIcon.gameObject.SetActive(false);
 
         currentInteractable = null;
+
+        _interactText.text = "";
     }
 
     public void ShowInteractIconImmediate()
@@ -83,12 +85,27 @@ public class InteractionUI : Singleton<InteractionUI>
         if (_interactIcon == null)
             return;
 
+        if (_interactIcon.transform.parent != null)
+            _interactIcon.transform.parent.gameObject.SetActive(true);
+
         _interactIcon.enabled = true;
         _interactIcon.gameObject.SetActive(true);
 
         KeybindIconSwapper keybindIconSwapper = _interactIcon.GetComponent<KeybindIconSwapper>();
         if (keybindIconSwapper != null)
             keybindIconSwapper.RefreshIcon();
+    }
+
+    public void ShowInteractPromptImmediate()
+    {
+        if (_interactText != null)
+        {
+            _interactText.gameObject.SetActive(true);
+            if (_interactText.transform.parent != null)
+                _interactText.transform.parent.gameObject.SetActive(true);
+        }
+
+        ShowInteractIconImmediate();
     }
 
     public void HideCollectUI()
