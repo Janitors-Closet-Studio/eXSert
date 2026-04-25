@@ -4045,6 +4045,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             float hoverBaseY = (ultimateArenaCenterPoint != null ? ultimateArenaCenterPoint.position.y : arenaCenter.y) + UltimateSettings.HoverHeightOffset;
             Vector3 floatPos = new Vector3(arenaCenter.x, hoverBaseY, arenaCenter.z);
+            cleanserVfxManager?.BeginAirborneVfx();
             TriggerJumpArcBaseAnimation();
             yield return WaitForJumpArcMovementEventOrFallback();
             yield return JumpToPosition(floatPos, 0.8f, false);
@@ -4114,6 +4115,8 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 TryRestoreAgentToNavMesh(transform.position, 6f);
             }
+
+            cleanserVfxManager?.EndAirborneVfx();
 
             // Reset spare stockpile/lodged state after ultimate. Use the sinking despawn so any
             // remaining spares visibly disappear into the floor (Roomba-panel style) instead of
@@ -4499,6 +4502,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 transform.position = Vector3.Lerp(startPos, targetPos, t * t);
                 yield return null;
             }
+
+            cleanserVfxManager?.EndAirborneVfx();
             
             agent.enabled = true;
             agent.Warp(transform.position);
@@ -4541,6 +4546,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             transform.position = targetPos;
+            cleanserVfxManager?.EndAirborneVfx();
 
             if (agent != null)
             {
@@ -5709,6 +5715,7 @@ namespace EnemyBehavior.Boss.Cleanser
             HideDashTelegraph();
             ResetComboMovementState(cancelActiveCombo: true);
             isStunned = true;
+            cleanserVfxManager?.BeginPhaseBreakVfx();
             TriggerAnimation(triggerStunned);
             
 #if UNITY_EDITOR
@@ -5718,6 +5725,7 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return new WaitForSeconds(duration);
             
             isStunned = false;
+            cleanserVfxManager?.EndPhaseBreakVfx();
         }
 
         private void OnDefeated()
@@ -5764,6 +5772,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             
             TriggerAnimation(triggerDeath);
+            cleanserVfxManager?.PlayDeathVfx();
             LogCriticalDiagnostic($"Death trigger sent. triggerDeath='{triggerDeath}', animatorPresent={animator != null}, animControllerPresent={animController != null}", true);
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death trigger sent. triggerDeath='{triggerDeath}'");
