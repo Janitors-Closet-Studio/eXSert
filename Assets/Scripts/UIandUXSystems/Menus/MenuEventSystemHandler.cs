@@ -106,6 +106,9 @@ public class MenuEventSystemHandler : MonoBehaviour
     {
         yield return null;
 
+        if (MenuSelectionSuppression.IsSuppressed)
+            yield break;
+
         // Ensure there's an EventSystem to use. When scenes load, EventSystem.current can be null for a frame.
         if (EventSystem.current == null)
         {
@@ -124,6 +127,13 @@ public class MenuEventSystemHandler : MonoBehaviour
         {
             Debug.LogError($"First selected is null for menu \"{name}\".");
             yield break;
+        }
+
+        if (EventSystem.current.currentSelectedGameObject != null)
+        {
+            GameObject currentSelected = EventSystem.current.currentSelectedGameObject;
+            if (currentSelected.activeInHierarchy && currentSelected.transform.IsChildOf(transform))
+                yield break;
         }
 
         EventSystem.current.SetSelectedGameObject(_firstSelected.gameObject);
