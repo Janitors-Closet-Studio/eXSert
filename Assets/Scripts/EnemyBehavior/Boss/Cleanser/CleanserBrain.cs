@@ -354,10 +354,27 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private bool attackIndicatorFollowsBoss = true;
         [Tooltip("Scale multiplier for the indicator VFX.")]
         [SerializeField] private float attackIndicatorScale = 1f;
+        [Header("Dash Telegraph VFX")]
+        [Tooltip("Dash telegraph prefab spawned from the dash start point. Leave empty to disable dash telegraphs.")]
+        [SerializeField] private GameObject dashTelegraphPrefab;
+        [Tooltip("Optional anchor used for fallback dash telegraph yaw. Falls back to the attack indicator anchor, then the boss transform.")]
+        [SerializeField] private Transform dashTelegraphSpawnTarget;
+        [Tooltip("Absolute world Y used when spawning dash telegraphs.")]
+        [SerializeField] private float dashTelegraphWorldY = 8.7f;
+        [Tooltip("Applied to the computed dash distance before sizing the telegraph. Use this to compensate for authored prefab length.")]
+        [SerializeField] private float dashTelegraphLengthOffset = 0f;
+        [Tooltip("Extra warning time before the regular dash begins after the telegraph appears.")]
+        [SerializeField, Min(0f)] private float dashTelegraphLeadTime = 0.2f;
+        [Tooltip("Extra warning time before each Anime Dash movement segment begins after the telegraph appears.")]
+        [SerializeField, Min(0f)] private float animeDashTelegraphLeadTime = 0.08f;
+        [Tooltip("Extra lifetime after hiding the dash telegraph before its object is destroyed.")]
+        [SerializeField] private float dashTelegraphDestroyDelay = 0.1f;
         
         // Runtime state for attack indicator
         private GameObject attackIndicatorInstance;
         private Coroutine attackIndicatorCoroutine;
+        private GameObject activeDashTelegraphInstance;
+        private Coroutine dashTelegraphCoroutine;
 
         // Runtime state
         private NavMeshAgent agent;
@@ -659,11 +676,11 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             ultimateAttackLockActive = true;
 
-            if (comboSystem != null && comboSystem.IsExecutingCombo)
-                comboSystem.CancelCombo();
+            ResetComboMovementState(cancelActiveCombo: true);
 
             isExecutingAttack = false;
             HideAttackIndicator();
+            HideDashTelegraph();
             cleanserVfxManager?.StopAllLoopingVfx();
             SetAllMeleeHitboxesEnabled(false);
             EndSpinDashHitboxPhase();
@@ -848,6 +865,151 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return WaitForSecondsCache.Get(delay);
             HideAttackIndicator();
         }
+
+        private void ShowDashTelegraph(Vector3 dashStart, Vector3 dashDestination, float visibleDuration)
+        {
+            if (dashTelegraphPrefab == null)
+                return;
+
+            HideDashTelegraph();
+
+            Transform spawnAnchor = dashTelegraphSpawnTarget != null
+                ? dashTelegraphSpawnTarget
+                : (attackIndicatorSpawnTarget != null ? attackIndicatorSpawnTarget : transform);
+
+            Vector3 spawnPosition = dashStart;
+            spawnPosition.y = dashTelegraphWorldY;
+
+            Quaternion spawnRotation = GetDashTelegraphRotation(spawnAnchor, dashStart, dashDestination);
+            float dashDistance = Mathf.Max(0.01f, GetFlatDistance(dashStart, dashDestination) + dashTelegraphLengthOffset);
+            float telegraphLifetime = Mathf.Max(0.01f, visibleDuration);
+
+            activeDashTelegraphInstance = Instantiate(dashTelegraphPrefab, spawnPosition, spawnRotation);
+            ForceDashTelegraphFlatRotation(activeDashTelegraphInstance.transform, spawnRotation);
+            ConfigureDashTelegraph(activeDashTelegraphInstance.GetComponentsInChildren<ParticleSystem>(true), dashDistance, telegraphLifetime);
+            RestartDashTelegraph(activeDashTelegraphInstance);
+            dashTelegraphCoroutine = StartCoroutine(HideDashTelegraphAfterDelay(telegraphLifetime));
+        }
+
+        private void HideDashTelegraph()
+        {
+            if (dashTelegraphCoroutine != null)
+            {
+                StopCoroutine(dashTelegraphCoroutine);
+                dashTelegraphCoroutine = null;
+            }
+
+            if (activeDashTelegraphInstance == null)
+                return;
+
+            StopDashTelegraph(activeDashTelegraphInstance.GetComponentsInChildren<ParticleSystem>(true));
+            Destroy(activeDashTelegraphInstance, Mathf.Max(0f, dashTelegraphDestroyDelay));
+            activeDashTelegraphInstance = null;
+        }
+
+        private IEnumerator HideDashTelegraphAfterDelay(float delay)
+        {
+            if (delay > 0f)
+                yield return WaitForSecondsCache.Get(delay);
+
+            dashTelegraphCoroutine = null;
+            HideDashTelegraph();
+        }
+
+        private static void ConfigureDashTelegraph(ParticleSystem[] particleSystems, float dashDistance, float lifetime)
+        {
+            if (particleSystems == null)
+                return;
+
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                var main = particleSystem.main;
+                main.startSize3D = true;
+                main.startSizeY = new ParticleSystem.MinMaxCurve(dashDistance);
+                main.startSizeYMultiplier = dashDistance;
+                main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime);
+                main.startLifetimeMultiplier = lifetime;
+            }
+        }
+
+        private IEnumerator ShowDashTelegraphLead(Vector3 dashStart, Vector3 dashDestination, float dashDuration, float leadTime)
+        {
+            float clampedLeadTime = Mathf.Max(0f, leadTime);
+            ShowDashTelegraph(dashStart, dashDestination, dashDuration + clampedLeadTime);
+
+            if (clampedLeadTime > 0f)
+                yield return WaitForSecondsCache.Get(clampedLeadTime);
+        }
+
+        private static void ForceDashTelegraphFlatRotation(Transform telegraphTransform, Quaternion intendedRotation)
+        {
+            if (telegraphTransform == null)
+                return;
+
+            Vector3 euler = intendedRotation.eulerAngles;
+            telegraphTransform.rotation = Quaternion.Euler(90f, euler.y, 0f);
+        }
+
+        private static void RestartDashTelegraph(GameObject telegraphObject)
+        {
+            if (telegraphObject == null)
+                return;
+
+            ParticleSystem[] particleSystems = telegraphObject.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particleSystem.Clear(true);
+                particleSystem.Simulate(0f, true, true, true);
+                particleSystem.Play(true);
+            }
+        }
+
+        private static void StopDashTelegraph(ParticleSystem[] particleSystems)
+        {
+            if (particleSystems == null)
+                return;
+
+            for (int i = 0; i < particleSystems.Length; i++)
+            {
+                ParticleSystem particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                    continue;
+
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                particleSystem.Clear(true);
+            }
+        }
+
+        private static float GetFlatDistance(Vector3 from, Vector3 to)
+        {
+            from.y = 0f;
+            to.y = 0f;
+            return Vector3.Distance(from, to);
+        }
+
+        private static Quaternion GetDashTelegraphRotation(Transform spawnAnchor, Vector3 dashStart, Vector3 dashDestination)
+        {
+            Vector3 flatDirection = dashDestination - dashStart;
+            flatDirection.y = 0f;
+
+            if (flatDirection.sqrMagnitude <= 0.0001f)
+            {
+                float fallbackYaw = spawnAnchor != null ? spawnAnchor.eulerAngles.y : 0f;
+                return Quaternion.Euler(90f, fallbackYaw, 0f);
+            }
+
+            float yaw = Quaternion.LookRotation(flatDirection.normalized, Vector3.up).eulerAngles.y;
+            return Quaternion.Euler(90f, yaw, 0f);
+        }
         #endregion
 
         private void Awake()
@@ -1002,6 +1164,8 @@ namespace EnemyBehavior.Boss.Cleanser
             cleanserVfxManager?.StopAllLoopingVfx();
             SetAllMeleeHitboxesEnabled(false);
             isStrafingMovement = false;
+            HideDashTelegraph();
+            ResetComboMovementState(cancelActiveCombo: true);
             ResetAnimationSpeed();
         }
 
@@ -1133,6 +1297,30 @@ namespace EnemyBehavior.Boss.Cleanser
             agent.speed = baseAgentSpeed * speedMultiplier * comboSpeedMultiplier * vulnerableRecoverySpeedMultiplier;
             agent.angularSpeed = baseAgentAngularSpeed * comboSpeedMultiplier;
             agent.acceleration = baseAgentAcceleration * comboSpeedMultiplier * Mathf.Max(0.1f, vulnerableRecoverySpeedMultiplier);
+        }
+
+        private float GetEffectiveComboMovementSpeedMultiplier(CleanserCombo combo)
+        {
+            if (combo == null)
+                return 1f;
+
+            // Legacy combos serialized before this field was added can still contain 0.
+            // Treat that as "use normal movement" instead of forcing 10% movement speed.
+            if (combo.ComboMovementSpeedMultiplier <= 0f)
+                return 1f;
+
+            return Mathf.Max(0.1f, combo.ComboMovementSpeedMultiplier);
+        }
+
+        private void ResetComboMovementState(bool cancelActiveCombo)
+        {
+            currentComboMovementSpeedMultiplier = 1f;
+
+            if (cancelActiveCombo && comboSystem != null && comboSystem.IsExecutingCombo)
+                comboSystem.CancelCombo();
+
+            if (agent != null && agent.hasPath)
+                agent.ResetPath();
         }
 
         private void UpdatePlayerGuardingAggression()
@@ -1558,130 +1746,133 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             comboSystem.StartCombo(combo);
             pickedUpWeaponThisCombo = false;
-            currentComboMovementSpeedMultiplier = combo != null ? Mathf.Max(0.1f, combo.ComboMovementSpeedMultiplier) : 1f;
+            currentComboMovementSpeedMultiplier = GetEffectiveComboMovementSpeedMultiplier(combo);
             bool comboExecutedAnyStep = false;
-            
-            while (comboSystem.IsExecutingCombo)
+
+            try
             {
-                if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                while (comboSystem.IsExecutingCombo)
                 {
-                    comboSystem.CancelCombo();
-                    break;
-                }
-
-                var step = comboSystem.GetCurrentStep();
-                if (step == null)
-                    break;
-
-                bool attemptedRangeEdgeNudge = false;
-
-                ComboStep nextStep = comboSystem.GetNextStep();
-
-                int pickupCountForStep = comboSystem != null
-                    ? comboSystem.GetSpareWeaponPickupCountForStep(step)
-                    : Mathf.Max(0, step.SpareWeaponsToAddBeforeStep);
-
-                // Step-directed stockpiling (designer controlled).
-                if (pickupCountForStep > 0 && dualWieldSystem != null && dualWieldSystem.AvailableSpareWeaponCount > 0)
-                {
-                    int queuedPickups = dualWieldSystem.QueueSpareWeaponBurst(pickupCountForStep);
-                    if (queuedPickups > 0)
-                        pickedUpWeaponThisCombo = true;
-                }
-                
-                bool hasCurrentStepRange = TryGetComboStepDesiredRange(step, out float stepRangeMin, out float stepRangeMax);
-                bool hasNextStepRange = TryGetComboStepDesiredRange(nextStep, out float nextStepRangeMin, out float nextStepRangeMax);
-
-                if (hasCurrentStepRange)
-                {
-                    float currentDistance = GetPlayerDistanceXZ();
-                    bool isInCurrentStepRange = IsDistanceInRange(currentDistance, stepRangeMin, stepRangeMax);
-                    bool isInNextStepRange = hasNextStepRange && IsDistanceInRange(currentDistance, nextStepRangeMin, nextStepRangeMax);
-
-                    if (!isInCurrentStepRange)
+                    if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
                     {
-                        float desiredMin = stepRangeMin;
-                        float desiredMax = stepRangeMax;
-
-                        if (hasNextStepRange && TryGetRangeIntersection(stepRangeMin, stepRangeMax, nextStepRangeMin, nextStepRangeMax, out float overlapMin, out float overlapMax))
-                        {
-                            desiredMin = overlapMin;
-                            desiredMax = overlapMax;
-                        }
-
-                        yield return MoveIntoStepRange(desiredMin, desiredMax);
-                    }
-                    else if (isInNextStepRange && agent != null && agent.hasPath)
-                    {
-                        agent.ResetPath();
+                        comboSystem.CancelCombo();
+                        break;
                     }
 
-                    float postMoveDistance = GetPlayerDistanceXZ();
-                    if (!IsDistanceInRange(postMoveDistance, stepRangeMin, stepRangeMax))
+                    var step = comboSystem.GetCurrentStep();
+                    if (step == null)
+                        break;
+
+                    bool attemptedRangeEdgeNudge = false;
+
+                    ComboStep nextStep = comboSystem.GetNextStep();
+
+                    int pickupCountForStep = comboSystem != null
+                        ? comboSystem.GetSpareWeaponPickupCountForStep(step)
+                        : Mathf.Max(0, step.SpareWeaponsToAddBeforeStep);
+
+                    // Step-directed stockpiling (designer controlled).
+                    if (pickupCountForStep > 0 && dualWieldSystem != null && dualWieldSystem.AvailableSpareWeaponCount > 0)
                     {
-                        if (!attemptedRangeEdgeNudge && IsWithinComboRangeNudgeWindow(postMoveDistance, stepRangeMin, stepRangeMax))
+                        int queuedPickups = dualWieldSystem.QueueSpareWeaponBurst(pickupCountForStep);
+                        if (queuedPickups > 0)
+                            pickedUpWeaponThisCombo = true;
+                    }
+
+                    bool hasCurrentStepRange = TryGetComboStepDesiredRange(step, out float stepRangeMin, out float stepRangeMax);
+                    bool hasNextStepRange = TryGetComboStepDesiredRange(nextStep, out float nextStepRangeMin, out float nextStepRangeMax);
+
+                    if (hasCurrentStepRange)
+                    {
+                        float currentDistance = GetPlayerDistanceXZ();
+                        bool isInCurrentStepRange = IsDistanceInRange(currentDistance, stepRangeMin, stepRangeMax);
+                        bool isInNextStepRange = hasNextStepRange && IsDistanceInRange(currentDistance, nextStepRangeMin, nextStepRangeMax);
+
+                        if (!isInCurrentStepRange)
                         {
-                            attemptedRangeEdgeNudge = true;
-                            yield return NudgeForwardForComboRange();
-                            postMoveDistance = GetPlayerDistanceXZ();
+                            float desiredMin = stepRangeMin;
+                            float desiredMax = stepRangeMax;
+
+                            if (hasNextStepRange && TryGetRangeIntersection(stepRangeMin, stepRangeMax, nextStepRangeMin, nextStepRangeMax, out float overlapMin, out float overlapMax))
+                            {
+                                desiredMin = overlapMin;
+                                desiredMax = overlapMax;
+                            }
+
+                            yield return MoveIntoStepRange(desiredMin, desiredMax);
+                        }
+                        else if (isInNextStepRange && agent != null && agent.hasPath)
+                        {
+                            agent.ResetPath();
                         }
 
+                        float postMoveDistance = GetPlayerDistanceXZ();
                         if (!IsDistanceInRange(postMoveDistance, stepRangeMin, stepRangeMax))
                         {
-                            yield return null;
-                            continue;
+                            if (!attemptedRangeEdgeNudge && IsWithinComboRangeNudgeWindow(postMoveDistance, stepRangeMin, stepRangeMax))
+                            {
+                                attemptedRangeEdgeNudge = true;
+                                yield return NudgeForwardForComboRange();
+                                postMoveDistance = GetPlayerDistanceXZ();
+                            }
+
+                            if (!IsDistanceInRange(postMoveDistance, stepRangeMin, stepRangeMax))
+                            {
+                                yield return null;
+                                continue;
+                            }
                         }
+                    }
+
+                    if (step.PreDelay > 0f)
+                    {
+                        yield return new WaitForSeconds(step.PreDelay);
+                    }
+
+                    if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+                    {
+                        comboSystem.CancelCombo();
+                        break;
+                    }
+
+                    if (step.IsFinisher)
+                    {
+                        yield return ExecuteStrongAttack(step.StrongAttack);
+                    }
+                    else
+                    {
+                        yield return ExecuteBasicAttack(step.BasicAttack);
+                    }
+
+                    comboExecutedAnyStep = true;
+
+                    if (!comboSystem.AdvanceStep())
+                        break;
+
+                    yield return null;
+                }
+            }
+            finally
+            {
+                ResetComboMovementState(cancelActiveCombo: true);
+
+                // Clean up stockpiled/lodged spare weapons at END of combo.
+                if (dualWieldSystem != null)
+                {
+                    while (dualWieldSystem.IsHoldingSpareWeapon)
+                    {
+                        dualWieldSystem.ReleaseCurrentWeapon();
+                    }
+
+                    if (dualWieldSystem.LodgedWeaponCount > 0)
+                    {
+                        dualWieldSystem.ReturnAllLodgedWeaponsToRest();
                     }
                 }
 
-                if (step.PreDelay > 0f)
-                {
-                    yield return new WaitForSeconds(step.PreDelay);
-                }
-
-                if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
-                {
-                    comboSystem.CancelCombo();
-                    break;
-                }
-                
-                if (step.IsFinisher)
-                {
-                    yield return ExecuteStrongAttack(step.StrongAttack);
-                }
-                else
-                {
-                    yield return ExecuteBasicAttack(step.BasicAttack);
-                }
-
-                comboExecutedAnyStep = true;
-                
-                if (!comboSystem.AdvanceStep())
-                    break;
-                
-                yield return null;
+                if (comboExecutedAnyStep)
+                    combosSinceUltimate++;
             }
-
-            currentComboMovementSpeedMultiplier = 1f;
-            if (agent != null && agent.hasPath)
-                agent.ResetPath();
-            
-            // Clean up stockpiled/lodged spare weapons at END of combo.
-            if (dualWieldSystem != null)
-            {
-                while (dualWieldSystem.IsHoldingSpareWeapon)
-                {
-                    dualWieldSystem.ReleaseCurrentWeapon();
-                }
-
-                if (dualWieldSystem.LodgedWeaponCount > 0)
-                {
-                    dualWieldSystem.ReturnAllLodgedWeaponsToRest();
-                }
-            }
-
-            if (comboExecutedAnyStep)
-                combosSinceUltimate++;
         }
 
         private IEnumerator ExecuteBasicAttack(CleanserBasicAttack attackType)
@@ -2545,7 +2736,16 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield break;
             }
 
+            const float releaseFallbackTimeout = 1.2f;
+
             yield return FaceTarget(player, 0.3f);
+
+            if (SpareTossSettings != null && SpareTossSettings.ShowDashTelegraph && player != null)
+            {
+                Vector3 telegraphTarget = player.position;
+                telegraphTarget.y = transform.position.y;
+                ShowDashTelegraph(transform.position, telegraphTarget, releaseFallbackTimeout);
+            }
 
             ApplyAnimationSpeedMultiplier(SpareTossSettings.AnimationSpeedMultiplier);
 
@@ -2557,7 +2757,6 @@ namespace EnemyBehavior.Boss.Cleanser
             waitingForSpareTossReleaseEvent = true;
             spareTossReleaseEventReceived = false;
 
-            const float releaseFallbackTimeout = 1.2f;
             float elapsed = 0f;
             while (!spareTossReleaseEventReceived && elapsed < releaseFallbackTimeout)
             {
@@ -2995,6 +3194,8 @@ namespace EnemyBehavior.Boss.Cleanser
                         transform.rotation = targetRot;
                     }
 
+                    yield return ShowDashTelegraphLead(startPoint, targetPoint, dashDuration, animeDashTelegraphLeadTime);
+
                     float elapsed = 0f;
                     bool hitAppliedThisDash = false;
                     float previousT = 0f;
@@ -3274,9 +3475,18 @@ namespace EnemyBehavior.Boss.Cleanser
                     transform.rotation = targetRot;
                 }
 
+                float dashThroughAttackIndicatorLeadTime = Mathf.Max(0f, settings.DashThroughAttackIndicatorLeadTime);
+                if (dashThroughAttackIndicatorLeadTime > 0f)
+                {
+                    ShowAttackIndicator(customDuration: dashThroughAttackIndicatorLeadTime);
+                    yield return WaitForSecondsCache.Get(dashThroughAttackIndicatorLeadTime);
+                }
+
                 Vector3 startPoint = transform.position;
                 Vector3 throughTarget = centerPos + dashDir * radius;
                 throughTarget.y = transform.position.y;
+
+                yield return ShowDashTelegraphLead(startPoint, throughTarget, dashThroughDuration, animeDashTelegraphLeadTime);
 
                 float elapsed = 0f;
                 bool hitAppliedThisDash = false;
@@ -3640,6 +3850,8 @@ namespace EnemyBehavior.Boss.Cleanser
             Vector3 targetPos = startPos + dirToPlayer * dashDistance;
             float dashDuration = Mathf.Max(0.01f, GapCloseDashSettings.DashDuration);
             float computedDashSpeed = dashDistance / dashDuration;
+
+            yield return ShowDashTelegraphLead(startPos, targetPos, dashDuration, dashTelegraphLeadTime);
 
             // Execute dash movement over fixed duration; speed is derived from distance / duration.
             float elapsed = 0f;
@@ -5494,6 +5706,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ApplyStun(float duration)
         {
+            HideDashTelegraph();
+            ResetComboMovementState(cancelActiveCombo: true);
             isStunned = true;
             TriggerAnimation(triggerStunned);
             
@@ -5532,6 +5746,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 StopCoroutine(currentAttackCoroutine);
                 currentAttackCoroutine = null;
             }
+
+            HideDashTelegraph();
+            ResetComboMovementState(cancelActiveCombo: true);
             
             if (platformController != null)
             {
