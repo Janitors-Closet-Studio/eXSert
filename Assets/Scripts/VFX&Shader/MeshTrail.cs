@@ -6,6 +6,7 @@ using UnityEngine;
 public class MeshTrail : MonoBehaviour
 {
     public float activeTime = 2f;
+    [SerializeField] private bool allowDebugHotkey;
     [Header("Mesh Related")]
     public float meshRefreshRate = 0.1f;
     public float meshDestroyDelay = 3f;
@@ -25,6 +26,11 @@ public class MeshTrail : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!allowDebugHotkey)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Space))
         {
             if (timedTrailCoroutine != null)
@@ -86,6 +92,13 @@ public class MeshTrail : MonoBehaviour
     IEnumerator ActivateTrail()
     {
         CacheSourceRenderers();
+
+        if (skinnedMeshRenderers == null || skinnedMeshRenderers.Length == 0 || mat == null)
+        {
+            isTrailActive = false;
+            trailCoroutine = null;
+            yield break;
+        }
 
         while (isTrailActive)
         {
