@@ -282,6 +282,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private Animator animator;
         [Tooltip("Audio source for boss SFX. Auto-falls back to SoundManager if left empty.")]
         [SerializeField] private AudioSource sfxSource;
+        [Tooltip("Optional VFX coordinator used for animation-event-driven boss VFX.")]
+        [SerializeField] private CleanserVFXManager cleanserVfxManager;
 
         [Header("Hitbox References")]
         [Tooltip("Optional additional halberd colliders (for example pole capsule + blade sphere). Used together to derive halberd hit range.")]
@@ -340,6 +342,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Attack Indicator VFX")]
         [Tooltip("VFX prefab to spawn before an attack to warn the player. Leave empty to disable.")]
         [SerializeField] private GameObject attackIndicatorPrefab;
+        [Tooltip("Optional anchor used for attack indicator placement. Falls back to the boss transform when not assigned.")]
+        [SerializeField] private Transform attackIndicatorSpawnTarget;
         [Tooltip("Position offset from the boss's transform where the indicator spawns (local space).")]
         [SerializeField] private Vector3 attackIndicatorOffset = new Vector3(0f, 0.5f, 2f);
         [Tooltip("Seconds before the attack lands that the indicator appears.")]
@@ -660,6 +664,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             isExecutingAttack = false;
             HideAttackIndicator();
+            cleanserVfxManager?.StopAllLoopingVfx();
             SetAllMeleeHitboxesEnabled(false);
             EndSpinDashHitboxPhase();
             EndWhirlwindDamagePhase();
@@ -686,9 +691,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
             HideAttackIndicator();
 
+            Transform indicatorAnchor = attackIndicatorSpawnTarget != null ? attackIndicatorSpawnTarget : transform;
             Vector3 offset = customOffset ?? attackIndicatorOffset;
-            Vector3 spawnPos = transform.TransformPoint(offset);
-            Quaternion spawnRot = transform.rotation;
+            Vector3 spawnPos = indicatorAnchor.TransformPoint(offset);
+            Quaternion spawnRot = indicatorAnchor.rotation;
 
             attackIndicatorInstance = Instantiate(attackIndicatorPrefab, spawnPos, spawnRot);
             
@@ -699,7 +705,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (attackIndicatorFollowsBoss)
             {
-                attackIndicatorInstance.transform.SetParent(transform);
+                attackIndicatorInstance.transform.SetParent(indicatorAnchor);
                 attackIndicatorInstance.transform.localPosition = offset;
                 attackIndicatorInstance.transform.localRotation = Quaternion.identity;
             }
@@ -711,7 +717,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Attack indicator shown at offset {offset}");
+        EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Attack indicator shown at offset {offset} from {(indicatorAnchor != null ? indicatorAnchor.name : transform.name)}");
 #endif
         }
 
@@ -749,6 +755,94 @@ namespace EnemyBehavior.Boss.Cleanser
             HideAttackIndicator();
         }
 
+        /// <summary>
+        /// Animation Event receiver: enables configured weapon-trail VFX.
+        /// </summary>
+        public void Trail()
+        {
+            cleanserVfxManager?.Trail();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: disables configured weapon-trail VFX.
+        /// </summary>
+        public void TrailEnd()
+        {
+            cleanserVfxManager?.TrailEnd();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: enables configured wing-trail VFX.
+        /// </summary>
+        public void Wing()
+        {
+            cleanserVfxManager?.Wing();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: disables configured wing-trail VFX.
+        /// </summary>
+        public void WingEnd()
+        {
+            cleanserVfxManager?.WingEnd();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: enables configured dash VFX.
+        /// </summary>
+        public void DashOn()
+        {
+            cleanserVfxManager?.DashOn();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: disables configured dash VFX.
+        /// </summary>
+        public void DashOff()
+        {
+            cleanserVfxManager?.DashOff();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: plays a named VFX entry configured on CleanserVFXManager.
+        /// </summary>
+        public void PlayNamedVfx(string vfxId)
+        {
+            cleanserVfxManager?.PlayNamedVfx(vfxId);
+        }
+
+        /// <summary>
+        /// Animation Event receiver: plays the blade spark VFX.
+        /// </summary>
+        public void BladeSpark()
+        {
+            cleanserVfxManager?.BladeSpark();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: stops the blade spark VFX.
+        /// </summary>
+        public void BSparkEnd()
+        {
+            cleanserVfxManager?.BSparkEnd();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: plays the pommel spark VFX.
+        /// </summary>
+        public void PommelSpark()
+        {
+            cleanserVfxManager?.PommelSpark();
+        }
+
+        /// <summary>
+        /// Animation Event receiver: plays the wing spark VFX.
+        /// </summary>
+        public void WingSpark()
+        {
+            cleanserVfxManager?.WingSpark();
+        }
+
         private IEnumerator HideIndicatorAfterDelay(float delay)
         {
             yield return WaitForSecondsCache.Get(delay);
@@ -765,6 +859,7 @@ namespace EnemyBehavior.Boss.Cleanser
             aggressionSystem = aggressionSystem ?? GetComponent<CleanserAggressionSystem>();
             animController = animController ?? GetComponent<CleanserAnimController>() ?? GetComponentInChildren<CleanserAnimController>();
             animator = animator ?? GetComponentInChildren<Animator>();
+            cleanserVfxManager = cleanserVfxManager ?? GetComponent<CleanserVFXManager>() ?? GetComponentInChildren<CleanserVFXManager>(true);
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
 
             if (dualWieldSystem != null)
@@ -904,6 +999,7 @@ namespace EnemyBehavior.Boss.Cleanser
             EndSpinDashHitboxPhase();
             EndWhirlwindDamagePhase();
             aggressionSystem?.SetAggressionProcessingPaused(false);
+            cleanserVfxManager?.StopAllLoopingVfx();
             SetAllMeleeHitboxesEnabled(false);
             isStrafingMovement = false;
             ResetAnimationSpeed();
@@ -1595,61 +1691,67 @@ namespace EnemyBehavior.Boss.Cleanser
 
             NotifyAttackBegin();
             isExecutingAttack = true;
-            
-            switch (attackType)
+
+            try
             {
-                case CleanserBasicAttack.Lunge:
-                    yield return ExecuteAttackWithAnimationEvents(LungeAttack);
-                    break;
-                case CleanserBasicAttack.LungeBlock:
-                    yield return ExecuteAttackWithAnimationEvents(LungeBlockAttack);
-                    break;
-                case CleanserBasicAttack.OverheadCleave:
-                    yield return ExecuteAttackWithAnimationEvents(OverheadCleaveAttack);
-                    break;
-                case CleanserBasicAttack.Cleave:
-                    yield return ExecuteAttackWithAnimationEvents(CleaveAttack);
-                    break;
-                case CleanserBasicAttack.CleaveAdvance:
-                    yield return ExecuteAttackWithAnimationEvents(CleaveAdvanceAttack);
-                    break;
-                case CleanserBasicAttack.PommelStrike:
-                    yield return ExecuteAttackWithAnimationEvents(PommelStrikeAttack);
-                    break;
-                case CleanserBasicAttack.DiagUpwardSlash:
-                    yield return ExecuteAttackWithAnimationEvents(DiagUpwardSlashAttack);
-                    break;
-                case CleanserBasicAttack.WingBash:
-                    yield return ExecuteAttackWithAnimationEvents(WingBashAttack);
-                    break;
-                case CleanserBasicAttack.SlashIntoSlap:
-                    yield return ExecuteAttackWithAnimationEvents(SlashIntoSlapAttack);
-                    break;
-                case CleanserBasicAttack.RakeIntoSpinSlash:
-                    yield return ExecuteAttackWithAnimationEvents(RakeIntoSpinSlashAttack);
-                    break;
-                case CleanserBasicAttack.SpareToss:
-                    yield return ExecuteSpareToss();
-                    break;
-                case CleanserBasicAttack.LegSweep:
-                    yield return ExecuteAttackWithAnimationEvents(LegSweepAttack);
-                    break;
-                case (CleanserBasicAttack)8:
-                    // Legacy serialized value: Knockback is no longer selectable in combo-authoring list.
-                    yield return ExecuteKnockbackAttack();
-                    break;
-                case (CleanserBasicAttack)9:
-                    // Legacy serialized value: MiniCrescentWave now routes to DiagUpwardSlash behavior.
-                    yield return ExecuteAttackWithAnimationEvents(DiagUpwardSlashAttack);
-                    break;
-                case (CleanserBasicAttack)16:
-                    // Legacy serialized value: Basic SpinDash now routes to SpinDash strong behavior.
-                    yield return ExecuteSpinDash();
-                    break;
+                switch (attackType)
+                {
+                    case CleanserBasicAttack.Lunge:
+                        yield return ExecuteAttackWithAnimationEvents(LungeAttack);
+                        break;
+                    case CleanserBasicAttack.LungeBlock:
+                        yield return ExecuteAttackWithAnimationEvents(LungeBlockAttack);
+                        break;
+                    case CleanserBasicAttack.OverheadCleave:
+                        yield return ExecuteAttackWithAnimationEvents(OverheadCleaveAttack);
+                        break;
+                    case CleanserBasicAttack.Cleave:
+                        yield return ExecuteAttackWithAnimationEvents(CleaveAttack);
+                        break;
+                    case CleanserBasicAttack.CleaveAdvance:
+                        yield return ExecuteAttackWithAnimationEvents(CleaveAdvanceAttack);
+                        break;
+                    case CleanserBasicAttack.PommelStrike:
+                        yield return ExecuteAttackWithAnimationEvents(PommelStrikeAttack);
+                        break;
+                    case CleanserBasicAttack.DiagUpwardSlash:
+                        yield return ExecuteAttackWithAnimationEvents(DiagUpwardSlashAttack);
+                        break;
+                    case CleanserBasicAttack.WingBash:
+                        yield return ExecuteAttackWithAnimationEvents(WingBashAttack);
+                        break;
+                    case CleanserBasicAttack.SlashIntoSlap:
+                        yield return ExecuteAttackWithAnimationEvents(SlashIntoSlapAttack);
+                        break;
+                    case CleanserBasicAttack.RakeIntoSpinSlash:
+                        yield return ExecuteAttackWithAnimationEvents(RakeIntoSpinSlashAttack);
+                        break;
+                    case CleanserBasicAttack.SpareToss:
+                        yield return ExecuteSpareToss();
+                        break;
+                    case CleanserBasicAttack.LegSweep:
+                        yield return ExecuteAttackWithAnimationEvents(LegSweepAttack);
+                        break;
+                    case (CleanserBasicAttack)8:
+                        // Legacy serialized value: Knockback is no longer selectable in combo-authoring list.
+                        yield return ExecuteKnockbackAttack();
+                        break;
+                    case (CleanserBasicAttack)9:
+                        // Legacy serialized value: MiniCrescentWave now routes to DiagUpwardSlash behavior.
+                        yield return ExecuteAttackWithAnimationEvents(DiagUpwardSlashAttack);
+                        break;
+                    case (CleanserBasicAttack)16:
+                        // Legacy serialized value: Basic SpinDash now routes to SpinDash strong behavior.
+                        yield return ExecuteSpinDash();
+                        break;
+                }
             }
-            
-            isExecutingAttack = false;
-            NotifyAttackEnd();
+            finally
+            {
+                cleanserVfxManager?.StopAttackLoopingVfx();
+                isExecutingAttack = false;
+                NotifyAttackEnd();
+            }
         }
 
         private bool TryGetComboStepDesiredRange(ComboStep step, out float rangeMin, out float rangeMax)
@@ -1954,25 +2056,31 @@ namespace EnemyBehavior.Boss.Cleanser
 
             NotifyAttackBegin();
             isExecutingAttack = true;
-            
-            switch (attackType)
+
+            try
             {
-                case CleanserStrongAttack.HighDive:
-                    yield return ExecuteHighDive();
-                    break;
-                case CleanserStrongAttack.AnimeDashSlash:
-                    yield return ExecuteAnimeDashSlash();
-                    break;
-                case CleanserStrongAttack.Whirlwind:
-                    yield return ExecuteWhirlwind();
-                    break;
-                case CleanserStrongAttack.SpinDash:
-                    yield return ExecuteSpinDash();
-                    break;
+                switch (attackType)
+                {
+                    case CleanserStrongAttack.HighDive:
+                        yield return ExecuteHighDive();
+                        break;
+                    case CleanserStrongAttack.AnimeDashSlash:
+                        yield return ExecuteAnimeDashSlash();
+                        break;
+                    case CleanserStrongAttack.Whirlwind:
+                        yield return ExecuteWhirlwind();
+                        break;
+                    case CleanserStrongAttack.SpinDash:
+                        yield return ExecuteSpinDash();
+                        break;
+                }
             }
-            
-            isExecutingAttack = false;
-            NotifyAttackEnd();
+            finally
+            {
+                cleanserVfxManager?.StopAttackLoopingVfx();
+                isExecutingAttack = false;
+                NotifyAttackEnd();
+            }
         }
 
         #endregion
@@ -2801,155 +2909,164 @@ namespace EnemyBehavior.Boss.Cleanser
 
             var settings = AnimeDashSettings ?? new AnimeDashSlashConfig();
 
-            if (settings.UseCircularDashPattern)
+            cleanserVfxManager?.BeginAnimeDashMeshTrail();
+            try
             {
-                yield return ExecuteAnimeDashSlashCircular(settings);
-                yield break;
-            }
-
-            ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
-            TriggerAnimation(settings.AnimationTrigger);
-            PlaySFX(settings.AttackSFX);
-
-            if (settings.PreDashDelay > 0f)
-                yield return new WaitForSeconds(settings.PreDashDelay);
-
-            Vector3 centerPos = settings.UsePlayerPositionAsCenterAtStart ? player.position : transform.position;
-            centerPos.y = transform.position.y;
-
-            int dashCount = Mathf.Max(1, settings.DashTargetCount);
-            float radius = Mathf.Max(0.1f, settings.DashTargetRadius);
-            float dashDuration = Mathf.Max(0.01f, settings.DashTravelDuration);
-            float pauseDuration = Mathf.Max(0f, settings.PauseAtTargetDuration);
-            float turnSpeed = Mathf.Max(0f, settings.TurnSpeed);
-            float hitWindowStart = Mathf.Clamp01(settings.HitWindowStart);
-            float hitWindowEnd = Mathf.Clamp01(settings.HitWindowEnd);
-            if (hitWindowEnd < hitWindowStart)
-                hitWindowEnd = hitWindowStart;
-
-            bool useSpinDashColliderForAnimeDash = settings.UseSpinDashColliderForHitRange && spinDashHitboxCollider != null;
-            bool useContinuousHitboxMode = useSpinDashColliderForAnimeDash && settings.UseContinuousHitboxDuringCircle;
-            bool animeDashEnabledSpinDashCollider = false;
-            if (useSpinDashColliderForAnimeDash && !spinDashHitboxCollider.enabled)
-            {
-                spinDashHitboxCollider.enabled = true;
-                animeDashEnabledSpinDashCollider = true;
-            }
-
-            agent.enabled = false;
-
-            if (useContinuousHitboxMode)
-            {
-                BeginDashHitboxPhase(
-                    settings.DamagePerHit,
-                    settings.MaxHitCount,
-                    settings.StaggerPlayerOnHit,
-                    settings.HitStopDurationOnPlayerHit,
-                    settings.MoveSpeedSlowDurationOnPlayerHit,
-                    settings.MoveSpeedMultiplierOnPlayerHit);
-                spinDashHitStopTimer = 0f;
-                spinDashMoveSlowTimer = 0f;
-            }
-
-            List<Vector3> points = new List<Vector3>(dashCount);
-            for (int i = 0; i < dashCount; i++)
-            {
-                float angle = (i * settings.DashAngleStepDegrees) * Mathf.Deg2Rad;
-                Vector3 point = centerPos + new Vector3(
-                    Mathf.Cos(angle) * radius,
-                    0f,
-                    Mathf.Sin(angle) * radius
-                );
-                point.y = transform.position.y;
-                points.Add(point);
-            }
-
-            for (int i = 0; i < points.Count; i++)
-            {
-                Vector3 targetPoint = points[i];
-                Vector3 startPoint = transform.position;
-                bool isFinalDash = i == points.Count - 1;
-
-                Vector3 dashDir = targetPoint - startPoint;
-                dashDir.y = 0f;
-                if (dashDir.sqrMagnitude > 0.001f && turnSpeed > 0f)
+                if (settings.UseCircularDashPattern)
                 {
-                    Quaternion targetRot = Quaternion.LookRotation(dashDir.normalized);
-                    while (Quaternion.Angle(transform.rotation, targetRot) > 1f)
+                    yield return ExecuteAnimeDashSlashCircular(settings);
+                    yield break;
+                }
+
+                ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
+                TriggerAnimation(settings.AnimationTrigger);
+                PlaySFX(settings.AttackSFX);
+
+                if (settings.PreDashDelay > 0f)
+                    yield return new WaitForSeconds(settings.PreDashDelay);
+
+                Vector3 centerPos = settings.UsePlayerPositionAsCenterAtStart ? player.position : transform.position;
+                centerPos.y = transform.position.y;
+
+                int dashCount = Mathf.Max(1, settings.DashTargetCount);
+                float radius = Mathf.Max(0.1f, settings.DashTargetRadius);
+                float dashDuration = Mathf.Max(0.01f, settings.DashTravelDuration);
+                float pauseDuration = Mathf.Max(0f, settings.PauseAtTargetDuration);
+                float turnSpeed = Mathf.Max(0f, settings.TurnSpeed);
+                float hitWindowStart = Mathf.Clamp01(settings.HitWindowStart);
+                float hitWindowEnd = Mathf.Clamp01(settings.HitWindowEnd);
+                if (hitWindowEnd < hitWindowStart)
+                    hitWindowEnd = hitWindowStart;
+
+                bool useSpinDashColliderForAnimeDash = settings.UseSpinDashColliderForHitRange && spinDashHitboxCollider != null;
+                bool useContinuousHitboxMode = useSpinDashColliderForAnimeDash && settings.UseContinuousHitboxDuringCircle;
+                bool animeDashEnabledSpinDashCollider = false;
+                if (useSpinDashColliderForAnimeDash && !spinDashHitboxCollider.enabled)
+                {
+                    spinDashHitboxCollider.enabled = true;
+                    animeDashEnabledSpinDashCollider = true;
+                }
+
+                agent.enabled = false;
+
+                if (useContinuousHitboxMode)
+                {
+                    BeginDashHitboxPhase(
+                        settings.DamagePerHit,
+                        settings.MaxHitCount,
+                        settings.StaggerPlayerOnHit,
+                        settings.HitStopDurationOnPlayerHit,
+                        settings.MoveSpeedSlowDurationOnPlayerHit,
+                        settings.MoveSpeedMultiplierOnPlayerHit);
+                    spinDashHitStopTimer = 0f;
+                    spinDashMoveSlowTimer = 0f;
+                }
+
+                List<Vector3> points = new List<Vector3>(dashCount);
+                for (int i = 0; i < dashCount; i++)
+                {
+                    float angle = (i * settings.DashAngleStepDegrees) * Mathf.Deg2Rad;
+                    Vector3 point = centerPos + new Vector3(
+                        Mathf.Cos(angle) * radius,
+                        0f,
+                        Mathf.Sin(angle) * radius
+                    );
+                    point.y = transform.position.y;
+                    points.Add(point);
+                }
+
+                for (int i = 0; i < points.Count; i++)
+                {
+                    Vector3 targetPoint = points[i];
+                    Vector3 startPoint = transform.position;
+                    bool isFinalDash = i == points.Count - 1;
+
+                    Vector3 dashDir = targetPoint - startPoint;
+                    dashDir.y = 0f;
+                    if (dashDir.sqrMagnitude > 0.001f && turnSpeed > 0f)
                     {
-                        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, turnSpeed * Time.deltaTime);
+                        Quaternion targetRot = Quaternion.LookRotation(dashDir.normalized);
+                        while (Quaternion.Angle(transform.rotation, targetRot) > 1f)
+                        {
+                            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, turnSpeed * Time.deltaTime);
+                            yield return null;
+                        }
+
+                        transform.rotation = targetRot;
+                    }
+
+                    float elapsed = 0f;
+                    bool hitAppliedThisDash = false;
+                    float previousT = 0f;
+                    animeDashTriggerArmed = false;
+                    bool animeDashWindowOpenedThisDash = false;
+                    while (elapsed < dashDuration)
+                    {
+                        elapsed += Time.deltaTime;
+                        float t = Mathf.Clamp01(elapsed / dashDuration);
+                        transform.position = Vector3.Lerp(startPoint, targetPoint, t);
+
+                        if (!hitAppliedThisDash)
+                        {
+                            bool isInsideWindow = t >= hitWindowStart && t <= hitWindowEnd;
+                            bool crossedWindowStartThisFrame = previousT < hitWindowStart && t >= hitWindowStart;
+                            bool jumpedPastEntireWindowThisFrame = previousT < hitWindowStart && t > hitWindowEnd;
+
+                            if (isInsideWindow || crossedWindowStartThisFrame || jumpedPastEntireWindowThisFrame)
+                            {
+                                if (useSpinDashColliderForAnimeDash)
+                                {
+                                    if (!animeDashWindowOpenedThisDash)
+                                    {
+                                        animeDashTriggerDamage = settings.DamagePerHit;
+                                        animeDashTriggerArmed = true;
+                                        animeDashWindowOpenedThisDash = true;
+                                        if (spinDashHitboxCollider != null)
+                                            spinDashHitboxCollider.enabled = true;
+                                    }
+                                }
+                                else
+                                {
+                                    float animeDashRange = Mathf.Max(0.1f, settings.HitRange);
+                                    hitAppliedThisDash = CheckMeleeHit(settings.DamagePerHit, AttackCategory.Halberd, animeDashRange, settings.StaggerPlayerOnHit);
+                                }
+                            }
+                        }
+
+                        previousT = t;
+
                         yield return null;
                     }
 
-                    transform.rotation = targetRot;
-                }
-
-                float elapsed = 0f;
-                bool hitAppliedThisDash = false;
-                float previousT = 0f;
-                animeDashTriggerArmed = false;
-                bool animeDashWindowOpenedThisDash = false;
-                while (elapsed < dashDuration)
-                {
-                    elapsed += Time.deltaTime;
-                    float t = Mathf.Clamp01(elapsed / dashDuration);
-                    transform.position = Vector3.Lerp(startPoint, targetPoint, t);
-
-                    if (!hitAppliedThisDash)
+                    animeDashTriggerArmed = false;
+                    if (useSpinDashColliderForAnimeDash && spinDashHitboxCollider != null)
                     {
-                        bool isInsideWindow = t >= hitWindowStart && t <= hitWindowEnd;
-                        bool crossedWindowStartThisFrame = previousT < hitWindowStart && t >= hitWindowStart;
-                        bool jumpedPastEntireWindowThisFrame = previousT < hitWindowStart && t > hitWindowEnd;
-
-                        if (isInsideWindow || crossedWindowStartThisFrame || jumpedPastEntireWindowThisFrame)
-                        {
-                            if (useSpinDashColliderForAnimeDash)
-                            {
-                                if (!animeDashWindowOpenedThisDash)
-                                {
-                                    animeDashTriggerDamage = settings.DamagePerHit;
-                                    animeDashTriggerArmed = true;
-                                    animeDashWindowOpenedThisDash = true;
-                                    if (spinDashHitboxCollider != null)
-                                        spinDashHitboxCollider.enabled = true;
-                                }
-                            }
-                            else
-                            {
-                                float animeDashRange = Mathf.Max(0.1f, settings.HitRange);
-                                hitAppliedThisDash = CheckMeleeHit(settings.DamagePerHit, AttackCategory.Halberd, animeDashRange, settings.StaggerPlayerOnHit);
-                            }
-                        }
+                        spinDashHitboxCollider.enabled = !isFinalDash;
                     }
 
-                    previousT = t;
-
-                    yield return null;
+                    if (pauseDuration > 0f)
+                        yield return new WaitForSeconds(pauseDuration);
                 }
 
-                animeDashTriggerArmed = false;
-                if (useSpinDashColliderForAnimeDash && spinDashHitboxCollider != null)
-                {
-                    spinDashHitboxCollider.enabled = !isFinalDash;
-                }
+                agent.enabled = true;
+                agent.Warp(transform.position);
 
-                if (pauseDuration > 0f)
-                    yield return new WaitForSeconds(pauseDuration);
+                // Exit the AnimeDash pose immediately after the final destination is reached.
+                animController?.PlayIdle(0.05f);
+
+                if (animeDashEnabledSpinDashCollider && spinDashHitboxCollider != null)
+                    spinDashHitboxCollider.enabled = false;
+
+                if (settings.PostDashDelay > 0f)
+                    yield return new WaitForSeconds(settings.PostDashDelay);
+
+                ResetAnimationSpeed();
             }
-
-            agent.enabled = true;
-            agent.Warp(transform.position);
-
-            // Exit the AnimeDash pose immediately after the final destination is reached.
-            animController?.PlayIdle(0.05f);
-
-            if (animeDashEnabledSpinDashCollider && spinDashHitboxCollider != null)
-                spinDashHitboxCollider.enabled = false;
-
-            if (settings.PostDashDelay > 0f)
-                yield return new WaitForSeconds(settings.PostDashDelay);
-
-            ResetAnimationSpeed();
+            finally
+            {
+                cleanserVfxManager?.WingEnd();
+                cleanserVfxManager?.EndAnimeDashMeshTrail();
+            }
         }
 
         private IEnumerator ExecuteAnimeDashSlashCircular(AnimeDashSlashConfig settings)
@@ -4741,6 +4858,11 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (CombatManager.isParrying)
                 {
                     CombatManager.ParrySuccessful();
+
+                    // Parry is an immediate attack interrupt, so clear attack-loop VFX that would
+                    // otherwise rely on later animation events. Keep AfterImageTrail alive so the
+                    // fast-circling AnimeDash pattern can resolve its own cleanup at pattern end.
+                    cleanserVfxManager?.StopAttackLoopingVfx();
 
                     // If the parry happened during a spin-dash, signal the dash coroutine to bail out
                     // after this hit so the remaining sequential dashes are canceled (mirrors the

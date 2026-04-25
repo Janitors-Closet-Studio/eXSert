@@ -583,6 +583,127 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
+        /// Animation Event: enables configured weapon trail VFX.
+        /// </summary>
+        public void Trail()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] Trail invoked");
+
+            cleanserBrain?.Trail();
+        }
+
+        /// <summary>
+        /// Animation Event: disables configured weapon trail VFX.
+        /// </summary>
+        public void TrailEnd()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] TrailEnd invoked");
+
+            cleanserBrain?.TrailEnd();
+        }
+
+        /// <summary>
+        /// Animation Event: enables configured wing trail VFX.
+        /// </summary>
+        public void Wing()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] Wing invoked");
+
+            cleanserBrain?.Wing();
+        }
+
+        /// <summary>
+        /// Animation Event: disables configured wing trail VFX.
+        /// </summary>
+        public void WingEnd()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] WingEnd invoked");
+
+            cleanserBrain?.WingEnd();
+        }
+
+        /// <summary>
+        /// Animation Event: enables configured dash particle VFX.
+        /// </summary>
+        public void DashOn()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] DashOn invoked");
+
+            cleanserBrain?.DashOn();
+        }
+
+        /// <summary>
+        /// Animation Event: disables configured dash particle VFX.
+        /// </summary>
+        public void DashOff()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] DashOff invoked");
+
+            cleanserBrain?.DashOff();
+        }
+
+        /// <summary>
+        /// Animation Event: plays a named VFX entry configured on CleanserVFXManager.
+        /// </summary>
+        public void PlayNamedVfx(string vfxId)
+        {
+            if (logAnimationEvents)
+                Debug.Log($"[CleanserAnimController] PlayNamedVfx invoked for '{vfxId}'");
+
+            cleanserBrain?.PlayNamedVfx(vfxId);
+        }
+
+        /// <summary>
+        /// Animation Event: plays the blade spark Visual Effect Graph.
+        /// </summary>
+        public void BladeSpark()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] BladeSpark invoked");
+
+            cleanserBrain?.BladeSpark();
+        }
+
+        /// <summary>
+        /// Animation Event: stops the blade spark Visual Effect Graph.
+        /// </summary>
+        public void BSparkEnd()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] BSparkEnd invoked");
+
+            cleanserBrain?.BSparkEnd();
+        }
+
+        /// <summary>
+        /// Animation Event: plays the pommel spark Visual Effect Graph.
+        /// </summary>
+        public void PommelSpark()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] PommelSpark invoked");
+
+            cleanserBrain?.PommelSpark();
+        }
+
+        /// <summary>
+        /// Animation Event: plays the wing spark Visual Effect Graph.
+        /// </summary>
+        public void WingSpark()
+        {
+            if (logAnimationEvents)
+                Debug.Log("[CleanserAnimController] WingSpark invoked");
+
+            cleanserBrain?.WingSpark();
+        }
+
+        /// <summary>
         /// Animation Event: Enables damage reduction (during wind-up).
         /// </summary>
         public void EnableDamageReduction()
