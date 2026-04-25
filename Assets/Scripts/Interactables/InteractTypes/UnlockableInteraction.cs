@@ -12,6 +12,9 @@ using UnityEngine.Events;
 public abstract class UnlockableInteraction : InteractionManager
 {
     [Header("Unlockable Interaction Settings")]
+
+    [SerializeField] protected string displayName = "";
+
     [Tooltip("Insert the ID of the item needed to unlock this interaction; leave empty if none is needed")]
     [SerializeField] protected string requiredItemID = "";
     [SerializeField] private string requiredItemDisplayName = "";
@@ -71,14 +74,15 @@ public abstract class UnlockableInteraction : InteractionManager
         if (!other.transform.root.CompareTag("Player"))
             return;
 
-        if (!needsItem || canExecuteInteraction)
-            return;
-
         if (InteractionUI.Instance != null && InteractionUI.Instance._interactText != null)
         {
-            InteractionUI.Instance._interactText.text = string.IsNullOrWhiteSpace(lockedInteractionPrompt)
-                ? "LOCKED"
-                : lockedInteractionPrompt;
+            string promptToShow = (needsItem && !canExecuteInteraction) ? lockedInteractionPrompt : _interactionPrompt;
+            InteractionUI.Instance._interactText.text = string.IsNullOrWhiteSpace(promptToShow)
+                ? "Press to Interact"
+                : promptToShow;
+
+            InteractionUI.Instance._interactText.gameObject.SetActive(true);
+            InteractionUI.Instance.ShowInteractIconImmediate();
         }
     }
 
@@ -111,7 +115,7 @@ public abstract class UnlockableInteraction : InteractionManager
         ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
 
         // Notice stuff
-        InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 0.5f, 2f);
+        InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 2f, 4f, priority: 11);
     }
 
     protected override bool Interact()    
@@ -145,7 +149,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if (!(this is DoorInteractions doorInt) || !(doorInt.HasActiveCameraTransition()))
         {
             if (needsItem && canUnlock && InteractionUI.Instance != null)
-                InteractionUI.Instance.OnCollectedItem($"Used {requiredItemDisplayName}", $"Unlocked {this.interactId} with {requiredItemDisplayName}.", 0.5f, 6f);
+                InteractionUI.Instance.OnCollectedItem($"Used {requiredItemDisplayName}", $"Unlocked {displayName} with {requiredItemDisplayName}.", 2f, 4f, priority: 8);
         }
 
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)

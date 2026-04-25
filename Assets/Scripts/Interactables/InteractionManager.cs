@@ -26,7 +26,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [SerializeField, Min(0f)] private float _interactBusyFallbackDuration = 0.6f;
     [SerializeField] private string _interactId;
     [SerializeField] internal AudioClip _interactionSFX;
-    [SerializeField] private string _interactionPrompt = "Press to Interact";
+    [SerializeField] internal string _interactionPrompt = "Press to Interact";
     
     [Space(10)]
     [Header("Input Action Reference")]
@@ -228,8 +228,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                     if (interactionUI._interactText.transform.parent != null)
                         interactionUI._interactText.transform.parent.gameObject.SetActive(true);
                 }
-                if (interactionUI._interactIcon != null)
-                    interactionUI._interactIcon.gameObject.SetActive(true);
+                interactionUI.ShowInteractIconImmediate();
                 // Set currentInteractable if prompt is shown
                 interactionUI.currentInteractable = this;
             }
@@ -317,14 +316,10 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         if (interactionUI._interactText != null)
         {
-            interactionUI._interactText.text = string.IsNullOrWhiteSpace(_interactionPrompt)
-                ? "Press to Interact"
-                : _interactionPrompt;
             interactionUI._interactText.gameObject.SetActive(true);
         }
 
-        if (interactionUI._interactIcon != null)
-            interactionUI._interactIcon.gameObject.SetActive(true);
+        interactionUI.ShowInteractIconImmediate();
     }
 
     protected virtual void OnTriggerEnter(Collider other)
@@ -378,8 +373,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                 if (interactionUI._interactText.transform.parent != null)
                     interactionUI._interactText.transform.parent.gameObject.SetActive(true);
             }
-            if (interactionUI._interactIcon != null && interactable)
-                interactionUI._interactIcon.gameObject.SetActive(true);
+            if (interactable)
+                interactionUI.ShowInteractIconImmediate();
         }
     }
 
@@ -431,8 +426,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                 interactionUI._interactText.transform.parent.gameObject.SetActive(true);
         }
 
-        if (interactionUI._interactIcon != null)
-            interactionUI._interactIcon.gameObject.SetActive(true);
+        interactionUI.ShowInteractIconImmediate();
     }
 
     private void OnDrawGizmos()

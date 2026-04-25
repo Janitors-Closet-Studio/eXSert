@@ -24,7 +24,7 @@ public class MenuListManager : MonoBehaviour
     private readonly WaitForSecondsRealtime controlsPollInterval = new WaitForSecondsRealtime(0.1f);
 
     // Guard flag to prevent double back
-    private bool backGuardActive = false;
+    internal bool backGuardActive = false;
     private float backGuardCooldown = 0.15f; // seconds
     private FadeMenus _fadeMenus;
 
