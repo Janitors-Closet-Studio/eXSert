@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
-public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
 {
     [SerializeField] private Image darkestImage; // Reference to the darkest image
     [SerializeField] private Image midBrightnessImage; // Reference to the mid brightness image
@@ -32,6 +32,17 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     }
 
     public void OnPointerExit(PointerEventData eventData)
+    {
+        FadeOutAllImages(0.25f);
+    }
+
+    public void OnSelect(BaseEventData eventData)
+    {
+        FadeInAllImages(0.25f);
+        FadeOutTopMenuIfItIsASubMenu();
+    }
+
+    public void OnDeselect(BaseEventData eventData)
     {
         FadeOutAllImages(0.25f);
     }
@@ -127,6 +138,8 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
         if (brightestImage != null)
             brightestImage.color = BuildColorWithAlpha(normalizedBrightness);
+
+        FadeOutAllImages(0f); // Start with all images invisible
     }
 
     private void UpdateBrightnessInfographic(float value)
