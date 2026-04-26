@@ -95,6 +95,7 @@ public class CutsceneManager : Singleton<CutsceneManager>
         videoScreenInstance.SetActive(false); // Hide the video screen when the cutscene finishes
         source.Stop();
         SoundManager.Instance?.PauseAllMusic(false); // Unpause music if SoundManager exists
+        RumbleManager.Instance.StopControllerRumble(); // Stop any ongoing controller rumble when a cutscene finishes
         IsCutscenePlaying = false;
         source.loopPointReached -= OnCutsceneFinished; // Unsubscribe from the event
         CutsceneFinished?.Invoke();

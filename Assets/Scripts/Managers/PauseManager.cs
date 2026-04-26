@@ -184,6 +184,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnPause(InputAction.CallbackContext context)
     {
+        if (MainMenu.isInMainMenu)
+        {
+            Debug.Log("[PauseManager] OnPause ignored - currently in main menu");
+            return;
+        }
+
         if (Time.unscaledTime < ignorePauseUntilTime)
             return;
 
@@ -234,7 +240,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (Time.unscaledTime < ignoreBackUntilTime)
             return;
 
-         
+        if (MainMenu.isInMainMenu)
+        {
+            Debug.Log("[PauseManager] OnBack ignored - currently in main menu");
+            return;
+        }
+
         // If we have more than 2 menus (canvas + first menu), just go back one level
         if (menuListManager.menusToManage.Count > 2)
         {
@@ -264,6 +275,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     }
     private void OnNavigationMenu(InputAction.CallbackContext context)
     {
+        if (Time.unscaledTime < ignorePauseUntilTime)
+            return;
+    
+        if (MainMenu.isInMainMenu)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently in main menu");
+            return;
+        }
+
+
         if (isUnpausing)
         {
             Debug.Log("[PauseManager] OnNavigationMenu ignored - currently unpausing");
