@@ -636,7 +636,16 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 aggressionSystem.OnPlayerHitsBoss();
             }
-            
+
+            // Play a random hit reaction animation (50/50 between Hit1 and Hit2)
+            if (!isDefeated && !isExecutingUltimate && animController != null)
+            {
+                if (Random.value < 0.5f)
+                    animController.PlayHit1();
+                else
+                    animController.PlayHit2();
+            }
+
             if (currentHealth <= Mathf.Max(0f, healthZeroEpsilon))
             {
                 currentHealth = 0f;
