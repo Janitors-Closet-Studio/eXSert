@@ -179,6 +179,12 @@ public class SaveSlotsMenu : MonoBehaviour
 
         LoadMusicScene();
 
+        var footerManager = FindAnyObjectByType<FooterManager>();
+        if (footerManager != null)
+        {
+            footerManager.UpdateFooterForMenu(null);
+        }
+
         if (isLoadingGame) LoadGame();
         else StartNewGame();
     }

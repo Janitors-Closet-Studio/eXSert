@@ -252,6 +252,7 @@ public class WarningButtonFunctionality : MonoBehaviour
                 break;
 
             case WarningAction.ReturnToMainMenu:
+                PrepareForSceneTransition();
                 FadeOutLevelMusic();
                 GameActionHandler handler = ResolveActionHandler();
                 if (handler != null)
@@ -281,5 +282,18 @@ public class WarningButtonFunctionality : MonoBehaviour
 
         actionHandler = FindFirstObjectByType<GameActionHandler>(FindObjectsInactive.Include);
         return actionHandler;
+    }
+
+    private void PrepareForSceneTransition()
+    {
+        PauseManager pauseManager = PauseManager.Instance;
+        if (pauseManager != null)
+        {
+            pauseManager.HideMenusForSceneTransition();
+            return;
+        }
+
+        FooterManager footerManager = FindFirstObjectByType<FooterManager>(FindObjectsInactive.Include);
+        footerManager?.UpdateFooterForMenu(null);
     }
 }

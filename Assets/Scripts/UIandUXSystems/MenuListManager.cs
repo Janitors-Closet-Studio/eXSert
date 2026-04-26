@@ -339,6 +339,9 @@ public class MenuListManager : MonoBehaviour
         GameObject currentTop = menusToManage[0];
         GameObject previousMenu = menusToManage[1];
 
+        if (IsBlockedFromFade(currentTop))
+            return;
+
         MenuSelectionSuppression.SuppressForFrames(3);
 
         // Keep the revealed menu fully visible during back transitions to prevent self-fades.
@@ -450,6 +453,9 @@ public class MenuListManager : MonoBehaviour
         if (ShouldIgnoreMenuSwap())
             return;
 
+        if (menusToManage != null && menusToManage.Count > 0 && IsBlockedFromFade(menusToManage[0]))
+            return;
+
         if (numberOfMenusToGoBack < 2)
             return;
 
@@ -464,8 +470,15 @@ public class MenuListManager : MonoBehaviour
         if (currentEventSystem == null)
             return;
 
+        if (menusToManage != null && menusToManage.Count > 0 && IsBlockedFromFade(menusToManage[0]))
+            return;
+
         GameObject selected = currentEventSystem.currentSelectedGameObject;
         bool editingSlider = selected != null && selected.GetComponentInParent<Slider>() != null;
+
+        // Ignore active slider callbacks so dragging does not trigger menu close logic.
+        if (editingSlider)
+            return;
 
         // Only close a true nested submenu; never fall back to closing the whole page/screen.
         int menuIndexToClose = FindFirstOpenSubmenuIndex();
@@ -494,6 +507,10 @@ public class MenuListManager : MonoBehaviour
         {
             GameObject menu = menusToManage[i];
             if (menu == null)
+                continue;
+
+            // Menus explicitly blocked from transitions should never be auto-closed.
+            if (IsBlockedFromFade(menu))
                 continue;
 
             bool isTopLevelSettingsPage = settingPageMenus != null && settingPageMenus.Contains(menu);
@@ -621,6 +638,9 @@ public class MenuListManager : MonoBehaviour
             return;
 
         GameObject menu = menusToManage[index];
+        if (IsBlockedFromFade(menu))
+            return;
+
         RestoreTemporarilyHiddenMenusFor(menu);
         CloseMenu(menu);
         menusToManage.RemoveAt(index);
