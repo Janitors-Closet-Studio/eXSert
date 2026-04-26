@@ -39,28 +39,13 @@ public class ActsManager : Singleton<ActsManager>
             pauseManager = PauseManager.Instance;
         }
 
-        mapLocationImages[0].SetActive(true);
-        ActivateAllImagesBefore();
-
-        string currentSceneName = GetHighestLoadedTrackedSceneName();
-        if (!string.IsNullOrEmpty(currentSceneName))
-        {
-            SyncActButtonsForScene(currentSceneName);
-
-            foreach (var kvp in sceneNames)
-            {
-                if (kvp.Value == currentSceneName)
-                {
-                    StartPulsingLocation(kvp.Key);
-                    break;
-                }
-            }
-        }
+        RefreshMapLocationState();
     }
 
     private void OnEnable()
     {
         SceneManager.sceneLoaded += HandleSceneLoaded;
+        RefreshMapLocationState();
     }
 
     private void OnDisable()
@@ -120,25 +105,27 @@ public class ActsManager : Singleton<ActsManager>
         string sceneName = GetHighestLoadedTrackedSceneName();
         Debug.Log($"[ActsManager] Scene loaded: {scene.name}. Highest tracked scene: {sceneName}");
 
-        if (!string.IsNullOrEmpty(sceneName))
-            SyncActButtonsForScene(sceneName);
+        RefreshMapLocationState();
+    }
 
-        if (sceneNames.ContainsValue(sceneName))
+    private void RefreshMapLocationState()
+    {
+        string currentSceneName = GetHighestLoadedTrackedSceneName();
+        if (string.IsNullOrEmpty(currentSceneName))
+            return;
+
+        ActivateAllImagesBefore();
+
+        foreach (var kvp in sceneNames)
         {
-            // Find map location image for this scene and activate it
-            foreach (var kvp in sceneNames)
-            {
-                if (kvp.Value == sceneName)
-                {
-                    mapLocationImages[kvp.Key].SetActive(true);
+            if (kvp.Value != currentSceneName)
+                continue;
 
-                    StartPulsingLocation(kvp.Key);
-                    break;
-                }
-            }
-
-            ResetNonCurrentLocationVisuals(sceneName);
+            StartPulsingLocation(kvp.Key);
+            break;
         }
+
+        ResetNonCurrentLocationVisuals(currentSceneName);
     }
 
     private IEnumerator PulseColorForMapIfInRespectiveScene(float pulseDuration, GameObject locationRoot = null)
