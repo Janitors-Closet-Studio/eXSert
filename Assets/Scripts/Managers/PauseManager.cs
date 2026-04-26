@@ -48,6 +48,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
 
     private MenuListManager menuListManager;
+    private FooterManager footerManager;
 
     // Proxy to coordinator's paused state
     public static bool IsPaused => PauseCoordinator.IsPaused;
@@ -78,6 +79,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         CacheHudRootName();
         HideAllMenus();
         menuListManager = this.GetComponent<MenuListManager>();
+        footerManager = FindFirstObjectByType<FooterManager>(FindObjectsInactive.Include);
         pauseOverlay.SetActive(false);
         fadeMenus = this.GetComponent<FadeMenus>();
         SetBlurEnabled(false);
@@ -463,6 +465,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         // Release the coordinator ownership for pause
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
 
+        footerManager?.UpdateFooterForMenu(null);
+
         // Release gameplay input block
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
@@ -516,6 +520,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         // Release this menu's pause ownership so restart transitions do not leave the game paused.
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
+
+        footerManager?.UpdateFooterForMenu(null);
 
         // Hide pause/navigation UI and release local gameplay input blocking.
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);

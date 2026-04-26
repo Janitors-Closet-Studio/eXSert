@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 using Progression.Checkpoints;
+using Unity.VisualScripting;
 
 /// <summary>
 /// Centralizes the warning prompt logic so buttons no longer need to wire up multiple GameObject.SetActive calls.
@@ -32,10 +33,22 @@ public class WarningButtonFunctionality : MonoBehaviour
     [SerializeField] private GameObject quitText;
     [SerializeField] private GameObject returnToMenuText;
 
+    // When in the menu the footer panel will be parented to the pausemenu so itll be overlaid properly
+    [SerializeField] private GameObject footerPanel;
+    [SerializeField] private GameObject pauseMenu;
+
+    private GameObject originalFooterParent;
+
     [Header("Action Handler")]
     [SerializeField] private GameActionHandler actionHandler;
 
     private WarningAction pendingAction = WarningAction.None;
+
+    private void Awake()
+    {
+        originalFooterParent = footerPanel.transform.parent.gameObject;
+    }
+
 
     /// <summary>
     /// Existing buttons still call this via OnClick. It now simply delegates to the new confirm handler.
@@ -84,6 +97,7 @@ public class WarningButtonFunctionality : MonoBehaviour
         pendingAction = action;
         ActivateTextBlock(textToEnable);
         SetWarningVisible(true);
+        ParentFooterToPauseMenu(true);
     }
 
     private void ActivateTextBlock(GameObject target)
@@ -118,6 +132,24 @@ public class WarningButtonFunctionality : MonoBehaviour
         pendingAction = WarningAction.None;
         ActivateTextBlock(null);
         SetWarningVisible(false);
+        ParentFooterToPauseMenu(false);
+    }
+
+    private void ParentFooterToPauseMenu(bool parentToPause)
+    {
+        if (footerPanel == null || pauseMenu == null)
+            return;
+
+        if (parentToPause) 
+        {
+            footerPanel.transform.SetParent(pauseMenu.transform, worldPositionStays: false);
+            footerPanel.transform.SetSiblingIndex(1); // Above pause ui but below warning canvas
+        }
+        else 
+        {
+            footerPanel.transform.SetParent(originalFooterParent.transform, worldPositionStays: false);
+            footerPanel.transform.SetAsLastSibling(); // Ensure footer is on top of other UI elements in the warning canvas
+        }
     }
 
     private WarningAction ResolvePendingAction()

@@ -106,8 +106,12 @@ public abstract class CollectableInteraction : InteractionManager
         InteractionUI interactionUI = GetInteractionUIIfAvailable();
         if (interactionUI != null && interactionUI._interactText != null)
         {
+            // Respect InteractionManager ownership so text cannot appear a frame early.
+            if (interactionUI.currentInteractable != this)
+                return;
+
             interactionUI._interactText.text = this._interactionPrompt;
-            interactionUI._interactText.gameObject.SetActive(true);
+            interactionUI.ShowInteractPromptImmediate();
         }
     }
     

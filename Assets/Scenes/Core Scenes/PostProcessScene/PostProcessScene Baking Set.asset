@@ -34,6 +34,7 @@ MonoBehaviour:
   m_SceneGUIDs:
   - 96c183df0af2ebb488f959d80c380311
   - 30991b1cf38df634ab4bc514e635ad71
+  - d8c3c23e8262abc4982cf21098e3c8ba
   obsoleteScenesToNotBake: []
   m_LightingScenarios:
   - Default
@@ -359,14 +360,20 @@ MonoBehaviour:
     m_Keys:
     - 96c183df0af2ebb488f959d80c380311
     - 30991b1cf38df634ab4bc514e635ad71
+    - d8c3c23e8262abc4982cf21098e3c8ba
     m_Values:
+    - hasProbeVolume: 0
+      bakeScene: 1
+      bounds:
+        m_Center: {x: 0, y: 81, z: 607.5}
+        m_Extent: {x: 162, y: 81, z: 121.5}
+    - hasProbeVolume: 1
+      bakeScene: 0
+      bounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 81, y: 81, z: 81}
     - hasProbeVolume: 0
       bakeScene: 1
       bounds:
         m_Center: {x: 0, y: 0, z: 0}
         m_Extent: {x: 0, y: 0, z: 0}
-    - hasProbeVolume: 1
-      bakeScene: 1
-      bounds:
-        m_Center: {x: 0, y: 0, z: 0}
-        m_Extent: {x: 81, y: 81, z: 81}
