@@ -58,6 +58,8 @@ public class PlayerMovement : MonoBehaviour
     private bool verboseMovementDebugLogs = false;
     [SerializeField, Tooltip("Enable debug logs for external velocity (mounting/carrying system).")]
     private bool enableExternalVelocityDebugLogs = false;
+    [SerializeField, Tooltip("Log every frame the player becomes briefly airborne while an attack is in progress on a grounded enemy. Helps diagnose the hover/float-during-combat bug.")]
+    private bool enableCombatAirborneDebugLogs = false;
 
     [Header("Player Animator")]
     [SerializeField] private PlayerAnimationController animationController;
@@ -560,6 +562,9 @@ public class PlayerMovement : MonoBehaviour
     private float nextDownhillGroundingDebugLogTime;
     private float nextBossFaceplateBounceDebugLogTime;
     private float nextBossFaceplateCriticalLogTime;
+    private bool combatAirborneWatchdogWasGrounded;
+    private float combatAirborneWatchdogLiftTime = -1f;
+    private Vector3 combatAirborneWatchdogLiftPosition;
     private float lastLightAttackIntentTime = float.NegativeInfinity;
     private float lastHeavyAttackIntentTime = float.NegativeInfinity;
     private bool faceplateWatchInitialized;
@@ -1181,7 +1186,7 @@ public class PlayerMovement : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, toRotation, Time.deltaTime * 10f);
             }
 
-            if (!attackMovementActive && !locomotionAnimationSuppressed && pendingJump == PendingJumpType.None && !previouslyMoving && !stateChanged)
+            if (!attackMovementActive && !locomotionAnimationSuppressed && !IsJumpPending && !previouslyMoving && !stateChanged)
             {
                 PlayMovementAnimation();
             }
@@ -1198,7 +1203,7 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.x = Mathf.MoveTowards(currentMovement.x, 0f, friction * Time.deltaTime);
             currentMovement.z = Mathf.MoveTowards(currentMovement.z, 0f, friction * Time.deltaTime);
 
-            if (!attackMovementActive && !locomotionAnimationSuppressed && pendingJump == PendingJumpType.None && IsGroundedNow() && !airborneAnimationLocked && landingAnimationLockTimer <= 0f &&
+            if (!attackMovementActive && !locomotionAnimationSuppressed && !IsJumpPending && IsGroundedNow() && !airborneAnimationLocked && landingAnimationLockTimer <= 0f &&
                 (previouslyMoving || (Mathf.Abs(currentMovement.x) < 0.01f && Mathf.Abs(currentMovement.z) < 0.01f)))
             {
                 EnsureCombatIdleControllerReference();
@@ -1219,34 +1224,38 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         bool grounded = IsGroundedNow();
-        bool guarding = CombatManager.isGuarding;
-        if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackMovementActive)
-        {
-            noInputGroundedTimer = 0f;
-            idleRecoveryAppliedThisWindow = false;
-            return;
-        }
+            bool guarding = CombatManager.isGuarding;
+            if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackMovementActive || aerialAttackLockTimer > 0f || IsJumpPending)
+            {
+                noInputGroundedTimer = 0f;
+                idleRecoveryAppliedThisWindow = false;
+                return;
+            }
 
-        if (InputReader.inputBusy)
-            return;
+            if (InputReader.inputBusy)
+                return;
 
-        float horizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
-        if (horizontalSpeed > idleRecoveryHorizontalSpeedThreshold)
-        {
-            noInputGroundedTimer = 0f;
-            idleRecoveryAppliedThisWindow = false;
-            return;
-        }
+            float horizontalSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+            if (horizontalSpeed > idleRecoveryHorizontalSpeedThreshold)
+            {
+                noInputGroundedTimer = 0f;
+                idleRecoveryAppliedThisWindow = false;
+                return;
+            }
 
-        noInputGroundedTimer += Time.deltaTime;
-        if (idleRecoveryAppliedThisWindow || noInputGroundedTimer < idleRecoveryDelay)
-            return;
+            noInputGroundedTimer += Time.deltaTime;
+            if (idleRecoveryAppliedThisWindow || noInputGroundedTimer < idleRecoveryDelay)
+                return;
 
-        if (locomotionAnimationSuppressed)
-            SuppressLocomotionAnimations(false);
+            if (locomotionAnimationSuppressed)
+                SuppressLocomotionAnimations(false);
 
-        animationController.PlayIdle();
-        idleRecoveryAppliedThisWindow = true;
+            idleRecoveryAppliedThisWindow = true;
+            EnsureCombatIdleControllerReference();
+            if (hasCombatIdleController)
+                return;
+
+            animationController.PlayIdle();
 
         DebugMovementLog($"Idle recovery safeguard applied. grounded={grounded}, horizontalSpeed={horizontalSpeed:F3}, noInputGroundedTimer={noInputGroundedTimer:F2}");
     }
@@ -2350,6 +2359,18 @@ public class PlayerMovement : MonoBehaviour
         if (attack == null || IsGroundedNow())
             return;
 
+        if (enableCombatAirborneDebugLogs)
+        {
+            float distToGround = float.MaxValue;
+            if (characterController != null)
+            {
+                Vector3 origin = new Vector3(characterController.bounds.center.x, characterController.bounds.min.y + 0.05f, characterController.bounds.center.z);
+                if (Physics.Raycast(origin, Vector3.down, out RaycastHit hop_hit, 3f, layerMask, QueryTriggerInteraction.Ignore))
+                    distToGround = hop_hit.distance;
+            }
+            Debug.Log($"[CombatAirborne][AerialAttackHop] Fired while NOT grounded | attackType={attack.attackType} ccGrounded={(characterController != null && characterController.isGrounded)} currentY={currentMovement.y:F3} distToGround={distToGround:F3} aerialAttackLockTimer={aerialAttackLockTimer:F3} frame={Time.frameCount} time={Time.time:F4}");
+        }
+
         if (attack.attackType == AttackType.LightAerial)
         {
             float lockDuration = aerialLightAttackHangTime > 0f
@@ -2839,7 +2860,13 @@ public class PlayerMovement : MonoBehaviour
         // Add attack forward-move velocity (smooth lunge)
         if (attackMoveActive && !(aerialAssistActive && suppressAttackForwardMoveDuringAerialAssist))
         {
-            horizontalMovement += new Vector3(attackMoveVelocity.x, 0, attackMoveVelocity.z);
+            Vector3 attackMoveContrib = new Vector3(attackMoveVelocity.x, 0, attackMoveVelocity.z);
+            if (enableCombatAirborneDebugLogs && attackMoveContrib.magnitude > 0.5f && IsGroundedNow())
+            {
+                bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
+                Debug.Log($"[CombatAirborne][ATTACK-MOVE] Attack forward-move applied while grounded | vel={attackMoveContrib} mag={attackMoveContrib.magnitude:F3} attackInProgress={attackActive} inputBusy={InputReader.inputBusy} currentY={currentMovement.y:F3} frame={Time.frameCount} time={Time.time:F4}");
+            }
+            horizontalMovement += attackMoveContrib;
         }
 
         if (aerialAssistActive)
@@ -2854,7 +2881,14 @@ public class PlayerMovement : MonoBehaviour
         Vector3 finalVelocity = horizontalMovement + Vector3.up * currentMovement.y;
 
         if (aerialAssistActive || aerialAssistVelocity.sqrMagnitude > 0.0001f)
+        {
+            if (enableCombatAirborneDebugLogs && IsGroundedNow() && aerialAssistVelocity.y > 0.05f)
+            {
+                bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
+                Debug.Log($"[CombatAirborne][ASSIST-Y] aerialAssistVelocity has upward Y component while GROUNDED | assistVel={aerialAssistVelocity} assistVelY={aerialAssistVelocity.y:F3} aerialAssistActive={aerialAssistActive} attackInProgress={attackActive} inputBusy={InputReader.inputBusy} currentMovementY={currentMovement.y:F3} frame={Time.frameCount} time={Time.time:F4}");
+            }
             finalVelocity += aerialAssistVelocity;
+        }
 
         // Apply movement using the simulation timestep (FixedUpdate-safe) to avoid dash jitter.
         characterController.Move(finalVelocity * movementDeltaTime);
@@ -2995,6 +3029,15 @@ public class PlayerMovement : MonoBehaviour
                 DebugMovementLog($"Plunge landing recovery triggered while already grounded | wasGrounded={wasGrounded} groundedNow={grounded} plungeLandingPending={plungeLandingPending} isPlunging={isPlunging}");
             }
 
+            if (enableCombatAirborneDebugLogs && combatAirborneWatchdogLiftTime >= 0f)
+            {
+                float airborneSeconds = Time.time - combatAirborneWatchdogLiftTime;
+                float distTravelled = Vector3.Distance(transform.position, combatAirborneWatchdogLiftPosition);
+                bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
+                Debug.Log($"[CombatAirborne][LAND] Re-grounded after brief liftoff | duration={airborneSeconds * 1000f:F1}ms distTravelled={distTravelled:F3} attackInProgress={attackActive} inputBusy={InputReader.inputBusy} currentY={currentMovement.y:F3} frame={Time.frameCount} time={Time.time:F4}");
+                combatAirborneWatchdogLiftTime = -1f;
+            }
+
             DebugMovementLog($"Landing transition detected | wasGrounded={wasGrounded} groundedNow={grounded} ccGrounded={(characterController != null && characterController.isGrounded)} currentY={currentMovement.y:F2} pendingJump={pendingJump}");
             bool landedFromPlunge = plungeLandingPending || isPlunging;
             plungeLandingPending = false;
@@ -3053,6 +3096,19 @@ public class PlayerMovement : MonoBehaviour
                 highFallActive = false;
                 airDashAvailable = true;
                 airborneStartedWithUpwardVelocity = currentMovement.y > 0.05f;
+
+                if (enableCombatAirborneDebugLogs)
+                {
+                    bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
+                    bool inputBusy = InputReader.inputBusy;
+                    if (attackActive || inputBusy)
+                    {
+                        combatAirborneWatchdogLiftTime = Time.time;
+                        combatAirborneWatchdogLiftPosition = transform.position;
+                        float attackMoveVelMag = attackMoveActive ? new Vector2(attackMoveVelocity.x, attackMoveVelocity.z).magnitude : 0f;
+                        Debug.Log($"[CombatAirborne][LIFT] Grounded->Airborne during attack/busy | attackInProgress={attackActive} inputBusy={inputBusy} currentY={currentMovement.y:F3} ccGrounded={(characterController != null && characterController.isGrounded)} aerialAssistActive={aerialAssistActive} aerialAssistVelY={aerialAssistVelocity.y:F3} aerialAssistVelMag={aerialAssistVelocity.magnitude:F3} attackMoveActive={attackMoveActive} attackMoveVelMag={attackMoveVelMag:F3} knockbackActive={isKnockbackActive} knockbackY={knockbackVelocity.y:F3} externalVelActive={externalVelocityActive} externalVelY={externalVelocity.y:F3} isPlunging={isPlunging} aerialAttackLockTimer={aerialAttackLockTimer:F3} frame={Time.frameCount} time={Time.time:F4}");
+                    }
+                }
             }
 
             bool aerialAttackAnimationActive = aerialAttackLockTimer > 0f
@@ -3291,7 +3347,7 @@ public class PlayerMovement : MonoBehaviour
         bool guarding = CombatManager.isGuarding;
         bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
 
-        if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackActive || InputReader.inputBusy)
+        if (!grounded || guarding || isDashing || isPlunging || plungeLandingPending || pendingJump != PendingJumpType.None || attackActive || InputReader.inputBusy || aerialAttackLockTimer > 0f || IsJumpPending)
         {
             nextLocomotionFailsafeRefreshTime = 0f;
             return;
@@ -3959,9 +4015,9 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        if (characterController != null && (!IsGroundedNow() || airborneAnimationLocked))
+        if (characterController != null && (!IsGroundedNow() || airborneAnimationLocked || IsJumpPending))
         {
-            DebugMovementLog($"PlayMovementAnimation blocked: grounded={IsGroundedNow()} airborneAnimationLocked={airborneAnimationLocked} ccGrounded={characterController.isGrounded}");
+            DebugMovementLog($"PlayMovementAnimation blocked: grounded={IsGroundedNow()} airborneAnimationLocked={airborneAnimationLocked} isJumpPending={IsJumpPending} ccGrounded={characterController.isGrounded}");
             return;
         }
 
