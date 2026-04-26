@@ -192,6 +192,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7893555799193181609, guid: 7fc76f0565afecf41a94ac9c90fa361f, type: 3}
+      propertyPath: priority
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7893555799193181609, guid: 7fc76f0565afecf41a94ac9c90fa361f, type: 3}
       propertyPath: blendDistance
       value: 10
       objectReference: {fileID: 0}
@@ -205,13 +209,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8415211066518351723, guid: 7fc76f0565afecf41a94ac9c90fa361f, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7fc76f0565afecf41a94ac9c90fa361f, type: 3}
+--- !u!1 &41088568 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8415211066518351723, guid: 7fc76f0565afecf41a94ac9c90fa361f, type: 3}
+  m_PrefabInstance: {fileID: 41088567}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &359379355
 GameObject:
   m_ObjectHideFlags: 1
@@ -274,7 +283,7 @@ GameObject:
   - component: {fileID: 972079191}
   - component: {fileID: 972079190}
   m_Layer: 0
-  m_Name: Box Volume
+  m_Name: ConservatoryVolume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -537,8 +546,32 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8331080339687529239, guid: cccba1ccd2f1a99498daa760bbd578c9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3391115034995747037}
   m_SourcePrefab: {fileID: 100100000, guid: cccba1ccd2f1a99498daa760bbd578c9, type: 3}
+--- !u!1 &3391115034995747036 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8331080339687529239, guid: cccba1ccd2f1a99498daa760bbd578c9, type: 3}
+  m_PrefabInstance: {fileID: 3391115034995747035}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3391115034995747037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3391115034995747036}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5220a832d834d4d80e7df64dc838d4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PostProcessSceneVolumeController
+  engineCoreScene: {fileID: 11400000, guid: 36ff65a2d07f3e849ae86727e50d282c, type: 2}
+  conservatoryScene: {fileID: 11400000, guid: 36e8f19f38a6c3c4e82fe7f638e9086b, type: 2}
+  engineVolume: {fileID: 41088568}
+  conservatoryVolume: {fileID: 972079189}
 --- !u!1001 &4019971208631256129
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -881,7 +914,7 @@ SceneRoots:
   - {fileID: 1260722186}
   - {fileID: 8742299730694271858}
   - {fileID: 4019971208631256129}
+  - {fileID: 972079192}
   - {fileID: 41088567}
   - {fileID: 1671100385}
-  - {fileID: 972079192}
   - {fileID: 359379357}

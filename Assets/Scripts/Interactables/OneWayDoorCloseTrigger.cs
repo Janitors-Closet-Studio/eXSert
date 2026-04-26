@@ -28,6 +28,11 @@ public class OneWayDoorCloseTrigger : MonoBehaviour
         owner = oneWayDoor;
     }
 
+    public bool IsOnDestinationSide(Vector3 worldPosition)
+    {
+        return Vector3.Dot(transform.forward, worldPosition - transform.position) > 0f;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (owner == null)

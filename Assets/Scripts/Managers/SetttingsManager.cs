@@ -72,7 +72,9 @@ public class SettingsManager : Singleton<SettingsManager>
 
     public void ReapplyFPSLimit(Scene scene, LoadSceneMode mode)
     {
-        Application.targetFrameRate = PlayerPrefs.GetInt("masterFPS", 60);
+        int targetFPS = PlayerPrefs.GetInt("masterFPS", 60);
+        Application.targetFrameRate = targetFPS;
+        FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(targetFPS);
     }
 
     internal void UpdatePlayerCameraSens(float newSensitivity)
