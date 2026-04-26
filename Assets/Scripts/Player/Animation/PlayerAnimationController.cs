@@ -130,6 +130,15 @@ public class PlayerAnimationController : MonoBehaviour
     private Coroutine hardLockCoroutine;
     private string hardLockedState;
 
+    // Set by the PlungeWaitForLanding animation event; cleared when the player lands.
+    private bool waitingForPlungeLand;
+
+    /// <summary>
+    /// True while the Plunge animation is frozen mid-air waiting for the player to land.
+    /// External systems (e.g. EnsureAnimatorRuntimeHealthy) must respect this and not reset animator speed.
+    /// </summary>
+    public bool IsWaitingForPlungeLand => waitingForPlungeLand;
+
     // Saved animator state for pause/resume — preserves the exact normalized time so
     // the animation resumes from the same pose rather than restarting from frame 0.
     private string savedStateOnPause;
@@ -212,6 +221,12 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (animator == null)
             return;
+
+        if (waitingForPlungeLand)
+        {
+            Debug.Log("[Plunge] ResetAnimatorSpeed suppressed — still waiting for plunge landing");
+            return;
+        }
 
         animator.speed = 1f;
     }
@@ -332,7 +347,12 @@ public class PlayerAnimationController : MonoBehaviour
 
     public void PlayLauncher() => CrossFade(PlayerAnim.Specials.Launcher, 0.04f, true);
 
-    public void PlayPlunge() => CrossFade(PlayerAnim.Specials.Plunge, 0.04f, true);
+    public void PlayPlunge()
+    {
+        waitingForPlungeLand = false;
+        Debug.Log($"[Plunge] PlayPlunge called | currentState={currentState} | animSpeed={animator?.speed:F3} | frame={Time.frameCount}");
+        CrossFade(PlayerAnim.Specials.Plunge, 0.04f, true);
+    }
 
     public void PlayInteract()
     {
@@ -537,6 +557,13 @@ public class PlayerAnimationController : MonoBehaviour
         if (!animator.enabled)
             animator.enabled = true;
 
+        // Never override the intentional speed=0 freeze set by PlungeWaitForLanding.
+        if (waitingForPlungeLand)
+        {
+            Debug.Log($"[Plunge] EnsureAnimatorRuntimeHealthy skipping speed reset — waitingForPlungeLand | animSpeed={animator.speed:F3} | frame={Time.frameCount}");
+            return;
+        }
+
         if (animator.speed < 0.95f)
             animator.speed = 1f;
     }
@@ -597,6 +624,48 @@ public class PlayerAnimationController : MonoBehaviour
             Debug.Log("[PlayerAnimationController] EndDashInvincibility invoked");
 
         playerHealth?.EndDashInvincibilityWindow();
+    }
+
+    /// <summary>
+    /// Called by an animation event placed just before the ground-slam portion of the Plunge clip.
+    /// Freezes the animator in place until the player actually lands, then ResumePlungeFromLanding unfreezes it.
+    /// Add this event to the Plunge animation clip at the frame where the slam should only trigger on contact.
+    /// </summary>
+    public void PlungeWaitForLanding()
+    {
+        AnimatorStateInfo info = animator != null ? animator.GetCurrentAnimatorStateInfo(layerIndex) : default;
+        Debug.Log($"[Plunge] PlungeWaitForLanding invoked | currentState={currentState} | normTime={info.normalizedTime:F4} | animSpeed={animator?.speed:F3} | frame={Time.frameCount}");
+
+        if (logAnimationEvents)
+            Debug.Log("[PlayerAnimationController] PlungeWaitForLanding invoked — freezing animator until grounded");
+
+        waitingForPlungeLand = true;
+        FreezeCurrentPose();
+
+        Debug.Log($"[Plunge] Animator frozen | speed={animator?.speed:F3} | waitingForPlungeLand={waitingForPlungeLand} | frame={Time.frameCount}");
+    }
+
+    /// <summary>
+    /// Called by PlayerMovement the moment the player lands from a plunge.
+    /// Resumes the frozen Plunge animation so the ground-slam plays from the correct frame.
+    /// </summary>
+    public void ResumePlungeFromLanding()
+    {
+        AnimatorStateInfo info = animator != null ? animator.GetCurrentAnimatorStateInfo(layerIndex) : default;
+        Debug.Log($"[Plunge] ResumePlungeFromLanding called | waitingForPlungeLand={waitingForPlungeLand} | currentState={currentState} | normTime={info.normalizedTime:F4} | animSpeed={animator?.speed:F3} | frame={Time.frameCount}");
+
+        if (!waitingForPlungeLand)
+        {
+            Debug.LogWarning($"[Plunge] ResumePlungeFromLanding ignored — waitingForPlungeLand was already false | animSpeed={animator?.speed:F3} | frame={Time.frameCount}");
+            return;
+        }
+
+        if (logAnimationEvents)
+            Debug.Log("[PlayerAnimationController] ResumePlungeFromLanding invoked — resuming animator");
+
+        waitingForPlungeLand = false;
+        animator.speed = 1f; // Bypass ResetAnimatorSpeed guard — we are the authority clearing the flag
+        Debug.Log($"[Plunge] Animator unfrozen | speed={animator?.speed:F3} | frame={Time.frameCount}");
     }
 
     // Legacy event names kept to avoid missing-method errors on existing clips
