@@ -106,9 +106,13 @@ public class HangarCrane : CranePuzzle, IConsoleSelectable
         CachePuzzleCameraInitialLocalPosition();
     }
 
-    private void LateUpdate()
+    private void Update()
     {
         SyncPuzzleTransitionRendererState();
+    }
+
+    private void LateUpdate()
+    {
         UpdatePuzzleCameraFollow();
 
         float deltaTime = Time.deltaTime;
@@ -172,6 +176,7 @@ public class HangarCrane : CranePuzzle, IConsoleSelectable
             return;
         }
 
+        activeConsoleInteraction?.SetInteractionEnabled(false);
         BeginPuzzleEntryTransition();
     }
 
@@ -183,6 +188,7 @@ public class HangarCrane : CranePuzzle, IConsoleSelectable
         }
 
         activeConsoleInteraction = interaction;
+        activeConsoleInteraction?.SetInteractionEnabled(false);
         BeginPuzzleEntryTransition();
     }
 
@@ -199,9 +205,7 @@ public class HangarCrane : CranePuzzle, IConsoleSelectable
     protected override void CheckForConfirm()
     {
         if (IsConfirmTriggered())
-        {
             EndPuzzle();
-        }
     }
 
     public override void EndPuzzle()
@@ -257,6 +261,9 @@ public class HangarCrane : CranePuzzle, IConsoleSelectable
         isPuzzleTransitionActive = true;
         pendingPuzzleExitAfterEntry = false;
 
+        ScreenFadeOverlay.Instance.SetImmediate(0f);
+        yield return null;
+
         yield return FadeTo(1f, puzzleTransitionFadeDurationSeconds);
 
         float blackHoldDuration = Mathf.Max(0f, puzzleTransitionBlackHoldSeconds);
@@ -293,6 +300,7 @@ public class HangarCrane : CranePuzzle, IConsoleSelectable
 
         isPuzzleTransitionActive = false;
         puzzleTransitionRoutine = null;
+        activeConsoleInteraction?.SetInteractionEnabled(true);
     }
 
     private static IEnumerator FadeTo(float targetAlpha, float durationSeconds)
@@ -428,7 +436,7 @@ public class HangarCrane : CranePuzzle, IConsoleSelectable
             return;
 
         if (cachedPuzzleTransitionRendererFeature != null)
-            cachedPuzzleTransitionRendererFeature.SetActive(cachedPuzzleTransitionRendererFeatureActive);
+            cachedPuzzleTransitionRendererFeature.SetActive(false);
 
         isPuzzleTransitionRendererApplied = false;
         cachedPuzzleTransitionOutputCamera = null;
