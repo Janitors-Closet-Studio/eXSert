@@ -2912,7 +2912,10 @@ public class PlayerMovement : MonoBehaviour
             DebugMovementLog($"ApplyMovement grounded reset | groundedNow={groundedAfterMove} ccGrounded={characterController.isGrounded} yBeforeReset={currentMovement.y:F2} fallingAnimationPlaying={fallingAnimationPlaying} airborneAnimationLocked={airborneAnimationLocked}");
             currentMovement.y = -1f; // small negative value to keep the player grounded
             if (isPlunging)
+            {
+                Debug.Log($"[Plunge] plungeLandingPending set in ApplyMovement | animWaiting={animationController?.IsWaitingForPlungeLand} | animSpeed={animationController?.GetCurrentClipName()} | frame={Time.frameCount}");
                 plungeLandingPending = true;
+            }
             isPlunging = false;
             plungeTimer = 0f;
             aerialAttackLockTimer = 0f;
@@ -3063,7 +3066,9 @@ public class PlayerMovement : MonoBehaviour
 
             if (landedFromPlunge)
             {
-                // Plunge handles its own animation; keep playing until cancel window fires.
+                Debug.Log($"[Plunge] Landing detected | plungeLandingPending={plungeLandingPending} | isPlunging={isPlunging} | wasGrounded={wasGrounded} | grounded={grounded} | animWaiting={animationController?.IsWaitingForPlungeLand} | frame={Time.frameCount}");
+                // Resume the plunge animation from the freeze point set by the PlungeWaitForLanding event.
+                animationController?.ResumePlungeFromLanding();
             }
             else
             {
