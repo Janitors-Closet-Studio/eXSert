@@ -9,7 +9,6 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
-using UnityEngine.Video;
 using Utilities.Combat;
 using Managers.TimeLord; // For pause event handling
 #pragma warning disable CS0414
@@ -96,8 +95,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Ending Flow")]
         [Tooltip("If true, runs ending flow after death animation completes.")]
         [SerializeField] private bool playEndingFlowOnDefeat = false;
-        [Tooltip("Video clip to play after death animation.")]
-        [SerializeField] private VideoClip endingCutsceneClip;
+        [Tooltip("Cutscene ScriptableObject to play after death animation.")]
+        [SerializeField] private Cutscene endingCutscene;
         [Tooltip("If true, loads the configured credits scene after the ending cutscene. If false, returns to main menu.")]
         [SerializeField] private bool loadCreditsSceneAfterEndingCutscene = false;
         [Tooltip("Optional transition scene to show during ending cutscene while gameplay scenes unload (for example, a solid color background scene).")]
@@ -5812,9 +5811,9 @@ namespace EnemyBehavior.Boss.Cleanser
             bool shouldLoadCredits = loadCreditsSceneAfterEndingCutscene && !string.IsNullOrWhiteSpace(creditsSceneName);
             string ownerSceneName = gameObject.scene.IsValid() ? gameObject.scene.name : string.Empty;
 
-            if (endingCutsceneClip != null)
+            if (endingCutscene != null)
             {
-                CutsceneManager.PlayCutscene(endingCutsceneClip);
+                CutsceneManager.PlayCutscene(endingCutscene);
                 CoroutineRunner.Run(FinishEndingFlowAfterCutscene(shouldLoadCredits, creditsSceneName, ownerSceneName, endingTransitionSceneName));
 
                 endingFlowCoroutine = null;
@@ -5822,7 +5821,7 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             else
             {
-                Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no ending cutscene is assigned.", this);
+                Debug.LogWarning("[CleanserBrain] Ending flow is enabled but no ending cutscene ScriptableObject is assigned.", this);
             }
 
             if (shouldLoadCredits)
