@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -121,9 +121,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1022d876be3971c47b50245f33f5a9ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InteractionUI
+  currentInteractable: {fileID: 0}
   _interactText: {fileID: 0}
   _interactIcon: {fileID: 0}
-  _interactEffect: {fileID: 0}
+  _collectText: {fileID: 0}
+  _collectBottomText: {fileID: 0}
+  _hintNameText: {fileID: 0}
+  _hintDescriptionText: {fileID: 0}
+  hintUI: {fileID: 0}
+  collectUI: {fileID: 0}
 --- !u!1 &4581617725469510314
 GameObject:
   m_ObjectHideFlags: 0
@@ -199,7 +205,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
