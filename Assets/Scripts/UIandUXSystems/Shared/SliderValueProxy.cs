@@ -16,6 +16,8 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
     // When the pointer enters the slider, select it for controller input
    
 {
+    public static bool IsAdjustingSlider { get; private set; }
+
     [Header("Visual Slider (Optional)")]
     [SerializeField, Tooltip("Slider that visually mirrors the real slider's value.")]
     private Slider visualSlider;
@@ -70,6 +72,7 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
         UnsubscribeInput(decreaseAction, OnDecreaseStarted, OnDecreaseCanceled);
         StopRepeat(ref increaseRepeatRoutine);
         StopRepeat(ref decreaseRepeatRoutine);
+        IsAdjustingSlider = false;
     }
 
 
@@ -125,12 +128,14 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
 
     private void OnIncreaseStarted(InputAction.CallbackContext context)
     {
+        IsAdjustingSlider = true;
         StopRepeat(ref decreaseRepeatRoutine);
         StartRepeat(ref increaseRepeatRoutine, 1f);
     }
 
     private void OnDecreaseStarted(InputAction.CallbackContext context)
     {
+        IsAdjustingSlider = true;
         StopRepeat(ref increaseRepeatRoutine);
         StartRepeat(ref decreaseRepeatRoutine, -1f);
     }
@@ -138,11 +143,13 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
     private void OnIncreaseCanceled(InputAction.CallbackContext context)
     {
         StopRepeat(ref increaseRepeatRoutine);
+        IsAdjustingSlider = decreaseRepeatRoutine != null;
     }
 
     private void OnDecreaseCanceled(InputAction.CallbackContext context)
     {
         StopRepeat(ref decreaseRepeatRoutine);
+        IsAdjustingSlider = increaseRepeatRoutine != null;
     }
 
     private void StartRepeat(ref Coroutine repeatRoutine, float direction)
@@ -159,6 +166,8 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
 
         StopCoroutine(repeatRoutine);
         repeatRoutine = null;
+        if (increaseRepeatRoutine == null && decreaseRepeatRoutine == null)
+            IsAdjustingSlider = false;
     }
 
     private IEnumerator RepeatAdjust(float direction)
@@ -179,12 +188,24 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
         if (sourceSlider == null)
             return;
 
-        // Only allow controller input if this slider is currently selected
-        if (UnityEngine.EventSystems.EventSystem.current == null ||
-            UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != sourceSlider.gameObject)
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null)
         {
             return;
         }
+
+        GameObject selectedObject = eventSystem.currentSelectedGameObject;
+        if (selectedObject == null)
+            return;
+
+        Transform parentTransform = transform.parent;
+        bool sliderSelected = selectedObject == sourceSlider.gameObject;
+        bool parentSelected = parentTransform != null && selectedObject == parentTransform.gameObject;
+        bool selectedUnderParent = parentTransform != null && selectedObject.transform.IsChildOf(parentTransform);
+
+        // Allow adjustment when selecting the slider itself or its parent row/container.
+        if (!sliderSelected && !parentSelected && !selectedUnderParent)
+            return;
 
         float range = sourceSlider.maxValue - sourceSlider.minValue;
         float stepSize = range * controllerStepNormalized;

@@ -8,6 +8,8 @@ using UnityEngine.UI;
 /// </summary>
 public class MainMenu : MonoBehaviour
 {
+    public static bool isInMainMenu = false;
+
     [Header("Menu Navigation")]
     [SerializeField] private SaveSlotsMenu saveSlotsMenu;
 
@@ -19,6 +21,7 @@ public class MainMenu : MonoBehaviour
 
     private void Start()
     {
+        isInMainMenu = true;
         // Disable load game button if no save data exists
         if (!DataPersistenceManager.HasGameData()) loadGame.interactable = false;
 
@@ -48,6 +51,8 @@ public class MainMenu : MonoBehaviour
     {
         if (backButtonInputAction != null && backButtonInputAction.action != null)
             backButtonInputAction.action.performed -= OnBackButtonPressed;
+
+        isInMainMenu = false;
     }
 
     private void OnBackButtonPressed(InputAction.CallbackContext context)
