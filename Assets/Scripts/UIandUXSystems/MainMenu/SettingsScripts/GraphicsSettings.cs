@@ -87,23 +87,35 @@ public class GraphicsSettings : MonoBehaviour
     private void OnEnable()
     {
         if (_applyAction != null && _applyAction.action != null)
-            _applyAction.action.performed += ctx => GraphicsApply();
+            _applyAction.action.performed += OnApplyPerformed;
     }
 
     private void OnDisable()
     {
         if (_applyAction != null && _applyAction.action != null)
-            _applyAction.action.performed -= ctx => GraphicsApply();
+            _applyAction.action.performed -= OnApplyPerformed;
 
         SaveCurrentFPSSetting();
     }
+
+    private void OnApplyPerformed(InputAction.CallbackContext context)
+    {
+        GraphicsApply();
+    }
+
     // Ensures FPS is saved/applied even if menu is closed without Apply
     public void SaveCurrentFPSSetting()
     {
         PlayerPrefs.SetInt("masterFPS", fpsLevel);
         PlayerPrefs.Save();
-        Application.targetFrameRate = fpsLevel;
+        ApplyRuntimeFPSSetting(fpsLevel);
         Debug.Log($"[GraphicsSettings] SaveCurrentFPSSetting: fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
+    }
+
+    private void ApplyRuntimeFPSSetting(int appliedFrameRate)
+    {
+        Application.targetFrameRate = appliedFrameRate;
+        FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(appliedFrameRate);
     }
 
     private void FindGlobalVolume()
@@ -230,7 +242,7 @@ public class GraphicsSettings : MonoBehaviour
             fpsText.text = "Unlimited";
             Application.targetFrameRate = appliedFrameRate;
         }
-        FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(appliedFrameRate);
+        ApplyRuntimeFPSSetting(appliedFrameRate);
         Debug.Log($"[GraphicsSettings] SetFPS called: framerate={framerate}, fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
     }
 
@@ -240,7 +252,7 @@ public class GraphicsSettings : MonoBehaviour
         PlayerPrefs.SetFloat("masterBrightness", brightnessLevel);
 
         PlayerPrefs.SetInt("masterFPS", fpsLevel);
-        Application.targetFrameRate = fpsLevel;
+        ApplyRuntimeFPSSetting(fpsLevel);
 
         PlayerPrefs.SetInt("masterMotionBlur", (isMotionBlur ? 1 : 0));
 
@@ -261,7 +273,7 @@ public class GraphicsSettings : MonoBehaviour
             brightnessSlider.value = defaultBrightness;
         SetBrightness(defaultBrightness);
 
-        Application.targetFrameRate = 60;
+        ApplyRuntimeFPSSetting(60);
         fpsText.text = "60";
         fpsLevel = 60;
 
