@@ -101,6 +101,8 @@ public class SaveSlotsMenu : MonoBehaviour
             string farthestAct = GetFarthestUnlockedActName(selectedProfileId);
             actText.text = string.IsNullOrEmpty(farthestAct) ? "ACT 1.1: INFILTRATION" : farthestAct;
         }
+
+        
     }
 
     /// <summary>
@@ -187,6 +189,8 @@ public class SaveSlotsMenu : MonoBehaviour
 
         if (isLoadingGame) LoadGame();
         else StartNewGame();
+
+        RumbleManager.Instance.StopControllerRumble();
     }
 
     // Helper to get the farthest unlocked act name for a profile
