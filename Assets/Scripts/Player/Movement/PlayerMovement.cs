@@ -535,7 +535,7 @@ public class PlayerMovement : MonoBehaviour
     private readonly Collider[] plungeEnemyPushBuffer = new Collider[32];
     private readonly Collider[] enemyTopSlideHits = new Collider[32];
     private readonly Collider[] bossFaceplateHits = new Collider[24];
-    private readonly RaycastHit[] groundedProbeHits = new RaycastHit[16];
+    private readonly RaycastHit[] groundedProbeHits = new RaycastHit[64];
     private readonly int[] plungeProcessedEnemyIds = new int[32];
     private bool warnedMissingSoundSource;
     private Vector3 dashCarryVelocity = Vector3.zero;
@@ -601,8 +601,17 @@ public class PlayerMovement : MonoBehaviour
         if (characterController == null)
             return false;
 
-        if (characterController.isGrounded && !IsStandingOnEnemySurface())
+        if (characterController.isGrounded)
+        {
+            // CharacterController.isGrounded is fully authoritative: the capsule is physically
+            // touching a surface. Never override it to false here — IsStandingOnEnemySurface()
+            // was causing false negatives during multi-enemy combat (adjacent enemy colliders
+            // filling probe buffers / intercepting raycasts), which made IsGroundedNow() return
+            // false while ccGrounded=true, letting gravity accumulate and visibly lifting the
+            // player off the ground. GetEnemyTopSlideVelocity() handles sliding the player off
+            // enemy tops without disrupting the grounded state.
             return true;
+        }
 
         float probeDistance = Mathf.Max(0.01f, maxDistance);
         if (probeDistance <= 0f)
