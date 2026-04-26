@@ -25,8 +25,11 @@ public class LogUI : MonoBehaviour
         if(scrollingList != null)
             scrollingList.ClearLogButtons(); // Clear existing buttons to prevent duplicates
 
-        EventsManager.Instance.logEvents.onLogStateChange -= LogStateChange; // Unsubscribe first to prevent multiple subscriptions
-        EventsManager.Instance.logEvents.onLogStateChange += LogStateChange;
+        if (EventsManager.Instance != null && EventsManager.Instance.logEvents != null)
+        {
+            EventsManager.Instance.logEvents.onLogStateChange -= LogStateChange; // Unsubscribe first to prevent multiple subscriptions
+            EventsManager.Instance.logEvents.onLogStateChange += LogStateChange;
+        }
         // Refresh all logs to populate buttons when UI becomes active
         if (LogManager.Instance != null)
         {
@@ -36,7 +39,8 @@ public class LogUI : MonoBehaviour
 
     private void OnDisable()
     {
-        EventsManager.Instance.logEvents.onLogStateChange -= LogStateChange;
+        if (EventsManager.Instance != null && EventsManager.Instance.logEvents != null)
+            EventsManager.Instance.logEvents.onLogStateChange -= LogStateChange;
     }
 
     //Creates the button with the info from SetLogInfo
