@@ -124,7 +124,16 @@ public class CutsceneManager : Singleton<CutsceneManager>
         // Apply cutscene side-effects immediately so gameplay does not flash in before the first video frame.
         OnCutsceneStarted(VideoPlayer);
         VideoPlayer.loopPointReached += OnCutsceneFinished; // Subscribe to the event to know when the cutscene finishes
-        
-        VideoPlayer.Play();
+
+        // Prepare the video before playing. In builds, calling Play() without Prepare() can silently fail
+        // because the video hasn't been buffered yet. The editor is more forgiving due to faster streaming.
+        VideoPlayer.prepareCompleted += OnVideoPrepared;
+        VideoPlayer.Prepare();
+    }
+
+    private static void OnVideoPrepared(VideoPlayer source)
+    {
+        source.prepareCompleted -= OnVideoPrepared;
+        source.Play();
     }
 }
