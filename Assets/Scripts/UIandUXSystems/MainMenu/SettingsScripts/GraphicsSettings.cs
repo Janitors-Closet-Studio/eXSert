@@ -194,13 +194,13 @@ public class GraphicsSettings : MonoBehaviour
     {
         if (resolution == "1920x1080")
         {
-            resolutionText.text = "1920x1080";
+            resolutionText.text = "1920 x 1080";
             Screen.SetResolution(1920, 1080, isFullscreen);
             isResolution1920x1080 = true;
         }
         else
         {
-            resolutionText.text = "2560x1440";
+            resolutionText.text = "2560 x 1440";
             Screen.SetResolution(2560, 1440, isFullscreen);
             isResolution1920x1080 = false;
         }
@@ -284,7 +284,7 @@ public class GraphicsSettings : MonoBehaviour
         cameraShakeText.text = "On";
 
         isResolution1920x1080 = true;
-        resolutionText.text = "1920x1080";
+        resolutionText.text = "1920 x 1080";
 
         SetDisplayMode(0); // Fullscreen
         displayModeText.text = "Fullscreen";  
