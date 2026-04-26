@@ -46,7 +46,7 @@ namespace UIandUXSystems.HUD
     
     public static class PlayerHUD
     {
-        private static readonly ObjectiveManager objectiveManager = ObjectiveManager.Instance;
+      //  private static readonly ObjectiveManager objectiveManager = ObjectiveManager.Instance;
 
         private static readonly Dictionary<HUDMessageType, HUDTextHandler> HUDHandlers = new();
         public static SubobjectiveHandler subObjectiveHandler { get; private set; }
