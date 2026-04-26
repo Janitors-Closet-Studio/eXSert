@@ -253,10 +253,12 @@ public class DoorInteractions : UnlockableInteraction
     private IEnumerator ExecuteInteractionWithNoticeAfterTemporaryTransition()
     {
         BeginTemporaryCameraTransition();
-        // Wait for the temporary camera transition to finish (wait for puzzleCameraRoutine to be null)
+        ExecuteAssignedDoorInteractions();
+
+        // Wait for the temporary camera transition to finish before showing the notice.
         while (puzzleCameraRoutine != null)
             yield return null;
-        ExecuteAssignedDoorInteractions();
+
         ShowUnlockNoticeIfNeeded();
     }
 
