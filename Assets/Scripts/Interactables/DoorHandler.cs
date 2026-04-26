@@ -132,7 +132,7 @@ public class DoorHandler : MonoBehaviour
     private static Color DefaultUnlockedBulbEmissionColor => ColorFromHsv(145f, 100f, 13f);
     private static Color DefaultUnlockedPointLightColor => ColorFromHex("44A659");
 
-    private void Awake()
+    protected virtual void Awake()
     {
         doorPosOrigin = this.transform.localPosition;
         doorRotOrigin = this.transform.localRotation;
@@ -156,7 +156,7 @@ public class DoorHandler : MonoBehaviour
     /// Toggles the door between Open and Closed states.
     /// Lock checking is handled by DoorInteractions component.
     /// </summary>
-    public void Interact()
+    public virtual void Interact()
     {
         switch (currentDoorState)
         {

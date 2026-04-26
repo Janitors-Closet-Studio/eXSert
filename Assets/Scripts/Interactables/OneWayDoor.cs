@@ -83,8 +83,10 @@ public class OneWayDoor : DoorHandler
 
     private Coroutine closeAfterPassRoutine;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         if (closeAndLockTrigger != null)
             closeAndLockTrigger.SetOwner(this);
 
@@ -106,6 +108,11 @@ public class OneWayDoor : DoorHandler
 
     }
 
+    private void Start()
+    {
+        SealDoorIfDestinationSceneLoadedWithoutSourceScene();
+    }
+
     private void OnDestroy()
     {
         if (closeAfterPassRoutine != null)
@@ -124,6 +131,14 @@ public class OneWayDoor : DoorHandler
     public override IEnumerator NotAllowReentryCoroutine()
     {
         yield break;
+    }
+
+    public override void Interact()
+    {
+        if (oneWayDoorLocked)
+            return;
+
+        base.Interact();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -165,12 +180,20 @@ public class OneWayDoor : DoorHandler
             yield return new WaitForSeconds(delay);
 
         if (isOpened && !oneWayDoorLocked)
-        {
-            CloseControlledDoorHandlersOrSelf();
-            oneWayDoorLocked = true;
-        }
+            SealDoor();
 
         closeAfterPassRoutine = null;
+    }
+
+    private void SealDoorIfDestinationSceneLoadedWithoutSourceScene()
+    {
+        if (playerDestinationScene == null || playerCurrentScene == null)
+            return;
+
+        bool isDestinationSceneLoaded = playerDestinationScene.IsLoaded();
+        bool isCurrentSceneLoaded = playerCurrentScene.IsLoaded();
+        if (isDestinationSceneLoaded && !isCurrentSceneLoaded)
+            SealDoor();
     }
 
     private static bool IsPlayerCollider(Collider other)
@@ -188,6 +211,19 @@ public class OneWayDoor : DoorHandler
         }
 
         CloseDoor();
+    }
+
+    private void SealDoor()
+    {
+        if (!oneWayDoorLocked)
+            oneWayDoorLocked = true;
+
+        if (isOpened)
+            CloseControlledDoorHandlersOrSelf();
+
+        DoorInteractions doorInteraction = ResolveControllingDoorInteraction();
+        if (doorInteraction != null)
+            doorInteraction.DisableInteraction();
     }
 
     private DoorInteractions ResolveControllingDoorInteraction()
