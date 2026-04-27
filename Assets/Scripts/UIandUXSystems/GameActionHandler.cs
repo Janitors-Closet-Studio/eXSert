@@ -22,9 +22,15 @@ public class GameActionHandler : MonoBehaviour
         if (pauseManager == null)
         {
             pauseManager = PauseManager.Instance;
+
+            if (pauseManager == null)
+            {
+                Debug.LogWarning("[GameActionHandler] No PauseManager found in the scene. Some functionality may not work properly.");
+            }
         }
 
-        menuListManager = pauseManager.GetComponent<MenuListManager>();
+        if (pauseManager != null)
+            menuListManager = pauseManager.GetComponent<MenuListManager>();
     }
 
     /// <summary>
