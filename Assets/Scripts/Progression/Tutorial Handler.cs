@@ -58,6 +58,10 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField, TextArea] private string parryFightMessage;
     [SerializeField] private bool parryFightMessageUseSelectedIcon = true;
     [SerializeField] private KeybindAction parryFightMessageAction = KeybindAction.GP_Guard;
+    [SerializeField, TextArea] private string playerTurnReadyMessage;
+    [SerializeField] private List<string> playerTurnReadyMessageOptions = new();
+    [SerializeField] private bool playerTurnReadyMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction playerTurnReadyMessageAction = KeybindAction.GP_FastAttackSingle;
     [SerializeField, TextArea] private string correctButtonPressedMessage;
     [SerializeField] private List<string> correctButtonPressedMessageOptions = new();
     [SerializeField] private bool correctButtonPressedMessageUseSelectedIcon;
@@ -65,6 +69,7 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField, TextArea] private string tutorialCompleteMessage;
     [SerializeField] private bool tutorialCompleteMessageUseSelectedIcon;
     [SerializeField] private KeybindAction tutorialCompleteMessageAction = KeybindAction.GP_Interact;
+    [SerializeField, Min(0f)] private float postEncounterFeedbackDelay = 1.25f;
     [SerializeField] private Color tutorialIconColor = Color.white;
     [SerializeField, Min(0.1f)] private float tutorialIconSize = 1f;
 
@@ -97,9 +102,11 @@ public class TutorialHandler : MonoBehaviour
     private TutorialStep currentStep;
     private bool isSubscribedToPlayerMovement;
     private readonly List<BaseEnemyCore> currentStepEnemies = new();
+    private string lastPlayerTurnReadyMessage;
     private string lastCorrectButtonPressedMessage;
     private PlayerHealthBarManager playerHealth;
     private CombatEncounter currentStepEncounter;
+    private Coroutine postEncounterFeedbackRoutine;
 
     #region Couroutines
     private Coroutine enableRetryRoutine;
@@ -193,6 +200,12 @@ public class TutorialHandler : MonoBehaviour
             destroyMonitorRoutine = null;
         }
 
+        if (postEncounterFeedbackRoutine != null)
+        {
+            StopCoroutine(postEncounterFeedbackRoutine);
+            postEncounterFeedbackRoutine = null;
+        }
+
         ReleaseCurrentStepEnemyOverrides();
         SetTutorialPlayerProtection(false);
     }
@@ -206,6 +219,12 @@ public class TutorialHandler : MonoBehaviour
     #region Combat Tutorial Handlers
     private void BeginStep(TutorialStep step)
     {
+        if (postEncounterFeedbackRoutine != null)
+        {
+            StopCoroutine(postEncounterFeedbackRoutine);
+            postEncounterFeedbackRoutine = null;
+        }
+
         currentStep = step;
         currentStepCompleted = false;
 
@@ -274,7 +293,10 @@ public class TutorialHandler : MonoBehaviour
         if (!currentStepCompleted)
             return;
 
-        BeginStep(GetNextStepAfter(currentStep));
+        if (postEncounterFeedbackRoutine != null)
+            StopCoroutine(postEncounterFeedbackRoutine);
+
+        postEncounterFeedbackRoutine = StartCoroutine(ShowPostEncounterFeedbackThenAdvance(currentStep));
     }
     #endregion
 
@@ -312,38 +334,107 @@ public class TutorialHandler : MonoBehaviour
 
         currentStepCompleted = true;
         SetCurrentStepEnemiesDamageable(true);
-        DisplayTutorialObjective(GetRandomCorrectButtonPressedMessage(), correctButtonPressedMessageUseSelectedIcon, correctButtonPressedMessageAction);
+
+        if (ShouldShowPlayerTurnReadyMessage())
+        {
+            DisplayTutorialObjective(
+                GetRandomPlayerTurnReadyMessage(),
+                playerTurnReadyMessageUseSelectedIcon,
+                playerTurnReadyMessageAction);
+        }
+    }
+
+    private IEnumerator ShowPostEncounterFeedbackThenAdvance(TutorialStep completedStep)
+    {
+        if (ShouldShowPostEncounterFeedback())
+        {
+            DisplayTutorialObjective(
+                GetRandomCorrectButtonPressedMessage(),
+                correctButtonPressedMessageUseSelectedIcon,
+                correctButtonPressedMessageAction);
+
+            if (postEncounterFeedbackDelay > 0f)
+                yield return new WaitForSeconds(postEncounterFeedbackDelay);
+        }
+
+        postEncounterFeedbackRoutine = null;
+
+        if (currentStep != completedStep || !currentStepCompleted)
+            yield break;
+
+        BeginStep(GetNextStepAfter(completedStep));
+    }
+
+    private bool ShouldShowPlayerTurnReadyMessage()
+    {
+        return (currentStep == TutorialStep.Dash || currentStep == TutorialStep.Guard || currentStep == TutorialStep.Parry)
+            && HasConfiguredMessage(playerTurnReadyMessageOptions, playerTurnReadyMessage);
+    }
+
+    private bool ShouldShowPostEncounterFeedback()
+    {
+        return HasConfiguredMessage(correctButtonPressedMessageOptions, correctButtonPressedMessage);
+    }
+
+    private string GetRandomPlayerTurnReadyMessage()
+    {
+        return GetRandomMessage(playerTurnReadyMessageOptions, playerTurnReadyMessage, ref lastPlayerTurnReadyMessage);
     }
 
     private string GetRandomCorrectButtonPressedMessage()
     {
-        if (correctButtonPressedMessageOptions != null)
+        return GetRandomMessage(correctButtonPressedMessageOptions, correctButtonPressedMessage, ref lastCorrectButtonPressedMessage);
+    }
+
+    private static bool HasConfiguredMessage(List<string> messageOptions, string fallbackMessage)
+    {
+        if (messageOptions != null)
+        {
+            for (int i = 0; i < messageOptions.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(messageOptions[i]))
+                    return true;
+            }
+        }
+
+        return !string.IsNullOrWhiteSpace(fallbackMessage);
+    }
+
+    private string GetRandomMessage(List<string> messageOptions, string fallbackMessage, ref string lastMessage)
+    {
+        if (messageOptions != null)
         {
             List<string> validMessages = new();
 
-            for (int i = 0; i < correctButtonPressedMessageOptions.Count; i++)
+            for (int i = 0; i < messageOptions.Count; i++)
             {
-                string message = correctButtonPressedMessageOptions[i];
+                string message = messageOptions[i];
                 if (!string.IsNullOrWhiteSpace(message))
                     validMessages.Add(message);
             }
 
             if (validMessages.Count > 0)
             {
-                if (validMessages.Count > 1 && !string.IsNullOrWhiteSpace(lastCorrectButtonPressedMessage))
-                    validMessages.RemoveAll(message => string.Equals(message, lastCorrectButtonPressedMessage, StringComparison.Ordinal));
+                if (validMessages.Count > 1 && !string.IsNullOrWhiteSpace(lastMessage))
+                {
+                    for (int i = validMessages.Count - 1; i >= 0; i--)
+                    {
+                        if (string.Equals(validMessages[i], lastMessage, StringComparison.Ordinal))
+                            validMessages.RemoveAt(i);
+                    }
+                }
 
                 if (validMessages.Count > 0)
                 {
                     int randomIndex = UnityEngine.Random.Range(0, validMessages.Count);
-                    lastCorrectButtonPressedMessage = validMessages[randomIndex];
-                    return lastCorrectButtonPressedMessage;
+                    lastMessage = validMessages[randomIndex];
+                    return lastMessage;
                 }
             }
         }
 
-        lastCorrectButtonPressedMessage = correctButtonPressedMessage;
-        return correctButtonPressedMessage;
+        lastMessage = fallbackMessage;
+        return fallbackMessage;
     }
 
     private TutorialStep GetNextStepAfter(TutorialStep step)
