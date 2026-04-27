@@ -20,7 +20,6 @@ public class LoadPrefs : MonoBehaviour
     [Header("Graphics Settings")]
     [SerializeField] private TMP_Text displayModeText = null;
     [SerializeField] private Slider brightnessSlider = null;
-    [SerializeField] private float fallbackDefaultBrightness = 0.75f;
     [SerializeField] private TMP_Text resolutionTextValue = null;
     [SerializeField] private TMP_Text motionBlurOnOffText = null;
     [SerializeField] private TMP_Text cameraShakeOnOffText = null;
@@ -290,25 +289,15 @@ public class LoadPrefs : MonoBehaviour
             DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterBrightness: {localBrightness}");
             if (brightnessSlider) brightnessSlider.value = localBrightness;
 
-            float defaultBrightness = fallbackDefaultBrightness;
             if (graphics != null)
             {
-                defaultBrightness = graphics.defaultBrightness;
                 graphics.SetBrightness(localBrightness);
                 graphics.brightnessLevel = localBrightness;
                 DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loaded Brightness: {localBrightness}, Applied to GraphicsSettings.");
             }
             else
             {
-                if (BrightnessOverlayController.Instance != null)
-                {
-                    BrightnessOverlayController.Instance.ApplyBrightness(localBrightness, defaultBrightness);
-                    DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Applied brightness via BrightnessOverlayController: {localBrightness}");
-                }
-                else
-                {
-                    Debug.LogWarning("[LoadPrefs] Could not apply brightness: GraphicsSettings and BrightnessOverlayController are both unavailable.");
-                }
+                Debug.LogWarning("[LoadPrefs] Could not apply brightness: GraphicsSettings is unavailable.");
             }
         }
         else

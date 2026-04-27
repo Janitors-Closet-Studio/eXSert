@@ -4,18 +4,22 @@ using UnityEngine.Rendering.Universal;
 using Singletons;
 
 /// <summary>
-/// Adjusts a persistent URP Volume's Lift/Gamma/Gain overrides to simulate brightness changes.
-/// Attach this to the shared Global Volume so every scene can call <see cref="ApplyBrightness"/>.
+/// Adjusts brightness through a dedicated runtime global volume so scene-specific
+/// post-process profiles cannot override the player's brightness setting.
 /// </summary>
-[RequireComponent(typeof(Volume))]
 [DisallowMultipleComponent]
 public class BrightnessOverlayController : Singleton<BrightnessOverlayController>
 {
     [Header("Volume References")]
     [SerializeField]
+    [Tooltip("Explicit volume profile reference. Preferred when brightness is driven from a shared post-process profile asset.")]
+    private VolumeProfile targetVolumeProfile;
+
+    [SerializeField]
     [Tooltip("Explicit volume reference (auto-assigned when left empty).")]
     private Volume targetVolume;
 
+    private Volume runtimeVolume;
     private VolumeProfile runtimeProfile;
     private LiftGammaGain liftGammaGain;
 
@@ -30,7 +34,7 @@ public class BrightnessOverlayController : Singleton<BrightnessOverlayController
 
     [SerializeField]
     [Tooltip("Gamma value when the slider is at its maximum.")]
-    private float maxGamma = 1.2f;
+    private float maxGamma = 1.5f;
 
     [Header("Slider Bounds")]
     [SerializeField]
@@ -40,11 +44,16 @@ public class BrightnessOverlayController : Singleton<BrightnessOverlayController
     [Tooltip("Lowest brightness slider value (used for normalization).")]
     private float minSliderValue = 0f;
 
+    [Header("Runtime Volume")]
+    [SerializeField]
+    [Tooltip("Priority used by the runtime brightness volume. Keep this above scene volumes so brightness always applies.")]
+    private float runtimeVolumePriority = 1000f;
+
     protected override void Awake()
     {
         base.Awake();
 
-        EnsureVolumeReferences();
+        EnsureBrightnessOverride();
     }
 
     /// <summary>
@@ -52,7 +61,7 @@ public class BrightnessOverlayController : Singleton<BrightnessOverlayController
     /// </summary>
     public void ApplyBrightness(float brightness, float defaultBrightness)
     {
-        if (!EnsureVolumeReferences())
+        if (!EnsureBrightnessOverride())
             return;
 
         if (Mathf.Approximately(defaultBrightness, 0f))
@@ -66,15 +75,17 @@ public class BrightnessOverlayController : Singleton<BrightnessOverlayController
             sliderMax,
             Mathf.Clamp(brightness, sliderMin, sliderMax));
 
-        float gammaValue = Mathf.Lerp(minGamma, maxGamma, normalizedBrightness);
+        float gammaAlpha = Mathf.Lerp(minGamma, maxGamma, normalizedBrightness);
 
-        liftGammaGain.gamma.value = new Vector4(gammaValue, gammaValue, gammaValue, 0f);
+        liftGammaGain.gamma.Override(new Vector4(1f, 1f, 1f, gammaAlpha));
+        liftGammaGain.gamma.overrideState = true;
         liftGammaGain.active = true;
+        runtimeVolume.weight = 1f;
 
         if (logChanges)
         {
             Debug.Log(
-                $"[BrightnessOverlayController] Brightness:{brightness:F3} -> Gamma:{gammaValue:F3}");
+            $"[BrightnessOverlayController] Brightness:{brightness:F3} -> GammaAlpha:{liftGammaGain.gamma.value.w:F3} via {runtimeVolume.name}");
         }
     }
 
@@ -86,33 +97,60 @@ public class BrightnessOverlayController : Singleton<BrightnessOverlayController
         liftGammaGain.gamma.overrideState = true;
     }
 
-    private bool EnsureVolumeReferences()
+    private bool EnsureBrightnessOverride()
     {
-        targetVolume ??= GetComponent<Volume>();
-        if (targetVolume == null)
+        if (runtimeVolume == null)
+            CreateRuntimeBrightnessVolume();
+
+        if (runtimeVolume == null)
         {
-            Debug.LogError(
-                "[BrightnessOverlayController] Missing Volume reference. Brightness adjustments disabled.");
+            Debug.LogError("[BrightnessOverlayController] Failed to create runtime brightness volume.");
             return false;
         }
 
-        runtimeProfile = targetVolume.profile ?? targetVolume.sharedProfile ?? runtimeProfile;
         if (runtimeProfile == null)
         {
-            Debug.LogError(
-                "[BrightnessOverlayController] Volume profile missing. Assign a profile to the Global Volume.");
-            return false;
+            runtimeProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+            runtimeVolume.sharedProfile = runtimeProfile;
         }
 
         if (liftGammaGain == null && !runtimeProfile.TryGet(out liftGammaGain))
         {
-            Debug.LogError(
-                "[BrightnessOverlayController] Volume profile lacks a LiftGammaGain override. Add one to enable brightness control.");
-            return false;
+            liftGammaGain = runtimeProfile.Add<LiftGammaGain>(true);
         }
 
         EnsureOverridesEnabled();
         return true;
+    }
+
+    private void CreateRuntimeBrightnessVolume()
+    {
+        GameObject runtimeVolumeObject = new GameObject("Runtime Brightness Volume");
+        runtimeVolumeObject.layer = ResolveVolumeLayer();
+        DontDestroyOnLoad(runtimeVolumeObject);
+
+        runtimeVolume = runtimeVolumeObject.AddComponent<Volume>();
+        runtimeVolume.isGlobal = true;
+        runtimeVolume.priority = runtimeVolumePriority;
+        runtimeVolume.weight = 1f;
+    }
+
+    private int ResolveVolumeLayer()
+    {
+        if (targetVolume == null)
+            targetVolume = GetComponent<Volume>();
+
+        if (targetVolume != null)
+            return targetVolume.gameObject.layer;
+
+        Volume[] sceneVolumes = FindObjectsByType<Volume>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        foreach (Volume sceneVolume in sceneVolumes)
+        {
+            if (sceneVolume != null)
+                return sceneVolume.gameObject.layer;
+        }
+
+        return gameObject.layer;
     }
 
 }

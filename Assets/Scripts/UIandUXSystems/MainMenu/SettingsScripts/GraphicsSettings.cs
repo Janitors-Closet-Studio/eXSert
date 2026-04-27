@@ -3,30 +3,38 @@
 
     written by Brandon Wahl
 */
-using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.UI;
 
 public class GraphicsSettings : MonoBehaviour
 {
-
     [Header("Graphics Settings Container Reference")]
     [SerializeField] private GameObject graphicsSettingsContainer;
 
     [Space(20)]
 
-
     [Header("Brightness Settings")]
-    [SerializeField] private Slider brightnessSlider = null;
+    [SerializeField] private Slider brightnessSlider;
     public float defaultBrightness = 1.25f;
 
-    public Volume globalVolume;
+    [SerializeField]
+    [Tooltip("Assign the shared post-process volume profile here. Brightness uses its LiftGammaGain override just like PauseManager uses a VolumeProfile.")]
+    private VolumeProfile brightnessVolumeProfile;
+
+    [SerializeField]
+    [Tooltip("Gamma value when the brightness slider is at its minimum.")]
+    private float minBrightnessGamma = 0.5f;
+
+    [SerializeField]
+    [Tooltip("Gamma value when the brightness slider is at its maximum.")]
+    private float maxBrightnessGamma = 1.5f;
+
     internal LiftGammaGain liftGammaGain;
     internal float brightnessLevel;
-    
 
     [Header("Display Mode Settings")]
     [SerializeField] private TMP_Text displayModeText;
@@ -54,16 +62,16 @@ public class GraphicsSettings : MonoBehaviour
 
     [SerializeField] private InputActionReference _applyAction;
 
-    void Awake()
+    private void Awake()
     {
         QualitySettings.vSyncCount = 0;
 
-        FindGlobalVolume();
+        FindBrightnessProfile();
 
-        // Load PlayerPrefs for toggles and settings
         brightnessLevel = PlayerPrefs.GetFloat("masterBrightness", defaultBrightness);
         if (brightnessSlider != null)
             brightnessSlider.value = brightnessLevel;
+
         SetBrightness(brightnessLevel);
 
         fpsLevel = PlayerPrefs.GetInt("masterFPS", 60);
@@ -81,7 +89,6 @@ public class GraphicsSettings : MonoBehaviour
         isResolution1920x1080 = PlayerPrefs.GetInt("masterResolution", 0) == 0;
         SetResolution(isResolution1920x1080 ? "1920x1080" : "2560x1440");
     }
-#pragma warning restore CS0414
 
     private void OnEnable()
     {
@@ -90,7 +97,6 @@ public class GraphicsSettings : MonoBehaviour
 
         if (brightnessSlider != null)
         {
-            // Ensure runtime binding exists even if inspector event wiring is missing.
             brightnessSlider.onValueChanged.RemoveListener(SetBrightness);
             brightnessSlider.onValueChanged.AddListener(SetBrightness);
         }
@@ -112,13 +118,14 @@ public class GraphicsSettings : MonoBehaviour
         GraphicsApply();
     }
 
-    // Ensures FPS is saved/applied even if menu is closed without Apply
     public void SaveCurrentFPSSetting()
     {
         PlayerPrefs.SetInt("masterFPS", fpsLevel);
         PlayerPrefs.Save();
         ApplyRuntimeFPSSetting(fpsLevel);
-        Debug.Log($"[GraphicsSettings] SaveCurrentFPSSetting: fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
+        Debug.Log(
+            $"[GraphicsSettings] SaveCurrentFPSSetting: fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}"
+        );
     }
 
     private void ApplyRuntimeFPSSetting(int appliedFrameRate)
@@ -127,72 +134,104 @@ public class GraphicsSettings : MonoBehaviour
         FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(appliedFrameRate);
     }
 
-    private void FindGlobalVolume()
+    private void FindBrightnessProfile()
     {
-        if (globalVolume != null && globalVolume.profile != null)
+        if (brightnessVolumeProfile == null)
         {
-            // Try to get the LiftGammaGain override from the volume profile
-            if (globalVolume.profile.TryGet(out liftGammaGain))
-            {
-                Debug.Log("LiftGammaGain found. Current gamma value: " + liftGammaGain.gamma.value.x);
-            }
-            else
-            {
-                Debug.LogError("LiftGammaGain effect not found in the volume profile.");
-            }
-        }
-        else
-        {
-            Debug.LogError("Global Volume not assigned.");
-        }
-            
-    }
-
-
-    //Alls functions below change values based on player choice
-    public void SetBrightness(float brightness)
-    {
-        if (BrightnessOverlayController.Instance != null)
-        {
-            BrightnessOverlayController.Instance.ApplyBrightness(brightness, defaultBrightness);
-            brightnessLevel = brightness;
-            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Brightness set to: " + brightness);
+            Debug.LogError("Brightness Volume Profile not assigned.");
             return;
         }
 
-        if (globalVolume != null && globalVolume.profile != null && globalVolume.profile.TryGet(out liftGammaGain))
+        if (!brightnessVolumeProfile.TryGet(out liftGammaGain))
         {
-            liftGammaGain.gamma.value = new Vector4(brightness, brightness, brightness, 0f);
+            liftGammaGain = brightnessVolumeProfile.Add<LiftGammaGain>(true);
+            Debug.Log("LiftGammaGain was missing and has been added to the brightness volume profile.");
+        }
+
+        liftGammaGain.gamma.overrideState = true;
+        liftGammaGain.active = true;
+        Debug.Log(
+            "LiftGammaGain ready. Current gamma alpha: " + liftGammaGain.gamma.value.w
+        );
+    }
+
+    public void SetBrightness(float brightness)
+    {
+        if (brightnessVolumeProfile == null)
+        {
+            Debug.LogWarning(
+                "[GraphicsSettings] Could not apply brightness: no VolumeProfile is assigned."
+            );
+            return;
+        }
+
+        if (liftGammaGain == null)
+            FindBrightnessProfile();
+
+        if (liftGammaGain != null)
+        {
+            float gammaAlpha = GetGammaValueForBrightness(brightness);
+            liftGammaGain.gamma.Override(new Vector4(1f, 1f, 1f, gammaAlpha));
             liftGammaGain.gamma.overrideState = true;
             liftGammaGain.active = true;
             brightnessLevel = brightness;
-            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Brightness set to: " + brightness);
+            DebugLogSettingsM.ConditionalLog(
+                DebugLogCategory.Settings,
+                $"Brightness set to: {brightness} -> gamma alpha {liftGammaGain.gamma.value.w}"
+            );
+            return;
+        }
+
+        Debug.LogWarning(
+            "[GraphicsSettings] Could not apply brightness: LiftGammaGain could not be initialized from the assigned VolumeProfile."
+        );
+    }
+
+    private float GetGammaValueForBrightness(float brightness)
+    {
+        float sliderMin = 0f;
+        float sliderMax = 1f;
+
+        if (brightnessSlider != null)
+        {
+            sliderMin = brightnessSlider.minValue;
+            sliderMax = brightnessSlider.maxValue;
         }
         else
         {
-            Debug.LogWarning("[GraphicsSettings] Could not apply brightness: no BrightnessOverlayController or LiftGammaGain profile.");
+            sliderMax = Mathf.Max(defaultBrightness, sliderMin + 0.0001f);
         }
+
+        if (Mathf.Approximately(sliderMin, sliderMax))
+            return minBrightnessGamma;
+
+        float normalizedBrightness = Mathf.InverseLerp(sliderMin, sliderMax, brightness);
+        return Mathf.Lerp(minBrightnessGamma, maxBrightnessGamma, normalizedBrightness);
     }
 
     public void SetDisplayMode(int displayMode)
     {
         displayModeLevel = displayMode;
 
-        if (displayMode == 0) // Fullscreen
+        if (displayMode == 0)
         {
             Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
             displayModeText.text = "Fullscreen";
             isFullscreen = true;
         }
-        else if (displayMode == 1) // Windowed
+        else if (displayMode == 1)
         {
             Screen.fullScreenMode = FullScreenMode.Windowed;
             displayModeText.text = "Windowed";
             isFullscreen = false;
         }
-        else if (displayMode == 2) // Borderless
+        else if (displayMode == 2)
         {
-            Screen.SetResolution(Screen.currentResolution.width, Screen.currentResolution.height, FullScreenMode.FullScreenWindow);
+            Screen.SetResolution(
+                Screen.currentResolution.width,
+                Screen.currentResolution.height,
+                FullScreenMode.FullScreenWindow
+            );
             displayModeText.text = "Borderless";
             isFullscreen = false;
         }
@@ -201,15 +240,7 @@ public class GraphicsSettings : MonoBehaviour
     public void SetMotionBlur(bool motionBlur)
     {
         isMotionBlur = motionBlur;
-
-        if (motionBlur)
-        {
-            motionBlurText.text = "On";
-        }
-        else
-        {
-            motionBlurText.text = "Off";
-        }
+        motionBlurText.text = motionBlur ? "On" : "Off";
     }
 
     public void SetResolution(string resolution)
@@ -219,13 +250,12 @@ public class GraphicsSettings : MonoBehaviour
             resolutionText.text = "1920 x 1080";
             Screen.SetResolution(1920, 1080, isFullscreen);
             isResolution1920x1080 = true;
+            return;
         }
-        else
-        {
-            resolutionText.text = "2560 x 1440";
-            Screen.SetResolution(2560, 1440, isFullscreen);
-            isResolution1920x1080 = false;
-        }
+
+        resolutionText.text = "2560 x 1440";
+        Screen.SetResolution(2560, 1440, isFullscreen);
+        isResolution1920x1080 = false;
     }
 
     public void SetCameraShake(bool cameraShake)
@@ -234,21 +264,24 @@ public class GraphicsSettings : MonoBehaviour
 
         if (cameraShake)
         {
-            //Add camera shake logic here
             cameraShakeText.text = "On";
             SettingsManager.Instance.cameraShake = true;
+            return;
         }
-        else
-        {
-            cameraShakeText.text = "Off";
-            SettingsManager.Instance.cameraShake = false;
-        }
+
+        cameraShakeText.text = "Off";
+        SettingsManager.Instance.cameraShake = false;
     }
 
     public void SetFPS(int framerate)
     {
-        int appliedFrameRate = framerate == 60 ? 60 : framerate == 30 ? 30 : -1;
+        int appliedFrameRate =
+            framerate == 60 ? 60
+            : framerate == 30 ? 30
+            : -1;
+
         fpsLevel = appliedFrameRate;
+
         if (framerate == 60)
         {
             fpsText.text = "60";
@@ -264,37 +297,31 @@ public class GraphicsSettings : MonoBehaviour
             fpsText.text = "Unlimited";
             Application.targetFrameRate = appliedFrameRate;
         }
+
         ApplyRuntimeFPSSetting(appliedFrameRate);
-        Debug.Log($"[GraphicsSettings] SetFPS called: framerate={framerate}, fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}");
+        Debug.Log(
+            $"[GraphicsSettings] SetFPS called: framerate={framerate}, fpsLevel={fpsLevel}, targetFrameRate={Application.targetFrameRate}, vSyncCount={QualitySettings.vSyncCount}"
+        );
     }
 
-    //Applies graphic settings
     public void GraphicsApply()
     {
         PlayerPrefs.SetFloat("masterBrightness", brightnessLevel);
-
         PlayerPrefs.SetInt("masterFPS", fpsLevel);
         ApplyRuntimeFPSSetting(fpsLevel);
-
-        PlayerPrefs.SetInt("masterMotionBlur", (isMotionBlur ? 1 : 0));
-
+        PlayerPrefs.SetInt("masterMotionBlur", isMotionBlur ? 1 : 0);
         PlayerPrefs.SetInt("masterFullscreen", displayModeLevel);
-
-        PlayerPrefs.SetInt("masterCameraShake", (isCameraShake ? 1 : 0));
-
-        PlayerPrefs.SetInt("masterResolution", (isResolution1920x1080 ? 0 : 1));
-
+        PlayerPrefs.SetInt("masterCameraShake", isCameraShake ? 1 : 0);
+        PlayerPrefs.SetInt("masterResolution", isResolution1920x1080 ? 0 : 1);
         PlayerPrefs.Save();
     }
 
-    //Resets graphics settings
     public void ResetButton()
     {
-
         if (brightnessSlider != null)
             brightnessSlider.value = defaultBrightness;
-        SetBrightness(defaultBrightness);
 
+        SetBrightness(defaultBrightness);
         ApplyRuntimeFPSSetting(60);
         fpsText.text = "60";
         fpsLevel = 60;
@@ -308,10 +335,8 @@ public class GraphicsSettings : MonoBehaviour
         isResolution1920x1080 = true;
         resolutionText.text = "1920 x 1080";
 
-        SetDisplayMode(0); // Fullscreen
-        displayModeText.text = "Fullscreen";  
-
+        SetDisplayMode(0);
+        displayModeText.text = "Fullscreen";
         GraphicsApply();
-
     }
 }
