@@ -1145,8 +1145,22 @@ namespace EnemyBehavior.Boss
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             BeginRetryingPlayerReferenceIfNeeded();
-            
-            // Start the delayed fight initialization
+
+            // If a BossRoombaEnabler is present it will call StartFight() when the player enters the trigger.
+            // Otherwise start automatically as before.
+            if (GetComponentInParent<BossRoombaEnabler>() == null && GetComponent<BossRoombaEnabler>() == null)
+                StartCoroutine(DelayedFightStart());
+        }
+
+        /// <summary>
+        /// Called by BossRoombaEnabler once the player enters the boss arena trigger.
+        /// Enables the NavMeshAgent and begins the fight with the configured start delay.
+        /// </summary>
+        public void StartFight()
+        {
+            var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null) agent.enabled = true;
+
             StartCoroutine(DelayedFightStart());
         }
         
