@@ -129,6 +129,18 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Tooltip("When enabled, landing an attack temporarily reduces how much the player can turn while attacking.")]
     private bool reduceAttackTurningAfterLandingHit = true;
 
+    [Header("Lock-On Animation Speed Sync")]
+    [SerializeField, Tooltip("When enabled, scales the animator playback speed of strafe/walkback animations to match actual movement speed, preventing foot-sliding.")]
+    private bool useLockonAnimSpeedSync = true;
+    [SerializeField, Range(0.1f, 10f), Tooltip("The movement speed at which the strafe animation plays at exactly 1× speed. Tune this to match the walk animation's authored pace.")]
+    private float lockOnStrafeAnimCalibrationSpeed = 2.25f;
+    [SerializeField, Range(0.1f, 10f), Tooltip("The movement speed at which the walkback animation plays at exactly 1× speed. Tune this to match the walk animation's authored pace.")]
+    private float lockOnBackAnimCalibrationSpeed = 2.25f;
+    [SerializeField, Range(0.1f, 1f), Tooltip("Speed multiplier applied when the player is locked on and strafing left or right.")]
+    private float lockOnStrafeSpeedMultiplier = 0.6f;
+    [SerializeField, Range(0.1f, 1f), Tooltip("Speed multiplier applied when the player is locked on and walking backwards.")]
+    private float lockOnBackSpeedMultiplier = 0.6f;
+
     [Header("Animation Safeguards")]
     [SerializeField, Tooltip("If enabled, forcibly recovers to idle when locomotion animation gets stuck while player is grounded and not moving.")]
     private bool enableIdleRecoverySafeguard = true;
@@ -774,6 +786,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 previousKeyboardInput = Vector2.zero;
 
     private GroundMoveState moveState = GroundMoveState.Walk;
+    private string lastLockonAnimState = string.Empty;
     private bool shouldRestoreSprintAfterDash;
     private float postDashForceFullSprintTimer;
     private bool postDashSprintLogPending;
@@ -1126,10 +1139,11 @@ public class PlayerMovement : MonoBehaviour
             bool stateChanged = UpdateMoveState(usingAnalogThresholds, inputMagnitude);
 
             bool guarding = CombatManager.isGuarding;
-            Vector3 moveForwardBasis = guarding
+            bool lockedOn = !guarding && (attackLockSystem != null && attackLockSystem.IsHardLockActive);
+            Vector3 moveForwardBasis = (guarding || lockedOn)
                 ? Vector3.ProjectOnPlane(transform.forward, Vector3.up)
                 : forward;
-            Vector3 moveRightBasis = guarding
+            Vector3 moveRightBasis = (guarding || lockedOn)
                 ? Vector3.ProjectOnPlane(transform.right, Vector3.up)
                 : right;
 
@@ -1146,6 +1160,19 @@ public class PlayerMovement : MonoBehaviour
 
             if (attackMovementActive)
                 targetSpeed *= attackMovementSpeedMultiplier;
+
+            // When locked on and moving backward or sideways, reduce speed.
+            if (lockedOn && !movementSpeedOverrideActive)
+            {
+                float fwd = inputMove.y;
+                float rgt = inputMove.x;
+                bool isLockonBackward = fwd < -0.3f && Mathf.Abs(fwd) >= Mathf.Abs(rgt);
+                bool isLockonStrafe   = !isLockonBackward && Mathf.Abs(rgt) > 0.3f;
+                if (isLockonBackward)
+                    targetSpeed *= lockOnBackSpeedMultiplier;
+                else if (isLockonStrafe)
+                    targetSpeed *= lockOnStrafeSpeedMultiplier;
+            }
 
             float appliedSpeed = targetSpeed;
 
@@ -1181,7 +1208,7 @@ public class PlayerMovement : MonoBehaviour
             currentMovement.x = desiredVelocity.x;
             currentMovement.z = desiredVelocity.z;
 
-            if (shouldFaceMoveDirection && moveDirection.sqrMagnitude > 0.001f)
+            if (shouldFaceMoveDirection && !lockedOn && moveDirection.sqrMagnitude > 0.001f)
             {
                 Vector3 facingDirection;
                 if (attackMovementActive && TryGetAttackPriorityFacingDirection(moveDirection, out Vector3 prioritizedFacing))
@@ -1195,7 +1222,7 @@ public class PlayerMovement : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, toRotation, Time.deltaTime * 10f);
             }
 
-            if (!attackMovementActive && !locomotionAnimationSuppressed && !IsJumpPending && !previouslyMoving && !stateChanged)
+            if (!attackMovementActive && !locomotionAnimationSuppressed && !IsJumpPending && ((!previouslyMoving && !stateChanged) || lockedOn))
             {
                 PlayMovementAnimation();
             }
@@ -1218,6 +1245,7 @@ public class PlayerMovement : MonoBehaviour
                 EnsureCombatIdleControllerReference();
                 if (!hasCombatIdleController)
                     animationController?.PlayIdle();
+                animationController?.ResetAnimatorSpeed();
             }
 
             TryApplyIdleRecoverySafeguard(attackMovementActive);
@@ -3404,6 +3432,10 @@ public class PlayerMovement : MonoBehaviour
 
     private string GetExpectedLocomotionStateName()
     {
+        bool lockedOn = !CombatManager.isGuarding && (attackLockSystem != null && attackLockSystem.IsHardLockActive);
+        if (lockedOn && !string.IsNullOrEmpty(lastLockonAnimState))
+            return lastLockonAnimState;
+
         switch (moveState)
         {
             case GroundMoveState.Walk:
@@ -3421,6 +3453,13 @@ public class PlayerMovement : MonoBehaviour
     {
         if (animationController == null)
             return;
+
+        bool lockedOn = !CombatManager.isGuarding && (attackLockSystem != null && attackLockSystem.IsHardLockActive);
+        if (lockedOn)
+        {
+            PlayMovementAnimation();
+            return;
+        }
 
         switch (moveState)
         {
@@ -4037,6 +4076,66 @@ public class PlayerMovement : MonoBehaviour
 
         if (landingAnimationLockTimer > 0f && InputReader.MoveInput.sqrMagnitude < moveInputDeadZone * moveInputDeadZone)
             return;
+
+        bool lockedOnAnim = !CombatManager.isGuarding && (attackLockSystem != null && attackLockSystem.IsHardLockActive);
+
+        if (lockedOnAnim)
+        {
+            // Determine strafe/walkback based on input relative to player facing.
+            Vector2 input = cachedMoveInput.sqrMagnitude > 0.0001f ? cachedMoveInput : InputReader.MoveInput;
+            float forwardDot = input.y;   // y = forward/back in player-relative space
+            float rightDot   = input.x;   // x = right/left in player-relative space
+
+            bool isBackward    = forwardDot < -0.3f && Mathf.Abs(forwardDot) >= Mathf.Abs(rightDot);
+            bool isStrafeLeft  = rightDot < -0.3f && !isBackward;
+            bool isStrafeRight = rightDot >  0.3f && !isBackward;
+
+            if (isBackward)
+            {
+                lastLockonAnimState = "Walkback";
+                animationController.PlayWalkBack();
+            }
+            else if (isStrafeLeft)
+            {
+                lastLockonAnimState = "WalkStrafeL";
+                animationController.PlayWalkStrafeLeft();
+            }
+            else if (isStrafeRight)
+            {
+                lastLockonAnimState = "WalkStrafeR";
+                animationController.PlayWalkStrafeRight();
+            }
+            else
+            {
+                // Forward lock-on movement: use normal speed-based animation and reset anim speed.
+                lastLockonAnimState = string.Empty;
+                animationController.ResetAnimatorSpeed();
+                switch (moveState)
+                {
+                    case GroundMoveState.Walk:   animationController.PlayWalk();   break;
+                    case GroundMoveState.Jog:    animationController.PlayJog();    break;
+                    case GroundMoveState.Sprint: animationController.PlaySprint(); break;
+                }
+                DebugMovementLog($"PlayMovementAnimation (lock-on forward): {moveState}");
+                return;
+            }
+
+            // Scale animator speed so foot cycles match actual movement speed.
+            if (useLockonAnimSpeedSync)
+            {
+                float actualSpeed = new Vector2(currentMovement.x, currentMovement.z).magnitude;
+                float calibration = isBackward ? lockOnBackAnimCalibrationSpeed : lockOnStrafeAnimCalibrationSpeed;
+                float ratio = Mathf.Clamp(actualSpeed / Mathf.Max(0.01f, calibration), 0.1f, 3f);
+                animationController.SetAnimatorSpeed(ratio);
+            }
+
+            DebugMovementLog($"PlayMovementAnimation (lock-on): fwd={forwardDot:F2} rgt={rightDot:F2} back={isBackward} sl={isStrafeLeft} sr={isStrafeRight} speed={new Vector2(currentMovement.x, currentMovement.z).magnitude:F2}");
+            return;
+        }
+
+        // Not locked on — clear tracked state and ensure animator speed is at default.
+        lastLockonAnimState = string.Empty;
+        animationController.ResetAnimatorSpeed();
 
         switch (moveState)
         {
