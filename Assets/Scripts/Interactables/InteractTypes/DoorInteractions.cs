@@ -30,6 +30,8 @@ public class DoorInteractions : UnlockableInteraction
 
     [Header("Interaction")]
     [SerializeField] private bool onlyInteractableOnce = false;
+    [SerializeField, Tooltip("When enabled, assigned locked doors stay blocked even if Required Item ID is empty.")]
+    private bool requireUnlockedDoorsWhenRequiredItemIsEmpty = false;
 
     [Header("Camera")]
     [FormerlySerializedAs("useSpecialTransition")]
@@ -146,8 +148,25 @@ public class DoorInteractions : UnlockableInteraction
         base.SetInteractionEnabled(isEnabled);
     }
 
+    protected override void OnTriggerEnter(Collider other)
+    {
+        base.OnTriggerEnter(other);
+        UpdateLockedDoorPromptIfNeeded(other);
+    }
+
+    protected override void OnTriggerStay(Collider other)
+    {
+        base.OnTriggerStay(other);
+        UpdateLockedDoorPromptIfNeeded(other);
+    }
+
     protected override bool Interact()
     {
+
+        RefreshExecutionState();
+
+        if (ShouldBlockLockedDoorWithoutRequiredItem())
+            return false;
 
         bool didInteract = base.Interact();
         if (!didInteract)
@@ -184,8 +203,54 @@ public class DoorInteractions : UnlockableInteraction
         return true;
     }
 
+    private bool ShouldBlockLockedDoorWithoutRequiredItem()
+    {
+        return requireUnlockedDoorsWhenRequiredItemIsEmpty
+            && !needsItem
+            && HasLockedAssignedDoor();
+    }
+
+    private bool HasLockedAssignedDoor()
+    {
+        if (doorHandlers == null)
+            return false;
+
+        for (int i = 0; i < doorHandlers.Count; i++)
+        {
+            DoorHandler doorHandler = doorHandlers[i];
+            if (doorHandler == null)
+                continue;
+
+            if (doorHandler.doorLockState == DoorHandler.DoorLockState.Locked)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateLockedDoorPromptIfNeeded(Collider other)
+    {
+        if (other == null || !other.transform.root.CompareTag("Player"))
+            return;
+
+        if (!ShouldBlockLockedDoorWithoutRequiredItem())
+            return;
+
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI == null || interactionUI.currentInteractable != this || interactionUI._interactText == null)
+            return;
+
+        interactionUI._interactText.text = string.IsNullOrWhiteSpace(lockedInteractionPrompt)
+            ? "LOCKED"
+            : lockedInteractionPrompt;
+        interactionUI.ShowInteractPromptImmediate();
+    }
+
     protected override bool IsUnlockedWithoutRequiredItem()
     {
+        if (needsItem)
+            return false;
+
         if (doorHandlers == null || doorHandlers.Count == 0)
             return false;
 
