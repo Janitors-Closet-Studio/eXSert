@@ -13,8 +13,6 @@ public abstract class UnlockableInteraction : InteractionManager
 {
     [Header("Unlockable Interaction Settings")]
 
-    [SerializeField] protected string displayName = "";
-
     [Tooltip("Insert the ID of the item needed to unlock this interaction; leave empty if none is needed")]
     [SerializeField] protected string requiredItemID = "";
     [SerializeField] private string requiredItemDisplayName = "";
@@ -117,7 +115,8 @@ public abstract class UnlockableInteraction : InteractionManager
         ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
 
         // Notice stuff
-        InteractionUI.Instance.OnCollectedItem("Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 2f, 4f, priority: 11);
+        if (masterObjective != null)
+            masterObjective.CreateAndShowNotice(this, $"{this.interactId}_locked", "Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 2f, 4f, priority: 11);
     }
 
     protected override bool Interact()    
@@ -150,8 +149,8 @@ public abstract class UnlockableInteraction : InteractionManager
         // Only show notice immediately if not using camera transition (handled in DoorInteractions otherwise)
         if (!(this is DoorInteractions doorInt) || !(doorInt.HasActiveCameraTransition()))
         {
-            if (needsItem && canUnlock && InteractionUI.Instance != null)
-                InteractionUI.Instance.OnCollectedItem($"Used {requiredItemDisplayName}", $"Unlocked {displayName} with {requiredItemDisplayName}.", 2f, 4f, priority: 8);
+            if (needsItem && canUnlock && masterObjective != null)
+                masterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", $"Used {requiredItemDisplayName}", $"Unlocked {displayName} with {requiredItemDisplayName}.", 2f, 4f, priority: 8);
         }
 
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)

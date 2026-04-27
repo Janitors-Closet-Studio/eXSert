@@ -230,6 +230,8 @@ public class AttackLockSystem : MonoBehaviour
     private float lastTargetInvalidLogTime = -1f;
     private string lastTargetInvalidReason;
     private bool playerDead;
+    /// <summary>When true, the lock-on toggle input is suppressed and <see cref="ActivateHardLock"/> is blocked.</summary>
+    private bool lockOnToggleBlocked;
     private readonly List<Transform> reticleCandidates = new();
     private readonly HashSet<ReticleController> drivenReticles = new();
     private readonly HashSet<ReticleController> drivenReticlesThisFrame = new();
@@ -506,6 +508,12 @@ public class AttackLockSystem : MonoBehaviour
         if (playerDead)
             return;
 
+        if (lockOnToggleBlocked)
+        {
+            LogLock("LockOn toggle received but suppressed (lockOnToggleBlocked=true).");
+            return;
+        }
+
         LogLock($"LockOn toggle received. hardLockActive={hardLockActive}, currentTarget={(currentTarget != null ? currentTarget.name : "null")}");
 
         if (hardLockActive)
@@ -567,6 +575,12 @@ public class AttackLockSystem : MonoBehaviour
 
     public bool ActivateHardLock(Transform forcedTarget = null, bool instantCameraAlign = false)
     {
+        if (lockOnToggleBlocked)
+        {
+            LogLock("ActivateHardLock blocked (lockOnToggleBlocked=true).");
+            return false;
+        }
+
         Transform candidate = forcedTarget ?? FindBestHardLockTarget();
         if (candidate == null)
         {
@@ -598,6 +612,26 @@ public class AttackLockSystem : MonoBehaviour
     public void ReleaseHardLock()
     {
         ClearHardLock();
+    }
+
+    /// <summary>
+    /// Suppresses the lock-on toggle input and prevents new hard locks from activating.
+    /// Also releases any currently active hard lock.
+    /// Call <see cref="UnblockLockOnToggle"/> when the suppression should end.
+    /// </summary>
+    public void BlockLockOnToggle()
+    {
+        lockOnToggleBlocked = true;
+        if (hardLockActive)
+            ClearHardLock();
+    }
+
+    /// <summary>
+    /// Re-enables the lock-on toggle input after a previous <see cref="BlockLockOnToggle"/> call.
+    /// </summary>
+    public void UnblockLockOnToggle()
+    {
+        lockOnToggleBlocked = false;
     }
 
     public void AlignPlayerAndCamera(Transform target, bool instantCameraAlign)

@@ -128,6 +128,9 @@ public class AudioSettings : MonoBehaviour
         if (SoundManager.Instance.levelMusicSource != null)
             SoundManager.Instance.levelMusicSource.volume = _musicVolumeRaw * _masterVolumeRaw;
 
+        if (SoundManager.Instance.musicSource != null)
+            SoundManager.Instance.musicSource.volume = _musicVolumeRaw * _masterVolumeRaw;
+
         if (SoundManager.Instance.uiSource != null)
             SoundManager.Instance.uiSource.volume = _sfxVolumeRaw * _masterVolumeRaw;
 

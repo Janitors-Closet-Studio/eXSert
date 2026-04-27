@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 using Managers.TimeLord;
 using Unity.VisualScripting;
 using UnityEngine.Rendering;
@@ -44,6 +45,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     [SerializeField] private InputActionReference _backActionReference;
     [SerializeField, Tooltip("Small debounce to prevent one key press from triggering Pause then Back after action map switch.")]
     private float inputDebounceSeconds = 0.15f;
+    [SerializeField, Tooltip("How many frames to suppress UI auto-selection right after unpausing.")]
+    private int unpauseSelectionSuppressionFrames = 20;
     FadeMenus fadeMenus;
 
 
@@ -184,6 +187,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnPause(InputAction.CallbackContext context)
     {
+        if (MainMenu.isInMainMenu)
+        {
+            Debug.Log("[PauseManager] OnPause ignored - currently in main menu");
+            return;
+        }
+
         if (Time.unscaledTime < ignorePauseUntilTime)
             return;
 
@@ -234,7 +243,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (Time.unscaledTime < ignoreBackUntilTime)
             return;
 
-         
+        if (MainMenu.isInMainMenu)
+        {
+            Debug.Log("[PauseManager] OnBack ignored - currently in main menu");
+            return;
+        }
+
         // If we have more than 2 menus (canvas + first menu), just go back one level
         if (menuListManager.menusToManage.Count > 2)
         {
@@ -264,6 +278,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     }
     private void OnNavigationMenu(InputAction.CallbackContext context)
     {
+        if (Time.unscaledTime < ignorePauseUntilTime)
+            return;
+    
+        if (MainMenu.isInMainMenu)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently in main menu");
+            return;
+        }
+
+
         if (isUnpausing)
         {
             Debug.Log("[PauseManager] OnNavigationMenu ignored - currently unpausing");
@@ -462,34 +486,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     public void ResumeGame()
     {
-        // Release the coordinator ownership for pause
-        PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
-
-        footerManager?.UpdateFooterForMenu(null);
-
-        // Release gameplay input block
-        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
-        currentActiveMenu = ActiveMenu.None;
-
-        HideAllMenus();
-        SetBlurEnabled(false);
-        
-        if (pauseOverlay.activeInHierarchy)
-            StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
-
-
-        // Prevent immediate re-open from the same key press while returning to Gameplay.
-        ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
-        ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
-
-        StartCoroutine(DelayAfterUnpausing());
-
-        SoundManager.Instance.sfxSource.UnPause();
-        SoundManager.Instance.puzzleSource.UnPause();
-        SoundManager.Instance.ambienceSource.UnPause();
-
-        Debug.Log("Game Resumed");
-        
         // Switch back to Gameplay input
         if (InputReader.PlayerInput != null)
         {
@@ -503,6 +499,47 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             Debug.LogWarning("PlayerInput is null when trying to resume game. Make sure InputReader is set up correctly.");
         }
+
+        // Release gameplay input block
+        InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
+        currentActiveMenu = ActiveMenu.None;
+        // Release the coordinator ownership for pause
+        PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
+
+        StartCoroutine(DelayAfterUnpausing());
+
+        footerManager?.UpdateFooterForMenu(null);
+
+        
+
+        HideAllMenus();
+        SetBlurEnabled(false);
+        
+        if (pauseOverlay.activeInHierarchy)
+            StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
+
+
+        // Prevent immediate re-open from the same key press while returning to Gameplay.
+        ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
+        ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
+        ApplyResumeUiGuard();
+
+
+        SoundManager.Instance.sfxSource.UnPause();
+        SoundManager.Instance.puzzleSource.UnPause();
+        SoundManager.Instance.ambienceSource.UnPause();
+
+        Debug.Log("Game Resumed");
+        
+        
+    }
+
+    private void ApplyResumeUiGuard()
+    {
+        MenuSelectionSuppression.SuppressForFrames(unpauseSelectionSuppressionFrames);
+
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
     }
 
     private IEnumerator DelayAfterUnpausing()

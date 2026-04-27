@@ -31,13 +31,18 @@ public class ItemInteractions : CollectableInteraction
 
     protected override void ExecuteInteraction()
     {
+        Debug.Log($"[ItemInteractions] ExecuteInteraction called for {this.interactId}");
+        
         if (usePuzzleCameraOnInteraction)
             BeginTemporaryPuzzleCamera();
 
         InternalPlayerInventory.Instance.AddCollectible(this.interactId);
+        Debug.Log($"[ItemInteractions] Added {this.interactId} to inventory. Current items: {string.Join(", ", InternalPlayerInventory.Instance.GetCollectedItems())}");
+        
         if (ObjectiveManager.SubObjectives.Exists(so => so.ID == this.interactId))
         {
             ObjectiveManager.CompleteSubObjective(this.interactId);
+            Debug.Log($"[ItemInteractions] Completed subobjective for {this.interactId}");
         }
     }
 

@@ -339,9 +339,6 @@ public class MenuListManager : MonoBehaviour
         GameObject currentTop = menusToManage[0];
         GameObject previousMenu = menusToManage[1];
 
-        if (IsBlockedFromFade(currentTop))
-            return;
-
         MenuSelectionSuppression.SuppressForFrames(3);
 
         // Keep the revealed menu fully visible during back transitions to prevent self-fades.
@@ -453,9 +450,6 @@ public class MenuListManager : MonoBehaviour
         if (ShouldIgnoreMenuSwap())
             return;
 
-        if (menusToManage != null && menusToManage.Count > 0 && IsBlockedFromFade(menusToManage[0]))
-            return;
-
         if (numberOfMenusToGoBack < 2)
             return;
 
@@ -468,9 +462,6 @@ public class MenuListManager : MonoBehaviour
     {
         EventSystem currentEventSystem = EventSystem.current;
         if (currentEventSystem == null)
-            return;
-
-        if (menusToManage != null && menusToManage.Count > 0 && IsBlockedFromFade(menusToManage[0]))
             return;
 
         GameObject selected = currentEventSystem.currentSelectedGameObject;
@@ -558,15 +549,7 @@ public class MenuListManager : MonoBehaviour
     // Prevents menu swaps when interacting with sliders, to avoid unintentionally closing menus when adjusting slider values.
     private static bool ShouldIgnoreMenuSwap()
     {
-        if (EventSystem.current == null)
-            return false;
-
-        GameObject selected = EventSystem.current.currentSelectedGameObject;
-        if (selected == null)
-            return false;
-
-        // Prevent sliders from unintentionally triggering menu stack pop on value changes.
-        return selected.GetComponentInParent<Slider>() != null;
+        return SliderValueProxy.IsAdjustingSlider || SliderDragWatcher.SliderIsBeingDragged;
     }
 
     // Blocks fade out and back in when trying to open certain menus,
@@ -616,6 +599,9 @@ public class MenuListManager : MonoBehaviour
     private void CloseMenu(GameObject menu)
     {
         if (menu == null)
+            return;
+
+        if (IsBlockedFromFade(menu))
             return;
 
         if (!IsBlockedFromFade(menu))

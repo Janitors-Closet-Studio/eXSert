@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 internal class ObjectiveText : MonoBehaviour
 {
@@ -12,23 +13,74 @@ internal class ObjectiveText : MonoBehaviour
 
     private Objective currentMessage;
     private string currentMessageString => currentMessage?.DisplayText ?? "";
+    private bool isSubscribed;
+
+    [Header("Debug")]
+    [Tooltip("Enable verbose ObjectiveText debug logs.")]
+    [SerializeField] private bool debugLogging = false;
 
     private void OnEnable()
     {
         ObjectiveManager.OnObjectiveChanged += UpdateText;
+        SubscribeToPlayerInput();
+        InputSystem.onActionChange += HandleActionChange;
     }
 
     private void OnDisable()
     {
         ObjectiveManager.OnObjectiveChanged -= UpdateText;
+        UnsubscribeFromPlayerInput();
+        InputSystem.onActionChange -= HandleActionChange;
     }
 
     private void UpdateText(Objective newObjective)
     {
-        Debug.Log($"[HUDTextHandler] Setting new message: {newObjective}");
+        if (debugLogging) Debug.Log($"[HUDTextHandler] Setting new message: {newObjective}");
         currentMessage = newObjective;
 
-        WritingTextUI.AddWriter_Static(HUDText, currentMessageString, typingSpeed, false);
+        RefreshCurrentText();
+    }
+
+    private void HandleActionChange(object obj, InputActionChange change)
+    {
+        if (change != InputActionChange.BoundControlsChanged)
+            return;
+
+        RefreshCurrentText();
+    }
+
+    private void HandleControlsChanged(PlayerInput _)
+    {
+        RefreshCurrentText();
+    }
+
+    private void SubscribeToPlayerInput()
+    {
+        if (isSubscribed || InputReader.PlayerInput == null)
+            return;
+
+        InputReader.PlayerInput.onControlsChanged += HandleControlsChanged;
+        isSubscribed = true;
+    }
+
+    private void UnsubscribeFromPlayerInput()
+    {
+        if (!isSubscribed)
+            return;
+
+        if (InputReader.PlayerInput != null)
+            InputReader.PlayerInput.onControlsChanged -= HandleControlsChanged;
+
+        isSubscribed = false;
+    }
+
+    private void RefreshCurrentText()
+    {
+        if (HUDText == null)
+            return;
+
+        string formattedText = KeybindRichTextFormatter.Format(HUDText, currentMessageString);
+        WritingTextUI.AddWriter_Static(HUDText, formattedText, typingSpeed, false);
     }
 
     // Probably remove below. I'm keeping it for now in case it is actually important

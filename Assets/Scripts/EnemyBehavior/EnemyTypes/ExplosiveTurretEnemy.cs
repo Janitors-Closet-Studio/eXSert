@@ -150,4 +150,27 @@ public class ExplosiveTurretEnemy : BaseTurretEnemy
 			boxAnimator?.Play(popupStateName, 0, 0f);
 		}
 	}
+
+	public override void ResetEnemy()
+	{
+		base.ResetEnemy();
+
+		// Reset popup state so the turret properly plays its popup sequence on next spawn
+		popupStarted = false;
+		popupComplete = false;
+		playerEnteredDetection = false;
+
+		if (popupRoutine != null)
+		{
+			StopCoroutine(popupRoutine);
+			popupRoutine = null;
+		}
+
+		// Reset the secondary box animator to idle so it doesn't stay in the death pose
+		if (boxAnimator != null)
+		{
+			boxAnimator.Rebind();
+			boxAnimator.Update(0f);
+		}
+	}
 }

@@ -11,6 +11,7 @@ namespace Progression.Encounters
     public class CombatEncounter : BasicEncounter
     {
         public static event Action<CombatEncounter, bool> EncounterCombatStateChanged;
+        public event Action<BaseEnemyCore> OnEnemySpawned;
 
         #region Inspector Setup
         [Header("Combat Encounter Settings")]
@@ -63,6 +64,7 @@ namespace Progression.Encounters
                 Wave newWave = SetupWave(child);
                 newWave.OnWaveComplete += WaveComplete;
                 newWave.UpdateLastEnemyPosition += OnUpdateLastEnemyPosition;
+                newWave.OnEnemySpawned += HandleEnemySpawned;
                 allWaves.Add(newWave);
             }
 
@@ -198,6 +200,12 @@ namespace Progression.Encounters
             wave.Cleanup();
             wave.UpdateLastEnemyPosition -= OnUpdateLastEnemyPosition;
             wave.OnWaveComplete -= WaveComplete;
+            wave.OnEnemySpawned -= HandleEnemySpawned;
+        }
+
+        private void HandleEnemySpawned(BaseEnemyCore enemy)
+        {
+            OnEnemySpawned?.Invoke(enemy);
         }
 
         private async void SpawnNextWave(float delay = 0f)
@@ -270,6 +278,21 @@ namespace Progression.Encounters
                 Debug.Log($"[CombatEncounter] Generated new wave: {newWave} for encounter: {name}");
 
             return newWaveObject;
+        }
+
+        public IReadOnlyList<BaseEnemyCore> GetTrackedEnemies()
+        {
+            List<BaseEnemyCore> trackedEnemies = new();
+
+            foreach (Wave wave in allWaves)
+            {
+                if (wave == null)
+                    continue;
+
+                trackedEnemies.AddRange(wave.TrackedEnemies);
+            }
+
+            return trackedEnemies;
         }
 
         private void SetEncounterCombatActive(bool isActive)

@@ -9,6 +9,8 @@ public class MenusWithFooters
 {
     public GameObject menuName;
     public string footerMessage;
+
+    public List <GameObject> activateOnMenuOpen;
 }
 
 
@@ -156,72 +158,73 @@ public class FooterManager : MonoBehaviour
         return false;
     }
 
+    private void SetActivateOnOpenObjects(MenusWithFooters activeMenuFooter)
+    {
+        if (menuFooters == null)
+            return;
+
+        foreach (MenusWithFooters menuFooter in menuFooters)
+        {
+            if (menuFooter == null || menuFooter.activateOnMenuOpen == null)
+                continue;
+
+            bool shouldActivate = menuFooter == activeMenuFooter;
+
+            foreach (GameObject objectToToggle in menuFooter.activateOnMenuOpen)
+            {
+                if (objectToToggle != null)
+                    objectToToggle.SetActive(shouldActivate);
+            }
+        }
+    }
+
+    private MenusWithFooters ResolveMappedMenuFooter(GameObject menu)
+    {
+        if (menu == null || menuFooters == null)
+            return null;
+
+        foreach (MenusWithFooters menuFooter in menuFooters)
+        {
+            if (menuFooter == null)
+                continue;
+
+            if (CheckIfMenuIsParent(menuFooter, menu))
+                return menuFooter;
+        }
+
+        foreach (MenusWithFooters menuFooter in menuFooters)
+        {
+            if (menuFooter != null && menuFooter.menuName == menu)
+                return menuFooter;
+        }
+
+        return null;
+    }
+
     public void UpdateFooterForMenu(GameObject menu)
     {
         if (menu == null)
         {
             skipFadeForNextUpdate = false;
+            SetActivateOnOpenObjects(null);
             OnFooterTextUpdated?.Invoke(string.Empty);
+            DeactivateOtherActivateOnOpenObjects(null);
             return;
         }
 
         Debug.Log($"Updating footer for menu: {menu.name}");
 
         string footerMessage = string.Empty;
-        bool hasMappedFooter = false;
         skipFadeForNextUpdate = HasActiveMappedAncestor(menu);
 
-        foreach (var menuFooter in menuFooters)
-        {
-            if (CheckIfMenuIsParent(menuFooter, menu))
-            {
-                hasMappedFooter = true;
+        MenusWithFooters activeMenuFooter = ResolveMappedMenuFooter(menu);
+        SetActivateOnOpenObjects(activeMenuFooter);
+        DeactivateOtherActivateOnOpenObjects(activeMenuFooter);
 
-                if (!string.IsNullOrWhiteSpace(menuFooter.footerMessage))
-                    footerMessage = menuFooter.footerMessage;
-
-                break;
-
-            }
-        }
-
-        if (menuFooters != null)
-        {
-            foreach (MenusWithFooters menuFooter in menuFooters)
-            {
-                if (menuFooter == null || menuFooter.menuName != menu)
-                    continue;
-
-                hasMappedFooter = true;
-
-                if (!string.IsNullOrWhiteSpace(menuFooter.footerMessage))
-                    footerMessage = menuFooter.footerMessage;
-
-                break;
-            }
-        }
-
-        if (!hasMappedFooter)
-            footerMessage = string.Empty;
+        if (activeMenuFooter != null && !string.IsNullOrWhiteSpace(activeMenuFooter.footerMessage))
+            footerMessage = activeMenuFooter.footerMessage;
 
         OnFooterTextUpdated?.Invoke(footerMessage);
-    }
-
-    public void ForceHideFooter()
-    {
-        if (footerText != null)
-            footerText.text = string.Empty;
-
-        if (footerPanel == null)
-            return;
-
-        if (fadeMenus != null && footerPanel.activeSelf)
-        {
-            fadeMenus.FadeMenuSafe(footerPanel, fadeMenus.fadeDuration, false);
-            return;
-        }
-
-        footerPanel.SetActive(false);
     }
 
     public void SetToLastSibling()
@@ -230,6 +233,23 @@ public class FooterManager : MonoBehaviour
             footerPanel.transform.SetAsLastSibling();
     }
 
+    private void DeactivateOtherActivateOnOpenObjects(MenusWithFooters activeMenuFooter)
+    {
+        if (menuFooters == null)
+            return;
+
+        foreach (MenusWithFooters menuFooter in menuFooters)
+        {
+            if (menuFooter == null || menuFooter.activateOnMenuOpen == null || menuFooter == activeMenuFooter)
+                continue;
+
+            foreach (GameObject objectToToggle in menuFooter.activateOnMenuOpen)
+            {
+                if (objectToToggle != null)
+                    objectToToggle.SetActive(false);
+            }
+        }
+    }
 
 
 }

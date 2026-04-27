@@ -7,13 +7,6 @@ using System.ComponentModel;
 
 public abstract class CollectableInteraction : InteractionManager
 {
-    [Header("Collectable Interaction Settings")]
-    [Tooltip("The name of the item to display in the UI when collected.")]
-    [SerializeField] private string displayName;
-    [SerializeField] private float uiDisplayDuration = 4f;
-    [SerializeField] private float uiFadeDuration = 2f;
-    [SerializeField] private string bottomFlavorText = "Press Pause to View";
-
     // Removed local fadeOutComplete; will use InteractionUI.Instance.fadeOutComplete
 
     protected override void Awake()
@@ -31,7 +24,15 @@ public abstract class CollectableInteraction : InteractionManager
         ExecuteInteraction();
         AfterExecuteInteraction();
         
-        InteractionUI.Instance.OnCollectedItem(displayName, bottomFlavorText, uiFadeDuration, uiDisplayDuration, priority: 9);
+        if (masterObjective != null)
+        {
+            if (debugLogging) Debug.Log($"[CollectableInteraction] Showing notice for {this.interactId}: {displayName}");
+            masterObjective.CreateAndShowNotice(this, this.interactId, displayName, bottomFlavorText, uiFadeDuration, uiDisplayDuration, priority: 9);
+        }
+        else
+        {
+            Debug.LogError($"[CollectableInteraction] masterObjective is null for {this.interactId}! Notice will not show.");
+        }
         
         StartCoroutine(DeactivateInteractableCoroutine(this));
 

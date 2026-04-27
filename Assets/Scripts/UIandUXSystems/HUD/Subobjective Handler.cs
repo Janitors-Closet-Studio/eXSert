@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.InputSystem;
 
 public class SubobjectiveHandler : MonoBehaviour
 {
@@ -10,20 +11,27 @@ public class SubobjectiveHandler : MonoBehaviour
     [SerializeField] private Color completedColor = Color.gray;
 
     private readonly List<GameObject> activeSubobjectives = new();
+    private List<SubObjective> currentSubObjectives = new();
+    private bool isSubscribed;
 
     private void OnEnable()
     {
         ObjectiveManager.OnSubObjectivesUpdated += UpdateUI;
+        SubscribeToPlayerInput();
+        InputSystem.onActionChange += HandleActionChange;
     }
 
     private void OnDisable()
     {
         ObjectiveManager.OnSubObjectivesUpdated -= UpdateUI;
+        UnsubscribeFromPlayerInput();
+        InputSystem.onActionChange -= HandleActionChange;
     }
 
     private void UpdateUI(List<SubObjective> subObjectives)
     {
         Debug.Log("[Subobjective Handler] Updating Subobjective UI with " + subObjectives.Count + " subobjectives.");
+        currentSubObjectives = new List<SubObjective>(subObjectives);
 
         // Clear existing sub-objectives
         ClearSubobjectives();
@@ -36,10 +44,46 @@ public class SubobjectiveHandler : MonoBehaviour
             textComponent.text = "";
             activeSubobjectives.Add(newSubobjective);
             // Animate typing in
-            WritingTextUI.AddWriter_Static(textComponent, subObj.DisplayText, 0.025f, false, true);
+            WritingTextUI.AddWriter_Static(textComponent, KeybindRichTextFormatter.Format(textComponent, subObj.DisplayText), 0.025f, false, true);
             // Set color based on completion status
             textComponent.color = subObj.IsCompleted ? completedColor : activeColor;
         }
+    }
+
+    private void HandleActionChange(object obj, InputActionChange change)
+    {
+        if (change != InputActionChange.BoundControlsChanged || currentSubObjectives == null)
+            return;
+
+        UpdateUI(currentSubObjectives);
+    }
+
+    private void HandleControlsChanged(PlayerInput _)
+    {
+        if (currentSubObjectives == null)
+            return;
+
+        UpdateUI(currentSubObjectives);
+    }
+
+    private void SubscribeToPlayerInput()
+    {
+        if (isSubscribed || InputReader.PlayerInput == null)
+            return;
+
+        InputReader.PlayerInput.onControlsChanged += HandleControlsChanged;
+        isSubscribed = true;
+    }
+
+    private void UnsubscribeFromPlayerInput()
+    {
+        if (!isSubscribed)
+            return;
+
+        if (InputReader.PlayerInput != null)
+            InputReader.PlayerInput.onControlsChanged -= HandleControlsChanged;
+
+        isSubscribed = false;
     }
 
     private void ClearSubobjectives()

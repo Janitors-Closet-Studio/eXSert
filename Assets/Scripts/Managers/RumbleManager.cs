@@ -22,6 +22,24 @@ public class RumbleManager : Singleton<RumbleManager>
     //lowfreq is the low frequency motor, highfreq is the high frequency motor, duration is how long the rumble should last
     public void RumblePulse(float lowFreq, float highFreq, float duration)
     {
+        if (Time.timeScale == 0)
+        {
+            Debug.Log("Rumble skipped due to timeScale being 0");
+            return;
+        }
+
+        if (PauseManager.IsPaused)
+        {
+            Debug.Log("Rumble skipped because the game is currently paused");
+            return;
+        }
+
+        if (CutsceneManager.IsCutscenePlaying)
+        {
+            Debug.Log("Rumble skipped because a cutscene is currently playing");
+            return;
+        }
+
         //checks the current control scheme and if rumble is activated
         if (InputReader.PlayerInput.currentControlScheme == "Gamepad")
         {

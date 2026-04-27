@@ -52,6 +52,9 @@ namespace Utilities.Combat
         // Unity Action event for stance change for other scripts to subscribe to
         public static event Action OnStanceChanged;
 
+        // Unity Action event for successful guard for other scripts to subscribe to
+        public static event Action OnSuccessfulGuard;
+
         // Unity Action event for successful parry for other scripts to subscribe to
         public static event Action<BaseEnemy<EnemyState, EnemyTrigger>> OnSuccessfulParry;
         public static event Action<bool> OnInCombatChanged;
@@ -189,6 +192,12 @@ namespace Utilities.Combat
             OnSuccessfulParry?.Invoke(null);
 
             // Additional logic for successful parry can be added here
+        }
+
+        public static void GuardSuccessful()
+        {
+            Debug.Log("Guard successful! Incoming damage was mitigated.");
+            OnSuccessfulGuard?.Invoke();
         }
 
         public void HealHP(float hp)

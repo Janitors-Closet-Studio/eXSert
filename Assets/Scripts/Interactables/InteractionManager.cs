@@ -15,6 +15,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     [Header("Debugging")]
     [SerializeField] private bool _showHitbox;
+    [Tooltip("Enable verbose InteractionManager debug logs.")]
+    [SerializeField] protected bool debugLogging = false;
     // Prevent prompt when player is attacking or dashing
     [Header("Interaction Blocking")]
     [SerializeField] protected bool blockPromptWhenAttackingOrDashing = false;
@@ -27,6 +29,14 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [SerializeField] private string _interactId;
     [SerializeField] internal AudioClip _interactionSFX;
     [SerializeField] internal string _interactionPrompt = "Press to Interact";
+
+    [Space(10)]
+    [Header("Notice Settings")]
+    [Tooltip("The name of the interaction/item shown in notices.")]
+    [SerializeField] protected string displayName = "";
+    [SerializeField] protected float uiDisplayDuration = 4f;
+    [SerializeField] protected float uiFadeDuration = 2f;
+    [SerializeField] protected string bottomFlavorText = "Press Pause to View";
     
     [Space(10)]
     [Header("Input Action Reference")]
@@ -42,6 +52,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     private PlayerAnimationController _playerAnimationController;
     private Coroutine _interactionBusyRoutine;
     private bool _interactionBusyOwned;
+
+    internal MasterObjectiveClass masterObjective;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
     {
@@ -59,6 +71,14 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         this.GetComponent<BoxCollider>().isTrigger = true;
 
         interactId = _interactId.Trim().ToLowerInvariant();
+    }
+
+    private void Start()
+    {
+        masterObjective = MasterObjectiveClass.GetInstance(SceneAsset.GetSceneAssetOfObject(this.gameObject));
+        if (masterObjective == null)
+            Debug.LogWarning($"[InteractionManager] No MasterObjectiveClass instance found for {gameObject.name} in scene {SceneManager.GetActiveScene().name}. Notices will not show for this interaction.");
+        StartCoroutine(FindPlayerScene("PlayerScene"));
     }
 
     protected virtual void OnEnable()
@@ -95,10 +115,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         isPlayerNearby = false;
     }
 
-    private void Start()
-    {
-        StartCoroutine(FindPlayerScene("PlayerScene"));
-    }
 
     private IEnumerator FindPlayerScene(string sceneName)
     {
@@ -250,7 +266,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     public void OnInteractButtonPressed()
     {
-        Debug.Log($"[InteractionManager] OnInteractButtonPressed called on {gameObject.name}");
+        if (debugLogging) Debug.Log($"[InteractionManager] OnInteractButtonPressed called on {gameObject.name}");
         // Prevent interaction if gameplay input is blocked (e.g., during pause)
         if (InputReader.IsGameplayInputBlocked)
         {
@@ -261,7 +277,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         // Only allow if player is nearby, interactable, not dashing, and this is the current interactable (if set)
         if (!isPlayerNearby || !interactable || PlayerMovement.isDashingFlag || (interactionUI != null && interactionUI.currentInteractable != null && interactionUI.currentInteractable != this))
         {
-            Debug.Log($"Interaction attempted with {gameObject.name}, but conditions not met. isPlayerNearby: {isPlayerNearby}, interactable: {interactable}, isDashing: {PlayerMovement.isDashingFlag}, isCurrent: {interactionUI?.currentInteractable == this}");
+            if (debugLogging) Debug.Log($"Interaction attempted with {gameObject.name}, but conditions not met. isPlayerNearby: {isPlayerNearby}, interactable: {interactable}, isDashing: {PlayerMovement.isDashingFlag}, isCurrent: {interactionUI?.currentInteractable == this}");
             // Only hide prompt if this is still the current interactable
             if (interactionUI != null && interactionUI.currentInteractable == this)
                 interactionUI.HideInteractPrompt();
@@ -277,7 +293,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         RumbleManager.Instance.RumblePulse(_rumbleLowFrequency, _rumbleHighFrequency, _rumbleDuration);
 
-        Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
+        if (debugLogging) Debug.Log($"Player interacted with {gameObject.name} using InputReader Interact.");
         if (Interact())
             PlayPlayerInteractAnimation();
     }
@@ -330,7 +346,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
                 return;
             }
 
-            Debug.Log($"[InteractionManager] Player entered interaction zone of {gameObject.name}. Setting isPlayerNearby true.");
+            if (debugLogging) Debug.Log($"[InteractionManager] Player entered interaction zone of {gameObject.name}. Setting isPlayerNearby true.");
             isPlayerNearby = true;
 
             CachePlayerCombatController();
@@ -354,7 +370,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
             if (blockPromptWhenAttackingOrDashing && (isAttacking || isDashing || isInCombatMode))
             {
-                Debug.Log($"[InteractionManager] Blocking prompt because player is attacking: {isAttacking}, dashing: {isDashing}, or in combat mode: {isInCombatMode}");
+                if (debugLogging) Debug.Log($"[InteractionManager] Blocking prompt because player is attacking: {isAttacking}, dashing: {isDashing}, or in combat mode: {isInCombatMode}");
                 return;
             }
 

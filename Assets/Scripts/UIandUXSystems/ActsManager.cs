@@ -474,7 +474,13 @@ public class ActsManager : Singleton<ActsManager>
         SceneLoader.Load(sceneAsset, forceReload: false);
         PauseManager.Instance.ResumeGame();
 
-        InteractionUI.Instance.ForceStopNoticeCoroutines();
+        SceneAsset currentSceneAsset = SceneAsset.GetSceneAssetOfObject(this.gameObject);
+        MasterObjectiveClass masterObjective = currentSceneAsset != null
+            ? MasterObjectiveClass.GetInstance(currentSceneAsset)
+            : FindFirstObjectByType<MasterObjectiveClass>(FindObjectsInactive.Include);
+        if (masterObjective != null)
+            masterObjective.ForceStopNoticeCoroutines();
+
 
         actsHolder.SetActive(false);
 

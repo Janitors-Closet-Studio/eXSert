@@ -46,6 +46,7 @@ public class FadeMenus : MonoBehaviour
         {
             menu.SetActive(true);
             canvasGroup.alpha = 0f;
+            canvasGroup.blocksRaycasts = false;
             Debug.Log($"Fading in {menu.name} over {duration} seconds.");
 
             while(elapsed < duration)
@@ -55,10 +56,13 @@ public class FadeMenus : MonoBehaviour
                 yield return null;
             }
             canvasGroup.alpha = 1f; // Ensure fully visible at end
+            canvasGroup.blocksRaycasts = true;
         }
         else
         {
             DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, $"Fading out {menu.name} over {duration} seconds.");
+            // Disable interaction immediately so submit/click cannot trigger while fading out.
+            canvasGroup.blocksRaycasts = false;
 
             while(elapsed < duration)
             {

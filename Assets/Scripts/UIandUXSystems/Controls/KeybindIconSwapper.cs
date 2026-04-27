@@ -43,6 +43,12 @@ public class KeybindIconSwapper : MonoBehaviour
     private bool isSubscribed;
     private string lastBindingPath = string.Empty;
 
+    public void SetAction(KeybindAction newAction)
+    {
+        action = newAction;
+        RefreshIcon();
+    }
+
     #if UNITY_EDITOR
     [UnityEditor.MenuItem("Tools/Refresh All Keybind Icons")]
     private static void EditorRefreshAllIconsMenu() => RefreshAllIcons();

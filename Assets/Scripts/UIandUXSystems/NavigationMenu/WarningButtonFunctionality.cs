@@ -55,6 +55,7 @@ public class WarningButtonFunctionality : MonoBehaviour
     /// </summary>
     public void WhichFunctionToCarryOut()
     {
+        Debug.Log("[WarningButtonFunctionality] WhichFunctionToCarryOut called - delegating to OnConfirmPressed.");
         OnConfirmPressed();
     }
 
@@ -75,16 +76,20 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     public void OnConfirmPressed()
     {
+        Debug.Log("[WarningButtonFunctionality] OnConfirmPressed called - START");
         var actionToRun = ResolvePendingAction();
-        Debug.Log($"[WarningButtonFunctionality] Confirm pressed. Resolved action: {actionToRun}");
+        Debug.Log($"[WarningButtonFunctionality] OnConfirmPressed - Resolved action: {actionToRun}");
         if (actionToRun == WarningAction.None)
         { 
-            Debug.LogError("[WarningButtonFunctionality] Confirm pressed but no pending action or active warning text found. This should not happen.");
+            Debug.LogError("[WarningButtonFunctionality] OnConfirmPressed - ERROR: Confirm pressed but no pending action or active warning text found.");
             return; 
         }
 
+        Debug.Log("[WarningButtonFunctionality] OnConfirmPressed - Action is valid, calling HideWarningUI...");
         HideWarningUI();
+        Debug.Log("[WarningButtonFunctionality] OnConfirmPressed - HideWarningUI completed, now calling ExecuteAction...");
         ExecuteAction(actionToRun);
+        Debug.Log("[WarningButtonFunctionality] OnConfirmPressed - ExecuteAction completed - END");
     }
 
     public void OnBackPressed()
@@ -129,10 +134,12 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     private void HideWarningUI()
     {
+        Debug.Log("[WarningButtonFunctionality] HideWarningUI called");
         pendingAction = WarningAction.None;
         ActivateTextBlock(null);
         SetWarningVisible(false);
         ParentFooterToPauseMenu(false);
+        Debug.Log("[WarningButtonFunctionality] HideWarningUI completed");
     }
 
     private void ParentFooterToPauseMenu(bool parentToPause)
@@ -204,7 +211,13 @@ public class WarningButtonFunctionality : MonoBehaviour
         }
 
         string musicBoxName = foundSceneName + "MusicBox";
-        musicBox = GameObject.Find(musicBoxName).GetComponent<MusicBox>();
+        GameObject musicBoxObj = GameObject.Find(musicBoxName);
+        if (musicBoxObj == null)
+        {
+            Debug.LogWarning($"[WarningButtonFunctionality] MusicBox object '{musicBoxName}' not found in scene. Cannot fade music.");
+            return null;
+        }
+        musicBox = musicBoxObj.GetComponent<MusicBox>();
         
 
         return musicBox;
@@ -213,9 +226,11 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     private void FadeOutLevelMusic()
     {
+        Debug.Log("[WarningButtonFunctionality] FadeOutLevelMusic called - searching for MusicBox...");
         MusicBox musicBox = FindSceneMusicBox();
         if (musicBox != null)
         {
+            Debug.Log("[WarningButtonFunctionality] FadeOutLevelMusic - MusicBox found, starting fade coroutines.");
             StopCoroutine(musicBox.FadeOutMusic(1f));
             StopCoroutine(musicBox.FadeOutAmbience(1f));
             Debug.Log("[WarningButtonFunctionality] Fading out music and ambience.");
@@ -225,40 +240,72 @@ public class WarningButtonFunctionality : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[WarningButtonFunctionality] No MusicBox found in scene to fade out music.");
+            Debug.LogWarning("[WarningButtonFunctionality] FadeOutLevelMusic - No MusicBox found in scene to fade out music.");
         }
+        Debug.Log("[WarningButtonFunctionality] FadeOutLevelMusic completed.");
     }
 
     private void ExecuteAction(WarningAction action)
     {
         Debug.Log($"[WarningButtonFunctionality] Executing action: {action}");
-        RumbleManager.Instance.StopControllerRumble();
-        PauseManager.Instance.pauseOverlay.SetActive(false);
-        InteractionUI.Instance.CancelCurrentCollectNotice(turnOffUI: true);
-        var start = transform.parent?.parent?.parent;
-        var menuListManager = start != null ? start.GetComponentInParent<MenuListManager>() : null;
 
-        menuListManager.menusToManage.RemoveAt(0);
+        if (RumbleManager.Instance != null)
+            RumbleManager.Instance.StopControllerRumble();
+
+        if (PauseManager.Instance != null && PauseManager.Instance.pauseOverlay != null)
+            PauseManager.Instance.pauseOverlay.SetActive(false);
+
+        SceneAsset sceneAsset = SceneAsset.GetSceneAssetOfObject(this.gameObject);
+        MasterObjectiveClass masterObjective = sceneAsset != null
+            ? MasterObjectiveClass.GetInstance(sceneAsset)
+            : FindFirstObjectByType<MasterObjectiveClass>(FindObjectsInactive.Include);
+        if (masterObjective != null)
+            masterObjective.CancelCurrentCollectNotice(turnOffUI: true);
+
         switch (action)
         {
             case WarningAction.RestartCheckpoint:
+                Debug.Log("[WarningButtonFunctionality] RestartCheckpoint: Starting action execution.");
+                PrepareForSceneTransition();
+                Debug.Log("[WarningButtonFunctionality] RestartCheckpoint: PrepareForSceneTransition called.");
                 FadeOutLevelMusic();
-                Debug.Log("[WarningButtonFunctionality] Restarting from checkpoint.");
+                Debug.Log("[WarningButtonFunctionality] RestartCheckpoint: FadeOutLevelMusic called. Now resolving handler...");
                 GameActionHandler restartHandler = ResolveActionHandler();
+                Debug.Log($"[WarningButtonFunctionality] RestartCheckpoint: Handler resolved: {(restartHandler != null ? "Found" : "Null")}. About to execute RestartFromCheckpoint.");
                 if (restartHandler != null)
+                {
+                    Debug.Log("[WarningButtonFunctionality] RestartCheckpoint: Calling restartHandler.RestartFromCheckpoint().");
                     restartHandler.RestartFromCheckpoint();
+                    Debug.Log("[WarningButtonFunctionality] RestartCheckpoint: restartHandler.RestartFromCheckpoint() completed.");
+                }
                 else
+                {
+                    Debug.Log("[WarningButtonFunctionality] RestartCheckpoint: Handler null, calling Player.TriggerRespawn() fallback.");
                     Player.TriggerRespawn();
+                    Debug.Log("[WarningButtonFunctionality] RestartCheckpoint: Player.TriggerRespawn() completed.");
+                }
                 break;
 
             case WarningAction.ReturnToMainMenu:
+                Debug.Log("[WarningButtonFunctionality] ReturnToMainMenu: Starting action execution.");
                 PrepareForSceneTransition();
+                Debug.Log("[WarningButtonFunctionality] ReturnToMainMenu: PrepareForSceneTransition called.");
                 FadeOutLevelMusic();
+                Debug.Log("[WarningButtonFunctionality] ReturnToMainMenu: FadeOutLevelMusic called. Now resolving handler...");
                 GameActionHandler handler = ResolveActionHandler();
+                Debug.Log($"[WarningButtonFunctionality] ReturnToMainMenu: Handler resolved: {(handler != null ? "Found" : "Null")}. About to execute ReturnToMainMenu.");
                 if (handler != null)
+                {
+                    Debug.Log("[WarningButtonFunctionality] ReturnToMainMenu: Calling handler.ReturnToMainMenu().");
                     handler.ReturnToMainMenu();
+                    Debug.Log("[WarningButtonFunctionality] ReturnToMainMenu: handler.ReturnToMainMenu() completed.");
+                }
                 else
+                {
+                    Debug.Log("[WarningButtonFunctionality] ReturnToMainMenu: Handler null, calling SceneLoader.LoadMainMenu() fallback.");
                     SceneLoader.LoadMainMenu();
+                    Debug.Log("[WarningButtonFunctionality] ReturnToMainMenu: SceneLoader.LoadMainMenu() completed.");
+                }
                 break;
 
             case WarningAction.QuitGame:
