@@ -108,17 +108,26 @@ public class NoticeManager : MonoBehaviour
 
     internal void ClearNotice()
     {
-        _collectText.text = "";
-        _collectBottomText.text = "";
+        if (_collectText != null)
+            _collectText.text = "";
+
+        if (_collectBottomText != null)
+            _collectBottomText.text = "";
     }
 
     
     internal void ForceStopNoticeCoroutines()
     {
         CancelCurrentCollectNotice();
-        _collectBottomText.gameObject.SetActive(false);
-        _collectText.gameObject.SetActive(false);
-        collectUI.SetActive(false);
+
+        if (_collectBottomText != null)
+            _collectBottomText.gameObject.SetActive(false);
+
+        if (_collectText != null)
+            _collectText.gameObject.SetActive(false);
+
+        if (collectUI != null)
+            collectUI.SetActive(false);
 
     }
 
