@@ -11,6 +11,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using UnityEngine.UI;
 using UIandUXSystems.HUD;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -72,6 +73,8 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField, Min(0f)] private float postEncounterFeedbackDelay = 1.25f;
     [SerializeField] private Color tutorialIconColor = Color.white;
     [SerializeField, Min(0.1f)] private float tutorialIconSize = 1f;
+    [SerializeField, Min(0f)] private float tutorialIconGrowthPerCorrectPress = 0.08f;
+    [SerializeField, Min(0.01f)] private float tutorialIconPulseDuration = 0.12f;
 
     [Header("Tutorial Progression References")]
     [SerializeField, CriticalReference] 
@@ -107,6 +110,8 @@ public class TutorialHandler : MonoBehaviour
     private PlayerHealthBarManager playerHealth;
     private CombatEncounter currentStepEncounter;
     private Coroutine postEncounterFeedbackRoutine;
+    private bool pendingPlayerTurnReadyMessage;
+    private Coroutine tutorialIconPulseRoutine;
 
     #region Couroutines
     private Coroutine enableRetryRoutine;
@@ -134,6 +139,7 @@ public class TutorialHandler : MonoBehaviour
         tutorialEntry.OnEntryRead += OnEntryRead;
         CombatManager.OnSuccessfulGuard += OnSuccessfulGuard;
         CombatManager.OnSuccessfulParry += OnSuccessfulParry;
+        ObjectiveText.ObjectiveTypingCompleted += HandleObjectiveTypingCompleted;
         SceneManager.sceneLoaded += HandleSceneLoaded;
         PlayerHealthBarManager.OnPlayerDamaged += HandlePlayerDamaged;
         PlayerHealthBarManager.OnPlayerHealthRegistered += HandlePlayerHealthRegistered;
@@ -164,6 +170,7 @@ public class TutorialHandler : MonoBehaviour
         tutorialEntry.OnEntryRead -= OnEntryRead;
         CombatManager.OnSuccessfulGuard -= OnSuccessfulGuard;
         CombatManager.OnSuccessfulParry -= OnSuccessfulParry;
+        ObjectiveText.ObjectiveTypingCompleted -= HandleObjectiveTypingCompleted;
         SceneManager.sceneLoaded -= HandleSceneLoaded;
         PlayerHealthBarManager.OnPlayerDamaged -= HandlePlayerDamaged;
         PlayerHealthBarManager.OnPlayerHealthRegistered -= HandlePlayerHealthRegistered;
@@ -206,6 +213,14 @@ public class TutorialHandler : MonoBehaviour
             postEncounterFeedbackRoutine = null;
         }
 
+        if (tutorialIconPulseRoutine != null)
+        {
+            StopCoroutine(tutorialIconPulseRoutine);
+            tutorialIconPulseRoutine = null;
+        }
+
+        pendingPlayerTurnReadyMessage = false;
+
         ReleaseCurrentStepEnemyOverrides();
         SetTutorialPlayerProtection(false);
     }
@@ -227,6 +242,7 @@ public class TutorialHandler : MonoBehaviour
 
         currentStep = step;
         currentStepCompleted = false;
+        pendingPlayerTurnReadyMessage = false;
 
         switch (step)
         {
@@ -284,6 +300,7 @@ public class TutorialHandler : MonoBehaviour
         if (!shouldProcess) return;
 
         Debug.Log($"[TutorialHandler] Player performed attack of type {type}. Updating Progress...");
+        GrowTutorialObjectiveIcon();
         MarkCurrentStepComplete();
     }
 
@@ -306,6 +323,7 @@ public class TutorialHandler : MonoBehaviour
             return;
 
         Debug.Log("[TutorialHandler] Successful guard detected. Updating progress...");
+        GrowTutorialObjectiveIcon();
         MarkCurrentStepComplete();
     }
 
@@ -315,6 +333,7 @@ public class TutorialHandler : MonoBehaviour
             return;
 
         Debug.Log("[TutorialHandler] Successful parry detected. Updating progress...");
+        GrowTutorialObjectiveIcon();
         MarkCurrentStepComplete();
     }
 
@@ -324,6 +343,7 @@ public class TutorialHandler : MonoBehaviour
             return;
 
         Debug.Log("[TutorialHandler] Dash detected. Updating progress...");
+        GrowTutorialObjectiveIcon();
         MarkCurrentStepComplete();
     }
 
@@ -336,16 +356,48 @@ public class TutorialHandler : MonoBehaviour
         SetCurrentStepEnemiesDamageable(true);
 
         if (ShouldShowPlayerTurnReadyMessage())
-        {
-            DisplayTutorialObjective(
-                GetRandomPlayerTurnReadyMessage(),
-                playerTurnReadyMessageUseSelectedIcon,
-                playerTurnReadyMessageAction);
-        }
+            QueuePlayerTurnReadyMessage();
+    }
+
+    private void QueuePlayerTurnReadyMessage()
+    {
+        if (!ShouldShowPlayerTurnReadyMessage())
+            return;
+
+        pendingPlayerTurnReadyMessage = true;
+        TryDisplayPendingPlayerTurnReadyMessage();
+    }
+
+    private void HandleObjectiveTypingCompleted()
+    {
+        TryDisplayPendingPlayerTurnReadyMessage();
+    }
+
+    private void TryDisplayPendingPlayerTurnReadyMessage()
+    {
+        if (!pendingPlayerTurnReadyMessage || !currentStepCompleted || !ShouldShowPlayerTurnReadyMessage())
+            return;
+
+        if (ObjectiveText.IsCurrentObjectiveTyping)
+            return;
+
+        pendingPlayerTurnReadyMessage = false;
+        DisplayTutorialObjective(
+            GetRandomPlayerTurnReadyMessage(),
+            playerTurnReadyMessageUseSelectedIcon,
+            playerTurnReadyMessageAction);
     }
 
     private IEnumerator ShowPostEncounterFeedbackThenAdvance(TutorialStep completedStep)
     {
+        yield return WaitForCurrentObjectiveTypingToFinish(completedStep);
+
+        if (currentStep != completedStep || !currentStepCompleted)
+        {
+            postEncounterFeedbackRoutine = null;
+            yield break;
+        }
+
         if (ShouldShowPostEncounterFeedback())
         {
             DisplayTutorialObjective(
@@ -363,6 +415,12 @@ public class TutorialHandler : MonoBehaviour
             yield break;
 
         BeginStep(GetNextStepAfter(completedStep));
+    }
+
+    private IEnumerator WaitForCurrentObjectiveTypingToFinish(TutorialStep step)
+    {
+        while (currentStep == step && ObjectiveText.IsCurrentObjectiveTyping)
+            yield return null;
     }
 
     private bool ShouldShowPlayerTurnReadyMessage()
@@ -680,7 +738,10 @@ public class TutorialHandler : MonoBehaviour
         tutorialObjectiveIcon.gameObject.SetActive(shouldShowIcon);
 
         if (shouldShowIcon)
+        {
             tutorialObjectiveIcon.SetAction(action);
+            ResetTutorialObjectiveIconVisuals();
+        }
     }
 
     private void HideTutorialObjectiveIcon()
@@ -689,6 +750,61 @@ public class TutorialHandler : MonoBehaviour
             return;
 
         tutorialObjectiveIcon.gameObject.SetActive(false);
+        ResetTutorialObjectiveIconVisuals();
+    }
+
+    private void ResetTutorialObjectiveIconVisuals()
+    {
+        if (tutorialObjectiveIcon == null)
+            return;
+
+        tutorialObjectiveIcon.transform.localScale = Vector3.one * tutorialIconSize;
+
+        Image iconImage = tutorialObjectiveIcon.targetImage != null
+            ? tutorialObjectiveIcon.targetImage
+            : tutorialObjectiveIcon.GetComponent<Image>();
+
+        if (iconImage != null)
+            iconImage.color = tutorialIconColor;
+    }
+
+    private void GrowTutorialObjectiveIcon()
+    {
+        if (tutorialObjectiveIcon == null || !tutorialObjectiveIcon.gameObject.activeSelf)
+            return;
+
+        if (tutorialIconPulseRoutine != null)
+            StopCoroutine(tutorialIconPulseRoutine);
+
+        tutorialIconPulseRoutine = StartCoroutine(PulseTutorialObjectiveIcon());
+    }
+
+    private IEnumerator PulseTutorialObjectiveIcon()
+    {
+        Vector3 baseScale = Vector3.one * tutorialIconSize;
+        Vector3 targetScale = Vector3.one * (tutorialIconSize + tutorialIconGrowthPerCorrectPress);
+        float halfDuration = Mathf.Max(0.01f, tutorialIconPulseDuration * 0.5f);
+
+        yield return AnimateTutorialIconScale(baseScale, targetScale, halfDuration);
+        yield return AnimateTutorialIconScale(targetScale, baseScale, halfDuration);
+
+        tutorialObjectiveIcon.transform.localScale = baseScale;
+        tutorialIconPulseRoutine = null;
+    }
+
+    private IEnumerator AnimateTutorialIconScale(Vector3 fromScale, Vector3 toScale, float duration)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            tutorialObjectiveIcon.transform.localScale = Vector3.LerpUnclamped(fromScale, toScale, t);
+            yield return null;
+        }
+
+        tutorialObjectiveIcon.transform.localScale = toScale;
     }
 
     private void TutorialComplete()

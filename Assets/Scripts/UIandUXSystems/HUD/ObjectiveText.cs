@@ -5,6 +5,9 @@ using UnityEngine.InputSystem;
 
 internal class ObjectiveText : MonoBehaviour
 {
+    public static event System.Action ObjectiveTypingCompleted;
+    public static bool IsCurrentObjectiveTyping { get; private set; }
+
     [SerializeField, CriticalReference]
     private TextMeshProUGUI HUDText;
 
@@ -14,6 +17,8 @@ internal class ObjectiveText : MonoBehaviour
     private Objective currentMessage;
     private string currentMessageString => currentMessage?.DisplayText ?? "";
     private bool isSubscribed;
+    private Coroutine typingMonitorRoutine;
+    private int typingRequestId;
 
     [Header("Debug")]
     [Tooltip("Enable verbose ObjectiveText debug logs.")]
@@ -31,6 +36,14 @@ internal class ObjectiveText : MonoBehaviour
         ObjectiveManager.OnObjectiveChanged -= UpdateText;
         UnsubscribeFromPlayerInput();
         InputSystem.onActionChange -= HandleActionChange;
+
+        if (typingMonitorRoutine != null)
+        {
+            StopCoroutine(typingMonitorRoutine);
+            typingMonitorRoutine = null;
+        }
+
+        IsCurrentObjectiveTyping = false;
     }
 
     private void UpdateText(Objective newObjective)
@@ -77,10 +90,35 @@ internal class ObjectiveText : MonoBehaviour
     private void RefreshCurrentText()
     {
         if (HUDText == null)
+        {
+            IsCurrentObjectiveTyping = false;
             return;
+        }
 
         string formattedText = KeybindRichTextFormatter.Format(HUDText, currentMessageString);
-        WritingTextUI.AddWriter_Static(HUDText, formattedText, typingSpeed, false);
+        WritingTextUI.TextWriterSingle writer = WritingTextUI.AddWriter_Static(HUDText, formattedText, typingSpeed, false);
+
+        if (typingMonitorRoutine != null)
+            StopCoroutine(typingMonitorRoutine);
+
+        typingRequestId++;
+        IsCurrentObjectiveTyping = !string.IsNullOrEmpty(formattedText) && writer != null && writer.IsActive();
+
+        if (IsCurrentObjectiveTyping)
+            typingMonitorRoutine = StartCoroutine(WaitForTypingToFinish(writer, typingRequestId));
+    }
+
+    private IEnumerator WaitForTypingToFinish(WritingTextUI.TextWriterSingle writer, int requestId)
+    {
+        while (writer != null && writer.IsActive())
+            yield return null;
+
+        if (requestId != typingRequestId)
+            yield break;
+
+        typingMonitorRoutine = null;
+        IsCurrentObjectiveTyping = false;
+        ObjectiveTypingCompleted?.Invoke();
     }
 
     // Probably remove below. I'm keeping it for now in case it is actually important
