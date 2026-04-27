@@ -11,17 +11,16 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     [SerializeField] private Color32 infographicBaseColor = new Color32(63, 63, 63, 255);
     [SerializeField] private float brightnessMin = -0.5f;
     [SerializeField] private float brightnessMax = 1f;
-    private void Start()
+    private float _previousSliderValue;
+    private void Start() 
     {
-        float initialBrightness = brightnessSlider != null
-            ? brightnessSlider.value
-            : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
-
-        if (brightnessSlider != null)
+        float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
+        _previousSliderValue = initialBrightness; // Initialize here
+    
+        if (brightnessSlider != null) 
         {
             brightnessSlider.onValueChanged.AddListener(UpdateBrightnessInfographic);
         }
-
         InitializeGearVisuals(initialBrightness);
     }
 
@@ -30,6 +29,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
        FadeInAllImages(0.25f);
        FadeOutTopMenuIfItIsASubMenu();
     }
+
 
     public void OnPointerExit(PointerEventData eventData)
     {
@@ -70,6 +70,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
         Vector3 initialRotation = image.transform.rotation.eulerAngles;
         Vector3 targetRotation = initialRotation + new Vector3(0f, 0f, 360f);
 
+
         while (elapsedTime < duration)
         {
             elapsedTime += Time.deltaTime;
@@ -104,6 +105,8 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
     private void FadeOutAllImages(float duration)
     {
+        StopAllCoroutines();
+
         if (darkestImage != null)
             StartCoroutine(FadeOutScaleForImage(darkestImage, duration));
 
@@ -116,6 +119,8 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
     private void FadeInAllImages(float duration)
     {
+        StopAllCoroutines(); // Stop any ongoing animations to prevent conflicts
+
         if (darkestImage != null)
             StartCoroutine(FadeInScaleForImage(darkestImage, duration));
 
@@ -146,49 +151,32 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     {
         float normalizedBrightness = NormalizeBrightness(value);
 
+        if (darkestImage != null) darkestImage.color = BuildColorWithAlpha(1f - normalizedBrightness);
+        if (midBrightnessImage != null) midBrightnessImage.color = BuildColorWithAlpha(1f - Mathf.Abs(0.5f - normalizedBrightness) * 2f);
+        if (brightestImage != null) brightestImage.color = BuildColorWithAlpha(normalizedBrightness);
 
-        if (darkestImage != null)
-            darkestImage.color = BuildColorWithAlpha(1f - normalizedBrightness);
+        float delta = value - _previousSliderValue;
+        float rotationAmount = delta * 360f; // Adjust 360 to change sensitivity
 
-        if (midBrightnessImage != null)
-            midBrightnessImage.color = BuildColorWithAlpha(1f - Mathf.Abs(0.5f - normalizedBrightness) * 2f);
+        RotateGear(darkestImage, rotationAmount);
+        RotateGear(midBrightnessImage, rotationAmount);
+        RotateGear(brightestImage, rotationAmount);
 
-        if (brightestImage != null)
-            brightestImage.color = BuildColorWithAlpha(normalizedBrightness);
 
-        StartGearRotationAnimation();
+        _previousSliderValue = value;
     }
 
-    private void StartGearRotationAnimation()
-    {
-        StartCoroutine(MoveGearRotInDirectionOfSlider(brightestImage.gameObject));
-        StartCoroutine(MoveGearRotInDirectionOfSlider(midBrightnessImage.gameObject));
-        StartCoroutine(MoveGearRotInDirectionOfSlider(darkestImage.gameObject));
-    }
-
-    private IEnumerator MoveGearRotInDirectionOfSlider(GameObject gear = null)
-    {
-        float elapsedTime = 0f;
-        float duration = 0.5f; // Duration of the movement
-        float prevSliderValue = brightnessSlider.value;
-
-        float newSliderValue = brightnessSlider.value;
-
-        Vector3 initialRotation = gear.transform.rotation.eulerAngles;
-        Vector3 targetRotation = initialRotation + new Vector3(0f, 0f, 360f); // Rotate based on slider value and direction
-
-        while (elapsedTime < duration)
-        {
-            elapsedTime += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsedTime / duration);
-            gear.transform.rotation = Quaternion.Euler(Vector3.Lerp(initialRotation, targetRotation, t * 0.1f));
-            yield return null;
+    private void RotateGear(Image img, float amount) {
+        if (img != null) {
+            // Rotates the object on the Z axis relative to its current rotation
+            img.transform.Rotate(Vector3.forward, amount);
         }
-
-        gear.transform.rotation = Quaternion.Euler(targetRotation);
     }
 
-    
+    public void OnSliderMove(float newValue)
+    {
+        UpdateBrightnessInfographic(newValue);
+    }
 
     private float NormalizeBrightness(float value)
     {
