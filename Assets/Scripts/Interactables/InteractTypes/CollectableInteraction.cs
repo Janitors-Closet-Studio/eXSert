@@ -50,7 +50,7 @@ public abstract class CollectableInteraction : InteractionManager
         
         if (masterObjective != null)
         {
-            Debug.Log($"[CollectableInteraction] Showing notice for {this.interactId}: {displayName}");
+            if (debugLogging) Debug.Log($"[CollectableInteraction] Showing notice for {this.interactId}: {displayName}");
             masterObjective.CreateAndShowNotice(this, this.interactId, displayName, bottomFlavorText, uiFadeDuration, uiDisplayDuration, priority: 9);
         }
         else

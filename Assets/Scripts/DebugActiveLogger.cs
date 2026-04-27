@@ -2,12 +2,15 @@ using UnityEngine;
 
 public class DebugActiveLogger : MonoBehaviour
 {
+    [Tooltip("Enable verbose active/deactive debug logs for this object.")]
+    [SerializeField] private bool debugLogging = false;
+
     void OnDisable()
     {
-        Debug.Log($"[DebugActiveLogger] {gameObject.name} was deactivated!", this);
+        if (debugLogging) Debug.Log($"[DebugActiveLogger] {gameObject.name} was deactivated!", this);
     }
     void OnEnable()
     {
-        Debug.Log($"[DebugActiveLogger] {gameObject.name} was activated!", this);
+        if (debugLogging) Debug.Log($"[DebugActiveLogger] {gameObject.name} was activated!", this);
     }
 }

@@ -225,6 +225,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             {
                 /* SetEnemyColor(attackColor); */
                 isTargetEngaged = true;
+                PlayAttackAnim();
                 BeginAttackTelegraphCycle(Time.time);
                 StartAttackLoop();
                 SetTelegraphVisible(false);
@@ -827,6 +828,38 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         }
         StopAttackLoop();
         SetTelegraphVisible(false);
+    }
+
+    private void OnEnable()
+    {
+        // Restart the detection loop when this object is re-activated from the pool
+        if (detectLoop == null && enemyAI != null)
+        {
+            detectLoop = StartCoroutine(DetectionLoop());
+        }
+    }
+
+    public override void ResetEnemy()
+    {
+        base.ResetEnemy();
+
+        // Reset turret-specific state for object pool reuse
+        isTargetEngaged = false;
+        nextShotTime = -1e9f;
+        lastShotTime = -1e9f;
+        telegraphCycleStartTime = Time.time;
+
+        if (animationRestoreRoutine != null)
+        {
+            StopCoroutine(animationRestoreRoutine);
+            animationRestoreRoutine = null;
+        }
+
+        StopAttackLoop();
+        SetTelegraphVisible(false);
+
+        // Force the animator back to the idle state so the turret doesn't spawn in death pose
+        PlayIdleAnim();
     }
 
     protected bool AimAtTarget(Transform target)

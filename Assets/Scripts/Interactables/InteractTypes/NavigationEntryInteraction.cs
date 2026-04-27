@@ -48,7 +48,7 @@ public class NavigationEntryInteraction : CollectableInteraction
     {
         if (diaries.info.diaryID.Equals(this.interactId))
         {
-            Debug.Log("Diary with id " + this.interactId + " updated to state: Is Found " + diaries.info.isFound);
+            if (debugLogging) Debug.Log("Diary with id " + this.interactId + " updated to state: Is Found " + diaries.info.isFound);
         }
     }
 
@@ -56,7 +56,7 @@ public class NavigationEntryInteraction : CollectableInteraction
     {
         if (log.info.logID.Equals(this.interactId))
         {
-            Debug.Log("Log with id " + this.interactId + " updated to state: Is Found " + log.info.isFound);
+            if (debugLogging) Debug.Log("Log with id " + this.interactId + " updated to state: Is Found " + log.info.isFound);
         }
     }
 
@@ -180,7 +180,7 @@ public class NavigationEntryInteraction : CollectableInteraction
             return;
         }
 
-        Debug.Log($"Collected entry with id: {this.interactId}");
+        if (debugLogging) Debug.Log($"Collected entry with id: {this.interactId}");
         OnEntryCollected?.Invoke(interactId);
     }
 

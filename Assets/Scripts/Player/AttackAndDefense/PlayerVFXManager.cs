@@ -255,6 +255,11 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private Coroutine piledriverExtendSparkFrontRoutine;
     private Coroutine piledriverExtendSparkBackRoutine;
     private bool airMoveCallbacksRegistered;
+    // Cooldown timestamp: landing VFX cannot fire again until Time.time exceeds this value.
+    // This prevents the rapid Landed event spam (caused by grounded-state oscillation on
+    // landing) from triggering the VFX more than once per actual landing.
+    private float landingVfxCooldownUntil = -1f;
+    private const float LandingVfxCooldown = 0.5f;
 
     private VisualEffect leftAttackEffect;
     private VisualEffect rightAttackEffect;
@@ -578,8 +583,56 @@ public sealed class PlayerVFXManager : MonoBehaviour
 
     private void HandleLandingTriggered()
     {
+        if (Time.time < landingVfxCooldownUntil)
+            return;
+
+        // Set cooldown immediately — before any early-out — so that regardless of
+        // whether the VFX actually plays, this call cannot spam every frame.
+        landingVfxCooldownUntil = Time.time + LandingVfxCooldown;
+
+        Debug.Log($"[LandingDust] HandleLandingTriggered fired | frame={Time.frameCount}");
+
         GameObject landingRoot = landingDustVfx != null ? landingDustVfx : dashDustVfx;
         if (landingRoot == null)
+        {
+            Debug.Log($"[LandingDust] BLOCKED: landingRoot is null | frame={Time.frameCount}");
+            return;
+        }
+
+        Debug.Log($"[LandingDust] landingRoot='{landingRoot.name}' active={landingRoot.activeSelf} | frame={Time.frameCount}");
+
+        // Only play landing dust when the player is actually on real ground (not on an enemy).
+        // Probe downward using the same ground-layer mask used to snap the VFX position.
+        Vector3 probeOrigin = transform.position;
+
+        Debug.Log($"[LandingDust] probeOrigin={probeOrigin}  probeStartHeight={landingDustProbeStartHeight}  probeDistance={landingDustProbeDistance}");
+
+        probeOrigin.y += Mathf.Max(0f, landingDustProbeStartHeight);
+        float probeDistance = Mathf.Max(0.1f, landingDustProbeStartHeight + landingDustProbeDistance);
+
+        // Exclude the player's own layer so the player collider doesn't block the probe.
+        int probeMask = Physics.AllLayers & ~(1 << gameObject.layer);
+        RaycastHit[] probeHits = Physics.RaycastAll(probeOrigin, Vector3.down, probeDistance, probeMask, QueryTriggerInteraction.Ignore);
+        System.Array.Sort(probeHits, (a, b) => a.distance.CompareTo(b.distance));
+
+        RaycastHit groundCheckHit = default;
+        bool groundHit = false;
+        foreach (var h in probeHits)
+        {
+            int groundLayerBit = 1 << h.collider.gameObject.layer;
+            if ((landingDustGroundLayers.value & groundLayerBit) != 0)
+            {
+                groundCheckHit = h;
+                groundHit = true;
+                break;
+            }
+            // A non-ground solid is closer than the ground — bail out (standing on enemy etc.)
+            break;
+        }
+
+        Debug.Log($"[LandingDust] Ground probe | origin={probeOrigin} dist={probeDistance} layerMask={landingDustGroundLayers.value} hit={groundHit} hitObject={(groundHit ? groundCheckHit.collider.gameObject.name + " (layer=" + groundCheckHit.collider.gameObject.layer + ")" : "none")} totalHits={probeHits.Length}{(probeHits.Length > 0 ? " closest='" + probeHits[0].collider.gameObject.name + "' layer=" + probeHits[0].collider.gameObject.layer + " dist=" + probeHits[0].distance.ToString("F3") : "")}");
+
+        if (!groundHit)
             return;
 
         SnapLandingVfxToGround(landingRoot);
@@ -611,6 +664,7 @@ public sealed class PlayerVFXManager : MonoBehaviour
                 dashDustEffects = landingEffects;
         }
 
+        Debug.Log($"[LandingDust] PLAYING | root={landingRoot.name} particles={landingParticles?.Length ?? 0} effects={landingEffects?.Length ?? 0}");
         PlayOneShotVfx(landingRoot, landingParticles, landingEffects);
         PlayAudio(landingDustAudioClip != null ? landingDustAudioClip : airMoveAudioClip);
     }
@@ -620,10 +674,9 @@ public sealed class PlayerVFXManager : MonoBehaviour
         if (landingRoot == null)
             return;
 
-        Vector3 worldPosition = landingRoot.transform.position;
-        Vector3 probeOrigin = characterController != null
-            ? characterController.bounds.center
-            : transform.position;
+        // Always use the player's XZ so the VFX appears at the player's feet, not where it last played.
+        Vector3 worldPosition = new Vector3(transform.position.x, landingRoot.transform.position.y, transform.position.z);
+        Vector3 probeOrigin = transform.position;
         probeOrigin.y += Mathf.Max(0f, landingDustProbeStartHeight);
 
         if (
@@ -631,17 +684,13 @@ public sealed class PlayerVFXManager : MonoBehaviour
                 probeOrigin,
                 Vector3.down,
                 out RaycastHit hit,
-                Mathf.Max(0.1f, landingDustProbeDistance),
+                Mathf.Max(0.1f, landingDustProbeStartHeight + landingDustProbeDistance),
                 landingDustGroundLayers,
                 QueryTriggerInteraction.Ignore
             )
         )
         {
             worldPosition.y = hit.point.y + landingDustVerticalOffset;
-        }
-        else if (characterController != null)
-        {
-            worldPosition.y = characterController.bounds.min.y + landingDustVerticalOffset;
         }
         else
         {
@@ -1518,13 +1567,17 @@ public sealed class PlayerVFXManager : MonoBehaviour
     private void RegisterAirMoveCallbacks()
     {
         if (playerMovement == null || airMoveCallbacksRegistered)
+        {
+            Debug.LogWarning($"[LandingDust] RegisterAirMoveCallbacks skipped | playerMovement={playerMovement} alreadyRegistered={airMoveCallbacksRegistered}");
             return;
+        }
 
         playerMovement.DashPerformed += HandleLandingTriggered;
         playerMovement.DoubleJumpPerformed += HandleAirMoveTriggered;
         playerMovement.AirDashPerformed += HandleAirMoveTriggered;
         playerMovement.Landed += HandleLandingTriggered;
         airMoveCallbacksRegistered = true;
+        Debug.Log($"[LandingDust] Callbacks registered on PlayerMovement ({playerMovement.gameObject.name})");
     }
 
     private void UnregisterAirMoveCallbacks()
