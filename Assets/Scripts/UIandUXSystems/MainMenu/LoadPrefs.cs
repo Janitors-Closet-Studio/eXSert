@@ -295,14 +295,19 @@ public class LoadPrefs : MonoBehaviour
             {
                 defaultBrightness = graphics.defaultBrightness;
                 graphics.SetBrightness(localBrightness);
+                graphics.brightnessLevel = localBrightness;
                 DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loaded Brightness: {localBrightness}, Applied to GraphicsSettings.");
             }
             else
             {
-                if (graphics.globalVolume.profile.TryGet(out graphics.liftGammaGain))
+                if (BrightnessOverlayController.Instance != null)
                 {
-                    graphics.liftGammaGain.gamma.value = new Vector4(1f, 1f, 1f, localBrightness);
-                    graphics.brightnessLevel = graphics.defaultBrightness;
+                    BrightnessOverlayController.Instance.ApplyBrightness(localBrightness, defaultBrightness);
+                    DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Applied brightness via BrightnessOverlayController: {localBrightness}");
+                }
+                else
+                {
+                    Debug.LogWarning("[LoadPrefs] Could not apply brightness: GraphicsSettings and BrightnessOverlayController are both unavailable.");
                 }
             }
         }

@@ -688,6 +688,13 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         MasterObjectiveClass masterObjective = FindObjectOfType<MasterObjectiveClass>();
         if (masterObjective != null)
             masterObjective.CreateAndShowNotice(null, "floor_locked", "Floor Locked", $"You need {floorData.keyDisplayName} to access this floor.", priority: 10);
+
+        string objectiveMessage = !string.IsNullOrEmpty(floorData.keyDisplayName)
+            ? $"Find {floorData.keyDisplayName}"
+            : $"Find {floorData.keyItemID}";
+
+        ObjectiveManager.AddSubObjective(floorData.keyDisplayName, objectiveMessage);
+
     }
 
     private void MoveToFirstFloor(InputAction.CallbackContext context)

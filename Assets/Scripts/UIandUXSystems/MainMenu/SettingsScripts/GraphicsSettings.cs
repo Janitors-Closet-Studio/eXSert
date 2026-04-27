@@ -9,7 +9,6 @@ using TMPro;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using Unity.VisualScripting;
 
 public class GraphicsSettings : MonoBehaviour
 {
@@ -88,12 +87,22 @@ public class GraphicsSettings : MonoBehaviour
     {
         if (_applyAction != null && _applyAction.action != null)
             _applyAction.action.performed += OnApplyPerformed;
+
+        if (brightnessSlider != null)
+        {
+            // Ensure runtime binding exists even if inspector event wiring is missing.
+            brightnessSlider.onValueChanged.RemoveListener(SetBrightness);
+            brightnessSlider.onValueChanged.AddListener(SetBrightness);
+        }
     }
 
     private void OnDisable()
     {
         if (_applyAction != null && _applyAction.action != null)
             _applyAction.action.performed -= OnApplyPerformed;
+
+        if (brightnessSlider != null)
+            brightnessSlider.onValueChanged.RemoveListener(SetBrightness);
 
         SaveCurrentFPSSetting();
     }
@@ -120,12 +129,12 @@ public class GraphicsSettings : MonoBehaviour
 
     private void FindGlobalVolume()
     {
-        if (globalVolume != null)
+        if (globalVolume != null && globalVolume.profile != null)
         {
             // Try to get the LiftGammaGain override from the volume profile
             if (globalVolume.profile.TryGet(out liftGammaGain))
             {
-                Debug.Log("LiftGammaGain found. Current gamma value: " + liftGammaGain.gamma.value.w);
+                Debug.Log("LiftGammaGain found. Current gamma value: " + liftGammaGain.gamma.value.x);
             }
             else
             {
@@ -143,12 +152,25 @@ public class GraphicsSettings : MonoBehaviour
     //Alls functions below change values based on player choice
     public void SetBrightness(float brightness)
     {
-
-        if (globalVolume.profile.TryGet(out liftGammaGain))
+        if (BrightnessOverlayController.Instance != null)
         {
-            liftGammaGain.gamma.value = new Vector4(1f, 1f, 1f, brightness);
+            BrightnessOverlayController.Instance.ApplyBrightness(brightness, defaultBrightness);
             brightnessLevel = brightness;
             DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Brightness set to: " + brightness);
+            return;
+        }
+
+        if (globalVolume != null && globalVolume.profile != null && globalVolume.profile.TryGet(out liftGammaGain))
+        {
+            liftGammaGain.gamma.value = new Vector4(brightness, brightness, brightness, 0f);
+            liftGammaGain.gamma.overrideState = true;
+            liftGammaGain.active = true;
+            brightnessLevel = brightness;
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, "Brightness set to: " + brightness);
+        }
+        else
+        {
+            Debug.LogWarning("[GraphicsSettings] Could not apply brightness: no BrightnessOverlayController or LiftGammaGain profile.");
         }
     }
 
