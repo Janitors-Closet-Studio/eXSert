@@ -207,23 +207,6 @@ public class FooterManager : MonoBehaviour
         OnFooterTextUpdated?.Invoke(footerMessage);
     }
 
-    public void ForceHideFooter()
-    {
-        if (footerText != null)
-            footerText.text = string.Empty;
-
-        if (footerPanel == null)
-            return;
-
-        if (fadeMenus != null && footerPanel.activeSelf)
-        {
-            fadeMenus.FadeMenuSafe(footerPanel, fadeMenus.fadeDuration, false);
-            return;
-        }
-
-        footerPanel.SetActive(false);
-    }
-
     public void SetToLastSibling()
     {
         if (footerPanel != null)

@@ -29,6 +29,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     [SerializeField] private CinemachineCamera elevatorCamera;
     [SerializeField] private GameObject[] elevatorUI;
 
+    [SerializeField] private BoxCollider elevatorTriggerCollider;
+
     [Tooltip("Assign the desired local positions for the elevator lift to move to for each floor, in order from first to third floor")]
     [SerializeField] private Vector3[] desiredLiftPosition;
     [SerializeField] private bool lockXMovement;
@@ -72,6 +74,11 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
     private int currentFloor = 0;
     private bool isMoving = false;
+    private bool triggerFollowInitialized;
+    private bool triggerFollowUsesColliderCenter;
+    private Vector3 triggerLocalPositionOffset;
+    private Quaternion triggerLocalRotationOffset = Quaternion.identity;
+    private Vector3 triggerCenterLocalOffset;
 
     private const string ExitMenuActionName = "ExitMenu";
     private const string FloorOneActionName = "FloorOne";
@@ -136,6 +143,50 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         TryResolveLockCoordinates();
 
         CachePlayerReferences();
+        InitializeTriggerFollow();
+    }
+
+    private void InitializeTriggerFollow()
+    {
+        if (elevatorLift == null || elevatorTriggerCollider == null)
+            return;
+
+        Transform liftTransform = elevatorLift.transform;
+        Transform triggerTransform = elevatorTriggerCollider.transform;
+
+        // If the trigger lives on a parent/root transform of the lift, moving that transform
+        // would also move the lift and can cause runaway movement. In that case, move only
+        // the collider center during lift motion.
+        triggerFollowUsesColliderCenter = liftTransform.IsChildOf(triggerTransform);
+
+        Vector3 triggerCenterWorld = triggerTransform.TransformPoint(elevatorTriggerCollider.center);
+        triggerCenterLocalOffset = liftTransform.InverseTransformPoint(triggerCenterWorld);
+
+        triggerLocalPositionOffset = liftTransform.InverseTransformPoint(triggerTransform.position);
+        triggerLocalRotationOffset = Quaternion.Inverse(liftTransform.rotation) * triggerTransform.rotation;
+        triggerFollowInitialized = true;
+    }
+
+    private void SyncTriggerWithLift()
+    {
+        if (elevatorLift == null || elevatorTriggerCollider == null)
+            return;
+
+        if (!triggerFollowInitialized)
+            InitializeTriggerFollow();
+
+        Transform liftTransform = elevatorLift.transform;
+        Transform triggerTransform = elevatorTriggerCollider.transform;
+
+        if (triggerFollowUsesColliderCenter)
+        {
+            Vector3 targetCenterWorld = liftTransform.TransformPoint(triggerCenterLocalOffset);
+            elevatorTriggerCollider.center = triggerTransform.InverseTransformPoint(targetCenterWorld);
+            return;
+        }
+
+        triggerTransform.position = liftTransform.TransformPoint(triggerLocalPositionOffset);
+        triggerTransform.rotation = liftTransform.rotation * triggerLocalRotationOffset;
     }
 
     private void TryResolveLockCoordinates()
@@ -319,7 +370,9 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
         if (enemiesOnLift.Count > 0)
         {
-            InteractionUI.Instance.OnCollectedItem("Elevator Load Exceeded", "Clear enemies to lighten load", priority: 10);
+            MasterObjectiveClass masterObjective = FindObjectOfType<MasterObjectiveClass>();
+            if (masterObjective != null)
+                masterObjective.CreateAndShowNotice(null, "elevator_load_exceeded", "Elevator Load Exceeded", "Clear enemies to lighten load", priority: 10);
             return;
         }
 
@@ -631,8 +684,12 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             elevatorLift.transform.localPosition = Vector3.MoveTowards(
                 elevatorLift.transform.localPosition, targetPosition, moveSpeed * Time.deltaTime);
 
+            SyncTriggerWithLift();
+
             yield return null;
         }
+
+        SyncTriggerWithLift();
 
         if (sfxSource != null)
         {
@@ -735,6 +792,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             elevatorLift.transform.localPosition = Vector3.MoveTowards(
                 elevatorLift.transform.localPosition, targetPosition, moveSpeed * Time.deltaTime);
 
+            SyncTriggerWithLift();
+
             Vector3 worldDelta = elevatorLift.transform.position - previousLiftWorldPosition;
             if (carryPlayerWithLift && playerReference != null && worldDelta.sqrMagnitude > 0.000001f)
                 playerReference.transform.position += worldDelta;
@@ -744,6 +803,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         }
 
         elevatorLift.transform.localPosition = targetPosition;
+    SyncTriggerWithLift();
 
         Vector3 finalWorldDelta = elevatorLift.transform.position - previousLiftWorldPosition;
         if (carryPlayerWithLift && playerReference != null && finalWorldDelta.sqrMagnitude > 0.000001f)

@@ -27,6 +27,14 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     [SerializeField] private string _interactId;
     [SerializeField] internal AudioClip _interactionSFX;
     [SerializeField] internal string _interactionPrompt = "Press to Interact";
+
+    [Space(10)]
+    [Header("Notice Settings")]
+    [Tooltip("The name of the interaction/item shown in notices.")]
+    [SerializeField] protected string displayName = "";
+    [SerializeField] protected float uiDisplayDuration = 4f;
+    [SerializeField] protected float uiFadeDuration = 2f;
+    [SerializeField] protected string bottomFlavorText = "Press Pause to View";
     
     [Space(10)]
     [Header("Input Action Reference")]
@@ -42,6 +50,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     private PlayerAnimationController _playerAnimationController;
     private Coroutine _interactionBusyRoutine;
     private bool _interactionBusyOwned;
+
+    internal MasterObjectiveClass masterObjective;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
     {
@@ -59,6 +69,14 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         this.GetComponent<BoxCollider>().isTrigger = true;
 
         interactId = _interactId.Trim().ToLowerInvariant();
+    }
+
+    private void Start()
+    {
+        masterObjective = MasterObjectiveClass.GetInstance(SceneAsset.GetSceneAssetOfObject(this.gameObject));
+        if (masterObjective == null)
+            Debug.LogWarning($"[InteractionManager] No MasterObjectiveClass instance found for {gameObject.name} in scene {SceneManager.GetActiveScene().name}. Notices will not show for this interaction.");
+        StartCoroutine(FindPlayerScene("PlayerScene"));
     }
 
     protected virtual void OnEnable()
@@ -95,10 +113,6 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         isPlayerNearby = false;
     }
 
-    private void Start()
-    {
-        StartCoroutine(FindPlayerScene("PlayerScene"));
-    }
 
     private IEnumerator FindPlayerScene(string sceneName)
     {
