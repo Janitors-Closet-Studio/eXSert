@@ -4038,17 +4038,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 553033663}
   m_CullTransparentMesh: 1
---- !u!114 &560670046 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6843192205539980952, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
-  m_PrefabInstance: {fileID: 1223060377}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1341900388}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
 --- !u!114 &564713915 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7670546707832598099, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
@@ -9009,7 +8998,7 @@ MonoBehaviour:
   - {fileID: 1584131428}
   - {fileID: 728824543}
   - {fileID: 1067967877}
-  - {fileID: 1341900388}
+  - {fileID: 0}
   - {fileID: 893385300}
   - {fileID: 139441193}
   settingPageMenus:
@@ -10338,6 +10327,10 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
       objectReference: {fileID: 1041919914}
+    - target: {fileID: 583840934673331649, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      propertyPath: _resetAction
+      value: 
+      objectReference: {fileID: 2131600873}
     - target: {fileID: 813600952843782952, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
       propertyPath: _navigateReference
       value: 
@@ -11989,11 +11982,6 @@ PrefabInstance:
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 9059512239238773875, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
   m_PrefabInstance: {fileID: 1336962337}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1341900388 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1051813100033660730, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
-  m_PrefabInstance: {fileID: 1223060377}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1358530406
 GameObject:
@@ -17394,6 +17382,20 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
+--- !u!114 &2131600873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
+  m_Name: UI/ResetDefault
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
+  m_Asset: {fileID: -944628639613478452, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  m_ActionId: ed96022f-7d1e-4c9b-a35c-247d4f948831
 --- !u!1 &2132088326
 GameObject:
   m_ObjectHideFlags: 0
@@ -18500,7 +18502,7 @@ PrefabInstance:
     - target: {fileID: 5217535595193317142, guid: 2134fa2bf068dae49a032a722faa8529, type: 3}
       propertyPath: brightnessSlider
       value: 
-      objectReference: {fileID: 560670046}
+      objectReference: {fileID: 0}
     - target: {fileID: 5217535595193317142, guid: 2134fa2bf068dae49a032a722faa8529, type: 3}
       propertyPath: fullScreenToggle
       value: 
