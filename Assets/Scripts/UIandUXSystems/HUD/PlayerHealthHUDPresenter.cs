@@ -45,6 +45,13 @@ public class PlayerHealthHUDPresenter : MonoBehaviour
 
         if (rootToToggle == null)
             rootToToggle = gameObject;
+
+        if (rootToToggle == gameObject)
+        {
+            // Never deactivate this presenter object itself; doing so would unsubscribe from
+            // events and stop the retry coroutine, preventing rebind after scene transitions.
+            rootToToggle = null;
+        }
     }
 
     private void OnEnable()
@@ -176,10 +183,25 @@ public class PlayerHealthHUDPresenter : MonoBehaviour
 
     private void SetRootActive(bool state)
     {
-        if (!hideWhenPlayerMissing || rootToToggle == null)
+        if (!hideWhenPlayerMissing)
             return;
 
-        if (rootToToggle.activeSelf != state)
-            rootToToggle.SetActive(state);
+        if (rootToToggle != null)
+        {
+            if (rootToToggle.activeSelf != state)
+                rootToToggle.SetActive(state);
+            return;
+        }
+
+        // Fallback when no dedicated root is assigned, hide visual widgets while keeping this
+        // presenter active so it can continue to rebind when the player loads.
+        if (slider != null && slider.gameObject.activeSelf != state)
+            slider.gameObject.SetActive(state);
+
+        if (healthFill != null && healthFill.gameObject.activeSelf != state)
+            healthFill.gameObject.SetActive(state);
+
+        if (valueLabel != null && valueLabel.gameObject.activeSelf != state)
+            valueLabel.gameObject.SetActive(state);
     }
 }
