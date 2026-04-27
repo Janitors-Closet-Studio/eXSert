@@ -9,11 +9,19 @@
 */
 
 using System.Collections;
+using System.Collections.Generic;
 using Progression.Encounters;
 using UnityEngine;
 public class SlowDownElevator : MonoBehaviour
 {
 #pragma warning disable CS0618
+    private struct SparkParticleBinding
+    {
+        public GameObject RootObject;
+        public ParticleSystem ParticleSystem;
+        public float InitialRateOverTimeMultiplier;
+    }
+
     #region Inspector Setup
     [Header("Required References")]
     [SerializeField, CriticalReference] private ElevatorWalls _elevatorWalls;
@@ -49,6 +57,9 @@ public class SlowDownElevator : MonoBehaviour
     [SerializeField] private AudioClip elevatorDecelerateSFX;
     [SerializeField] private AudioClip elevatorBell;
 
+    [Header("Slowdown VFX")]
+    [SerializeField] private List<GameObject> slowdownSparkVfx = new();
+
     #endregion
 
     // Internal state
@@ -65,6 +76,7 @@ public class SlowDownElevator : MonoBehaviour
     private bool _soundFadeStarted = false;
     private bool _swapped = false;
     private Coroutine _decelerationCoroutine;
+    private readonly List<SparkParticleBinding> _sparkParticleBindings = new();
 
     [SerializeField] private float _pointToSwitchWallsY;
 
@@ -90,10 +102,16 @@ public class SlowDownElevator : MonoBehaviour
         _swapped = false;
         _decelerationTimer = 0f;
         _initialSpeed = 0f;
+        CacheSlowdownSparkVfxBindings();
+        SetSlowdownSparkVfxActive(false);
     }
 
     private void OnEnable() => basicEncounter.OnEncounterCompleted += SetUpStateToSlowWalls;
-    private void OnDisable() => basicEncounter.OnEncounterCompleted -= SetUpStateToSlowWalls;
+    private void OnDisable()
+    {
+        basicEncounter.OnEncounterCompleted -= SetUpStateToSlowWalls;
+        SetSlowdownSparkVfxActive(false);
+    }
 
     /// <summary>
     /// Initiates the elevator deceleration process.
@@ -107,6 +125,7 @@ public class SlowDownElevator : MonoBehaviour
         _swapped = false;
         _initialSpeed = _elevatorWalls.elevatorSpeed;
         _elevatorWalls.isMoving = false;
+        SetSlowdownSparkVfxActive(true);
         
         // Stop ElevatorWalls script from moving the walls immediately
         _elevatorWalls.elevatorSpeed = 0f;
@@ -172,6 +191,7 @@ public class SlowDownElevator : MonoBehaviour
             CameraManager.Instance?.ShakeCamera(shakeAmplitude, shakeFrequency, shakeDuration, timeToResetShake); 
             _decelerationTimer += Time.deltaTime;
             float decelerationProgress = Mathf.Clamp01(_decelerationTimer / _actualDecelerationDuration);
+            UpdateSlowdownSparkVfxEmission(1f - decelerationProgress);
             
             // Apply ease-out quadratic curve for smooth deceleration
             float easedProgress = 1f - (1f - decelerationProgress) * (1f - decelerationProgress);
@@ -238,6 +258,7 @@ public class SlowDownElevator : MonoBehaviour
         SnapDoorWallToFinalLocalY();
         SoundManager.Instance.puzzleSource.Stop();
         SoundManager.Instance.puzzleSource.PlayOneShot(elevatorBell);
+        SetSlowdownSparkVfxActive(false);
         
         // Complete when total distance traveled is done
         _isDecelerating = false;
@@ -316,5 +337,113 @@ public class SlowDownElevator : MonoBehaviour
         float result = _elevatorWalls.yBounds + normalized;
             
         return result;
+    }
+
+    private void SetSlowdownSparkVfxActive(bool isActive)
+    {
+        CacheSlowdownSparkVfxBindings();
+
+        if (slowdownSparkVfx == null)
+            return;
+
+        for (int i = 0; i < slowdownSparkVfx.Count; i++)
+        {
+            GameObject vfxObject = slowdownSparkVfx[i];
+            if (vfxObject == null)
+                continue;
+
+            ApplySparkRates(isActive ? 1f : 0f, vfxObject);
+            vfxObject.SetActive(isActive);
+
+            if (isActive)
+                PlaySparkSystems(vfxObject);
+            else
+                StopSparkSystems(vfxObject);
+        }
+    }
+
+    private void UpdateSlowdownSparkVfxEmission(float normalizedEmission)
+    {
+        if (_sparkParticleBindings.Count == 0)
+            return;
+
+        float clampedEmission = Mathf.Clamp01(normalizedEmission);
+
+        for (int i = 0; i < slowdownSparkVfx.Count; i++)
+        {
+            GameObject vfxObject = slowdownSparkVfx[i];
+            if (vfxObject == null || !vfxObject.activeInHierarchy)
+                continue;
+
+            ApplySparkRates(clampedEmission, vfxObject);
+        }
+    }
+
+    private void CacheSlowdownSparkVfxBindings()
+    {
+        _sparkParticleBindings.Clear();
+
+        if (slowdownSparkVfx == null)
+            return;
+
+        for (int i = 0; i < slowdownSparkVfx.Count; i++)
+        {
+            GameObject vfxObject = slowdownSparkVfx[i];
+            if (vfxObject == null)
+                continue;
+
+            ParticleSystem[] particleSystems = vfxObject.GetComponentsInChildren<ParticleSystem>(true);
+            for (int particleIndex = 0; particleIndex < particleSystems.Length; particleIndex++)
+            {
+                ParticleSystem particleSystem = particleSystems[particleIndex];
+                if (particleSystem == null)
+                    continue;
+
+                ParticleSystem.EmissionModule emission = particleSystem.emission;
+                _sparkParticleBindings.Add(new SparkParticleBinding
+                {
+                    RootObject = vfxObject,
+                    ParticleSystem = particleSystem,
+                    InitialRateOverTimeMultiplier = emission.rateOverTimeMultiplier
+                });
+            }
+        }
+    }
+
+    private void ApplySparkRates(float normalizedEmission, GameObject rootObject)
+    {
+        for (int i = 0; i < _sparkParticleBindings.Count; i++)
+        {
+            SparkParticleBinding binding = _sparkParticleBindings[i];
+            if (binding.RootObject != rootObject || binding.ParticleSystem == null)
+                continue;
+
+            ParticleSystem.EmissionModule emission = binding.ParticleSystem.emission;
+            emission.rateOverTimeMultiplier = binding.InitialRateOverTimeMultiplier * normalizedEmission;
+        }
+    }
+
+    private void PlaySparkSystems(GameObject rootObject)
+    {
+        for (int i = 0; i < _sparkParticleBindings.Count; i++)
+        {
+            SparkParticleBinding binding = _sparkParticleBindings[i];
+            if (binding.RootObject != rootObject || binding.ParticleSystem == null)
+                continue;
+
+            binding.ParticleSystem.Play(true);
+        }
+    }
+
+    private void StopSparkSystems(GameObject rootObject)
+    {
+        for (int i = 0; i < _sparkParticleBindings.Count; i++)
+        {
+            SparkParticleBinding binding = _sparkParticleBindings[i];
+            if (binding.RootObject != rootObject || binding.ParticleSystem == null)
+                continue;
+
+            binding.ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 }

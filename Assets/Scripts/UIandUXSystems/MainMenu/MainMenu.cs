@@ -27,14 +27,12 @@ public class MainMenu : MonoBehaviour
 
         if (loadGame != null) loadGame.onClick.AddListener(OnLoadGameClicked);
         if (newGameButton != null) newGameButton.onClick.AddListener(OnNewGameClicked);
-        if (quitButton != null) quitButton.onClick.AddListener(OnQuitGameClicked);
     }
 
     private void OnDestroy()
     {
         if (loadGame != null) loadGame.onClick.RemoveListener(OnLoadGameClicked);
         if (newGameButton != null) newGameButton.onClick.RemoveListener(OnNewGameClicked);
-        if (quitButton != null) quitButton.onClick.RemoveListener(OnQuitGameClicked);
     }
 
     protected void OnEnable()
@@ -85,16 +83,7 @@ public class MainMenu : MonoBehaviour
     /// Called when Quit button is clicked.
     /// Quits the application.
     /// </summary>
-    public void OnQuitGameClicked()
-    {
-        Debug.Log("[MainMenu] Quit button clicked");
-        
-        #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-        #else
-        Application.Quit();
-        #endif
-    }
+    
 
     public void ActivateMenu()
     {

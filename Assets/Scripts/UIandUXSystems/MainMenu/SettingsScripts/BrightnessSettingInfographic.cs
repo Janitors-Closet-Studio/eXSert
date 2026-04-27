@@ -26,6 +26,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        Debug.Log("Pointer entered brightness infographic");
        FadeInAllImages(0.25f);
        FadeOutTopMenuIfItIsASubMenu();
     }
@@ -33,6 +34,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        Debug.Log("Pointer exited brightness infographic");
         FadeOutAllImages(0.25f);
     }
 

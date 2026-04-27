@@ -7,20 +7,66 @@
 
 using Managers.TimeLord;
 using Progression.Encounters;
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UIandUXSystems.HUD;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
+using Utilities.Combat;
 using Utilities.Combat.Attacks;
 
 public class TutorialHandler : MonoBehaviour
 {
+    private static readonly Regex TutorialBindTokenRegex = new(@"\[\[bind:[^\]]*\]\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex TutorialSpriteTagRegex = new(@"<sprite[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex TutorialWhitespaceRegex = new(@"\s{2,}", RegexOptions.Compiled);
+
+    private enum TutorialStep
+    {
+        None,
+        SingleAttack,
+        AoeAttack,
+        Dash,
+        Guard,
+        Parry,
+        Complete
+    }
+
     #region Inspector Setup
     [Header("Objective Messages")]
     [SerializeField, TextArea] private string initialMessage;
+    [SerializeField] private bool initialMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction initialMessageAction = KeybindAction.GP_Interact;
     [SerializeField, TextArea] private string singleTargetFightMessage;
+    [SerializeField] private bool singleTargetFightMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction singleTargetFightMessageAction = KeybindAction.GP_FastAttackSingle;
     [SerializeField, TextArea] private string aoeTargetFightMessage;
+    [SerializeField] private bool aoeTargetFightMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction aoeTargetFightMessageAction = KeybindAction.GP_HeavyAttackAoe;
+    [SerializeField] private bool useDashStep = true;
+    [SerializeField, TextArea] private string dashMessage;
+    [SerializeField] private bool dashMessageUseSelectedIcon = true;
+    [SerializeField] private KeybindAction dashMessageAction = KeybindAction.GP_Dash;
+    [SerializeField] private bool useGuardStep = true;
+    [SerializeField, TextArea] private string guardFightMessage;
+    [SerializeField] private bool guardFightMessageUseSelectedIcon = true;
+    [SerializeField] private KeybindAction guardFightMessageAction = KeybindAction.GP_Guard;
+    [SerializeField] private bool useParryStep = true;
+    [SerializeField, TextArea] private string parryFightMessage;
+    [SerializeField] private bool parryFightMessageUseSelectedIcon = true;
+    [SerializeField] private KeybindAction parryFightMessageAction = KeybindAction.GP_Guard;
     [SerializeField, TextArea] private string correctButtonPressedMessage;
+    [SerializeField] private List<string> correctButtonPressedMessageOptions = new();
+    [SerializeField] private bool correctButtonPressedMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction correctButtonPressedMessageAction = KeybindAction.GP_Interact;
     [SerializeField, TextArea] private string tutorialCompleteMessage;
+    [SerializeField] private bool tutorialCompleteMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction tutorialCompleteMessageAction = KeybindAction.GP_Interact;
+    [SerializeField] private Color tutorialIconColor = Color.white;
+    [SerializeField, Min(0.1f)] private float tutorialIconSize = 1f;
 
     [Header("Tutorial Progression References")]
     [SerializeField, CriticalReference] 
@@ -28,15 +74,32 @@ public class TutorialHandler : MonoBehaviour
     // [SerializeField] private HUDMessage postEntryMessage;
     [SerializeField, CriticalReference] private CombatEncounter singleTargetFight;
     [SerializeField, CriticalReference] private CombatEncounter aoeTargetFight;
+    [SerializeField] private CombatEncounter dashFight;
+    [SerializeField] private CombatEncounter guardFight;
+    [SerializeField] private CombatEncounter parryFight;
     [SerializeField, CriticalReference] private GameObject keycardToEnable;
+    [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private KeybindIconSwapper tutorialObjectiveIcon;
+    [SerializeField] private bool keepPlayerAtFullHealthUntilTutorialComplete = true;
+    [SerializeField, Range(0.05f, 0.95f)] private float playerRecoveryHealthThreshold = 0.3f;
+    [SerializeField] private bool enemiesInvulnerableUntilTutorialActionSucceeds = true;
+    [SerializeField] private bool makeDashEnemyHitHard = true;
+    [SerializeField] private bool makeGuardEnemyHitHard = true;
+    [SerializeField] private bool makeParryEnemyHitHard = true;
+    [FormerlySerializedAs("dashEnemyDamageMultiplier")]
+    [SerializeField, Min(1f)] private float tutorialEnemyDamageMultiplier = 5f;
     [SerializeField] private bool loadNextSceneOnComplete = true;
     [SerializeField] private SceneAsset nextScene;
     #endregion
 
     private bool logCollected = false;
-    private bool correctButtonPressed;
-    private bool FirstFightCompleted => singleTargetFight.isCompleted;
-    private bool SecondFightCompleted => aoeTargetFight.isCompleted;
+    private bool currentStepCompleted;
+    private TutorialStep currentStep;
+    private bool isSubscribedToPlayerMovement;
+    private readonly List<BaseEnemyCore> currentStepEnemies = new();
+    private string lastCorrectButtonPressedMessage;
+    private PlayerHealthBarManager playerHealth;
+    private CombatEncounter currentStepEncounter;
 
     #region Couroutines
     private Coroutine enableRetryRoutine;
@@ -51,36 +114,71 @@ public class TutorialHandler : MonoBehaviour
     private void Start()
     {
         keycardToEnable.SetActive(false); // Ensures the keycard is disabled at the start of the tutorial
-        
-        ObjectiveManager.SetMainObjective(initialMessage); // Displays the initial tutorial message to the player
+        ResolvePlayerMovement();
+        ResolvePlayerHealth();
+        SetTutorialPlayerProtection(true);
+
+        DisplayTutorialObjective(initialMessage, initialMessageUseSelectedIcon, initialMessageAction);
     }
 
     private void OnEnable()
     {
         tutorialEntry.OnEntryCollected += OnEntryCollected;
         tutorialEntry.OnEntryRead += OnEntryRead;
+        CombatManager.OnSuccessfulGuard += OnSuccessfulGuard;
+        CombatManager.OnSuccessfulParry += OnSuccessfulParry;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+        PlayerHealthBarManager.OnPlayerDamaged += HandlePlayerDamaged;
+        PlayerHealthBarManager.OnPlayerHealthRegistered += HandlePlayerHealthRegistered;
 
         // Subscribe to PlayerAttackManager attack-type events
         PlayerAttackManager.OnSingleAttack += OnPlayerAttack;
         PlayerAttackManager.OnAoeAttack += OnPlayerAttack;
 
+        SubscribeToPlayerMovement();
+
         // Subscribe to encounter completion events if they aren't already completed
         singleTargetFight.OnEncounterCompleted += OnEncounterCompleted;
         aoeTargetFight.OnEncounterCompleted += OnEncounterCompleted;
+
+        if (dashFight != null)
+            dashFight.OnEncounterCompleted += OnEncounterCompleted;
+
+        if (guardFight != null)
+            guardFight.OnEncounterCompleted += OnEncounterCompleted;
+
+        if (parryFight != null)
+            parryFight.OnEncounterCompleted += OnEncounterCompleted;
     }
 
     private void OnDisable()
     {
         tutorialEntry.OnEntryCollected -= OnEntryCollected;
         tutorialEntry.OnEntryRead -= OnEntryRead;
+        CombatManager.OnSuccessfulGuard -= OnSuccessfulGuard;
+        CombatManager.OnSuccessfulParry -= OnSuccessfulParry;
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        PlayerHealthBarManager.OnPlayerDamaged -= HandlePlayerDamaged;
+        PlayerHealthBarManager.OnPlayerHealthRegistered -= HandlePlayerHealthRegistered;
 
         // Unsubscribe from PlayerAttackManager events
         PlayerAttackManager.OnSingleAttack -= OnPlayerAttack;
         PlayerAttackManager.OnAoeAttack -= OnPlayerAttack;
 
+        UnsubscribeFromPlayerMovement();
+
         // Unsubscribe from encounter completion events
         singleTargetFight.OnEncounterCompleted -= OnEncounterCompleted;
         aoeTargetFight.OnEncounterCompleted -= OnEncounterCompleted;
+
+        if (dashFight != null)
+            dashFight.OnEncounterCompleted -= OnEncounterCompleted;
+
+        if (guardFight != null)
+            guardFight.OnEncounterCompleted -= OnEncounterCompleted;
+
+        if (parryFight != null)
+            parryFight.OnEncounterCompleted -= OnEncounterCompleted;
 
         if (enableRetryRoutine != null)
         {
@@ -94,87 +192,427 @@ public class TutorialHandler : MonoBehaviour
             StopCoroutine(destroyMonitorRoutine);
             destroyMonitorRoutine = null;
         }
+
+        ReleaseCurrentStepEnemyOverrides();
+        SetTutorialPlayerProtection(false);
     }
 
     private void OnEntryCollected(string entryId)
     {
         logCollected = true;
-
-        StartCombatTutorial(singleTargetFight, singleTargetFightMessage);
+        BeginStep(TutorialStep.SingleAttack);
     }
 
     #region Combat Tutorial Handlers
-    private void StartCombatTutorial(CombatEncounter fight, string message)
+    private void BeginStep(TutorialStep step)
     {
+        currentStep = step;
+        currentStepCompleted = false;
+
+        switch (step)
+        {
+            case TutorialStep.SingleAttack:
+                StartCombatTutorial(singleTargetFight, singleTargetFightMessage, singleTargetFightMessageUseSelectedIcon, singleTargetFightMessageAction);
+                break;
+
+            case TutorialStep.AoeAttack:
+                StartCombatTutorial(aoeTargetFight, aoeTargetFightMessage, aoeTargetFightMessageUseSelectedIcon, aoeTargetFightMessageAction);
+                break;
+
+            case TutorialStep.Dash:
+                StartCombatTutorial(dashFight, dashMessage, dashMessageUseSelectedIcon, dashMessageAction);
+                break;
+
+            case TutorialStep.Guard:
+                StartCombatTutorial(guardFight, guardFightMessage, guardFightMessageUseSelectedIcon, guardFightMessageAction);
+                break;
+
+            case TutorialStep.Parry:
+                StartCombatTutorial(parryFight, parryFightMessage, parryFightMessageUseSelectedIcon, parryFightMessageAction);
+                break;
+
+            case TutorialStep.Complete:
+                TutorialComplete();
+                break;
+        }
+    }
+
+    private void StartCombatTutorial(CombatEncounter fight, string message, bool useSelectedIcon, KeybindAction selectedAction)
+    {
+        if (fight == null)
+        {
+            Debug.LogWarning($"[TutorialHandler] Combat encounter missing for step {currentStep}. Skipping to next configured step.");
+            BeginStep(GetNextStepAfter(currentStep));
+            return;
+        }
+
         Debug.Log($"[TutorialHandler] Starting combat tutorial for encounter {fight.name}. Displaying message and enabling fight zone.");
-        correctButtonPressed = false; // Resets the button press requirement for this part of the tutorial
-        ObjectiveManager.SetMainObjective(message); // Displays the appropriate message for the current fight
+        DisplayTutorialObjective(message, useSelectedIcon, selectedAction);
+        ReleaseCurrentStepEnemyOverrides();
+        SubscribeToCurrentStepEncounter(fight);
         fight.EnableZone(); // Enables the fight zone
+        ApplyCurrentStepEnemyOverrides(fight);
     }
 
     private void OnPlayerAttack(PlayerAttack attack)
     {
         AttackType type = attack.attackType;
 
-        bool shouldProcess = 
-            (type == AttackType.LightSingle && logCollected) || 
-            (type == AttackType.HeavyAOE && FirstFightCompleted);
+        bool shouldProcess =
+            (currentStep == TutorialStep.SingleAttack && type == AttackType.LightSingle && logCollected) ||
+            (currentStep == TutorialStep.AoeAttack && type == AttackType.HeavyAOE);
 
         if (!shouldProcess) return;
 
-        // Unsubscribe from the specific attack event to prevent multiple triggers for the same attack type.
-        switch (type)
-        {
-            case AttackType.LightSingle: PlayerAttackManager.OnSingleAttack -= OnPlayerAttack; break;
-            case AttackType.HeavyAOE: PlayerAttackManager.OnAoeAttack -= OnPlayerAttack; break;
-            default: Debug.LogWarning($"[TutorialHandler] Received unexpected attack type {type}. No event unsubscription performed."); break;
-        }
-
         Debug.Log($"[TutorialHandler] Player performed attack of type {type}. Updating Progress...");
-
-        ObjectiveManager.SetMainObjective(correctButtonPressedMessage);
-        
-        correctButtonPressed = true; // Updates tutorial progress
-
-        // Checks if the second fight is complete to mark the tutorial as complete
-        if (SecondFightCompleted) TutorialComplete();
-
-        // If the second fight isn't complete, checks if the first fight is complete to start the second
-        else if (type == AttackType.LightSingle && FirstFightCompleted) 
-            StartCombatTutorial(aoeTargetFight, aoeTargetFightMessage);
+        MarkCurrentStepComplete();
     }
 
     private void OnEncounterCompleted()
     {
         Debug.Log($"[TutorialHandler] Encounter completed called. Checking conditions for tutorial progression...");
-        if (!correctButtonPressed) return; // Only proceed if the correct button was pressed
+        if (!currentStepCompleted)
+            return;
 
-        // Checks which fight was completed and updates the tutorial progression accordingly.
-        if (SecondFightCompleted) 
+        BeginStep(GetNextStepAfter(currentStep));
+    }
+    #endregion
+
+    private void OnSuccessfulGuard()
+    {
+        if (currentStep != TutorialStep.Guard)
+            return;
+
+        Debug.Log("[TutorialHandler] Successful guard detected. Updating progress...");
+        MarkCurrentStepComplete();
+    }
+
+    private void OnSuccessfulParry(BaseEnemy<EnemyState, EnemyTrigger> _)
+    {
+        if (currentStep != TutorialStep.Parry)
+            return;
+
+        Debug.Log("[TutorialHandler] Successful parry detected. Updating progress...");
+        MarkCurrentStepComplete();
+    }
+
+    private void HandleDashPerformed()
+    {
+        if (currentStep != TutorialStep.Dash)
+            return;
+
+        Debug.Log("[TutorialHandler] Dash detected. Updating progress...");
+        MarkCurrentStepComplete();
+    }
+
+    private void MarkCurrentStepComplete()
+    {
+        if (currentStepCompleted)
+            return;
+
+        currentStepCompleted = true;
+        SetCurrentStepEnemiesDamageable(true);
+        DisplayTutorialObjective(GetRandomCorrectButtonPressedMessage(), correctButtonPressedMessageUseSelectedIcon, correctButtonPressedMessageAction);
+    }
+
+    private string GetRandomCorrectButtonPressedMessage()
+    {
+        if (correctButtonPressedMessageOptions != null)
         {
-            Debug.Log($"[TutorialHandler] Second encounter completed. Updating tutorial progress...");
+            List<string> validMessages = new();
 
-            TutorialComplete();
+            for (int i = 0; i < correctButtonPressedMessageOptions.Count; i++)
+            {
+                string message = correctButtonPressedMessageOptions[i];
+                if (!string.IsNullOrWhiteSpace(message))
+                    validMessages.Add(message);
+            }
 
+            if (validMessages.Count > 0)
+            {
+                if (validMessages.Count > 1 && !string.IsNullOrWhiteSpace(lastCorrectButtonPressedMessage))
+                    validMessages.RemoveAll(message => string.Equals(message, lastCorrectButtonPressedMessage, StringComparison.Ordinal));
+
+                if (validMessages.Count > 0)
+                {
+                    int randomIndex = UnityEngine.Random.Range(0, validMessages.Count);
+                    lastCorrectButtonPressedMessage = validMessages[randomIndex];
+                    return lastCorrectButtonPressedMessage;
+                }
+            }
+        }
+
+        lastCorrectButtonPressedMessage = correctButtonPressedMessage;
+        return correctButtonPressedMessage;
+    }
+
+    private TutorialStep GetNextStepAfter(TutorialStep step)
+    {
+        return step switch
+        {
+            TutorialStep.SingleAttack => TutorialStep.AoeAttack,
+            TutorialStep.AoeAttack => useDashStep ? TutorialStep.Dash : (useGuardStep ? TutorialStep.Guard : (useParryStep ? TutorialStep.Parry : TutorialStep.Complete)),
+            TutorialStep.Dash => useGuardStep ? TutorialStep.Guard : (useParryStep ? TutorialStep.Parry : TutorialStep.Complete),
+            TutorialStep.Guard => useParryStep ? TutorialStep.Parry : TutorialStep.Complete,
+            TutorialStep.Parry => TutorialStep.Complete,
+            _ => TutorialStep.Complete,
+        };
+    }
+
+    private void HandleSceneLoaded(Scene _, LoadSceneMode __)
+    {
+        SubscribeToPlayerMovement();
+        ResolvePlayerHealth();
+        SetTutorialPlayerProtection(true);
+    }
+
+    private PlayerMovement ResolvePlayerMovement()
+    {
+        if (IsValidPlayerMovement(playerMovement))
+            return playerMovement;
+
+        playerMovement = null;
+
+        if (Player.TryGetPlayerObject(out GameObject playerObject) && playerObject != null)
+        {
+            playerMovement = playerObject.GetComponent<PlayerMovement>()
+                ?? playerObject.GetComponentInChildren<PlayerMovement>(true)
+                ?? playerObject.GetComponentInParent<PlayerMovement>();
+        }
+
+        if (!IsValidPlayerMovement(playerMovement))
+            playerMovement = FindFirstObjectByType<PlayerMovement>();
+
+        return playerMovement;
+    }
+
+    private void ResolvePlayerHealth()
+    {
+        if (playerHealth != null)
+            return;
+
+        playerHealth = PlayerHealthBarManager.Instance;
+
+        if (playerHealth == null && Player.TryGetPlayerObject(out GameObject playerObject) && playerObject != null)
+        {
+            playerHealth = playerObject.GetComponent<PlayerHealthBarManager>()
+                ?? playerObject.GetComponentInChildren<PlayerHealthBarManager>(true)
+                ?? playerObject.GetComponentInParent<PlayerHealthBarManager>();
+        }
+    }
+
+    private void HandlePlayerHealthRegistered(PlayerHealthBarManager manager)
+    {
+        playerHealth = manager;
+        SetTutorialPlayerProtection(true);
+    }
+
+    private void HandlePlayerDamaged(float _)
+    {
+        if (!keepPlayerAtFullHealthUntilTutorialComplete || currentStep == TutorialStep.Complete)
+            return;
+
+        ResolvePlayerHealth();
+
+        if (playerHealth != null && playerHealth.NormalizedHealth <= playerRecoveryHealthThreshold)
+            playerHealth.ForceFullHeal();
+    }
+
+    private void SetTutorialPlayerProtection(bool enabled)
+    {
+        ResolvePlayerHealth();
+
+        if (playerHealth == null)
+            return;
+
+        if (!enabled || currentStep == TutorialStep.Complete)
+        {
+            playerHealth.SetInvulnerable(false);
             return;
         }
 
-        // The first fight was completed
-        Debug.Log($"[TutorialHandler] First encounter completed. Updating tutorial progress...");
-
-        correctButtonPressed = false; // Resets the button press requirement for the next part of the tutorial
-        
-        StartCombatTutorial(aoeTargetFight, aoeTargetFightMessage);
+        playerHealth.SetInvulnerable(false);
     }
-    #endregion
+
+    private void ApplyCurrentStepEnemyOverrides(CombatEncounter fight)
+    {
+        if (fight == null)
+            return;
+
+        foreach (BaseEnemyCore enemy in fight.GetTrackedEnemies())
+            ApplyCurrentStepEnemyOverride(enemy);
+    }
+
+    private void ApplyCurrentStepEnemyOverride(BaseEnemyCore enemy)
+    {
+        if (enemy == null)
+            return;
+
+        if (!currentStepEnemies.Contains(enemy))
+            currentStepEnemies.Add(enemy);
+
+        enemy.ClearRuntimeCombatOverrides();
+
+        bool keepInvulnerable = enemiesInvulnerableUntilTutorialActionSucceeds &&
+            (currentStep == TutorialStep.Dash || currentStep == TutorialStep.Guard || currentStep == TutorialStep.Parry);
+
+        enemy.SetIncomingDamageEnabled(!keepInvulnerable);
+
+        if (ShouldIncreaseEnemyDamageForCurrentStep())
+            enemy.SetOutgoingDamageMultiplier(tutorialEnemyDamageMultiplier);
+    }
+
+    private bool ShouldIncreaseEnemyDamageForCurrentStep()
+    {
+        return currentStep switch
+        {
+            TutorialStep.Dash => makeDashEnemyHitHard,
+            TutorialStep.Guard => makeGuardEnemyHitHard,
+            TutorialStep.Parry => makeParryEnemyHitHard,
+            _ => false,
+        };
+    }
+
+    private void HandleCurrentStepEnemySpawned(BaseEnemyCore enemy)
+    {
+        if (currentStepCompleted)
+            return;
+
+        ApplyCurrentStepEnemyOverride(enemy);
+    }
+
+    private void SubscribeToCurrentStepEncounter(CombatEncounter encounter)
+    {
+        if (currentStepEncounter == encounter)
+            return;
+
+        UnsubscribeFromCurrentStepEncounter();
+        currentStepEncounter = encounter;
+
+        if (currentStepEncounter != null)
+            currentStepEncounter.OnEnemySpawned += HandleCurrentStepEnemySpawned;
+    }
+
+    private void UnsubscribeFromCurrentStepEncounter()
+    {
+        if (currentStepEncounter == null)
+            return;
+
+        currentStepEncounter.OnEnemySpawned -= HandleCurrentStepEnemySpawned;
+        currentStepEncounter = null;
+    }
+
+    private void SetCurrentStepEnemiesDamageable(bool enabled)
+    {
+        foreach (BaseEnemyCore enemy in currentStepEnemies)
+        {
+            if (enemy == null)
+                continue;
+
+            enemy.SetIncomingDamageEnabled(enabled);
+        }
+    }
+
+    private void ReleaseCurrentStepEnemyOverrides()
+    {
+        UnsubscribeFromCurrentStepEncounter();
+
+        foreach (BaseEnemyCore enemy in currentStepEnemies)
+        {
+            if (enemy == null)
+                continue;
+
+            enemy.ClearRuntimeCombatOverrides();
+        }
+
+        currentStepEnemies.Clear();
+    }
+
+    private void SubscribeToPlayerMovement()
+    {
+        PlayerMovement resolvedPlayerMovement = ResolvePlayerMovement();
+
+        if (!IsValidPlayerMovement(resolvedPlayerMovement))
+            return;
+
+        if (isSubscribedToPlayerMovement)
+            UnsubscribeFromPlayerMovement();
+
+        playerMovement = resolvedPlayerMovement;
+        playerMovement.DashPerformed += HandleDashPerformed;
+        isSubscribedToPlayerMovement = true;
+    }
+
+    private void UnsubscribeFromPlayerMovement()
+    {
+        if (!isSubscribedToPlayerMovement)
+            return;
+
+        if (IsValidPlayerMovement(playerMovement))
+            playerMovement.DashPerformed -= HandleDashPerformed;
+
+        isSubscribedToPlayerMovement = false;
+    }
+
+    private static bool IsValidPlayerMovement(PlayerMovement movement)
+    {
+        return movement != null && movement.gameObject != null;
+    }
+
+    private void DisplayTutorialObjective(string source, bool showSelectedIcon, KeybindAction selectedAction)
+    {
+        ObjectiveManager.SetMainObjective(BuildMessage(source));
+        UpdateTutorialObjectiveIcon(showSelectedIcon, selectedAction);
+    }
+
+    private string BuildMessage(string source, bool useSelectedIcon, KeybindAction selectedAction)
+    {
+        return BuildMessage(source);
+    }
+
+    private static string BuildMessage(string source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return string.Empty;
+
+        string cleaned = TutorialBindTokenRegex.Replace(source, string.Empty);
+        cleaned = TutorialSpriteTagRegex.Replace(cleaned, string.Empty);
+        cleaned = TutorialWhitespaceRegex.Replace(cleaned, " ");
+        return cleaned.Trim();
+    }
+
+    private void UpdateTutorialObjectiveIcon(bool shouldShowIcon, KeybindAction action)
+    {
+        if (tutorialObjectiveIcon == null)
+            return;
+
+        tutorialObjectiveIcon.gameObject.SetActive(shouldShowIcon);
+
+        if (shouldShowIcon)
+            tutorialObjectiveIcon.SetAction(action);
+    }
+
+    private void HideTutorialObjectiveIcon()
+    {
+        if (tutorialObjectiveIcon == null)
+            return;
+
+        tutorialObjectiveIcon.gameObject.SetActive(false);
+    }
 
     private void TutorialComplete()
     {
         Debug.Log($"[TutorialHandler] Tutorial complete! All conditions met.");
 
+        currentStep = TutorialStep.Complete;
+        currentStepCompleted = true;
+        ReleaseCurrentStepEnemyOverrides();
+        SetTutorialPlayerProtection(false);
+
         keycardToEnable.SetActive(true); // Enables the keycard to allow progression to the next scene
 
-        ObjectiveManager.SetMainObjective(tutorialCompleteMessage); // Displays the tutorial complete message
+        DisplayTutorialObjective(tutorialCompleteMessage, tutorialCompleteMessageUseSelectedIcon, tutorialCompleteMessageAction);
+        HideTutorialObjectiveIcon();
 
         if (loadNextSceneOnComplete && nextScene != null)
         {

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Collections.Generic;
+using System.Text;
 using Unity.VisualScripting;
 
 public class WritingTextUI : MonoBehaviour
@@ -46,6 +47,9 @@ public class WritingTextUI : MonoBehaviour
 
     private TextWriterSingle AddWriter(TextMeshProUGUI textComponent, string textToWrite, float timePerCharacter, bool invisibleCharacters)
     {
+        if (textComponent != null)
+            textComponent.richText = true;
+
         var writer = new TextWriterSingle();
         writer.AddWriter(textComponent, textToWrite, timePerCharacter, invisibleCharacters);
         textWriterSingles.Add(writer);
@@ -87,7 +91,7 @@ public class WritingTextUI : MonoBehaviour
     {
         private TextMeshProUGUI textComponent;
         private string fullText;
-        private int characterIndex;
+        private int rawTextIndex;
         private float timePerCharacter;
         private float timer;
         private bool invisibleCharacters;
@@ -96,11 +100,14 @@ public class WritingTextUI : MonoBehaviour
         public void AddWriter(TextMeshProUGUI textComponent, string textToWrite, float timePerCharacter, bool invisibleCharacters, bool isWriting = true)
         {
             this.textComponent = textComponent;
+            if (this.textComponent != null)
+                this.textComponent.richText = true;
+
             this.fullText = textToWrite;
             this.timePerCharacter = timePerCharacter;
             this.invisibleCharacters = invisibleCharacters;
             this.isWriting = isWriting;
-            characterIndex = 0;
+            rawTextIndex = 0;
         }
 
         public IEnumerator WriteTextCoroutine()
@@ -121,21 +128,22 @@ public class WritingTextUI : MonoBehaviour
             {
                 timer -= Time.deltaTime;
 
-                if (timer <= 0f && characterIndex < fullText.Length)
+                if (timer <= 0f && rawTextIndex < fullText.Length)
                 {
                     timer += timePerCharacter;
                     isWriting = true;
-                    characterIndex++;
-                    string textToShow = fullText.Substring(0, characterIndex);
-                    PlayRandomTypingSound();
+                    int nextVisibleIndex = GetNextVisibleIndex(fullText, rawTextIndex);
+                    if (nextVisibleIndex <= rawTextIndex)
+                        nextVisibleIndex = rawTextIndex + 1;
 
-                    if (invisibleCharacters)
-                        textToShow += $"<color=#00000000>{fullText.Substring(characterIndex)}</color>";
+                    rawTextIndex = nextVisibleIndex;
+                    string textToShow = BuildVisibleText(fullText, rawTextIndex, invisibleCharacters);
+                    PlayRandomTypingSound();
 
                     textComponent.text = textToShow;
                     if (WritingTextUI.DebugLogging) Debug.Log($"[WritingTextUI] Typing: '{textToShow}'");
 
-                    if (characterIndex >= fullText.Length)
+                    if (rawTextIndex >= fullText.Length)
                     {
                         isWriting = false;
                         if (WritingTextUI.DebugLogging) Debug.Log("[WritingTextUI] Typing complete.");
@@ -171,9 +179,58 @@ public class WritingTextUI : MonoBehaviour
         public void WriteAllAndDestroy()
         {
             if (textComponent != null)
+            {
+                textComponent.richText = true;
                 textComponent.text = fullText;
-            characterIndex = fullText.Length;
+            }
+
+            rawTextIndex = fullText.Length;
             WritingTextUI.RemoveWriter_Static(textComponent);
+        }
+
+        private static int GetNextVisibleIndex(string text, int startIndex)
+        {
+            int index = startIndex;
+
+            while (index < text.Length)
+            {
+                if (text[index] == '<')
+                {
+                    int tagEnd = text.IndexOf('>', index);
+                    if (tagEnd < 0)
+                        return Mathf.Min(index + 1, text.Length);
+
+                    string tag = text.Substring(index, tagEnd - index + 1);
+                    index = tagEnd + 1;
+
+                    if (IsVisibleTag(tag))
+                        return index;
+
+                    continue;
+                }
+
+                return index + 1;
+            }
+
+            return index;
+        }
+
+        private static string BuildVisibleText(string fullText, int visibleRawIndex, bool invisibleCharacters)
+        {
+            if (!invisibleCharacters || visibleRawIndex >= fullText.Length)
+                return fullText.Substring(0, visibleRawIndex);
+
+            StringBuilder builder = new();
+            builder.Append(fullText, 0, visibleRawIndex);
+            builder.Append("<color=#00000000>");
+            builder.Append(fullText.Substring(visibleRawIndex));
+            builder.Append("</color>");
+            return builder.ToString();
+        }
+
+        private static bool IsVisibleTag(string tag)
+        {
+            return tag.StartsWith("<sprite", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

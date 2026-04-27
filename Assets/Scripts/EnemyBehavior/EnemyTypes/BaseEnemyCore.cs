@@ -27,6 +27,18 @@ public abstract class BaseEnemyCore : MonoBehaviour, IHealthSystem
     public abstract void HealHP(float hp);
     public abstract void LoseHP(float damage, float rumbleDuration, float lowFrequency, float highFrequency);
 
+    public virtual void SetIncomingDamageEnabled(bool enabled)
+    {
+    }
+
+    public virtual void SetOutgoingDamageMultiplier(float multiplier)
+    {
+    }
+
+    public virtual void ClearRuntimeCombatOverrides()
+    {
+    }
+
     public virtual void ApplyHitStagger(float duration)
     {
     }
