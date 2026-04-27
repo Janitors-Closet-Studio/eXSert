@@ -13,6 +13,10 @@ internal class ObjectiveText : MonoBehaviour
     private Objective currentMessage;
     private string currentMessageString => currentMessage?.DisplayText ?? "";
 
+    [Header("Debug")]
+    [Tooltip("Enable verbose ObjectiveText debug logs.")]
+    [SerializeField] private bool debugLogging = false;
+
     private void OnEnable()
     {
         ObjectiveManager.OnObjectiveChanged += UpdateText;
@@ -25,7 +29,7 @@ internal class ObjectiveText : MonoBehaviour
 
     private void UpdateText(Objective newObjective)
     {
-        Debug.Log($"[HUDTextHandler] Setting new message: {newObjective}");
+        if (debugLogging) Debug.Log($"[HUDTextHandler] Setting new message: {newObjective}");
         currentMessage = newObjective;
 
         WritingTextUI.AddWriter_Static(HUDText, currentMessageString, typingSpeed, false);
