@@ -14,6 +14,7 @@ namespace UI.Loading
     public sealed class LoadingScreenController : MonoBehaviour
     {
         public static LoadingScreenController Instance { get; private set; }
+        public static bool IsLoading;
         public static bool HasInstance => Instance != null;
         public static event Action OnLoadingScreenShown;
         public static event Action OnLoadingScreenContentShown;
@@ -78,7 +79,7 @@ namespace UI.Loading
 #if UNITY_EDITOR
             Debug.Log($"[LoadingScreen][Editor Trace] BeginLoading called. Suppressed={SceneLoader.IsLoadingScreenSuppressed}, PauseGame={pauseGame}. Stack:\n{Environment.StackTrace}");
 #endif
-
+            IsLoading = true;
             if (SceneLoader.IsLoadingScreenSuppressed)
             {
                 if (loadSteps != null)
@@ -122,6 +123,7 @@ namespace UI.Loading
         private IEnumerator RunLoadingSequence(IEnumerator loadSteps, bool pauseGame, float minimumDisplayDuration)
         {
             isLoadingSequenceRunning = true;
+            IsLoading = true;
             string pauseToken = null;
             string gameplayInputBlockToken = null;
 
@@ -198,6 +200,7 @@ namespace UI.Loading
                     PauseCoordinator.ReleaseTimeScale(pauseToken);
 
                 isLoadingSequenceRunning = false;
+                IsLoading = false;
                 activeRoutine = null;
             }
         }
@@ -247,6 +250,7 @@ namespace UI.Loading
             }
 
             blackoutCanvasGroup.alpha = 0f;
+            IsLoading = false;
         }
     }
 }

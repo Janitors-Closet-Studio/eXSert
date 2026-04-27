@@ -74,11 +74,39 @@ public class RumbleManager : Singleton<RumbleManager>
 
     public void StopControllerRumble()
     {
-        StartCoroutine(StopRumble(0, pad));
+        Gamepad activePad = pad;
+
+        if (activePad == null)
+        {
+            var playerInput = InputReader.PlayerInput;
+            if (playerInput != null)
+            {
+                foreach (var device in playerInput.devices)
+                {
+                    if (device is Gamepad gamepad)
+                    {
+                        activePad = gamepad;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (activePad == null)
+            activePad = Gamepad.current;
+
+        if (activePad == null)
+            return;
+
+        pad = activePad;
+        StartCoroutine(StopRumble(0, activePad));
     }
 
     private IEnumerator StopRumble(float duration, Gamepad pad)
     {
+        if (pad == null)
+            yield break;
+
         float elapsedTime = 0f;
 
         //While the current time is lower than duration rumble will play
