@@ -31681,6 +31681,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HintInteractions
   _showHitbox: 0
+  debugLogging: 0
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
@@ -73243,12 +73244,16 @@ MonoBehaviour:
   basicEncounter: {fileID: 1584851644}
   platform: {fileID: 610576099}
   decelerationDuration: 5
+  debugFallbackSpeed: 10
   railToGoDown: {fileID: 858934806}
   railDropDuration: 1
   platformToExtend: {fileID: 1835201104}
   platformExtendDuration: 1
   delayBeforeDrop: 0.5
   delayBetweenAnimations: 0.1
+  snapDuration: 2
+  overshootEnabled: 1
+  overshootMultiplier: 1.025
   wallHeight: 24.99127
   finalDoorWallLocalY: -0.03
   shakeAmplitude: 1.5
