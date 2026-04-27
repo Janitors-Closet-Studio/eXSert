@@ -31357,7 +31357,7 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: requiredItemID
-      value: crewquarterdoor
+      value: CrewQuarterDoor
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: _interactionPrompt
@@ -58006,6 +58006,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
@@ -58021,7 +58022,7 @@ MonoBehaviour:
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
-  requiredItemID: CrewQuarterDoor
+  requiredItemID: 
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
@@ -58032,6 +58033,7 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 1574532791}
   onlyInteractableOnce: 1
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 1
   useCameraTransition: 0
   useSpecialTransition: 0
   transitionCinemachineCamera: {fileID: 0}
