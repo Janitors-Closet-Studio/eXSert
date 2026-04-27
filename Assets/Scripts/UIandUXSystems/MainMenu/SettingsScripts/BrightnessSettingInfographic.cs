@@ -14,8 +14,14 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     [SerializeField] private float brightnessMin = -0.5f;
     [SerializeField] private float brightnessMax = 1f;
     private float _previousSliderValue;
+    private bool isMainMenuScene;
+    private bool visualsVisible;
+    private bool isSelected;
+
     private void Start() 
     {
+        isMainMenuScene = SceneManager.GetActiveScene().name == "MainMenu";
+
         float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
         _previousSliderValue = initialBrightness; // Initialize here
     
@@ -29,9 +35,9 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     public void OnPointerEnter(PointerEventData eventData)
     {
         Debug.Log("Pointer entered brightness infographic");
-        FadeInAllImages(0.25f);
+        SetVisualsVisible(true, 0.25f);
 
-        if (SceneManager.GetActiveScene().name != "MainMenu")
+        if (!isMainMenuScene)
         {
             // In player scene, don't close other menus
             return;
@@ -46,30 +52,41 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     public void OnPointerExit(PointerEventData eventData)
     {
         Debug.Log("Pointer exited brightness infographic");
-        FadeOutAllImages(0.25f);
+        SetVisualsVisible(false, 0.25f);
     }
 
     public void OnSelect(BaseEventData eventData)
     {
-        FadeInAllImages(0.25f);
-
-        if (SceneManager.GetActiveScene().name != "MainMenu")
-        {
-            // In player scene, don't close other menus
+        // In player scene, selection can stick and never deselect. Hover should own visibility there.
+        if (!isMainMenuScene)
             return;
-        }
-        else
-        {
-            FadeOutTopMenuIfItIsASubMenu();
-        }
-        {
-            FadeOutTopMenuIfItIsASubMenu();
-        }
+
+        isSelected = true;
+        SetVisualsVisible(true, 0.25f);
+
+        FadeOutTopMenuIfItIsASubMenu();
     }
 
     public void OnDeselect(BaseEventData eventData)
     {
-        FadeOutAllImages(0.25f);
+        if (!isMainMenuScene)
+            return;
+
+        isSelected = false;
+        SetVisualsVisible(false, 0.25f);
+    }
+
+    private void SetVisualsVisible(bool visible, float duration)
+    {
+        if (visualsVisible == visible)
+            return;
+
+        visualsVisible = visible;
+
+        if (visible)
+            FadeInAllImages(duration);
+        else
+            FadeOutAllImages(duration);
     }
 
     private void FadeOutTopMenuIfItIsASubMenu()
@@ -90,7 +107,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     private IEnumerator FadeInScaleForImage(Image image, float duration)
     {
         float elapsedTime = 0f;
-        Vector3 initialScale = Vector3.zero;
+        Vector3 initialScale = image.transform.localScale;
         Vector3 targetScale = Vector3.one;
         Vector3 initialRotation = image.transform.rotation.eulerAngles;
         Vector3 targetRotation = initialRotation + new Vector3(0f, 0f, 360f);
@@ -98,7 +115,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
         while (elapsedTime < duration)
         {
-            elapsedTime += Time.deltaTime;
+            elapsedTime += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsedTime / duration);
             image.transform.localScale = Vector3.Lerp(initialScale, targetScale, t);
             image.transform.rotation = Quaternion.Euler(Vector3.Lerp(initialRotation, targetRotation, t * 0.1f)); // Rotate at half speed
@@ -111,14 +128,14 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     private IEnumerator FadeOutScaleForImage(Image image, float duration)
     {
         float elapsedTime = 0f;
-        Vector3 initialScale = Vector3.one;
+        Vector3 initialScale = image.transform.localScale;
         Vector3 targetScale = Vector3.zero;
         Vector3 initialRotation = image.transform.rotation.eulerAngles;
         Vector3 targetRotation = initialRotation + new Vector3(0f, 0f, 360f);
 
         while (elapsedTime < duration)
         {
-            elapsedTime += Time.deltaTime;
+            elapsedTime += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsedTime / duration);
             image.transform.localScale = Vector3.Lerp(initialScale, targetScale, t);
             image.transform.rotation = Quaternion.Euler(Vector3.Lerp(initialRotation, targetRotation, t * 0.1f)); // Rotate at half 
@@ -170,7 +187,8 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
         if (brightestImage != null)
             brightestImage.color = BuildColorWithAlpha(normalizedBrightness);
 
-        FadeOutAllImages(0f); // Start with all images invisible
+        visualsVisible = true;
+        SetVisualsVisible(false, 0f); // Start with all images invisible
     }
 
     private void UpdateBrightnessInfographic(float value)
@@ -195,7 +213,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     private void RotateGear(Image img, float amount) {
         if (img != null) {
             // Rotates the object on the Z axis relative to its current rotation
-            img.transform.Rotate(Vector3.forward, amount);
+            img.transform.Rotate(Vector3.forward, -amount);
         }
     }
 
