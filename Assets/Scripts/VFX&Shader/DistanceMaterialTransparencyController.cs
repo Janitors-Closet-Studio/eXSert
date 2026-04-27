@@ -4,21 +4,13 @@ using UnityEngine;
 
 public class DistanceMaterialTransparencyController : MonoBehaviour
 {
-    private static readonly int ToonTransparencyProperty = Shader.PropertyToID(
-        "_Tweak_transparency");
-    private static readonly int ToonTransparentEnabledProperty = Shader.PropertyToID(
-        "_TransparentEnabled");
-    private static readonly int ToonClippingModeProperty = Shader.PropertyToID(
-        "_ClippingMode");
-    private static readonly int ToonSrcBlendProperty = Shader.PropertyToID("_SrcBlend");
-    private static readonly int ToonDstBlendProperty = Shader.PropertyToID("_DstBlend");
-    private static readonly int ToonAlphaSrcBlendProperty = Shader.PropertyToID(
-        "_AlphaSrcBlend");
-    private static readonly int ToonAlphaDstBlendProperty = Shader.PropertyToID(
-        "_AlphaDstBlend");
-    private static readonly int ToonZWriteProperty = Shader.PropertyToID("_TransparentZWrite");
-    private static readonly int ToonOpaqueClippingMode = 0;
-    private static readonly int ToonTransparentClippingMode = 2;
+    private static readonly int ToonTransparencyProperty = Shader.PropertyToID("_Tweak_transparency");
+    private static readonly int ToonTransparentEnabledProperty = Shader.PropertyToID("_TransparentEnabled");
+    private static readonly int ToonClippingModeProperty = Shader.PropertyToID("_ClippingMode");
+    private static readonly int ToonZWriteModeProperty = Shader.PropertyToID("_ZWriteMode");
+    private static readonly int ToonZOverDrawModeProperty = Shader.PropertyToID("_ZOverDrawMode");
+    private static readonly int ToonOutlineColorMaskProperty = Shader.PropertyToID("_SPRDefaultUnlitColorMask");
+    private static readonly int ToonOutlineCullModeProperty = Shader.PropertyToID("_SRPDefaultUnlitColMode");
     private static readonly int LitSurfaceProperty = Shader.PropertyToID("_Surface");
     private static readonly int LitBaseColorProperty = Shader.PropertyToID("_BaseColor");
     private static readonly int LitBlendProperty = Shader.PropertyToID("_Blend");
@@ -29,42 +21,44 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
     private static readonly int LitZWriteProperty = Shader.PropertyToID("_ZWrite");
     private static readonly int SurfaceOpaque = 0;
     private static readonly int SurfaceTransparent = 1;
+    private const int ToonClippingOff = 0;
+    private const int ToonClippingOn = 1;
+    private const int ToonTransClipping = 2;
+    private const int ToonOutlineCullFront = 1;
+    private const int ToonOutlineCullBack = 2;
+    private const string ToonKeywordClippingOff = "_IS_CLIPPING_OFF";
+    private const string ToonKeywordClippingMode = "_IS_CLIPPING_MODE";
+    private const string ToonKeywordClippingTransparent = "_IS_CLIPPING_TRANSMODE";
+    private const string ToonKeywordOutlineClippingNo = "_IS_OUTLINE_CLIPPING_NO";
+    private const string ToonKeywordOutlineClippingYes = "_IS_OUTLINE_CLIPPING_YES";
+    private const string RenderTypeTag = "RenderType";
+    private const string IgnoreProjectionTag = "IgnoreProjection";
+    private const string RenderTypeOpaque = "Opaque";
+    private const string RenderTypeTransparentCutout = "TransparentCutOut";
+    private const string RenderTypeTransparent = "Transparent";
 
     [Header("Distance Targets")]
-
     [SerializeField] private GameObject firstTarget;
     [SerializeField] private GameObject secondTarget;
 
     [Header("Toon Materials")]
-
     [SerializeField] private List<Renderer> toonMeshes = new();
     [SerializeField] private List<Material> toonMaterialAssets = new();
     [SerializeField] private float restoredToonTransparency = 0f;
-    [SerializeField] private float hiddenToonTransparency = -0.99f;
-    [SerializeField, Range(0.01f, 0.1f)] private float toonTransparencyStep = 0.01f;
+    [SerializeField] private float hiddenToonTransparency = -1f;
 
     [Header("URP Lit Materials")]
-
     [SerializeField] private List<Renderer> litMeshes = new();
     [SerializeField] private List<Material> litMaterialAssets = new();
     [SerializeField, Range(0f, 1f)] private float restoredLitAlpha = 1f;
     [SerializeField, Range(0f, 1f)] private float hiddenLitAlpha = 0f;
 
     [Header("Distance Thresholds")]
-
     [SerializeField, Min(0f)] private float immediateHideDistance = 1.5f;
     [SerializeField, Min(0f)] private float fadeStartDistance = 3f;
 
-    [Header("Update Settings")]
-
-    [SerializeField, Min(0f)] private float transparencyUpdateInterval = 0.02f;
-    [SerializeField] private bool debugDistanceReadout = false;
-    [SerializeField, Min(0.05f)] private float debugLogInterval = 0.25f;
-
     private readonly List<ToonMaterialState> toonMaterials = new();
     private readonly List<LitMaterialState> litMaterials = new();
-    private float nextTransparencyUpdateTime;
-    private float nextDebugLogTime;
 
     private void Awake()
     {
@@ -74,19 +68,11 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
 
     private void OnEnable()
     {
-        nextTransparencyUpdateTime = 0f;
-        nextDebugLogTime = 0f;
         ApplyCurrentDistance();
     }
 
     private void Update()
     {
-        if (transparencyUpdateInterval > 0f && Time.time < nextTransparencyUpdateTime)
-        {
-            return;
-        }
-
-        nextTransparencyUpdateTime = Time.time + transparencyUpdateInterval;
         ApplyCurrentDistance();
     }
 
@@ -101,12 +87,6 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
         {
             fadeStartDistance = immediateHideDistance;
         }
-
-        restoredToonTransparency = Mathf.Clamp(restoredToonTransparency, -0.99f, 0f);
-        hiddenToonTransparency = Mathf.Clamp(hiddenToonTransparency, -0.99f, 0f);
-        toonTransparencyStep = Mathf.Clamp(toonTransparencyStep, 0.01f, 0.1f);
-        transparencyUpdateInterval = Mathf.Max(0f, transparencyUpdateInterval);
-        debugLogInterval = Mathf.Max(0.05f, debugLogInterval);
     }
 
     private void CacheMaterials()
@@ -178,38 +158,32 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             : 0f;
         float originalClippingMode = material.HasProperty(ToonClippingModeProperty)
             ? material.GetFloat(ToonClippingModeProperty)
-            : ToonOpaqueClippingMode;
-        float originalSrcBlend = material.HasProperty(ToonSrcBlendProperty)
-            ? material.GetFloat(ToonSrcBlendProperty)
-            : (float)UnityEngine.Rendering.BlendMode.One;
-        float originalDstBlend = material.HasProperty(ToonDstBlendProperty)
-            ? material.GetFloat(ToonDstBlendProperty)
-            : (float)UnityEngine.Rendering.BlendMode.Zero;
-        float originalAlphaSrcBlend = material.HasProperty(ToonAlphaSrcBlendProperty)
-            ? material.GetFloat(ToonAlphaSrcBlendProperty)
-            : (float)UnityEngine.Rendering.BlendMode.One;
-        float originalAlphaDstBlend = material.HasProperty(ToonAlphaDstBlendProperty)
-            ? material.GetFloat(ToonAlphaDstBlendProperty)
-            : (float)UnityEngine.Rendering.BlendMode.Zero;
-        float originalZWrite = material.HasProperty(ToonZWriteProperty)
-            ? material.GetFloat(ToonZWriteProperty)
+            : ToonClippingOff;
+        float originalZWriteMode = material.HasProperty(ToonZWriteModeProperty)
+            ? material.GetFloat(ToonZWriteModeProperty)
+            : 1f;
+        float originalZOverDrawMode = material.HasProperty(ToonZOverDrawModeProperty)
+            ? material.GetFloat(ToonZOverDrawModeProperty)
             : 0f;
+        float originalOutlineColorMask = material.HasProperty(ToonOutlineColorMaskProperty)
+            ? material.GetFloat(ToonOutlineColorMaskProperty)
+            : 15f;
+        float originalOutlineCullMode = material.HasProperty(ToonOutlineCullModeProperty)
+            ? material.GetFloat(ToonOutlineCullModeProperty)
+            : ToonOutlineCullFront;
 
-        toonMaterials.Add(
-            new ToonMaterialState(
-                material,
-                originalTransparency,
-                originalTransparentEnabled,
-                originalClippingMode,
-                originalSrcBlend,
-                originalDstBlend,
-                originalAlphaSrcBlend,
-                originalAlphaDstBlend,
-                originalZWrite,
-                material.renderQueue,
-                material.GetTag("RenderType", false, "Opaque")
-            )
-        );
+        toonMaterials.Add(new ToonMaterialState(
+            material,
+            originalTransparency,
+            originalTransparentEnabled,
+            originalClippingMode,
+            originalZWriteMode,
+            originalZOverDrawMode,
+            originalOutlineColorMask,
+            originalOutlineCullMode,
+            material.GetTag(RenderTypeTag, false, RenderTypeOpaque),
+            material.GetTag(IgnoreProjectionTag, false, "False"),
+            material.renderQueue));
     }
 
     private void RegisterLitMaterial(Material material, HashSet<Material> uniqueMaterials)
@@ -223,34 +197,17 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             ? material.GetColor(LitBaseColorProperty)
             : Color.white;
 
-        litMaterials.Add(
-            new LitMaterialState(
-                material,
-                originalBaseColor,
-                material.HasProperty(LitSurfaceProperty)
-                    ? material.GetFloat(LitSurfaceProperty)
-                    : SurfaceOpaque,
-                material.HasProperty(LitBlendProperty)
-                    ? material.GetFloat(LitBlendProperty)
-                    : 0f,
-                material.HasProperty(LitSrcBlendProperty)
-                    ? material.GetFloat(LitSrcBlendProperty)
-                    : (float)UnityEngine.Rendering.BlendMode.One,
-                material.HasProperty(LitDstBlendProperty)
-                    ? material.GetFloat(LitDstBlendProperty)
-                    : (float)UnityEngine.Rendering.BlendMode.Zero,
-                material.HasProperty(LitSrcBlendAlphaProperty)
-                    ? material.GetFloat(LitSrcBlendAlphaProperty)
-                    : (float)UnityEngine.Rendering.BlendMode.One,
-                material.HasProperty(LitDstBlendAlphaProperty)
-                    ? material.GetFloat(LitDstBlendAlphaProperty)
-                    : (float)UnityEngine.Rendering.BlendMode.Zero,
-                material.HasProperty(LitZWriteProperty)
-                    ? material.GetFloat(LitZWriteProperty)
-                    : 1f,
-                material.renderQueue
-            )
-        );
+        litMaterials.Add(new LitMaterialState(
+            material,
+            originalBaseColor,
+            material.HasProperty(LitSurfaceProperty) ? material.GetFloat(LitSurfaceProperty) : SurfaceOpaque,
+            material.HasProperty(LitBlendProperty) ? material.GetFloat(LitBlendProperty) : 0f,
+            material.HasProperty(LitSrcBlendProperty) ? material.GetFloat(LitSrcBlendProperty) : (float)UnityEngine.Rendering.BlendMode.One,
+            material.HasProperty(LitDstBlendProperty) ? material.GetFloat(LitDstBlendProperty) : (float)UnityEngine.Rendering.BlendMode.Zero,
+            material.HasProperty(LitSrcBlendAlphaProperty) ? material.GetFloat(LitSrcBlendAlphaProperty) : (float)UnityEngine.Rendering.BlendMode.One,
+            material.HasProperty(LitDstBlendAlphaProperty) ? material.GetFloat(LitDstBlendAlphaProperty) : (float)UnityEngine.Rendering.BlendMode.Zero,
+            material.HasProperty(LitZWriteProperty) ? material.GetFloat(LitZWriteProperty) : 1f,
+            material.renderQueue));
     }
 
     private void ApplyCurrentDistance()
@@ -266,24 +223,11 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             CacheMaterials();
         }
 
-        float distance = Vector3.Distance(
-            firstTarget.transform.position,
-            secondTarget.transform.position);
+        float distance = Vector3.Distance(firstTarget.transform.position, secondTarget.transform.position);
         float fadeProgress = GetFadeProgress(distance);
-        float toonFadeProgress = GetToonFadeProgress(distance);
-        bool enableToonTransparency = distance <= fadeStartDistance;
-        float toonTransparencyValue = GetQuantizedToonTransparency(toonFadeProgress);
-        float litAlphaValue = Mathf.Lerp(restoredLitAlpha, hiddenLitAlpha, fadeProgress);
 
-        ApplyToonFade(toonTransparencyValue, enableToonTransparency);
-        ApplyLitFade(litAlphaValue, fadeProgress);
-        MaybeLogDebugState(
-            distance,
-            toonFadeProgress,
-            fadeProgress,
-            toonTransparencyValue,
-            litAlphaValue,
-            enableToonTransparency);
+        ApplyToonFade(fadeProgress);
+        ApplyLitFade(fadeProgress);
     }
 
     private float GetFadeProgress(float distance)
@@ -307,29 +251,10 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
         return 1f - Mathf.InverseLerp(immediateHideDistance, fadeStartDistance, distance);
     }
 
-    private float GetToonFadeProgress(float distance)
+    private void ApplyToonFade(float fadeProgress)
     {
-        if (distance <= immediateHideDistance)
-        {
-            return 1f;
-        }
+        float transparencyValue = Mathf.Lerp(restoredToonTransparency, hiddenToonTransparency, fadeProgress);
 
-        if (distance >= fadeStartDistance)
-        {
-            return 0f;
-        }
-
-        float fadeRange = fadeStartDistance - immediateHideDistance;
-        if (fadeRange <= Mathf.Epsilon)
-        {
-            return 1f;
-        }
-
-        return 1f - Mathf.InverseLerp(immediateHideDistance, fadeStartDistance, distance);
-    }
-
-    private void ApplyToonFade(float transparencyValue, bool enableTransparency)
-    {
         foreach (ToonMaterialState state in toonMaterials)
         {
             if (state.Material == null)
@@ -342,7 +267,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
                 state.Material.SetFloat(ToonTransparencyProperty, transparencyValue);
             }
 
-            if (enableTransparency)
+            if (fadeProgress > 0f)
             {
                 SetToonTransparent(state.Material);
                 continue;
@@ -352,7 +277,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
         }
     }
 
-    private void ApplyLitFade(float alphaValue, float fadeProgress)
+    private void ApplyLitFade(float fadeProgress)
     {
         foreach (LitMaterialState state in litMaterials)
         {
@@ -361,8 +286,9 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
                 continue;
             }
 
+            float alpha = Mathf.Lerp(restoredLitAlpha, hiddenLitAlpha, fadeProgress);
             Color color = state.OriginalBaseColor;
-            color.a = alphaValue;
+            color.a = alpha;
 
             if (state.Material.HasProperty(LitBaseColorProperty))
             {
@@ -386,11 +312,6 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             if (state.Material == null)
             {
                 continue;
-            }
-
-            if (state.Material.HasProperty(ToonTransparencyProperty))
-            {
-                state.Material.SetFloat(ToonTransparencyProperty, state.OriginalTransparency);
             }
 
             RestoreToonMaterial(state);
@@ -426,9 +347,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
 
         if (material.HasProperty(LitDstBlendProperty))
         {
-            material.SetFloat(
-                LitDstBlendProperty,
-                (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat(LitDstBlendProperty, (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
         }
 
         if (material.HasProperty(LitSrcBlendAlphaProperty))
@@ -438,9 +357,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
 
         if (material.HasProperty(LitDstBlendAlphaProperty))
         {
-            material.SetFloat(
-                LitDstBlendAlphaProperty,
-                (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat(LitDstBlendAlphaProperty, (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
         }
 
         if (material.HasProperty(LitZWriteProperty))
@@ -463,101 +380,49 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
 
         if (material.HasProperty(ToonClippingModeProperty))
         {
-            material.SetFloat(ToonClippingModeProperty, ToonTransparentClippingMode);
+            material.SetFloat(ToonClippingModeProperty, ToonTransClipping);
         }
 
-        if (material.HasProperty(ToonSrcBlendProperty))
+        if (material.HasProperty(ToonZWriteModeProperty))
         {
-            material.SetFloat(
-                ToonSrcBlendProperty,
-                (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat(ToonZWriteModeProperty, 0f);
         }
 
-        if (material.HasProperty(ToonDstBlendProperty))
+        if (material.HasProperty(ToonZOverDrawModeProperty))
         {
-            material.SetFloat(
-                ToonDstBlendProperty,
-                (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat(ToonZOverDrawModeProperty, 1f);
         }
 
-        if (material.HasProperty(ToonAlphaSrcBlendProperty))
+        if (material.HasProperty(ToonOutlineColorMaskProperty))
         {
-            material.SetFloat(
-                ToonAlphaSrcBlendProperty,
-                (float)UnityEngine.Rendering.BlendMode.One);
+            material.SetFloat(ToonOutlineColorMaskProperty, 0f);
         }
 
-        if (material.HasProperty(ToonAlphaDstBlendProperty))
+        if (material.HasProperty(ToonOutlineCullModeProperty))
         {
-            material.SetFloat(
-                ToonAlphaDstBlendProperty,
-                (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat(ToonOutlineCullModeProperty, ToonOutlineCullBack);
         }
 
-        if (material.HasProperty(ToonZWriteProperty))
-        {
-            material.SetFloat(ToonZWriteProperty, 0f);
-        }
-
-        material.SetOverrideTag("RenderType", "Transparent");
-        material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-    }
-
-    private float GetQuantizedToonTransparency(float fadeProgress)
-    {
-        float transparencyValue = Mathf.Lerp(
-            restoredToonTransparency,
-            hiddenToonTransparency,
-            fadeProgress);
-        return QuantizeToonTransparency(transparencyValue);
-    }
-
-    private float QuantizeToonTransparency(float transparencyValue)
-    {
-        float stepCount = Mathf.Round(transparencyValue / toonTransparencyStep);
-        float quantizedValue = stepCount * toonTransparencyStep;
-        return Mathf.Clamp(quantizedValue, hiddenToonTransparency, restoredToonTransparency);
-    }
-
-    private void MaybeLogDebugState(
-        float distance,
-        float toonFadeProgress,
-        float litFadeProgress,
-        float toonTransparencyValue,
-        float litAlphaValue,
-        bool toonTransparencyEnabled)
-    {
-        if (!debugDistanceReadout)
-        {
-            return;
-        }
-
-        if (Application.isPlaying && Time.time < nextDebugLogTime)
-        {
-            return;
-        }
-
-        if (Application.isPlaying)
-        {
-            nextDebugLogTime = Time.time + debugLogInterval;
-        }
-
-        Debug.Log(
-            $"[DistanceMaterialTransparencyController] Distance={distance:F3} | " +
-            $"ToonFade={toonFadeProgress:F3} | ToonValue={toonTransparencyValue:F2} | " +
-            $"ToonTransparent={(toonTransparencyEnabled ? 1 : 0)} | " +
-            $"LitFade={litFadeProgress:F3} | LitAlpha={litAlphaValue:F2} | " +
-            $"UpdateInterval={transparencyUpdateInterval:F3}s",
-            this);
+        material.DisableKeyword(ToonKeywordClippingOff);
+        material.DisableKeyword(ToonKeywordClippingMode);
+        material.EnableKeyword(ToonKeywordClippingTransparent);
+        material.DisableKeyword(ToonKeywordOutlineClippingNo);
+        material.EnableKeyword(ToonKeywordOutlineClippingYes);
+        material.SetOverrideTag(RenderTypeTag, RenderTypeTransparent);
+        material.SetOverrideTag(IgnoreProjectionTag, "True");
+        material.renderQueue = 3000;
     }
 
     private static void RestoreToonMaterial(ToonMaterialState state)
     {
+        if (state.Material.HasProperty(ToonTransparencyProperty))
+        {
+            state.Material.SetFloat(ToonTransparencyProperty, state.OriginalTransparency);
+        }
+
         if (state.Material.HasProperty(ToonTransparentEnabledProperty))
         {
-            state.Material.SetFloat(
-                ToonTransparentEnabledProperty,
-                state.OriginalTransparentEnabled);
+            state.Material.SetFloat(ToonTransparentEnabledProperty, state.OriginalTransparentEnabled);
         }
 
         if (state.Material.HasProperty(ToonClippingModeProperty))
@@ -565,33 +430,60 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             state.Material.SetFloat(ToonClippingModeProperty, state.OriginalClippingMode);
         }
 
-        if (state.Material.HasProperty(ToonSrcBlendProperty))
+        if (state.Material.HasProperty(ToonZWriteModeProperty))
         {
-            state.Material.SetFloat(ToonSrcBlendProperty, state.OriginalSrcBlend);
+            state.Material.SetFloat(ToonZWriteModeProperty, state.OriginalZWriteMode);
         }
 
-        if (state.Material.HasProperty(ToonDstBlendProperty))
+        if (state.Material.HasProperty(ToonZOverDrawModeProperty))
         {
-            state.Material.SetFloat(ToonDstBlendProperty, state.OriginalDstBlend);
+            state.Material.SetFloat(ToonZOverDrawModeProperty, state.OriginalZOverDrawMode);
         }
 
-        if (state.Material.HasProperty(ToonAlphaSrcBlendProperty))
+        if (state.Material.HasProperty(ToonOutlineColorMaskProperty))
         {
-            state.Material.SetFloat(ToonAlphaSrcBlendProperty, state.OriginalAlphaSrcBlend);
+            state.Material.SetFloat(ToonOutlineColorMaskProperty, state.OriginalOutlineColorMask);
         }
 
-        if (state.Material.HasProperty(ToonAlphaDstBlendProperty))
+        if (state.Material.HasProperty(ToonOutlineCullModeProperty))
         {
-            state.Material.SetFloat(ToonAlphaDstBlendProperty, state.OriginalAlphaDstBlend);
+            state.Material.SetFloat(ToonOutlineCullModeProperty, state.OriginalOutlineCullMode);
         }
 
-        if (state.Material.HasProperty(ToonZWriteProperty))
-        {
-            state.Material.SetFloat(ToonZWriteProperty, state.OriginalZWrite);
-        }
-
-        state.Material.SetOverrideTag("RenderType", state.OriginalRenderType);
+        ApplyToonClippingKeywords(state.Material, state.OriginalClippingMode);
+        state.Material.SetOverrideTag(RenderTypeTag, state.OriginalRenderTypeTag);
+        state.Material.SetOverrideTag(IgnoreProjectionTag, state.OriginalIgnoreProjectionTag);
         state.Material.renderQueue = state.OriginalRenderQueue;
+    }
+
+    private static void ApplyToonClippingKeywords(Material material, float clippingMode)
+    {
+        int clippingModeInt = Mathf.RoundToInt(clippingMode);
+
+        switch (clippingModeInt)
+        {
+            case ToonClippingOff:
+                material.EnableKeyword(ToonKeywordClippingOff);
+                material.DisableKeyword(ToonKeywordClippingMode);
+                material.DisableKeyword(ToonKeywordClippingTransparent);
+                material.EnableKeyword(ToonKeywordOutlineClippingNo);
+                material.DisableKeyword(ToonKeywordOutlineClippingYes);
+                break;
+            case ToonClippingOn:
+                material.DisableKeyword(ToonKeywordClippingOff);
+                material.EnableKeyword(ToonKeywordClippingMode);
+                material.DisableKeyword(ToonKeywordClippingTransparent);
+                material.DisableKeyword(ToonKeywordOutlineClippingNo);
+                material.EnableKeyword(ToonKeywordOutlineClippingYes);
+                break;
+            default:
+                material.DisableKeyword(ToonKeywordClippingOff);
+                material.DisableKeyword(ToonKeywordClippingMode);
+                material.EnableKeyword(ToonKeywordClippingTransparent);
+                material.DisableKeyword(ToonKeywordOutlineClippingNo);
+                material.EnableKeyword(ToonKeywordOutlineClippingYes);
+                break;
+        }
     }
 
     private static void RestoreLitMaterial(LitMaterialState state)
@@ -636,9 +528,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             state.Material.SetFloat(LitZWriteProperty, state.OriginalZWrite);
         }
 
-        state.Material.SetOverrideTag(
-            "RenderType",
-            state.OriginalSurface >= SurfaceTransparent ? "Transparent" : "Opaque");
+        state.Material.SetOverrideTag("RenderType", state.OriginalSurface >= SurfaceTransparent ? "Transparent" : "Opaque");
         state.Material.renderQueue = state.OriginalRenderQueue;
 
         if (state.OriginalSurface >= SurfaceTransparent)
@@ -660,39 +550,38 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             float originalTransparency,
             float originalTransparentEnabled,
             float originalClippingMode,
-            float originalSrcBlend,
-            float originalDstBlend,
-            float originalAlphaSrcBlend,
-            float originalAlphaDstBlend,
-            float originalZWrite,
-            int originalRenderQueue,
-            string originalRenderType
-        )
+            float originalZWriteMode,
+            float originalZOverDrawMode,
+            float originalOutlineColorMask,
+            float originalOutlineCullMode,
+            string originalRenderTypeTag,
+            string originalIgnoreProjectionTag,
+            int originalRenderQueue)
         {
             Material = material;
             OriginalTransparency = originalTransparency;
             OriginalTransparentEnabled = originalTransparentEnabled;
             OriginalClippingMode = originalClippingMode;
-            OriginalSrcBlend = originalSrcBlend;
-            OriginalDstBlend = originalDstBlend;
-            OriginalAlphaSrcBlend = originalAlphaSrcBlend;
-            OriginalAlphaDstBlend = originalAlphaDstBlend;
-            OriginalZWrite = originalZWrite;
+            OriginalZWriteMode = originalZWriteMode;
+            OriginalZOverDrawMode = originalZOverDrawMode;
+            OriginalOutlineColorMask = originalOutlineColorMask;
+            OriginalOutlineCullMode = originalOutlineCullMode;
+            OriginalRenderTypeTag = originalRenderTypeTag;
+            OriginalIgnoreProjectionTag = originalIgnoreProjectionTag;
             OriginalRenderQueue = originalRenderQueue;
-            OriginalRenderType = originalRenderType;
         }
 
         public Material Material { get; }
         public float OriginalTransparency { get; }
         public float OriginalTransparentEnabled { get; }
         public float OriginalClippingMode { get; }
-        public float OriginalSrcBlend { get; }
-        public float OriginalDstBlend { get; }
-        public float OriginalAlphaSrcBlend { get; }
-        public float OriginalAlphaDstBlend { get; }
-        public float OriginalZWrite { get; }
+        public float OriginalZWriteMode { get; }
+        public float OriginalZOverDrawMode { get; }
+        public float OriginalOutlineColorMask { get; }
+        public float OriginalOutlineCullMode { get; }
+        public string OriginalRenderTypeTag { get; }
+        public string OriginalIgnoreProjectionTag { get; }
         public int OriginalRenderQueue { get; }
-        public string OriginalRenderType { get; }
     }
 
     [Serializable]
@@ -708,8 +597,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
             float originalSrcBlendAlpha,
             float originalDstBlendAlpha,
             float originalZWrite,
-            int originalRenderQueue
-        )
+            int originalRenderQueue)
         {
             Material = material;
             OriginalBaseColor = originalBaseColor;
