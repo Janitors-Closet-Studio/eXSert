@@ -88,6 +88,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Health Bar UI")]
         [Tooltip("Reference to the boss health bar script on the canvas.")]
         [SerializeField] private HealthBar healthBar;
+        [Tooltip("Optional root UI object containing boss health bar + title text. If null, falls back to healthBar's parent (or healthBar itself).")]
+        [SerializeField] private GameObject bossHealthUiRoot;
         [Tooltip("How quickly the health bar animates to the current value.")]
         [SerializeField] private float healthBarLerpSpeed = 8f;
         private float displayedHealth;
@@ -1102,6 +1104,13 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
+        private void Start()
+        {
+            // If no CleanserEnabler is present, show the health bar immediately (legacy behaviour).
+            if (FindObjectOfType<CleanserEnabler>() == null)
+                ShowHealthBar();
+        }
+
         private void ApplyMovementSettings()
         {
             if (agent == null) return;
@@ -1141,11 +1150,42 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void InitializeHealthBar()
         {
+            // Resolve the UI root: use the assigned field, fall back to healthBar's parent, then healthBar itself.
+            if (bossHealthUiRoot == null && healthBar != null)
+            {
+                bossHealthUiRoot = healthBar.transform.parent != null
+                    ? healthBar.transform.parent.gameObject
+                    : healthBar.gameObject;
+            }
+
             displayedHealth = maxHealth;
             if (healthBar != null)
             {
                 healthBar.SetHealth(currentHealth, maxHealth);
             }
+
+            // Hide until the fight is explicitly started (see CleanserEnabler).
+            HideHealthBar();
+        }
+
+        /// <summary>
+        /// Makes the boss health bar UI visible. Called by CleanserEnabler when the player
+        /// enters the arena trigger, or immediately on Start when no enabler is present.
+        /// </summary>
+        public void ShowHealthBar()
+        {
+            if (bossHealthUiRoot != null)
+                bossHealthUiRoot.SetActive(true);
+            else if (healthBar != null)
+                healthBar.gameObject.SetActive(true);
+        }
+
+        private void HideHealthBar()
+        {
+            if (bossHealthUiRoot != null)
+                bossHealthUiRoot.SetActive(false);
+            else if (healthBar != null)
+                healthBar.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -1172,7 +1212,25 @@ namespace EnemyBehavior.Boss.Cleanser
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             BeginRetryingPlayerReferenceIfNeeded();
-            
+
+            // If a CleanserEnabler is present it will call StartFight() when the player enters the trigger.
+            // Otherwise start automatically as before.
+            if (GetComponent<CleanserEnabler>() == null && FindObjectOfType<CleanserEnabler>() == null)
+            {
+                if (mainLoopCoroutine != null)
+                    StopCoroutine(mainLoopCoroutine);
+                mainLoopCoroutine = StartCoroutine(MainCombatLoop());
+            }
+        }
+
+        /// <summary>
+        /// Called by CleanserEnabler once the player enters the boss arena trigger.
+        /// Enables the NavMeshAgent and begins the main combat loop.
+        /// </summary>
+        public void StartFight()
+        {
+            if (agent != null) agent.enabled = true;
+
             if (mainLoopCoroutine != null)
                 StopCoroutine(mainLoopCoroutine);
             mainLoopCoroutine = StartCoroutine(MainCombatLoop());
