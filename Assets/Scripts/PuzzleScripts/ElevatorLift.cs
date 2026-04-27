@@ -5,7 +5,18 @@ using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 using Managers.TimeLord;
 using System.Collections.Generic;
-using System.Security.Cryptography;
+using TMPro;
+using Unity.AppUI.UI;
+
+[Serializable]
+public class LockedElevatorFloorData
+{
+    public bool isLocked;
+    public string floorName;
+    public TextMeshProUGUI buttonText;
+    public string keyItemID;
+    public string keyDisplayName;
+}
 
 [RequireComponent(typeof(BoxCollider))]
 
@@ -14,6 +25,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
     // FixedUpdate movement reverted; coroutine will handle movement
 
     public static bool ElevatorMenuActive { get; private set; }
+
+    public List<LockedElevatorFloorData> lockedFloors = new List<LockedElevatorFloorData>();
 
     [Header("Failsafe")]
     [SerializeField, Tooltip("Automatically recalls the lift to floor one when the player is stranded near the base of the shaft.")]
@@ -122,6 +135,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         if (wasMenuActiveBeforePause)
         {
             // Only restore if menuActive is still true (not closed during pause)
+            RefreshLockedFloors();
             SetupElevatorUI();
             SubscribeToInputActions();
             SetElevatorCameraActive(true);
@@ -144,6 +158,29 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
         CachePlayerReferences();
         InitializeTriggerFollow();
+        RefreshLockedFloors();
+    }
+
+    private void RefreshLockedFloors()
+    {
+        if (lockedFloors == null || lockedFloors.Count == 0)
+            return;
+
+        InternalPlayerInventory inventory = InternalPlayerInventory.Instance;
+
+        foreach (LockedElevatorFloorData data in lockedFloors)
+        {
+            if (data == null)
+                continue;
+
+            bool hasKey = string.IsNullOrWhiteSpace(data.keyItemID)
+                || (inventory != null && inventory.HasItem(data.keyItemID));
+
+            data.isLocked = !hasKey;
+
+            if (data.buttonText != null)
+                data.buttonText.text = data.isLocked ? "LOCKED" : data.floorName;
+        }
     }
 
     private void InitializeTriggerFollow()
@@ -337,6 +374,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
     public override void StartPuzzle()
     {
+        RefreshLockedFloors();
         EnterElevatorLiftMenu();
         ElevatorMenuActive = true;
     }
@@ -399,6 +437,7 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         PauseManager.Instance?.SetGameplayHUDVisible(false);
         DisableInteractUIDuringMenu();
         SetElevatorCameraActive(true);
+        RefreshLockedFloors();
         SetupElevatorUI();
     
         ManageElevatorButtons(currentFloor);
@@ -636,21 +675,63 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         TryTriggerGroundRecallFailsafe();
     }
 
+    private bool IsFloorLocked(int floorIndex)
+    {
+        if (lockedFloors == null || floorIndex < 0 || floorIndex >= lockedFloors.Count)
+            return false;
+
+        return lockedFloors[floorIndex].isLocked;
+    }
+
+    private void NoticeLockedMessage(LockedElevatorFloorData floorData)
+    {
+        MasterObjectiveClass masterObjective = FindObjectOfType<MasterObjectiveClass>();
+        if (masterObjective != null)
+            masterObjective.CreateAndShowNotice(null, "floor_locked", "Floor Locked", $"You need {floorData.keyDisplayName} to access this floor.", priority: 10);
+    }
+
     private void MoveToFirstFloor(InputAction.CallbackContext context)
     {
         if(currentFloor == 0 || isMoving) return;
+
+        RefreshLockedFloors();
+
+        if (IsFloorLocked(0))
+        {
+            NoticeLockedMessage(lockedFloors[0]);
+            return;
+        }
+
         StartCoroutine(MoveLift(0, carryPlayerWithLift: true));
     }
 
     private void MoveToSecondFloor(InputAction.CallbackContext context)
     {
         if(currentFloor == 1 || isMoving) return;
+
+        RefreshLockedFloors();
+
+        if (IsFloorLocked(1))
+        {
+            NoticeLockedMessage(lockedFloors[1]);
+            return;
+        }
+
         StartCoroutine(MoveLift(1, carryPlayerWithLift: true));
     }
 
     private void MoveToThirdFloor(InputAction.CallbackContext context)
     {
         if(currentFloor == 2 || isMoving) return;
+
+        RefreshLockedFloors();
+
+        if (IsFloorLocked(2))
+        {
+            NoticeLockedMessage(lockedFloors[2]);
+            return;
+        }
+
         StartCoroutine(MoveLift(2, carryPlayerWithLift: true));
     }
 

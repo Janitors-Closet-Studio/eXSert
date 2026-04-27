@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
+using UnityEngine.SceneManagement;
+
 public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
 {
     [SerializeField] private Image darkestImage; // Reference to the darkest image
@@ -27,8 +29,17 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     public void OnPointerEnter(PointerEventData eventData)
     {
         Debug.Log("Pointer entered brightness infographic");
-       FadeInAllImages(0.25f);
-       FadeOutTopMenuIfItIsASubMenu();
+        FadeInAllImages(0.25f);
+
+        if (SceneManager.GetActiveScene().name != "MainMenu")
+        {
+            // In player scene, don't close other menus
+            return;
+        }
+        else
+        {
+            FadeOutTopMenuIfItIsASubMenu();
+        }
     }
 
 
@@ -41,7 +52,19 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     public void OnSelect(BaseEventData eventData)
     {
         FadeInAllImages(0.25f);
-        FadeOutTopMenuIfItIsASubMenu();
+
+        if (SceneManager.GetActiveScene().name != "MainMenu")
+        {
+            // In player scene, don't close other menus
+            return;
+        }
+        else
+        {
+            FadeOutTopMenuIfItIsASubMenu();
+        }
+        {
+            FadeOutTopMenuIfItIsASubMenu();
+        }
     }
 
     public void OnDeselect(BaseEventData eventData)
@@ -118,6 +141,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
         if (brightestImage != null)
             StartCoroutine(FadeOutScaleForImage(brightestImage, duration));
     }
+
 
     private void FadeInAllImages(float duration)
     {

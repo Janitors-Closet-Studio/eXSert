@@ -75,8 +75,6 @@ public class GameActionHandler : MonoBehaviour
         PrepareForSceneLoad(resumeImmediately: false);
         Debug.Log("[GameActionHandler] ReturnToMainMenu: PrepareForSceneLoad completed.");
 
-        PauseManager.Instance.HideMenusForSceneTransition();
-
         Debug.Log("[GameActionHandler] ReturnToMainMenu: Calling SceneLoader.LoadMainMenu()...");
         SceneLoader.LoadMainMenu();
         Debug.Log("[GameActionHandler] ReturnToMainMenu: SceneLoader.LoadMainMenu() completed.");
@@ -109,10 +107,6 @@ public class GameActionHandler : MonoBehaviour
 
     private void PrepareForSceneLoad(bool resumeImmediately)
     {
-        MenuListManager menuListManager = pauseManager != null ? pauseManager.GetComponent<MenuListManager>() : null;
-        if (menuListManager != null)
-            menuListManager.menusToManage.RemoveAt(0); // Remove the confirmation dialog menu from the list of managed menus to prevent it from being hidden prematurely
-
         Debug.Log($"[GameActionHandler] PrepareForSceneLoad called (resumeImmediately={resumeImmediately}).");
         
         if (pauseManager == null)
