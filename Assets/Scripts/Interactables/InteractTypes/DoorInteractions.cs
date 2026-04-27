@@ -224,7 +224,8 @@ public class DoorInteractions : UnlockableInteraction
         }
 
         ExecuteAssignedDoorInteractions();
-        ShowUnlockNoticeIfNeeded();
+        // Non-transition door notices are handled by UnlockableInteraction.Interact()
+        // to avoid duplicate success notices for the same interaction.
 
     }
 
@@ -236,8 +237,8 @@ public class DoorInteractions : UnlockableInteraction
 
     private void ShowUnlockNoticeIfNeeded()
     {
-        if (needsItem && canUnlock && InteractionUI.Instance != null)
-            InteractionUI.Instance.OnCollectedItem($"Used BAMMMMM{requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f);
+        if (needsItem && canUnlock && masterObjective != null)
+            masterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", $"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f, priority: 8);
     }
 
     private IEnumerator ExecuteInteractionWithNoticeAfterSpecialTransition()

@@ -21,10 +21,19 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
 
     public void AddCollectible(string collectibleId)
     {
-        if (!collectedInteractables.Contains(collectibleId))
-            collectedInteractables.Add(collectibleId);
-
-
+        if (string.IsNullOrEmpty(collectibleId))
+            return;
+            
+        string normalizedId = collectibleId.Trim().ToLowerInvariant();
+        if (!collectedInteractables.Contains(normalizedId))
+        {
+            collectedInteractables.Add(normalizedId);
+            Debug.Log($"[InternalPlayerInventory] Added collectible: {normalizedId}. Total collected: {collectedInteractables.Count}");
+        }
+        else
+        {
+            Debug.LogWarning($"[InternalPlayerInventory] Collectible {normalizedId} already in inventory.");
+        }
     }
 
     /// <summary>
@@ -36,5 +45,13 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
         if (string.IsNullOrEmpty(itemID)) return true;
         string normalizedID = itemID.Trim().ToLowerInvariant();
         return collectedInteractables.Contains(normalizedID);
+    }
+
+    /// <summary>
+    /// Returns a copy of the collected items list for debugging.
+    /// </summary>
+    public List<string> GetCollectedItems()
+    {
+        return new List<string>(collectedInteractables);
     }
 }
