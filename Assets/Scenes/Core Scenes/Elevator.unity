@@ -34030,31 +34030,32 @@ MonoBehaviour:
   initialMessage: "\u201CBetter snatch that log disc, it seems important.\u201D"
   initialMessageUseSelectedIcon: 0
   initialMessageAction: 8
-  singleTargetFightMessage: "<b>Melee Attack</b>\n\u201CLet\u2019s put these gauntlets
+  singleTargetFightMessage: "<b>MEELE ATTACK</b>\n\u201CLet\u2019s put these gauntlets
     to work!\""
   singleTargetFightMessageUseSelectedIcon: 1
   singleTargetFightMessageAction: 7
-  aoeTargetFightMessage: "<b>Burst Attack</b>\n\u201CA little extra punch by adding
+  aoeTargetFightMessage: "<b>BURST ATTACK</b>\n\u201CA little extra punch by adding
     a fuel to the fire.\u201D"
   aoeTargetFightMessageUseSelectedIcon: 1
   aoeTargetFightMessageAction: 6
   useDashStep: 1
-  dashMessage: "<b>Dash & Dodge</b>\n\u201CA quick sidestep is all it takes to outmaneuver
-    these rustbuckets\u201D "
+  dashMessage: '<b>DASH & DODGE</b>
+
+    "Too slow, ya bloody rustbuckets."'
   dashMessageUseSelectedIcon: 1
   dashMessageAction: 0
   useGuardStep: 1
-  guardFightMessage: "<b>Guard</b>\n\u201CIt\u2019s okay, I can tank a few hits.\u201D"
+  guardFightMessage: "<b>GUARD</b>\n\u201CIt\u2019s okay, I can tank a few hits.\u201D"
   guardFightMessageUseSelectedIcon: 1
   guardFightMessageAction: 1
   useParryStep: 1
-  parryFightMessage: "<b>Parry</b>\n\u201CWith proper timing, redirect oncoming attacks\u201D"
+  parryFightMessage: "<b>PARRY</b>\n\u201CTime it right, send their scrap flyin'.\""
   parryFightMessageUseSelectedIcon: 1
   parryFightMessageAction: 1
   playerTurnReadyMessage: 
   playerTurnReadyMessageOptions:
   - "\u201CThat\u2019s all you got? Now it\u2019s my turn.\u201D"
-  - '"Too slow, mate. Time for a proper scrap."'
+  - '"Time for a proper scrap."'
   - '"Gotcha! Let''s give ''em a proper bash."'
   playerTurnReadyMessageUseSelectedIcon: 0
   playerTurnReadyMessageAction: 7
@@ -34070,9 +34071,12 @@ MonoBehaviour:
   tutorialCompleteMessageUseSelectedIcon: 0
   tutorialCompleteMessageAction: 8
   postEncounterFeedbackDelay: 2
+  playerTurnMessageRestoreDelay: 0.35
+  combatTutorialRetryDelay: 0.75
   tutorialIconColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
   tutorialIconSize: 1
   tutorialIconGrowthPerCorrectPress: 0.08
+  tutorialIconPulseDuration: 0.12
   tutorialEntry: {fileID: 1288089984}
   singleTargetFight: {fileID: 871761656}
   aoeTargetFight: {fileID: 1744050381}

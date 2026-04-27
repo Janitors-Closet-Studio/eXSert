@@ -72,6 +72,7 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField] private KeybindAction tutorialCompleteMessageAction = KeybindAction.GP_Interact;
     [SerializeField, Min(0f)] private float postEncounterFeedbackDelay = 1.25f;
     [SerializeField, Min(0f)] private float playerTurnMessageRestoreDelay = 0.35f;
+    [SerializeField, Min(0f)] private float combatTutorialRetryDelay = 0.75f;
     [SerializeField] private Color tutorialIconColor = Color.white;
     [SerializeField, Min(0.1f)] private float tutorialIconSize = 1f;
     [SerializeField, Min(0f)] private float tutorialIconGrowthPerCorrectPress = 0.08f;
@@ -111,10 +112,12 @@ public class TutorialHandler : MonoBehaviour
     private PlayerHealthBarManager playerHealth;
     private CombatEncounter currentStepEncounter;
     private Coroutine postEncounterFeedbackRoutine;
+    private Coroutine combatStepRetryRoutine;
     private bool pendingPlayerTurnReadyMessage;
     private bool pendingStepInstructionRestore;
     private Coroutine stepInstructionRestoreRoutine;
     private Coroutine tutorialIconPulseRoutine;
+    private bool tutorialObjectiveIconShouldBeVisible;
 
     #region Couroutines
     private Coroutine enableRetryRoutine;
@@ -134,6 +137,11 @@ public class TutorialHandler : MonoBehaviour
         SetTutorialPlayerProtection(true);
 
         DisplayTutorialObjective(initialMessage, initialMessageUseSelectedIcon, initialMessageAction);
+    }
+
+    private void Update()
+    {
+        ApplyTutorialObjectiveIconVisibility();
     }
 
     private void OnEnable()
@@ -216,6 +224,8 @@ public class TutorialHandler : MonoBehaviour
             postEncounterFeedbackRoutine = null;
         }
 
+        CancelCombatStepRetry();
+
         if (stepInstructionRestoreRoutine != null)
         {
             StopCoroutine(stepInstructionRestoreRoutine);
@@ -227,6 +237,8 @@ public class TutorialHandler : MonoBehaviour
             StopCoroutine(tutorialIconPulseRoutine);
             tutorialIconPulseRoutine = null;
         }
+
+        CancelCombatStepRetry();
 
         pendingPlayerTurnReadyMessage = false;
         pendingStepInstructionRestore = false;
@@ -255,6 +267,8 @@ public class TutorialHandler : MonoBehaviour
             StopCoroutine(stepInstructionRestoreRoutine);
             stepInstructionRestoreRoutine = null;
         }
+
+        CancelCombatStepRetry();
 
         currentStep = step;
         currentStepCompleted = false;
@@ -325,12 +339,14 @@ public class TutorialHandler : MonoBehaviour
     {
         Debug.Log($"[TutorialHandler] Encounter completed called. Checking conditions for tutorial progression...");
         if (!currentStepCompleted)
+        {
+            if (ShouldRetryAttackTutorialEncounter())
+                ScheduleCombatStepRetry();
+
             return;
+        }
 
-        if (postEncounterFeedbackRoutine != null)
-            StopCoroutine(postEncounterFeedbackRoutine);
-
-        postEncounterFeedbackRoutine = StartCoroutine(ShowPostEncounterFeedbackThenAdvance(currentStep));
+        BeginPostEncounterAdvance(currentStep);
     }
     #endregion
 
@@ -370,10 +386,68 @@ public class TutorialHandler : MonoBehaviour
             return;
 
         currentStepCompleted = true;
+        CancelCombatStepRetry();
         SetCurrentStepEnemiesDamageable(true);
+
+        if (currentStepEncounter != null && currentStepEncounter.isCompleted)
+        {
+            BeginPostEncounterAdvance(currentStep);
+            return;
+        }
 
         if (ShouldShowPlayerTurnReadyMessage())
             QueuePlayerTurnReadyMessage();
+    }
+
+    private bool ShouldRetryAttackTutorialEncounter()
+    {
+        return currentStep == TutorialStep.SingleAttack || currentStep == TutorialStep.AoeAttack;
+    }
+
+    private void ScheduleCombatStepRetry()
+    {
+        if (currentStepEncounter == null)
+            return;
+
+        CancelCombatStepRetry();
+        combatStepRetryRoutine = StartCoroutine(RestartCombatStepEncounterAfterDelay(currentStep, currentStepEncounter));
+    }
+
+    private void CancelCombatStepRetry()
+    {
+        if (combatStepRetryRoutine == null)
+            return;
+
+        StopCoroutine(combatStepRetryRoutine);
+        combatStepRetryRoutine = null;
+    }
+
+    private IEnumerator RestartCombatStepEncounterAfterDelay(TutorialStep step, CombatEncounter encounter)
+    {
+        if (combatTutorialRetryDelay > 0f)
+            yield return new WaitForSeconds(combatTutorialRetryDelay);
+
+        combatStepRetryRoutine = null;
+
+        if (currentStep != step || currentStepCompleted || encounter == null || currentStepEncounter != encounter)
+            yield break;
+
+        if (!encounter.isCompleted)
+            yield break;
+
+        ClearTrackedCurrentStepEnemies();
+        encounter.RestartEncounterForRetry();
+        ApplyCurrentStepEnemyOverrides(encounter);
+    }
+
+    private void BeginPostEncounterAdvance(TutorialStep completedStep)
+    {
+        CancelCombatStepRetry();
+
+        if (postEncounterFeedbackRoutine != null)
+            StopCoroutine(postEncounterFeedbackRoutine);
+
+        postEncounterFeedbackRoutine = StartCoroutine(ShowPostEncounterFeedbackThenAdvance(completedStep));
     }
 
     private void QueuePlayerTurnReadyMessage()
@@ -746,6 +820,13 @@ public class TutorialHandler : MonoBehaviour
     {
         UnsubscribeFromCurrentStepEncounter();
 
+        ClearTrackedCurrentStepEnemies();
+    }
+
+    private void ClearTrackedCurrentStepEnemies()
+    {
+        CancelCombatStepRetry();
+
         foreach (BaseEnemyCore enemy in currentStepEnemies)
         {
             if (enemy == null)
@@ -815,13 +896,15 @@ public class TutorialHandler : MonoBehaviour
         if (tutorialObjectiveIcon == null)
             return;
 
-        tutorialObjectiveIcon.gameObject.SetActive(shouldShowIcon);
+        tutorialObjectiveIconShouldBeVisible = shouldShowIcon;
 
         if (shouldShowIcon)
         {
             tutorialObjectiveIcon.SetAction(action);
             ResetTutorialObjectiveIconVisuals();
         }
+
+        ApplyTutorialObjectiveIconVisibility();
     }
 
     private void HideTutorialObjectiveIcon()
@@ -829,8 +912,32 @@ public class TutorialHandler : MonoBehaviour
         if (tutorialObjectiveIcon == null)
             return;
 
+        tutorialObjectiveIconShouldBeVisible = false;
         tutorialObjectiveIcon.gameObject.SetActive(false);
         ResetTutorialObjectiveIconVisuals();
+    }
+
+    private void ApplyTutorialObjectiveIconVisibility()
+    {
+        if (tutorialObjectiveIcon == null)
+            return;
+
+        bool shouldBeActive = tutorialObjectiveIconShouldBeVisible && !Mathf.Approximately(Time.timeScale, 0f);
+        if (tutorialObjectiveIcon.gameObject.activeSelf == shouldBeActive)
+            return;
+
+        tutorialObjectiveIcon.gameObject.SetActive(shouldBeActive);
+
+        if (!shouldBeActive)
+        {
+            if (tutorialIconPulseRoutine != null)
+            {
+                StopCoroutine(tutorialIconPulseRoutine);
+                tutorialIconPulseRoutine = null;
+            }
+
+            ResetTutorialObjectiveIconVisuals();
+        }
     }
 
     private void ResetTutorialObjectiveIconVisuals()

@@ -295,6 +295,16 @@ namespace Progression.Encounters
             return trackedEnemies;
         }
 
+        public void RestartEncounterForRetry()
+        {
+            if (!isCleanedUp)
+                CleanupEncounter();
+
+            ResetEncounterCompletionState();
+            SetupEncounter();
+            EnableZone();
+        }
+
         private void SetEncounterCombatActive(bool isActive)
         {
             if (encounterActiveForCombatTracking == isActive)
