@@ -21,6 +21,9 @@ namespace Singletons {
         public static T GetInstance(SceneAsset scene)
         {
             CleanupNullInstances();
+            if (scene == null)
+                return null;
+
             if (instances.TryGetValue(scene, out T instance))
                 return instance;
             else
@@ -38,6 +41,12 @@ namespace Singletons {
             CleanupNullInstances();
 
             SceneAsset asset = SceneAsset.GetSceneAssetOfObject(this.gameObject);
+            if (asset == null)
+            {
+                Debug.LogWarning($"[SceneSingleton<{typeof(T).Name}>] SceneAsset was null for {gameObject.name}. Instance will not be scene-registered.");
+                return;
+            }
+
             instanceSceneAsset = asset;
             if (instances.ContainsKey(asset))
             {

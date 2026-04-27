@@ -234,7 +234,14 @@ public class WarningButtonFunctionality : MonoBehaviour
         Debug.Log($"[WarningButtonFunctionality] Executing action: {action}");
         RumbleManager.Instance.StopControllerRumble();
         PauseManager.Instance.pauseOverlay.SetActive(false);
-        InteractionUI.Instance.CancelCurrentCollectNotice(turnOffUI: true);
+
+        SceneAsset sceneAsset = SceneAsset.GetSceneAssetOfObject(this.gameObject);
+        MasterObjectiveClass masterObjective = sceneAsset != null
+            ? MasterObjectiveClass.GetInstance(sceneAsset)
+            : FindFirstObjectByType<MasterObjectiveClass>(FindObjectsInactive.Include);
+        if (masterObjective != null)
+            masterObjective.CancelCurrentCollectNotice(turnOffUI: true);
+
         var start = transform.parent?.parent?.parent;
         var menuListManager = start != null ? start.GetComponentInParent<MenuListManager>() : null;
 
