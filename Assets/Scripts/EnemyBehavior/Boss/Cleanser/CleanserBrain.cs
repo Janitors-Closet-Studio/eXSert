@@ -5054,6 +5054,15 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 health.LoseHP(damage, .5f, .5f, .5f);
             }
+
+            if (UltimateSettings.KnockbackPlayerOnMassiveStrike
+                && player.TryGetComponent<PlayerHealthBarManager>(out var playerHealth))
+            {
+                Vector3 knockDir = (player.position - transform.position);
+                knockDir.y = 0f;
+                if (knockDir.sqrMagnitude < 0.0001f) knockDir = Vector3.forward;
+                playerHealth.ApplyKnockbackReaction(knockDir.normalized, UltimateSettings.MassiveStrikeKnockbackForce, UltimateSettings.MassiveStrikeKnockbackDuration);
+            }
         }
 
         private float GetMassiveStrikeDamage(float baseDamage)
@@ -5652,8 +5661,20 @@ namespace EnemyBehavior.Boss.Cleanser
                 Debug.Log($"[Cleanser][Hit] {category} hit landed — {damage:F1} damage applied to player.", this);
                 health.LoseHP(damage, .5f, .5f, .5f);
 
-                if (shouldStaggerPlayer && health is PlayerHealthBarManager playerHealth)
-                    playerHealth.ApplyForcedStagger(meleeHitStaggerDuration, resetPlayerComboOnMeleeStagger);
+                if (health is PlayerHealthBarManager playerHealth)
+                {
+                    if (currentAttack != null && currentAttack.KnockbackPlayer)
+                    {
+                        Vector3 knockDir = (player.position - transform.position);
+                        knockDir.y = 0f;
+                        if (knockDir.sqrMagnitude < 0.0001f) knockDir = Vector3.forward;
+                        playerHealth.ApplyKnockbackReaction(knockDir.normalized, currentAttack.KnockbackForce, currentAttack.KnockbackDuration);
+                    }
+                    else if (shouldStaggerPlayer)
+                    {
+                        playerHealth.ApplyForcedStagger(meleeHitStaggerDuration, resetPlayerComboOnMeleeStagger);
+                    }
+                }
 
                 return true;
             }

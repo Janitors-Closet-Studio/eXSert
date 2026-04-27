@@ -54,6 +54,14 @@ namespace EnemyBehavior.Boss
         public AudioClip AttackSFX;
         [Tooltip("Volume multiplier for this attack's SFX (0-1).")]
         [Range(0f, 1f)] public float SFXVolume = 1.0f;
+
+        [Header("Knockback Reaction")]
+        [Tooltip("If true, this attack will play the Knockback animation on the player and physically push them back.")]
+        public bool KnockbackPlayer = false;
+        [Tooltip("Magnitude of the knockback impulse applied to the player. Higher = farther push.")]
+        [Min(0f)] public float KnockbackForce = 10f;
+        [Tooltip("Duration in seconds the player input is locked during the knockback animation.")]
+        [Min(0f)] public float KnockbackDuration = 0.5f;
     }
 #pragma warning restore CS0414
 
@@ -5090,6 +5098,15 @@ namespace EnemyBehavior.Boss
             else
             {
                 hs.LoseHP(damage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
+            }
+
+            if (currentAttack != null && currentAttack.KnockbackPlayer
+                && player.TryGetComponent<PlayerHealthBarManager>(out var playerHealth))
+            {
+                Vector3 knockDir = (player.position - transform.position);
+                knockDir.y = 0f;
+                if (knockDir.sqrMagnitude < 0.0001f) knockDir = Vector3.forward;
+                playerHealth.ApplyKnockbackReaction(knockDir.normalized, currentAttack.KnockbackForce, currentAttack.KnockbackDuration);
             }
 
             return true;

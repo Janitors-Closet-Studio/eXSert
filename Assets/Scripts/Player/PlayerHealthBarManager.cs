@@ -613,6 +613,47 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         flinchRoutine = null;
     }
 
+    /// <summary>
+    /// Applies a knockback reaction to the player: plays the Knockback animation,
+    /// physically pushes the player in the given direction with the specified force,
+    /// and locks input for the given duration.
+    /// </summary>
+    /// <param name="knockbackDirection">Normalized world-space direction of the knockback impulse.</param>
+    /// <param name="force">Magnitude of the knockback impulse.</param>
+    /// <param name="duration">Seconds the player input is locked during the animation.</param>
+    public void ApplyKnockbackReaction(Vector3 knockbackDirection, float force, float duration)
+    {
+        if (isDead)
+            return;
+
+        if (flinchRoutine != null)
+        {
+            StopCoroutine(flinchRoutine);
+            flinchRoutine = null;
+        }
+
+        flinchRoutine = StartCoroutine(KnockbackReactionRoutine(knockbackDirection, force, duration));
+    }
+
+    private IEnumerator KnockbackReactionRoutine(Vector3 knockbackDirection, float force, float duration)
+    {
+        attackManager?.ForceCancelCurrentAttack(resetCombo: true);
+
+        Vector3 impulse = knockbackDirection.normalized * force;
+        playerMovement?.ApplyKnockback(impulse);
+        playerMovement?.ApplyExternalStun(duration);
+        animationController?.PlayKnockbackNonCancelable();
+
+        float timer = Mathf.Max(0.05f, duration);
+        while (timer > 0f)
+        {
+            timer -= Time.deltaTime;
+            yield return null;
+        }
+
+        flinchRoutine = null;
+    }
+
     private void CancelFlinchRoutine()
     {
         if (flinchRoutine == null)

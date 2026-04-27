@@ -95,6 +95,12 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     private bool staggerPlayerOnExplosion = true;
     [SerializeField, Range(0.05f, 2f), Tooltip("Forced stagger duration applied to the player on bomb explosion.")]
     private float playerExplosionStaggerDuration = 0.45f;
+    [SerializeField, Tooltip("If enabled, bomb explosions knock the player back with the Knockback animation.")]
+    private bool knockbackPlayerOnExplosion = true;
+    [SerializeField, Min(0f), Tooltip("Magnitude of the knockback impulse applied to the player on explosion.")]
+    private float explosionKnockbackForce = 18f;
+    [SerializeField, Min(0f), Tooltip("Duration in seconds the player input is locked during the knockback animation on explosion.")]
+    private float explosionKnockbackDuration = 0.6f;
     [SerializeField, Tooltip("If true, the bomb bot will randomly select an attack behavior on spawn.")]
     private bool randomizeBehavior = false;
     [SerializeField, Tooltip("The attack behavior this bomb bot will use.")]
@@ -798,8 +804,20 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
                 IHealthSystem health = hit.GetComponent<IHealthSystem>();
                 health?.LoseHP(explosionDamage, rumbleDuration, rumbleLowFrequency, rumbleHighFrequency);
 
-                if (staggerPlayerOnExplosion && health is PlayerHealthBarManager playerHealth)
-                    playerHealth.ApplyForcedStagger(playerExplosionStaggerDuration, resetCombo: true);
+                if (health is PlayerHealthBarManager playerHealth)
+                {
+                    if (knockbackPlayerOnExplosion)
+                    {
+                        Vector3 knockDir = (hit.transform.position - transform.position);
+                        knockDir.y = 0f;
+                        if (knockDir.sqrMagnitude < 0.0001f) knockDir = Vector3.forward;
+                        playerHealth.ApplyKnockbackReaction(knockDir.normalized, explosionKnockbackForce, explosionKnockbackDuration);
+                    }
+                    else if (staggerPlayerOnExplosion)
+                    {
+                        playerHealth.ApplyForcedStagger(playerExplosionStaggerDuration, resetCombo: true);
+                    }
+                }
             }
         }
 
