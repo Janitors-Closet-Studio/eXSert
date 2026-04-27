@@ -10,6 +10,12 @@ public class CameraShake : MonoBehaviour
     public CinemachineCamera combatCamera;
     private CinemachineBasicMultiChannelPerlin guardNoise;
     private CinemachineBasicMultiChannelPerlin combatNoise;
+    [SerializeField] private float defaultAmplitude = 1f;
+    [SerializeField] private float defaultFrequency = 2f;
+    [SerializeField] private float defaultDuration = 0.1f;
+    [SerializeField] private float defaultTimeToReset = 0.1f;
+
+    private Coroutine activeShakeRoutine;
 
     private void Awake()
     {
@@ -24,12 +30,26 @@ public class CameraShake : MonoBehaviour
         if (!SettingsManager.Instance.cameraShake)
         {
             Debug.Log("Camera shake disabled in settings, skipping shake");
+            ResetNoise();
             return;
         }
+
+        float resolvedAmplitude = amplitude >= 0f ? amplitude : defaultAmplitude;
+        float resolvedFrequency = frequency >= 0f ? frequency : defaultFrequency;
+        float resolvedDuration = duration >= 0f ? duration : defaultDuration;
+        float resolvedTimeToReset = timeToReset >= 0f ? timeToReset : defaultTimeToReset;
+
+        resolvedAmplitude = Mathf.Max(0f, resolvedAmplitude);
+        resolvedFrequency = Mathf.Max(0f, resolvedFrequency);
+        resolvedDuration = Mathf.Max(0.0001f, resolvedDuration);
+        resolvedTimeToReset = Mathf.Max(0.0001f, resolvedTimeToReset);
+
         Debug.Log("Camera shake triggered");
 
-        StopAllCoroutines();
-        StartCoroutine(ShakeCinemachineCameras(amplitude, frequency, duration, timeToReset));
+        if (activeShakeRoutine != null)
+            StopCoroutine(activeShakeRoutine);
+
+        activeShakeRoutine = StartCoroutine(ShakeCinemachineCameras(resolvedAmplitude, resolvedFrequency, resolvedDuration, resolvedTimeToReset));
     }
 
     private IEnumerator ShakeCinemachineCameras(float amplitude = -1f, float frequency = -1f, float duration = -1f, float timeToReset = 0.1f)
@@ -49,7 +69,7 @@ public class CameraShake : MonoBehaviour
 
         while (elapsed < duration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 
@@ -57,7 +77,7 @@ public class CameraShake : MonoBehaviour
 
         while (elapsed < timeToReset)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / timeToReset);
             // Cubic ease-out for smooth slowdown
             float easeT = 1f - Mathf.Pow(1f - t, 3);
@@ -74,11 +94,27 @@ public class CameraShake : MonoBehaviour
             yield return null;
         }
 
+        ResetNoise();
+        activeShakeRoutine = null;
+    }
+
+    private void OnDisable()
+    {
+        if (activeShakeRoutine != null)
+            StopCoroutine(activeShakeRoutine);
+
+        activeShakeRoutine = null;
+        ResetNoise();
+    }
+
+    private void ResetNoise()
+    {
         if (guardNoise != null)
         {
             guardNoise.AmplitudeGain = 0f;
             guardNoise.FrequencyGain = 0f;
         }
+
         if (combatNoise != null)
         {
             combatNoise.AmplitudeGain = 0f;

@@ -96,11 +96,7 @@ public class SaveSlotsMenu : MonoBehaviour
     {
         currentSaveSlotSelected = selectedSlot;
         string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
-        if (!string.IsNullOrWhiteSpace(selectedProfileId) && actText != null)
-        {
-            string farthestAct = GetFarthestUnlockedActName(selectedProfileId);
-            actText.text = string.IsNullOrEmpty(farthestAct) ? "ACT 1.1: INFILTRATION" : farthestAct;
-        }
+        UpdateActTextForProfile(selectedProfileId);
 
         
     }
@@ -202,6 +198,58 @@ public class SaveSlotsMenu : MonoBehaviour
             return actManager.GetFarthestUnlockedActName(profileId);
         }
         return null;
+    }
+
+    private void UpdateActTextForProfile(string profileId)
+    {
+        if (actText == null)
+            return;
+
+        const string defaultActText = "ACT 1.1: INFILTRATION";
+        if (string.IsNullOrWhiteSpace(profileId))
+        {
+            actText.text = defaultActText;
+            return;
+        }
+
+        string farthestAct = GetFarthestUnlockedActName(profileId);
+        if (!string.IsNullOrWhiteSpace(farthestAct))
+        {
+            actText.text = farthestAct;
+            return;
+        }
+
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.Instance != null
+            ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
+            : new Dictionary<string, GameData>();
+
+        if (!profilesGameData.TryGetValue(profileId, out GameData data) || data == null)
+        {
+            actText.text = defaultActText;
+            return;
+        }
+
+        actText.text = ResolveActDisplayFromSceneName(data.currentSceneName);
+    }
+
+    private static string ResolveActDisplayFromSceneName(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+            return "ACT 1.1: INFILTRATION";
+
+        if (sceneName.IndexOf("EngineCore", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            return "ACT 3.1: FINAL ENCOUNTER";
+
+        if (sceneName.IndexOf("Conservatory", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            return "ACT 2.2: CONSERVATORY";
+
+        if (sceneName.IndexOf("ChargingStation", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            return "ACT 2.1: AUGUR ENCOUNTER";
+
+        if (sceneName.IndexOf("Hangar", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            return "ACT 1.2: HANGAR";
+
+        return "ACT 1.1: INFILTRATION";
     }
 
     
@@ -495,6 +543,9 @@ public class SaveSlotsMenu : MonoBehaviour
             }
             currentSaveSlotSelected = defaultSlot;
         }
+
+        string selectedProfileId = currentSaveSlotSelected != null ? currentSaveSlotSelected.GetProfileId() : null;
+        UpdateActTextForProfile(selectedProfileId);
 
         TurnOffLoadButtonIfNoData();
         EnsureTheCorrectSaveSlotText(); // Force update after menu activation
