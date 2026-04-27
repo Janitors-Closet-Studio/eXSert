@@ -287,10 +287,13 @@ public class LoadPrefs : MonoBehaviour
         {
             float localBrightness = PlayerPrefs.GetFloat("masterBrightness");
             DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterBrightness: {localBrightness}");
-            if (brightnessSlider) brightnessSlider.value = localBrightness;
 
             if (graphics != null)
             {
+                localBrightness = graphics.ClampBrightnessValue(localBrightness);
+                if (brightnessSlider)
+                    brightnessSlider.value = localBrightness;
+
                 graphics.SetBrightness(localBrightness);
                 graphics.brightnessLevel = localBrightness;
                 DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loaded Brightness: {localBrightness}, Applied to GraphicsSettings.");

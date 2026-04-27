@@ -12,6 +12,9 @@ using UnityEngine.UI;
 
 public class GraphicsSettings : MonoBehaviour
 {
+    private const string MasterBrightnessKey = "masterBrightness";
+    private const string MasterBrightnessDefaultKey = "masterBrightnessDefault";
+
     [Header("Graphics Settings Container Reference")]
     [SerializeField] private GameObject graphicsSettingsContainer;
 
@@ -19,7 +22,7 @@ public class GraphicsSettings : MonoBehaviour
 
     [Header("Brightness Settings")]
     [SerializeField] private Slider brightnessSlider;
-    public float defaultBrightness = 1.25f;
+    public float defaultBrightness = 0.5f;
 
     [SerializeField]
     [Tooltip("Assign the shared post-process volume profile here. Brightness uses its LiftGammaGain override just like PauseManager uses a VolumeProfile.")]
@@ -32,6 +35,18 @@ public class GraphicsSettings : MonoBehaviour
     [SerializeField]
     [Tooltip("Gamma value when the brightness slider is at its maximum.")]
     private float maxBrightnessGamma = 1.5f;
+
+    [SerializeField]
+    [Tooltip("Neutral brightness value that should appear as 1.0 in the LiftGammaGain inspector.")]
+    private float neutralBrightnessGamma = 1f;
+
+    [SerializeField]
+    [Tooltip("Lowest slider value for screen brightness.")]
+    private float minBrightnessSliderValue = 0f;
+
+    [SerializeField]
+    [Tooltip("Highest slider value for screen brightness.")]
+    private float maxBrightnessSliderValue = 1f;
 
     internal LiftGammaGain liftGammaGain;
     internal float brightnessLevel;
@@ -68,7 +83,9 @@ public class GraphicsSettings : MonoBehaviour
 
         FindBrightnessProfile();
 
-        brightnessLevel = PlayerPrefs.GetFloat("masterBrightness", defaultBrightness);
+        ConfigureBrightnessSlider();
+
+        brightnessLevel = GetStartupBrightness();
         if (brightnessSlider != null)
             brightnessSlider.value = brightnessLevel;
 
@@ -170,14 +187,20 @@ public class GraphicsSettings : MonoBehaviour
 
         if (liftGammaGain != null)
         {
-            float gammaAlpha = GetGammaValueForBrightness(brightness);
+            float clampedBrightness = ClampBrightnessValue(brightness);
+            float gammaValue = GetGammaValueForBrightness(clampedBrightness);
+            float gammaAlpha = GetGammaAlphaForBrightness(gammaValue);
             liftGammaGain.gamma.Override(new Vector4(1f, 1f, 1f, gammaAlpha));
             liftGammaGain.gamma.overrideState = true;
             liftGammaGain.active = true;
-            brightnessLevel = brightness;
+            brightnessLevel = clampedBrightness;
+
+            if (brightnessSlider != null && !Mathf.Approximately(brightnessSlider.value, clampedBrightness))
+                brightnessSlider.SetValueWithoutNotify(clampedBrightness);
+
             DebugLogSettingsM.ConditionalLog(
                 DebugLogCategory.Settings,
-                $"Brightness set to: {brightness} -> gamma alpha {liftGammaGain.gamma.value.w}"
+                $"Brightness slider: {clampedBrightness} -> gamma {gammaValue} -> gamma alpha {liftGammaGain.gamma.value.w}"
             );
             return;
         }
@@ -187,26 +210,62 @@ public class GraphicsSettings : MonoBehaviour
         );
     }
 
+    public float ClampBrightnessValue(float brightness)
+    {
+        return Mathf.Clamp(brightness, minBrightnessSliderValue, maxBrightnessSliderValue);
+    }
+
+    private float GetStartupBrightness()
+    {
+        float clampedDefaultBrightness = ClampBrightnessValue(defaultBrightness);
+        float storedDefaultBrightness = PlayerPrefs.GetFloat(
+            MasterBrightnessDefaultKey,
+            clampedDefaultBrightness
+        );
+
+        bool shouldReseedBrightness =
+            !PlayerPrefs.HasKey(MasterBrightnessKey)
+            || !Mathf.Approximately(storedDefaultBrightness, clampedDefaultBrightness);
+
+        float startupBrightness = shouldReseedBrightness
+            ? clampedDefaultBrightness
+            : PlayerPrefs.GetFloat(MasterBrightnessKey, clampedDefaultBrightness);
+
+        startupBrightness = ClampBrightnessValue(startupBrightness);
+
+        PlayerPrefs.SetFloat(MasterBrightnessDefaultKey, clampedDefaultBrightness);
+        PlayerPrefs.SetFloat(MasterBrightnessKey, startupBrightness);
+        PlayerPrefs.Save();
+
+        return startupBrightness;
+    }
+
     private float GetGammaValueForBrightness(float brightness)
     {
-        float sliderMin = 0f;
-        float sliderMax = 1f;
+        float normalizedBrightness = Mathf.InverseLerp(
+            minBrightnessSliderValue,
+            maxBrightnessSliderValue,
+            brightness
+        );
 
-        if (brightnessSlider != null)
-        {
-            sliderMin = brightnessSlider.minValue;
-            sliderMax = brightnessSlider.maxValue;
-        }
-        else
-        {
-            sliderMax = Mathf.Max(defaultBrightness, sliderMin + 0.0001f);
-        }
-
-        if (Mathf.Approximately(sliderMin, sliderMax))
-            return minBrightnessGamma;
-
-        float normalizedBrightness = Mathf.InverseLerp(sliderMin, sliderMax, brightness);
         return Mathf.Lerp(minBrightnessGamma, maxBrightnessGamma, normalizedBrightness);
+    }
+
+    private float GetGammaAlphaForBrightness(float gammaValue)
+    {
+        return gammaValue - neutralBrightnessGamma;
+    }
+
+    private void ConfigureBrightnessSlider()
+    {
+        if (brightnessSlider == null)
+            return;
+
+        brightnessSlider.minValue = minBrightnessSliderValue;
+        brightnessSlider.maxValue = maxBrightnessSliderValue;
+        brightnessSlider.wholeNumbers = false;
+
+        defaultBrightness = ClampBrightnessValue(defaultBrightness);
     }
 
     public void SetDisplayMode(int displayMode)
