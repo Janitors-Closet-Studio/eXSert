@@ -1527,6 +1527,7 @@ GameObject:
   - component: {fileID: 4360433577188796707}
   - component: {fileID: 5480205498155007657}
   - component: {fileID: 1707564306165916711}
+  - component: {fileID: 3082634784137920473}
   m_Layer: 17
   m_Name: -Cameras-
   m_TagString: PlayerCamera
@@ -1618,6 +1619,20 @@ MonoBehaviour:
   hiddenLitAlpha: 0
   immediateHideDistance: 0.3
   fadeStartDistance: 0.7
+--- !u!114 &3082634784137920473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748908185219209484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79750aeac9e9bc14aae8eba147c0a043, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraShake
+  guardCamera: {fileID: 2086781366795740747}
+  combatCamera: {fileID: 7621358726023913587}
 --- !u!1 &749378645244079403
 GameObject:
   m_ObjectHideFlags: 0
@@ -3768,7 +3783,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.07450934, y: -0.001928752, z: 0.00014411089, w: -0.99721843}
+  m_LocalRotation: {x: -0.07450936, y: -0.0015384068, z: 0.00011494534, w: -0.99721915}
   m_LocalPosition: {x: 0.020154344, y: 1.9423592, z: -3.4481235}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3808,7 +3823,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 60
+  field of view: 89.99994
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -15550,6 +15565,7 @@ GameObject:
   - component: {fileID: 4586771806983760143}
   - component: {fileID: 6934024178243747345}
   - component: {fileID: 897994802152428115}
+  - component: {fileID: 5636255374834613782}
   m_Layer: 17
   m_Name: MoveCamera
   m_TagString: PlayerCamera
@@ -15822,6 +15838,23 @@ MonoBehaviour:
     NearLimit: 5
     FarLimit: 30
     MaxQualityBoost: 0.2
+--- !u!114 &5636255374834613782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6626823234369765875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68bb026fafb42b14791938953eaace77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBasicMultiChannelPerlin
+  NoiseProfile: {fileID: 11400000, guid: 69ce8388f6785dd4c8c39915efece2f4, type: 2}
+  PivotOffset: {x: 0, y: 0, z: 0}
+  AmplitudeGain: 1
+  FrequencyGain: 1
+  m_NoiseOffsets: {x: 0, y: 0, z: 0}
 --- !u!1 &6650212347235630138
 GameObject:
   m_ObjectHideFlags: 0
@@ -21177,6 +21210,7 @@ GameObject:
   - component: {fileID: 7838498483116243344}
   - component: {fileID: 6789831858660127544}
   - component: {fileID: 2847159133351051580}
+  - component: {fileID: 676342479454174667}
   m_Layer: 17
   m_Name: GuardCamera
   m_TagString: PlayerCamera
@@ -21449,6 +21483,23 @@ MonoBehaviour:
     NearLimit: 5
     FarLimit: 30
     MaxQualityBoost: 0.2
+--- !u!114 &676342479454174667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8983900087774367925}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68bb026fafb42b14791938953eaace77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBasicMultiChannelPerlin
+  NoiseProfile: {fileID: 11400000, guid: 69ce8388f6785dd4c8c39915efece2f4, type: 2}
+  PivotOffset: {x: 0, y: 0, z: 0}
+  AmplitudeGain: 1
+  FrequencyGain: 1
+  m_NoiseOffsets: {x: 0, y: 0, z: 0}
 --- !u!1 &9002662913152225744
 GameObject:
   m_ObjectHideFlags: 0

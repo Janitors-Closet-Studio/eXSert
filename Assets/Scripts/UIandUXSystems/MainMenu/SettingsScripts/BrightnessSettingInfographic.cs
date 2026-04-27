@@ -11,7 +11,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     [SerializeField] private Image brightestImage; // Reference to the brightest image
     [SerializeField] private Slider brightnessSlider; // Reference to the brightness slider\
     [SerializeField] private Color32 infographicBaseColor = new Color32(63, 63, 63, 255);
-    [SerializeField] private float brightnessMin = -0.5f;
+    [SerializeField] private float brightnessMin = 0f;
     [SerializeField] private float brightnessMax = 1f;
     private float _previousSliderValue;
     private bool isMainMenuScene;
@@ -22,7 +22,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     {
         isMainMenuScene = SceneManager.GetActiveScene().name == "MainMenu";
 
-        float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 1.25f);
+        float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
         _previousSliderValue = initialBrightness; // Initialize here
     
         if (brightnessSlider != null) 

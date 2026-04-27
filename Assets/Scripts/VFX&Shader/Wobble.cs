@@ -68,33 +68,59 @@ public class Wobble : MonoBehaviour
     private Color initialTopColor;
     private Color initialSideColor;
 
+    private void Awake()
+    {
+        lastPos = transform.position;
+        lastRot = transform.rotation.eulerAngles;
+    }
+
     void Start()
     {
         rend = GetComponent<Renderer>();
+        if (rend == null)
+            return;
+
         runtimeMaterial = rend.material;
         CacheInitialColors();
         InitializeFillState();
+        lastPos = transform.position;
+        lastRot = transform.rotation.eulerAngles;
     }
 
     private void Update()
     {
+        if (runtimeMaterial == null)
+            return;
+
+        float deltaTime = Time.deltaTime;
         time += Time.deltaTime;
         
-        wobbleAmountToAddX = Mathf.Lerp(wobbleAmountToAddX, 0, Time.deltaTime * (Recovery));
-        wobbleAmountToAddZ = Mathf.Lerp(wobbleAmountToAddZ, 0, Time.deltaTime * (Recovery));
+        wobbleAmountToAddX = Mathf.Lerp(wobbleAmountToAddX, 0, deltaTime * Recovery);
+        wobbleAmountToAddZ = Mathf.Lerp(wobbleAmountToAddZ, 0, deltaTime * Recovery);
 
         pulse = 2 * Mathf.PI * WobbleSpeed;
-        wobbleAmountX = wobbleAmountToAddX * Mathf.Sin(pulse * time);
-        wobbleAmountZ = wobbleAmountToAddZ * Mathf.Sin(pulse * time);
+        wobbleAmountX = SanitizeFloat(wobbleAmountToAddX * Mathf.Sin(pulse * time));
+        wobbleAmountZ = SanitizeFloat(wobbleAmountToAddZ * Mathf.Sin(pulse * time));
 
         runtimeMaterial.SetFloat("_WobbleX", wobbleAmountX);
         runtimeMaterial.SetFloat("_WobbleZ", wobbleAmountZ);
 
-        velocity = (lastPos - transform.position) / Time.deltaTime;
-        angularVelocity = transform.rotation.eulerAngles - lastRot;
+        if (deltaTime > Mathf.Epsilon)
+        {
+            velocity = (lastPos - transform.position) / deltaTime;
+            angularVelocity = (transform.rotation.eulerAngles - lastRot) / deltaTime;
+        }
+        else
+        {
+            velocity = Vector3.zero;
+            angularVelocity = Vector3.zero;
+        }
 
         wobbleAmountToAddX += Mathf.Clamp((velocity.x + (angularVelocity.z * 0.2f)) * MaxWobble, -MaxWobble, MaxWobble);
         wobbleAmountToAddZ += Mathf.Clamp((velocity.z + (angularVelocity.x * 0.2f)) * MaxWobble, -MaxWobble, MaxWobble);
+
+        wobbleAmountToAddX = SanitizeFloat(wobbleAmountToAddX);
+        wobbleAmountToAddZ = SanitizeFloat(wobbleAmountToAddZ);
 
         lastPos = transform.position;
         lastRot = transform.rotation.eulerAngles;
@@ -121,16 +147,17 @@ public class Wobble : MonoBehaviour
     {
         float elapsedTime = 0f;
         float startFill = currentFill;
+        float safeDuration = Mathf.Max(0.0001f, duration);
 
-        while (elapsedTime < duration)
+        while (elapsedTime < safeDuration)
         {
             elapsedTime += Time.deltaTime;
             
-            currentFill = Mathf.Lerp(startFill, targetFill, elapsedTime / duration);
+            currentFill = Mathf.Lerp(startFill, targetFill, elapsedTime / safeDuration);
             runtimeMaterial.SetFloat(FillProperty, currentFill);
 
-            float currentSurgeZ = Mathf.Lerp(surgeForceZ, 0, elapsedTime / duration);
-            float currentSurgeX = Mathf.Lerp(surgeForceX, 0, elapsedTime / duration);
+            float currentSurgeZ = Mathf.Lerp(surgeForceZ, 0, elapsedTime / safeDuration);
+            float currentSurgeX = Mathf.Lerp(surgeForceX, 0, elapsedTime / safeDuration);
             
             wobbleAmountToAddZ += currentSurgeZ * Time.deltaTime;
             wobbleAmountToAddX += currentSurgeX * Time.deltaTime;
@@ -258,5 +285,13 @@ public class Wobble : MonoBehaviour
 
         if (hasSideColor)
             runtimeMaterial.SetColor(SideColorProperty, initialSideColor);
+    }
+
+    private static float SanitizeFloat(float value)
+    {
+        if (float.IsNaN(value) || float.IsInfinity(value))
+            return 0f;
+
+        return value;
     }
 }
