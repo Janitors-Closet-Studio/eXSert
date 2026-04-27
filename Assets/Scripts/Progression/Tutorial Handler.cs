@@ -17,10 +17,22 @@ public class TutorialHandler : MonoBehaviour
     #region Inspector Setup
     [Header("Objective Messages")]
     [SerializeField, TextArea] private string initialMessage;
+    [SerializeField] private bool initialMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction initialMessageAction = KeybindAction.GP_Interact;
     [SerializeField, TextArea] private string singleTargetFightMessage;
+    [SerializeField] private bool singleTargetFightMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction singleTargetFightMessageAction = KeybindAction.GP_FastAttackSingle;
     [SerializeField, TextArea] private string aoeTargetFightMessage;
+    [SerializeField] private bool aoeTargetFightMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction aoeTargetFightMessageAction = KeybindAction.GP_HeavyAttackAoe;
     [SerializeField, TextArea] private string correctButtonPressedMessage;
+    [SerializeField] private bool correctButtonPressedMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction correctButtonPressedMessageAction = KeybindAction.GP_Interact;
     [SerializeField, TextArea] private string tutorialCompleteMessage;
+    [SerializeField] private bool tutorialCompleteMessageUseSelectedIcon;
+    [SerializeField] private KeybindAction tutorialCompleteMessageAction = KeybindAction.GP_Interact;
+    [SerializeField] private Color tutorialIconColor = Color.white;
+    [SerializeField, Min(0.1f)] private float tutorialIconSize = 1f;
 
     [Header("Tutorial Progression References")]
     [SerializeField, CriticalReference] 
@@ -52,7 +64,7 @@ public class TutorialHandler : MonoBehaviour
     {
         keycardToEnable.SetActive(false); // Ensures the keycard is disabled at the start of the tutorial
         
-        ObjectiveManager.SetMainObjective(initialMessage); // Displays the initial tutorial message to the player
+        ObjectiveManager.SetMainObjective(BuildMessage(initialMessage, initialMessageUseSelectedIcon, initialMessageAction)); // Displays the initial tutorial message to the player
     }
 
     private void OnEnable()
@@ -100,15 +112,15 @@ public class TutorialHandler : MonoBehaviour
     {
         logCollected = true;
 
-        StartCombatTutorial(singleTargetFight, singleTargetFightMessage);
+        StartCombatTutorial(singleTargetFight, singleTargetFightMessage, singleTargetFightMessageUseSelectedIcon, singleTargetFightMessageAction);
     }
 
     #region Combat Tutorial Handlers
-    private void StartCombatTutorial(CombatEncounter fight, string message)
+    private void StartCombatTutorial(CombatEncounter fight, string message, bool useSelectedIcon, KeybindAction selectedAction)
     {
         Debug.Log($"[TutorialHandler] Starting combat tutorial for encounter {fight.name}. Displaying message and enabling fight zone.");
         correctButtonPressed = false; // Resets the button press requirement for this part of the tutorial
-        ObjectiveManager.SetMainObjective(message); // Displays the appropriate message for the current fight
+        ObjectiveManager.SetMainObjective(BuildMessage(message, useSelectedIcon, selectedAction)); // Displays the appropriate message for the current fight
         fight.EnableZone(); // Enables the fight zone
     }
 
@@ -141,7 +153,8 @@ public class TutorialHandler : MonoBehaviour
 
         // If the second fight isn't complete, checks if the first fight is complete to start the second
         else if (type == AttackType.LightSingle && FirstFightCompleted) 
-            StartCombatTutorial(aoeTargetFight, aoeTargetFightMessage);
+            StartCombatTutorial(aoeTargetFight, aoeTargetFightMessage, aoeTargetFightMessageUseSelectedIcon, aoeTargetFightMessageAction);
+        ObjectiveManager.SetMainObjective(BuildMessage(tutorialCompleteMessage, tutorialCompleteMessageUseSelectedIcon, tutorialCompleteMessageAction)); // Displays the tutorial complete message
     }
 
     private void OnEncounterCompleted()
@@ -164,9 +177,16 @@ public class TutorialHandler : MonoBehaviour
 
         correctButtonPressed = false; // Resets the button press requirement for the next part of the tutorial
         
-        StartCombatTutorial(aoeTargetFight, aoeTargetFightMessage);
+        StartCombatTutorial(aoeTargetFight, aoeTargetFightMessage, aoeTargetFightMessageUseSelectedIcon, aoeTargetFightMessageAction);
     }
     #endregion
+
+    private string BuildMessage(string source, bool useSelectedIcon, KeybindAction selectedAction)
+    {
+        string color = $"#{ColorUtility.ToHtmlStringRGBA(tutorialIconColor)}";
+        KeybindAction? defaultAction = useSelectedIcon ? selectedAction : null;
+        return KeybindRichTextFormatter.ApplyDefaults(source, defaultAction, tutorialIconSize, color);
+    }
 
     private void TutorialComplete()
     {
