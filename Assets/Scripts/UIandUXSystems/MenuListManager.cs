@@ -346,7 +346,11 @@ public class MenuListManager : MonoBehaviour
         previousMenu.SetActive(true);
         CanvasGroup previousCanvasGroup = previousMenu.GetComponent<CanvasGroup>();
         if (previousCanvasGroup != null)
+        {
             previousCanvasGroup.alpha = 1f;
+            previousCanvasGroup.blocksRaycasts = true;
+            previousCanvasGroup.interactable = true;
+        }
 
         // Remove outgoing menu from stack first, then resolve a valid selection for the revealed menu.
         menusToManage.RemoveAt(0);

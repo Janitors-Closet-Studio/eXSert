@@ -254,18 +254,26 @@ public class LoadPrefs : MonoBehaviour
         else
         {
             Debug.LogWarning("[LoadPrefs] masterCameraShake key not found in PlayerPrefs.");
+            if (graphics != null)
+                graphics.SetCameraShake(true);
+
+            PlayerPrefs.SetInt("masterCameraShake", 1);
         }
 
         if (PlayerPrefs.HasKey("masterFPS"))
         {
             int localFPS = PlayerPrefs.GetInt("masterFPS");
             DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterFPS: {localFPS}");
-            Application.targetFrameRate = localFPS;
+            Application.targetFrameRate = NormalizeSceneTargetFPS(localFPS);
         }
         else
         {
             Debug.LogWarning("[LoadPrefs] masterFPS key not found in PlayerPrefs.");
             Application.targetFrameRate = 60; // Default to 60 FPS if no preference is found
+            if (graphics != null)
+                graphics.SetFPS(60);
+
+            PlayerPrefs.SetInt("masterFPS", 60);
         }
 
         if (PlayerPrefs.HasKey("masterMotionBlur"))
@@ -307,10 +315,21 @@ public class LoadPrefs : MonoBehaviour
         {
             Debug.LogWarning("[LoadPrefs] masterBrightness key not found in PlayerPrefs.");
         }
+
+        PlayerPrefs.Save();
     }
 
     void OnApplicationQuit()
     {
         PlayerPrefs.Save();
+    }
+
+    private static int NormalizeSceneTargetFPS(int targetFPS)
+    {
+        // Keep unlimited as-is, but don't allow low scene-load caps like 30.
+        if (targetFPS <= 0)
+            return targetFPS;
+
+        return Mathf.Max(60, targetFPS);
     }
 }

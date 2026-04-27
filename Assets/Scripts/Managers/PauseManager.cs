@@ -194,6 +194,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        if (IsPauseBlockedByPuzzleMode())
+            return;
+
         if (Time.unscaledTime < ignorePauseUntilTime)
             return;
 
@@ -300,6 +303,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         if (Time.unscaledTime < ignorePauseUntilTime)
             return;
+
+        if (IsPauseBlockedByPuzzleMode())
+            return;
     
         if (MainMenu.isInMainMenu)
         {
@@ -389,6 +395,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void OnSwapMenu(InputAction.CallbackContext context)
     {
+        if (IsPauseBlockedByPuzzleMode())
+            return;
+
         if (ConfirmationDialog.AnyOpen)
         {
             Debug.Log("[PauseManager] OnSwapMenu ignored - confirmation dialog open");
@@ -517,6 +526,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     public void ResumeGame()
     {
+        ForceCloseAllWarningUi();
+
         // Switch back to Gameplay input
         if (InputReader.PlayerInput != null)
         {
@@ -594,6 +605,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     /// </summary>
     public void HideMenusForSceneTransition()
     {
+        ForceCloseAllWarningUi();
+
         // Release this menu's pause ownership so restart transitions do not leave the game paused.
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
 
@@ -680,6 +693,30 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void SetGameplayHUDVisible(bool visible)
     {
         SetHUDVisible(visible);
+    }
+
+    private void ForceCloseAllWarningUi()
+    {
+        WarningButtonFunctionality[] warningDialogs = FindObjectsByType<WarningButtonFunctionality>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (warningDialogs == null || warningDialogs.Length == 0)
+            return;
+
+        foreach (WarningButtonFunctionality warningDialog in warningDialogs)
+        {
+            if (warningDialog == null)
+                continue;
+
+            warningDialog.ForceHideWarningUI();
+        }
+    }
+
+    private bool IsPauseBlockedByPuzzleMode()
+    {
+        if (!CranePuzzle.IsCranePuzzleActive && !ElevatorLift.ElevatorMenuActive)
+            return false;
+
+        Debug.Log("[PauseManager] Pause input ignored while puzzle interaction mode is active.");
+        return true;
     }
 
     private bool TryResolveHudRoot()

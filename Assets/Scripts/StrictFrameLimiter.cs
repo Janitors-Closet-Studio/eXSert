@@ -14,7 +14,7 @@ public class StrictFrameLimiter : MonoBehaviour
         if (graphicsSettings == null)
             graphicsSettings = GetComponentInChildren<GraphicsSettings>();
 
-        targetFPS = PlayerPrefs.GetInt("masterFPS", 60);
+        targetFPS = NormalizeSceneTargetFPS(PlayerPrefs.GetInt("masterFPS", 60));
         // Disable Unity's built-in limiter for strict control
         Application.targetFrameRate = 1000;
         QualitySettings.vSyncCount = 0;
@@ -23,8 +23,17 @@ public class StrictFrameLimiter : MonoBehaviour
     // Call this to update the FPS cap at runtime
     public void UpdateTargetFPS(int newFPS)
     {
-        targetFPS = newFPS;
+        targetFPS = NormalizeSceneTargetFPS(newFPS);
         Debug.Log($"[StrictFrameLimiter] Updated targetFPS to {targetFPS}");
+    }
+
+    private static int NormalizeSceneTargetFPS(int targetFPS)
+    {
+        // Keep unlimited as-is, but don't allow low scene-load caps like 30.
+        if (targetFPS <= 0)
+            return targetFPS;
+
+        return Mathf.Max(60, targetFPS);
     }
 
     IEnumerator FrameLimiter()

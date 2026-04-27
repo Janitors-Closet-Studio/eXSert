@@ -42,6 +42,23 @@ public class SettingsManager : Singleton<SettingsManager>
 
     private void Start()
     {
+        bool defaultSet = false;
+
+        if (!PlayerPrefs.HasKey("masterFPS"))
+        {
+            PlayerPrefs.SetInt("masterFPS", 60);
+            defaultSet = true;
+        }
+
+        if (!PlayerPrefs.HasKey("masterCameraShake"))
+        {
+            PlayerPrefs.SetInt("masterCameraShake", 1);
+            defaultSet = true;
+        }
+
+        if (defaultSet)
+            PlayerPrefs.Save();
+
         sensitivity = PlayerPrefs.GetFloat("masterSens", defaultSens);
         invertY = PlayerPrefs.GetInt("masterInvertY", 0) == 1;
         comboProgression = PlayerPrefs.GetInt("masterCombo", 1) == 1;
@@ -75,9 +92,18 @@ public class SettingsManager : Singleton<SettingsManager>
 
     public void ReapplyFPSLimit(Scene scene, LoadSceneMode mode)
     {
-        int targetFPS = PlayerPrefs.GetInt("masterFPS", 60);
+        int targetFPS = NormalizeSceneTargetFPS(PlayerPrefs.GetInt("masterFPS", 60));
         Application.targetFrameRate = targetFPS;
         FindFirstObjectByType<StrictFrameLimiter>()?.UpdateTargetFPS(targetFPS);
+    }
+
+    private static int NormalizeSceneTargetFPS(int targetFPS)
+    {
+        // Keep unlimited as-is, but don't allow low scene-load caps like 30.
+        if (targetFPS <= 0)
+            return targetFPS;
+
+        return Mathf.Max(60, targetFPS);
     }
 
     internal void UpdatePlayerCameraSens(float newSensitivity)
