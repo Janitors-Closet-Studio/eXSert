@@ -38,6 +38,7 @@ public class WarningButtonFunctionality : MonoBehaviour
     [SerializeField] private GameObject pauseMenu;
 
     private GameObject originalFooterParent;
+    private bool ownsFooterParenting;
 
     [Header("Action Handler")]
     [SerializeField] private GameActionHandler actionHandler;
@@ -46,7 +47,8 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     private void Awake()
     {
-        originalFooterParent = footerPanel.transform.parent.gameObject;
+        if (footerPanel != null && footerPanel.transform.parent != null)
+            originalFooterParent = footerPanel.transform.parent.gameObject;
     }
 
 
@@ -107,7 +109,7 @@ public class WarningButtonFunctionality : MonoBehaviour
         pendingAction = action;
         ActivateTextBlock(textToEnable);
         SetWarningVisible(true);
-        ParentFooterToPauseMenu(true);
+        ownsFooterParenting = ParentFooterToPauseMenu(true);
     }
 
     private void ActivateTextBlock(GameObject target)
@@ -143,24 +145,57 @@ public class WarningButtonFunctionality : MonoBehaviour
         pendingAction = WarningAction.None;
         ActivateTextBlock(null);
         SetWarningVisible(false);
-        ParentFooterToPauseMenu(false);
+
+        if (ownsFooterParenting)
+        {
+            ParentFooterToPauseMenu(false);
+            ownsFooterParenting = false;
+        }
+
         Debug.Log("[WarningButtonFunctionality] HideWarningUI completed");
     }
 
-    private void ParentFooterToPauseMenu(bool parentToPause)
+    private bool ParentFooterToPauseMenu(bool parentToPause)
     {
-        if (footerPanel == null || pauseMenu == null)
-            return;
+        if (footerPanel == null)
+            return false;
 
         if (parentToPause) 
         {
+            if (pauseMenu == null)
+                return false;
+
+            Transform currentParent = footerPanel.transform.parent;
+            if (currentParent != null && currentParent != pauseMenu.transform)
+                originalFooterParent = currentParent.gameObject;
+
             footerPanel.transform.SetParent(pauseMenu.transform, worldPositionStays: false);
             footerPanel.transform.SetSiblingIndex(1); // Above pause ui but below warning canvas
+            return true;
         }
-        else 
-        {
-            footerPanel.transform.SetParent(originalFooterParent.transform, worldPositionStays: false);
+
+        Transform restoreParent = null;
+
+        if (originalFooterParent != null && (pauseMenu == null || originalFooterParent != pauseMenu))
+            restoreParent = originalFooterParent.transform;
+        else if (warningCanvas != null && warningCanvas.transform.parent != null)
+            restoreParent = warningCanvas.transform.parent;
+
+        if (restoreParent != null)
+            footerPanel.transform.SetParent(restoreParent, worldPositionStays: false);
+
+        if (footerPanel.transform.parent != null)
             footerPanel.transform.SetAsLastSibling(); // Ensure footer is on top of other UI elements in the warning canvas
+
+        return restoreParent != null;
+    }
+
+    private void OnDisable()
+    {
+        if (ownsFooterParenting)
+        {
+            ParentFooterToPauseMenu(false);
+            ownsFooterParenting = false;
         }
     }
 

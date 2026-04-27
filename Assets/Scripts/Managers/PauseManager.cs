@@ -272,17 +272,36 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
-        // If we have more than 2 menus (canvas + first menu), just go back one level
-        if (menuListManager.menusToManage.Count > 2)
-        {
-            GoBackOnce();
-            return;
-        }
+        PrunePauseMenusFromStack();
 
-        // If settings menu is open, close it and return to pause menu
         if (settingsMenuOpen)
         {
             CloseSettingsMenu();
+            return;
+        }
+
+        int managedMenuCount = GetManagedMenuCount();
+
+        // If we have more than 2 menus (canvas + first menu), just go back one level
+        if (managedMenuCount > 2)
+        {
+            GoBackOnce();
+
+            PrunePauseMenusFromStack();
+            managedMenuCount = GetManagedMenuCount();
+
+            if (currentActiveMenu == ActiveMenu.NavigationMenu && managedMenuCount <= 2 && !HasBlockingSubmenuActive())
+            {
+                SwapToPauseMenu();
+                return;
+            }
+
+            if (currentActiveMenu == ActiveMenu.PauseMenu && managedMenuCount <= 2 && !HasBlockingSubmenuActive())
+            {
+                ResumeGame();
+                return;
+            }
+
             return;
         }
         
@@ -437,6 +456,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.PauseMenu;
 
+        PrunePauseMenusFromStack();
+
         if (menuListManager != null && pauseMenuHolder != null)
             menuListManager.AddToMenuList(pauseMenuHolder);
 
@@ -471,6 +492,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
+        PrunePauseMenusFromStack();
+
         if (menuListManager != null && navigationMenuHolder != null)
             menuListManager.AddToMenuList(navigationMenuHolder);
 
@@ -496,10 +519,13 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         currentActiveMenu = ActiveMenu.PauseMenu;
 
+        PrunePauseMenusFromStack();
+
         if (menuListManager != null && pauseMenuHolder != null)
             menuListManager.AddToMenuList(pauseMenuHolder);
 
-        menuListManager.menusToManage.Remove(navigationMenuHolder);
+        if (menuListManager != null && menuListManager.menusToManage != null)
+            menuListManager.menusToManage.Remove(navigationMenuHolder);
 
         RefreshNaviEntryIndicator();
 
@@ -512,6 +538,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void SwapToNavigationMenu()
     {
         currentActiveMenu = ActiveMenu.NavigationMenu;
+
+        PrunePauseMenusFromStack();
 
         if (menuListManager != null && navigationMenuHolder != null)
             menuListManager.AddToMenuList(navigationMenuHolder);
@@ -527,6 +555,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void ResumeGame()
     {
         ForceCloseAllWarningUi();
+
+        PrunePauseMenusFromStack();
 
         // Switch back to Gameplay input
         if (InputReader.PlayerInput != null)
@@ -558,7 +588,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         SetBlurEnabled(false);
         
         if (pauseOverlay.activeInHierarchy)
-            StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
+        {
+            if (fadeMenus != null)
+                StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
+            else
+                pauseOverlay.SetActive(false);
+        }
 
 
         // Prevent immediate re-open from the same key press while returning to Gameplay.
@@ -607,6 +642,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         ForceCloseAllWarningUi();
 
+        PrunePauseMenusFromStack();
+
         // Release this menu's pause ownership so restart transitions do not leave the game paused.
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
 
@@ -617,6 +654,14 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
         SetBlurEnabled(false);
+
+        if (pauseOverlay != null && pauseOverlay.activeInHierarchy)
+        {
+            if (fadeMenus != null)
+                StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
+            else
+                pauseOverlay.SetActive(false);
+        }
 
         if (InputReader.PlayerInput != null)
         {
@@ -651,10 +696,20 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             SetNavigationBlockingChildrenVisible(false);
 
         if (pauseMenuHolder != null)
-            StartCoroutine(fadeMenus.FadeMenu(pauseMenuHolder, fadeMenus.fadeDuration, showPause));
+        {
+            if (fadeMenus != null)
+                StartCoroutine(fadeMenus.FadeMenu(pauseMenuHolder, fadeMenus.fadeDuration, showPause));
+            else
+                pauseMenuHolder.SetActive(showPause);
+        }
 
         if (navigationMenuHolder != null)
-            StartCoroutine(fadeMenus.FadeMenu(navigationMenuHolder, fadeMenus.fadeDuration, showNavigation));
+        {
+            if (fadeMenus != null)
+                StartCoroutine(fadeMenus.FadeMenu(navigationMenuHolder, fadeMenus.fadeDuration, showNavigation));
+            else
+                navigationMenuHolder.SetActive(showNavigation);
+        }
 
         if (settingsMenuContainer != null)
             settingsMenuContainer.SetActive(showSettings);
@@ -693,6 +748,33 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void SetGameplayHUDVisible(bool visible)
     {
         SetHUDVisible(visible);
+    }
+
+    private int GetManagedMenuCount()
+    {
+        if (menuListManager == null || menuListManager.menusToManage == null)
+            return 0;
+
+        return menuListManager.menusToManage.Count;
+    }
+
+    private void PrunePauseMenusFromStack()
+    {
+        if (menuListManager == null || menuListManager.menusToManage == null)
+            return;
+
+        for (int i = menuListManager.menusToManage.Count - 1; i >= 0; i--)
+        {
+            GameObject menu = menuListManager.menusToManage[i];
+            if (menu == null)
+            {
+                menuListManager.menusToManage.RemoveAt(i);
+                continue;
+            }
+
+            if (menu == pauseMenuHolder || menu == navigationMenuHolder || menu == settingsMenuContainer)
+                menuListManager.menusToManage.RemoveAt(i);
+        }
     }
 
     private void ForceCloseAllWarningUi()
