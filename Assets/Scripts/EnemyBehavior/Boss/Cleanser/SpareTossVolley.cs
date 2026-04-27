@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.AI;
 using Utilities.Combat;
 
 namespace EnemyBehavior.Boss.Cleanser
@@ -283,14 +284,23 @@ namespace EnemyBehavior.Boss.Cleanser
         private Vector3 PickLandingPosition(Vector3 center, List<Vector3> usedPositions, CleanserDualWieldSystem owner)
         {
             const int attempts = 24;
+            // Generous radius so the sample succeeds even when the nav mesh surface Y
+            // differs from baseY (uneven terrain, baked-mesh offsets, etc.).
+            const float navSampleRadius = 6f;
             float minSpacing = Mathf.Max(0f, owner.MinLandingSpacing);
+            float baseY = owner.transform.position.y + owner.LodgedHeightOffset;
 
             for (int i = 0; i < attempts; i++)
             {
                 float angle = Random.Range(0f, Mathf.PI * 2f);
                 float radius = Random.Range(owner.LandingRadiusMin, owner.LandingRadiusMax);
-                Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-                candidate.y = owner.transform.position.y + owner.LodgedHeightOffset;
+                Vector3 raw = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+                raw.y = baseY;
+
+                // Snap to nav mesh if possible; fall back to raw position so spacing still works.
+                Vector3 candidate = NavMesh.SamplePosition(raw, out NavMeshHit hit, navSampleRadius, NavMesh.AllAreas)
+                    ? new Vector3(hit.position.x, baseY, hit.position.z)
+                    : raw;
 
                 if (GetMinDistanceToUsed(candidate, usedPositions) >= minSpacing)
                     return candidate;
@@ -303,8 +313,12 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 float angle = (i / 64f) * Mathf.PI * 2f;
                 float radius = owner.LandingRadiusMax;
-                Vector3 candidate = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-                candidate.y = owner.transform.position.y + owner.LodgedHeightOffset;
+                Vector3 raw = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+                raw.y = baseY;
+
+                Vector3 candidate = NavMesh.SamplePosition(raw, out NavMeshHit hit, navSampleRadius, NavMesh.AllAreas)
+                    ? new Vector3(hit.position.x, baseY, hit.position.z)
+                    : raw;
 
                 float minDist = GetMinDistanceToUsed(candidate, usedPositions);
                 if (minDist > bestMinDistance)
