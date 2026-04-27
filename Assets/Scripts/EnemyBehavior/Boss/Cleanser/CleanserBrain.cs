@@ -4865,10 +4865,21 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             PlaySFX(UltimateSettings.MassiveStrikeSFX);
             TriggerJumpArcResolutionAnimation(UltimateSettings.JumpArcResolutionAnimSpeedMultiplier);
-            
+
             Vector3 startPos = transform.position;
             Vector3 targetPos = startPos;
-            targetPos.y = 0f;
+
+            // Resolve the ground Y via NavMesh so this works in scenes where the floor
+            // is not at world Y=0 (hardcoding 0 caused the Cleanser to plunge underground
+            // in scenes whose arena floor sits at a non-zero world height).
+            if (agent != null && NavMesh.SamplePosition(startPos, out NavMeshHit massiveStrikeNavHit, 8f, NavMesh.AllAreas))
+            {
+                targetPos.y = massiveStrikeNavHit.position.y;
+            }
+            else if (ultimateArenaCenterPoint != null)
+            {
+                targetPos.y = ultimateArenaCenterPoint.position.y;
+            }
             
             agent.enabled = false;
 
@@ -4941,7 +4952,12 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (player == null) return;
 
-            float damage = GetMassiveStrikeDamage(UltimateSettings.MassiveStrikeDamage);
+            // Resolve base damage from a percentage of the player's max HP.
+            float baseDamage = UltimateSettings.MassiveStrikeFallbackDamage;
+            if (player.TryGetComponent<IHealthSystem>(out var healthForMax) && healthForMax.maxHP > 0f)
+                baseDamage = healthForMax.maxHP * Mathf.Max(0f, UltimateSettings.MassiveStrikePlayerMaxHpPercent);
+
+            float damage = GetMassiveStrikeDamage(baseDamage);
             if (damage <= 0f)
                 return;
 
