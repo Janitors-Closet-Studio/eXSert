@@ -74,13 +74,20 @@ namespace EnemyBehavior.Boss
         {
             currentHealth = maxHealth;
             displayedHealth = maxHealth;
-            
+
             if (brain == null)
             {
                 brain = GetComponent<BossRoombaBrain>();
             }
-            
+
             InitializeHealthBar();
+        }
+
+        void Start()
+        {
+            // If no BossRoombaEnabler is present, show the health bar immediately (legacy behaviour).
+            if (FindObjectOfType<BossRoombaEnabler>() == null)
+                ShowHealthBar();
         }
         
         private void InitializeHealthBar()
@@ -96,6 +103,30 @@ namespace EnemyBehavior.Boss
             {
                 healthBar.SetHealth(currentHealth, maxHealth);
             }
+
+            // Hide the HP bar until the fight is explicitly started (see BossRoombaEnabler).
+            // If no enabler exists in the scene the bar will be shown immediately via ShowHealthBar().
+            HideHealthBar();
+        }
+
+        /// <summary>
+        /// Makes the boss health bar UI visible. Called by BossRoombaEnabler when the player
+        /// enters the arena trigger, or immediately on Start when no enabler is present.
+        /// </summary>
+        public void ShowHealthBar()
+        {
+            if (bossHealthUiRoot != null)
+                bossHealthUiRoot.SetActive(true);
+            else if (healthBar != null)
+                healthBar.gameObject.SetActive(true);
+        }
+
+        private void HideHealthBar()
+        {
+            if (bossHealthUiRoot != null)
+                bossHealthUiRoot.SetActive(false);
+            else if (healthBar != null)
+                healthBar.gameObject.SetActive(false);
         }
         
         void Update()
