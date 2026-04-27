@@ -126,6 +126,10 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("How far beyond the player's position the final spin dash target extends.")]
         public float FinalPlayerOvershootDistance = 1.5f;
 
+        [Tooltip("Number of individual spin-dash segments that must be parried before the entire attack is cancelled. " +
+                 "Each parried dash counts as one, regardless of how many hits it absorbed.")]
+        [Min(1)] public int ParriesToCancel = 3;
+
         [Header("Damage")]
         [Tooltip("Damage per hit tick while spinning.")]
         public float DamagePerHit = 8f;

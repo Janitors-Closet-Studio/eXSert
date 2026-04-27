@@ -431,6 +431,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private int spinDashRemainingHits;
         private float spinDashTriggerDamage;
         private bool spinDashParried;
+        private int spinDashParryCount;
         private bool whirlwindDamagePhaseActive;
         private bool whirlwindDamageArmed;
         private Collider whirlwindDamageCollider;
@@ -3055,6 +3056,14 @@ namespace EnemyBehavior.Boss.Cleanser
                 dashPoints.Add(player.position);
             }
 
+            // Re-order the weapon waypoints so each successive dash segment passes
+            // as close to the player as possible, maximising threat coverage.
+            if (dashPoints.Count > 1 && player != null)
+            {
+                Vector3 playerFlat = new Vector3(player.position.x, transform.position.y, player.position.z);
+                dashPoints = SortDashPointsByPlayerCrossing(dashPoints, transform.position, playerFlat);
+            }
+
             if (logSpinDashDiagnostics)
                 Debug.Log($"[Cleanser][SpinDash] Start. DashPoints={dashPoints.Count}, MoveSpeed={SpinDashSettings.MoveSpeed}, Overshoot={SpinDashSettings.FinalPlayerOvershootDistance}", this);
 
@@ -3063,11 +3072,13 @@ namespace EnemyBehavior.Boss.Cleanser
             spinDashHitStopTimer = 0f;
             spinDashMoveSlowTimer = 0f;
             spinDashParried = false;
+            spinDashParryCount = 0;
             float dashMoveSpeed = Mathf.Max(0.01f, SpinDashSettings.MoveSpeed);
+            int parriesToCancel = Mathf.Max(1, SpinDashSettings.ParriesToCancel);
             bool spinDashInterrupted = false;
             for (int i = 0; i < dashPoints.Count; i++)
             {
-                if (ultimateAttackLockActive || isExecutingUltimate || spinDashParried)
+                if (ultimateAttackLockActive || isExecutingUltimate || spinDashParryCount >= parriesToCancel)
                 {
                     spinDashInterrupted = true;
                     break;
@@ -3092,9 +3103,17 @@ namespace EnemyBehavior.Boss.Cleanser
                 if (segmentDir.sqrMagnitude > 0.001f)
                     transform.forward = segmentDir.normalized;
 
+                bool segmentParried = false;
                 while (true)
                 {
-                    if (ultimateAttackLockActive || isExecutingUltimate || spinDashParried)
+                    if (spinDashParried)
+                    {
+                        spinDashParried = false;
+                        segmentParried = true;
+                        break;  // end this segment; count happens after the loop
+                    }
+
+                    if (ultimateAttackLockActive || isExecutingUltimate)
                     {
                         spinDashInterrupted = true;
                         break;
@@ -3133,6 +3152,15 @@ namespace EnemyBehavior.Boss.Cleanser
                     yield return null;
                 }
 
+                if (segmentParried)
+                {
+                    spinDashParryCount++;
+                    if (logSpinDashDiagnostics)
+                        Debug.Log($"[Cleanser][SpinDash] Segment {i + 1} parried. Count={spinDashParryCount}/{parriesToCancel}", this);
+                    if (spinDashParryCount >= parriesToCancel)
+                        spinDashInterrupted = true;
+                }
+
                 if (spinDashInterrupted)
                     break;
             }
@@ -3165,9 +3193,17 @@ namespace EnemyBehavior.Boss.Cleanser
                     if (logSpinDashDiagnostics)
                         Debug.Log($"[Cleanser][SpinDash] Final dash committed. PlayerSnapshot={playerSnapshot}, Direction={committedDir}, FinalTarget={finalTarget}", this);
 
+                    bool finalDashParried = false;
                     while (true)
                     {
-                        if (ultimateAttackLockActive || isExecutingUltimate || spinDashParried)
+                        if (spinDashParried)
+                        {
+                            spinDashParried = false;
+                            finalDashParried = true;
+                            break;  // end final dash; count happens after the loop
+                        }
+
+                        if (ultimateAttackLockActive || isExecutingUltimate)
                         {
                             spinDashInterrupted = true;
                             break;
@@ -3206,6 +3242,15 @@ namespace EnemyBehavior.Boss.Cleanser
 
                         transform.position += moveDir * step;
                         yield return null;
+                    }
+
+                    if (finalDashParried)
+                    {
+                        spinDashParryCount++;
+                        if (logSpinDashDiagnostics)
+                            Debug.Log($"[Cleanser][SpinDash] Final dash parried. Count={spinDashParryCount}/{parriesToCancel}", this);
+                        if (spinDashParryCount >= parriesToCancel)
+                            spinDashInterrupted = true;
                     }
 
                     if (!spinDashInterrupted && logSpinDashDiagnostics)
@@ -3254,6 +3299,52 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             HideAttackIndicator();
+        }
+
+        /// <summary>
+        /// Reorders <paramref name="points"/> using a greedy algorithm that picks the next waypoint
+        /// whose line segment from the current position passes closest to <paramref name="playerPos"/>.
+        /// This maximises the chance that each dash segment crosses through (or near) the player.
+        /// </summary>
+        private static List<Vector3> SortDashPointsByPlayerCrossing(List<Vector3> points, Vector3 startPos, Vector3 playerPos)
+        {
+            var remaining = new List<Vector3>(points);
+            var sorted = new List<Vector3>(points.Count);
+            Vector3 current = startPos;
+
+            while (remaining.Count > 0)
+            {
+                int bestIndex = 0;
+                float bestDist = float.MaxValue;
+
+                for (int i = 0; i < remaining.Count; i++)
+                {
+                    // Distance from playerPos to the line segment [current → remaining[i]].
+                    float d = PointToSegmentDistance(playerPos, current, remaining[i]);
+                    if (d < bestDist)
+                    {
+                        bestDist = d;
+                        bestIndex = i;
+                    }
+                }
+
+                sorted.Add(remaining[bestIndex]);
+                current = remaining[bestIndex];
+                remaining.RemoveAt(bestIndex);
+            }
+
+            return sorted;
+        }
+
+        /// <summary>Returns the minimum distance from point <paramref name="p"/> to the finite line segment [<paramref name="a"/>, <paramref name="b"/>].</summary>
+        private static float PointToSegmentDistance(Vector3 p, Vector3 a, Vector3 b)
+        {
+            Vector3 ab = b - a;
+            float lengthSq = ab.sqrMagnitude;
+            if (lengthSq < 0.0001f)
+                return Vector3.Distance(p, a);
+            float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / lengthSq);
+            return Vector3.Distance(p, a + t * ab);
         }
 
 
