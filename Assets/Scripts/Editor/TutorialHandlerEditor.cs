@@ -51,7 +51,14 @@ public class TutorialHandlerEditor : Editor
             "parryFight");
 
         DrawRandomizedMessageSection(
-            "Correct Button Pressed Message",
+            "Player Turn Message",
+            "playerTurnReadyMessage",
+            "playerTurnReadyMessageOptions",
+            "playerTurnReadyMessageUseSelectedIcon",
+            "playerTurnReadyMessageAction");
+
+        DrawRandomizedMessageSection(
+            "Post-Fight Success Message",
             "correctButtonPressedMessage",
             "correctButtonPressedMessageOptions",
             "correctButtonPressedMessageUseSelectedIcon",
@@ -98,6 +105,10 @@ public class TutorialHandlerEditor : Editor
         DrawProperty("playerMovement");
         DrawProperty("tutorialObjectiveIcon");
         DrawProperty("keycardToEnable");
+        EditorGUILayout.PropertyField(
+            serializedObject.FindProperty("postEncounterFeedbackDelay"),
+            new GUIContent("Post-Fight Message Delay")
+        );
         DrawProperty("loadNextSceneOnComplete");
         DrawProperty("nextScene");
 
