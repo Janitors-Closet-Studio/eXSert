@@ -130,6 +130,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Chance to strafe instead of direct approach (0-1).")]
         [Range(0f, 1f)] public float StrafeChance = 0.5f;
+
+        [Tooltip("Chance (0-1) that a voice line plays when a combo starts at this aggression level.")]
+        [Range(0f, 1f)] public float ComboVoiceLineChance = 0.35f;
     }
 
     /// <summary>
@@ -764,6 +767,14 @@ namespace EnemyBehavior.Boss.Cleanser
         public float GetSpeedMultiplier()
         {
             return GetCurrentMovementConfig().SpeedMultiplier;
+        }
+
+        /// <summary>
+        /// Gets the combo-start voice line chance for the current aggression level.
+        /// </summary>
+        public float GetComboVoiceLineChance()
+        {
+            return GetCurrentMovementConfig().ComboVoiceLineChance;
         }
 
         #endregion

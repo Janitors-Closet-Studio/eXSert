@@ -302,8 +302,22 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private Animator animator;
         [Tooltip("Audio source for boss SFX. Auto-falls back to SoundManager if left empty.")]
         [SerializeField] private AudioSource sfxSource;
+        [Tooltip("Audio source used exclusively for Cleanser voice lines. Auto-created on Awake if left empty.")]
+        [SerializeField] private AudioSource voiceLineSource;
         [Tooltip("Optional VFX coordinator used for animation-event-driven boss VFX.")]
         [SerializeField] private CleanserVFXManager cleanserVfxManager;
+
+        [Header("Voice Lines")]
+        [Tooltip("Voice line played once when the Cleanser's combat loop begins.")]
+        [SerializeField] private AudioClip battleStartVoiceLine;
+        [Tooltip("Voice line played when the Cleanser is defeated.")]
+        [SerializeField] private AudioClip deathVoiceLine;
+        [Tooltip("Voice line played when the player dies.")]
+        [SerializeField] private AudioClip playerDeathVoiceLine;
+        [Tooltip("Voice lines randomly chosen when a combo starts at low aggression (Levels 1-2).")]
+        [SerializeField] private List<AudioClip> lowAggressionComboVoiceLines = new List<AudioClip>();
+        [Tooltip("Voice lines randomly chosen when a combo starts at high aggression (Levels 3-5).")]
+        [SerializeField] private List<AudioClip> highAggressionComboVoiceLines = new List<AudioClip>();
 
         [Header("Hitbox References")]
         [Tooltip("Optional additional halberd colliders (for example pole capsule + blade sphere). Used together to derive halberd hit range.")]
@@ -1055,6 +1069,14 @@ namespace EnemyBehavior.Boss.Cleanser
             cleanserVfxManager = cleanserVfxManager ?? GetComponent<CleanserVFXManager>() ?? GetComponentInChildren<CleanserVFXManager>(true);
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
 
+            if (voiceLineSource == null)
+            {
+                voiceLineSource = gameObject.AddComponent<AudioSource>();
+                voiceLineSource.playOnAwake = false;
+                voiceLineSource.spatialBlend = sfxSource != null ? sfxSource.spatialBlend : 0f;
+                voiceLineSource.volume = 1f;
+            }
+
             if (dualWieldSystem != null)
             {
                 dualWieldSystem.SetSpareWeaponVisualPrefabs(ProjectilePrefabs);
@@ -1607,7 +1629,9 @@ namespace EnemyBehavior.Boss.Cleanser
         private IEnumerator MainCombatLoop()
         {
             yield return new WaitForSeconds(0.5f);
-            
+
+            PlayVoiceLine(battleStartVoiceLine);
+
             while (!isDefeated)
             {
                 // Beta dummy mode: just follow the player, no attacks
@@ -1822,6 +1846,8 @@ namespace EnemyBehavior.Boss.Cleanser
             pickedUpWeaponThisCombo = false;
             currentComboMovementSpeedMultiplier = GetEffectiveComboMovementSpeedMultiplier(combo);
             bool comboExecutedAnyStep = false;
+
+            TryPlayComboStartVoiceLine();
 
             try
             {
@@ -5167,6 +5193,16 @@ namespace EnemyBehavior.Boss.Cleanser
             return aggressionSystem != null ? aggressionSystem.AggressionValue : 0f;
         }
 
+        /// <summary>
+        /// Call this from an external system when the player dies so the Cleanser can play
+        /// its player-death voice line reaction.
+        /// </summary>
+        public void OnPlayerDied()
+        {
+            if (isDefeated) return;
+            PlayVoiceLine(playerDeathVoiceLine);
+        }
+
         #endregion
 
         #region Helper Methods
@@ -6182,7 +6218,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private void PlaySFX(AudioClip clip)
         {
             if (clip == null) return;
-            
+
             if (sfxSource != null)
             {
                 sfxSource.PlayOneShot(clip);
@@ -6191,6 +6227,42 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 SoundManager.Instance.sfxSource.PlayOneShot(clip);
             }
+        }
+
+        /// <summary>
+        /// Plays a voice line on the dedicated voice line AudioSource.
+        /// Interrupts any currently playing voice line.
+        /// </summary>
+        private void PlayVoiceLine(AudioClip clip)
+        {
+            if (clip == null || voiceLineSource == null) return;
+            voiceLineSource.Stop();
+            voiceLineSource.PlayOneShot(clip);
+        }
+
+        /// <summary>
+        /// Checks the aggression-level voice line chance and plays a random clip from the appropriate list.
+        /// Low aggression = Levels 1-2; High aggression = Levels 3-5.
+        /// </summary>
+        private void TryPlayComboStartVoiceLine()
+        {
+            float chance = aggressionSystem != null ? aggressionSystem.GetComboVoiceLineChance() : 0f;
+            if (Random.value > chance)
+                return;
+
+            AggressionLevel level = aggressionSystem != null ? aggressionSystem.CurrentLevel : AggressionLevel.Level1;
+            bool isHighAggression = level >= AggressionLevel.Level3;
+
+            List<AudioClip> pool = isHighAggression ? highAggressionComboVoiceLines : lowAggressionComboVoiceLines;
+            if (pool == null || pool.Count == 0)
+                return;
+
+            // Filter out nulls in case some slots are left empty in the inspector.
+            List<AudioClip> valid = pool.FindAll(c => c != null);
+            if (valid.Count == 0)
+                return;
+
+            PlayVoiceLine(valid[Random.Range(0, valid.Count)]);
         }
 
         private void SetDamageReduction(bool active, float reduction)
@@ -6262,6 +6334,7 @@ namespace EnemyBehavior.Boss.Cleanser
             
             TriggerAnimation(triggerDeath);
             cleanserVfxManager?.PlayDeathVfx();
+            PlayVoiceLine(deathVoiceLine);
             LogCriticalDiagnostic($"Death trigger sent. triggerDeath='{triggerDeath}', animatorPresent={animator != null}, animControllerPresent={animController != null}", true);
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death trigger sent. triggerDeath='{triggerDeath}'");
