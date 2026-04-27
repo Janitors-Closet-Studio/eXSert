@@ -325,6 +325,29 @@ public class PlayerAnimationController : MonoBehaviour
 
     public void PlayHit() => CrossFade(PlayerAnim.Reactions.Flinch, 0.02f, true);
     public void PlayHeavyHit() => CrossFade(PlayerAnim.Reactions.Knockback, 0.05f, true);
+
+    /// <summary>
+    /// Plays the Knockback animation and hard-locks it so no other animation request
+    /// can override it until the state finishes playing. Only death breaks through.
+    /// </summary>
+    public void PlayKnockbackNonCancelable()
+    {
+        if (animator == null)
+            return;
+
+        StartHardLock(PlayerAnim.Reactions.Knockback);
+
+        if (!StateExists(PlayerAnim.Reactions.Knockback))
+        {
+            Debug.LogWarning($"[PlayerAnimationController] State '{PlayerAnim.Reactions.Knockback}' not found on Animator layer {layerIndex}.", this);
+            ClearHardLock();
+            return;
+        }
+
+        animator.CrossFadeInFixedTime(PlayerAnim.Reactions.Knockback, 0.05f, layerIndex, 0f);
+        currentState = PlayerAnim.Reactions.Knockback;
+    }
+
     public void PlayDeath() => CrossFade(PlayerAnim.Reactions.Death, 0.02f, true);
 
     public bool IsPlayingDeath(out float normalizedTime) => IsPlaying(PlayerAnim.Reactions.Death, out normalizedTime);
@@ -426,6 +449,10 @@ public class PlayerAnimationController : MonoBehaviour
     {
         if (string.IsNullOrEmpty(hardLockedState))
             return true;
+
+        // Knockback hard lock: nothing overrides it (death is already handled before this call).
+        if (hardLockedState == PlayerAnim.Reactions.Knockback)
+            return false;
 
         if (hardLockedState == PlayerAnim.Specials.Interact
             || hardLockedState == PlayerAnim.Locomotion.Dash)

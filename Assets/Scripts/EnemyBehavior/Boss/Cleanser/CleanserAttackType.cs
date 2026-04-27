@@ -943,12 +943,15 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("High frequency intensity of the rumble (0-1).")]
         public float highFrequency = 0.75f;
-    }
 
-    /// <summary>
-    /// Full attack descriptor for Cleanser attacks.
-    /// Uses single animation clips with animation events for timing.
-    /// </summary>
+        [Header("Massive Strike Knockback Reaction")]
+        [Tooltip("If true, the massive strike will play the Knockback animation on the player and physically push them back.")]
+        public bool KnockbackPlayerOnMassiveStrike = true;
+        [Tooltip("Magnitude of the knockback impulse applied to the player on massive strike.")]
+        [Min(0f)] public float MassiveStrikeKnockbackForce = 20f;
+        [Tooltip("Duration in seconds the player input is locked during the knockback animation on massive strike.")]
+        [Min(0f)] public float MassiveStrikeKnockbackDuration = 0.7f;
+    }
     [System.Serializable]
     public class CleanserAttackDescriptor
     {
@@ -1002,6 +1005,14 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("If true, this attack's hit windows force-stagger the player.")]
         public bool StaggerPlayerOnHit = true;
+
+        [Header("Knockback Reaction")]
+        [Tooltip("If true, this attack will play the Knockback animation on the player and physically push them back on hit.")]
+        public bool KnockbackPlayer = false;
+        [Tooltip("Magnitude of the knockback impulse applied to the player. Higher = farther push.")]
+        [Min(0f)] public float KnockbackForce = 10f;
+        [Tooltip("Duration in seconds the player input is locked during the knockback animation.")]
+        [Min(0f)] public float KnockbackDuration = 0.5f;
 
         [Header("Projectile (Optional)")]
         [Tooltip("Optional projectile settings for attacks that spawn projectiles (for example DiagUpwardSlash).")]
