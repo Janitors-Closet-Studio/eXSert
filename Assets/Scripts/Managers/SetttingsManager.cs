@@ -60,6 +60,9 @@ public class SettingsManager : Singleton<SettingsManager>
         if (!pendingCameraInputApply)
             return;
 
+        if (MainMenu.isInMainMenu)
+            return;
+
         FindPlayer();
 
         if (playerCameraController == null || playerCameraController.Count == 0)
@@ -181,7 +184,7 @@ public class SettingsManager : Singleton<SettingsManager>
 
         if (player == null)
         {
-            Debug.LogWarning("Player not found in the scene.");
+
             return null;
         }
 

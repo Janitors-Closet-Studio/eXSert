@@ -266,6 +266,7 @@ public class LoadPrefs : MonoBehaviour
         else
         {
             Debug.LogWarning("[LoadPrefs] masterFPS key not found in PlayerPrefs.");
+            Application.targetFrameRate = 60; // Default to 60 FPS if no preference is found
         }
 
         if (PlayerPrefs.HasKey("masterMotionBlur"))
