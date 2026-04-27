@@ -32,6 +32,12 @@ namespace Progression.Encounters
 
         [SerializeField]
         private float dropYOffset = 0.5f;
+
+        [SerializeField, Tooltip("When enabled, drops that use the last enemy position keep the enemy's X/Z but force this exact world Y value.")]
+        private bool useFixedDropWorldY = false;
+
+        [SerializeField, Tooltip("Exact world-space Y position to use for drops when Use Fixed Drop World Y is enabled.")]
+        private float fixedDropWorldY = 0f;
         #endregion
 
         private Vector3 lastEnemyPosition;
@@ -142,7 +148,12 @@ namespace Progression.Encounters
 
             Vector3 dropPosition = objectToDrop.transform.position;
             if (dropAtLastEnemyPosition && hasLastEnemyPosition)
+            {
                 dropPosition = lastEnemyPosition + new Vector3(0f, dropYOffset, 0f);
+
+                if (useFixedDropWorldY)
+                    dropPosition.y = fixedDropWorldY;
+            }
 
             Debug.Log(
                 $"[CombatEncounter] Dropping object {objectToDrop.name} at position {dropPosition}"
