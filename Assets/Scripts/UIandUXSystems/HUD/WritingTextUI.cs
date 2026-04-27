@@ -41,6 +41,9 @@ public class WritingTextUI : MonoBehaviour
 
     private TextWriterSingle AddWriter(TextMeshProUGUI textComponent, string textToWrite, float timePerCharacter, bool invisibleCharacters)
     {
+        if (textComponent != null)
+            textComponent.richText = true;
+
         var writer = new TextWriterSingle();
         writer.AddWriter(textComponent, textToWrite, timePerCharacter, invisibleCharacters);
         textWriterSingles.Add(writer);
@@ -91,6 +94,9 @@ public class WritingTextUI : MonoBehaviour
         public void AddWriter(TextMeshProUGUI textComponent, string textToWrite, float timePerCharacter, bool invisibleCharacters, bool isWriting = true)
         {
             this.textComponent = textComponent;
+            if (this.textComponent != null)
+                this.textComponent.richText = true;
+
             this.fullText = textToWrite;
             this.timePerCharacter = timePerCharacter;
             this.invisibleCharacters = invisibleCharacters;
@@ -167,7 +173,11 @@ public class WritingTextUI : MonoBehaviour
         public void WriteAllAndDestroy()
         {
             if (textComponent != null)
+            {
+                textComponent.richText = true;
                 textComponent.text = fullText;
+            }
+
             rawTextIndex = fullText.Length;
             WritingTextUI.RemoveWriter_Static(textComponent);
         }

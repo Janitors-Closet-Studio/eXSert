@@ -75,7 +75,7 @@ internal class ObjectiveText : MonoBehaviour
         if (HUDText == null)
             return;
 
-        string formattedText = KeybindRichTextFormatter.Format(currentMessageString);
+        string formattedText = KeybindRichTextFormatter.Format(HUDText, currentMessageString);
         WritingTextUI.AddWriter_Static(HUDText, formattedText, typingSpeed, false);
     }
 

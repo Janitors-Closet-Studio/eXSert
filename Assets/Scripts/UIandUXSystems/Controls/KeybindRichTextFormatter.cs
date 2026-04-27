@@ -21,6 +21,20 @@ public static class KeybindRichTextFormatter
         return TokenRegex.Replace(source, ReplaceToken);
     }
 
+    public static string Format(TextMeshProUGUI textComponent, string source)
+    {
+        if (string.IsNullOrEmpty(source))
+            return source;
+
+        TMP_SpriteAsset resolvedSpriteAsset = null;
+        string formatted = TokenRegex.Replace(source, match => ReplaceToken(match, ref resolvedSpriteAsset));
+
+        if (textComponent != null && resolvedSpriteAsset != null)
+            textComponent.spriteAsset = resolvedSpriteAsset;
+
+        return formatted;
+    }
+
     public static string ApplyDefaults(string source, KeybindAction? defaultAction, float defaultScale, string defaultColor)
     {
         if (string.IsNullOrEmpty(source))
@@ -30,6 +44,12 @@ public static class KeybindRichTextFormatter
     }
 
     private static string ReplaceToken(Match match)
+    {
+        TMP_SpriteAsset resolvedSpriteAsset = null;
+        return ReplaceToken(match, ref resolvedSpriteAsset);
+    }
+
+    private static string ReplaceToken(Match match, ref TMP_SpriteAsset resolvedSpriteAsset)
     {
         string rawBody = match.Groups["body"].Value;
         string[] segments = rawBody.Split(',');
@@ -80,6 +100,7 @@ public static class KeybindRichTextFormatter
         if (!foundIcon || spriteAsset == null || string.IsNullOrEmpty(spriteName))
             return match.Value;
 
+        resolvedSpriteAsset ??= spriteAsset;
         return BuildSpriteTag(spriteAsset, spriteName, scale, color);
     }
 
@@ -159,9 +180,7 @@ public static class KeybindRichTextFormatter
         if (hasColor)
             builder.Append("<color=").Append(color).Append('>');
 
-        builder.Append("<sprite=")
-            .Append('"').Append(spriteAsset.name).Append('"')
-            .Append(" name=")
+        builder.Append("<sprite name=")
             .Append('"').Append(spriteName).Append('"')
             .Append(" tint=1");
 
