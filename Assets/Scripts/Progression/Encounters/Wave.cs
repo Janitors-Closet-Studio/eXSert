@@ -22,6 +22,7 @@ namespace Progression.Encounters
 
         private readonly List<EnemySpawnMarker> spawnMarkers = new();
         private readonly List<BaseEnemyCore> enemies = new();
+        private readonly Dictionary<BaseEnemyCore, Vector3> enemyDeathPositions = new();
 
         private bool waveCompleted;
         private bool debugMessagesEnabled = false;
@@ -70,7 +71,13 @@ namespace Progression.Encounters
         private void UnsubscribeAllEnemies()
         {
             if (debugMessagesEnabled) Debug.Log($"[{name} of combat encounter {transform.parent.name}] Unsubscribing from all enemy death events.");
-            foreach (var enemy in enemies) enemy.OnDeath -= OnEnemyDefeated;
+            foreach (var enemy in enemies)
+            {
+                enemy.OnDeathStarted -= OnEnemyDeathStarted;
+                enemy.OnDeath -= OnEnemyDefeated;
+            }
+
+            enemyDeathPositions.Clear();
         }
 
         public void SpawnEnemies()
@@ -86,6 +93,8 @@ namespace Progression.Encounters
             {
                 if (enemy == null) throw new ArgumentNullException(nameof(enemy), $"[{name} of combat encounter {transform.parent.name}] Spawned enemy is null. This should not happen if the EnemySpawnMarker and EnemyFactory are properly set up.");
                 enemies.Add(enemy);
+                enemy.OnDeathStarted -= OnEnemyDeathStarted;
+                enemy.OnDeathStarted += OnEnemyDeathStarted;
                 enemy.OnDeath -= OnEnemyDefeated; // Prevent double-subscription
                 enemy.OnDeath += OnEnemyDefeated;
                 OnEnemySpawned?.Invoke(enemy);
@@ -106,9 +115,14 @@ namespace Progression.Encounters
 
             if (!enemies.Contains(enemy)) return;
 
-            UpdateLastEnemyPosition?.Invoke(enemy.transform.position);
+            if (!enemyDeathPositions.TryGetValue(enemy, out Vector3 deathPosition))
+                deathPosition = enemy.transform.position;
 
+            UpdateLastEnemyPosition?.Invoke(deathPosition);
+
+            enemy.OnDeathStarted -= OnEnemyDeathStarted;
             enemy.OnDeath -= OnEnemyDefeated; // Unsubscribe to prevent memory leaks
+            enemyDeathPositions.Remove(enemy);
             enemies.Remove(enemy);
 
             if (!RemainingEnemiesCheck() && !waveCompleted)
@@ -125,6 +139,14 @@ namespace Progression.Encounters
 
                 return false;
             }
+        }
+
+        private void OnEnemyDeathStarted(BaseEnemyCore enemy)
+        {
+            if (enemy == null)
+                return;
+
+            enemyDeathPositions[enemy] = enemy.transform.position;
         }
 
         private void OnDestroy() => Cleanup();
