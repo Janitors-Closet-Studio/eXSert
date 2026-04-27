@@ -109,6 +109,10 @@ public class TutorialHandlerEditor : Editor
             serializedObject.FindProperty("postEncounterFeedbackDelay"),
             new GUIContent("Post-Fight Message Delay")
         );
+        DrawProperty("tutorialIconColor");
+        DrawProperty("tutorialIconSize");
+        DrawProperty("tutorialIconGrowthPerCorrectPress");
+        DrawProperty("tutorialIconPulseDuration");
         DrawProperty("loadNextSceneOnComplete");
         DrawProperty("nextScene");
 
