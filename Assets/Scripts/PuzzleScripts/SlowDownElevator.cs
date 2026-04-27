@@ -31,6 +31,10 @@ public class SlowDownElevator : MonoBehaviour
     [Header("Deceleration")]
     [SerializeField] [Range(0.1f, 10f)] private float decelerationDuration = 2f;
 
+    [Header("Debug")]
+    [Tooltip("Speed used for the debug button when the elevator isn't already running (mirrors the speed you'd normally set on ElevatorWalls).")]
+    [SerializeField] [Range(0f, 50f)] private float debugFallbackSpeed = 10f;
+
     [Header("Rail Drop")]
     [SerializeField] private GameObject railToGoDown;
     [SerializeField] [Range(0.1f, 10f)] private float railDropDuration = 3.5f;
@@ -42,6 +46,13 @@ public class SlowDownElevator : MonoBehaviour
     [Header("Animation Timing")]
     [SerializeField] [Range(0f, 5f)] private float delayBeforeDrop = 0.5f;
     [SerializeField] [Range(0f, 5f)] private float delayBetweenAnimations = 0.5f;
+
+    [Header("Final Snap")]
+    [SerializeField] [Range(0.05f, 2f)] private float snapDuration = 0.4f;
+    [Tooltip("When enabled, the wall travels slightly past the final position before smoothly snapping back, adding a bounce feel.")]
+    [SerializeField] private bool overshootEnabled = false;
+    [Tooltip("How far past the final position the wall travels before snapping back. Only used when Overshoot Enabled is true.\n1.0 = no extra travel, 1.2 = 20% further than the stop point.")]
+    [SerializeField] [Range(1f, 1.2f)] private float overshootMultiplier = 1.1f;
 
     [Header("Wall Offset")]
     [SerializeField] private float wallHeight = 2.0f; // Set this to your actual wall prefab height
@@ -83,13 +94,18 @@ public class SlowDownElevator : MonoBehaviour
     public void Debug_RunFullSequence()
     {
         if (!Application.isPlaying)
-        {
             return;
-        }
 
         StopAllCoroutines();
         _decelerationCoroutine = null;
         _isDecelerating = false;
+
+        // If the elevator walls aren't moving (tutorial never ran), kick them off at the debug speed.
+        if (_elevatorWalls.elevatorSpeed <= 0.01f)
+        {
+            _elevatorWalls.elevatorSpeed = debugFallbackSpeed;
+            _elevatorWalls.isMoving = true;
+        }
 
         SetUpStateToSlowWalls();
     }
@@ -131,25 +147,41 @@ public class SlowDownElevator : MonoBehaviour
         _elevatorWalls.elevatorSpeed = 0f;
         
         EnsureProperWallStates();
-    
-        // Compute distances along the wrapped path: start -> swap -> end (wrapping past yBounds to restartPoint)
+
+        // Always target finalDoorWallLocalY in world space as the true stop point.
+        // When overshoot is enabled the multiplier carries the wall past that point;
+        // the smooth snap then eases it back. endYPos is no longer used as the distance target.
+        float targetWorldY;
+        if (_elevatorWalls.wallWithDoor != null)
+        {
+            Transform parent = _elevatorWalls.wallWithDoor.transform.parent;
+            targetWorldY = parent != null
+                ? parent.TransformPoint(new Vector3(0f, finalDoorWallLocalY, 0f)).y
+                : finalDoorWallLocalY;
+        }
+        else
+        {
+            targetWorldY = _elevatorWalls.endYPos;
+        }
+
+        // Compute distances along the wrapped path: start -> swap -> target (wrapping past yBounds to restartPoint)
         _distanceToSwap = Mathf.Abs(_initialElevatorWallY - _pointToSwitchWallsY);
 
         float distanceSwapToEnd;
-        if (_elevatorWalls.endYPos >= _pointToSwitchWallsY)
+        if (targetWorldY >= _pointToSwitchWallsY)
         {
-            // End is above swap: go down to yBounds, wrap to restartPoint, then down to endYPos
+            // Target is above swap: go down to yBounds, wrap to restartPoint, then down to target
             float toBottom = Mathf.Abs(_pointToSwitchWallsY - _elevatorWalls.yBounds);
-            float fromTopToEnd = Mathf.Abs(_elevatorWalls.restartPoint - _elevatorWalls.endYPos);
+            float fromTopToEnd = Mathf.Abs(_elevatorWalls.restartPoint - targetWorldY);
             distanceSwapToEnd = toBottom + fromTopToEnd;
         }
         else
         {
-            // End is below swap: straight distance
-            distanceSwapToEnd = Mathf.Abs(_pointToSwitchWallsY - _elevatorWalls.endYPos);
+            // Target is below swap: straight distance
+            distanceSwapToEnd = Mathf.Abs(_pointToSwitchWallsY - targetWorldY);
         }
 
-        _totalDecelerationDistance = _distanceToSwap + distanceSwapToEnd;
+        _totalDecelerationDistance = (_distanceToSwap + distanceSwapToEnd) * (overshootEnabled ? overshootMultiplier : 1f);
         _actualDecelerationDuration = (_initialSpeed > 0.01f) ? (2f * _totalDecelerationDistance / _initialSpeed) : decelerationDuration;
         
         if (_decelerationCoroutine != null)
@@ -255,9 +287,12 @@ public class SlowDownElevator : MonoBehaviour
             yield return null;
         }
 
-        SnapDoorWallToFinalLocalY();
         SoundManager.Instance.puzzleSource.Stop();
         SoundManager.Instance.puzzleSource.PlayOneShot(elevatorBell);
+        if (overshootEnabled)
+            yield return StartCoroutine(SmoothSnapDoorWallToFinalLocalY());
+        else
+            SnapDoorWallToFinalLocalY();
         SetSlowdownSparkVfxActive(false);
         
         // Complete when total distance traveled is done
@@ -301,6 +336,32 @@ public class SlowDownElevator : MonoBehaviour
         }
 
         targetObject.transform.position = endPosition;
+    }
+
+    private IEnumerator SmoothSnapDoorWallToFinalLocalY()
+    {
+        if (_elevatorWalls == null || _elevatorWalls.wallWithDoor == null)
+            yield break;
+
+        Transform doorTransform = _elevatorWalls.wallWithDoor.transform;
+        Vector3 startLocal = doorTransform.localPosition;
+        Vector3 endLocal = startLocal;
+        endLocal.y = finalDoorWallLocalY;
+
+        float elapsed = 0f;
+        while (elapsed < snapDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = EaseOutCubic(Mathf.Clamp01(elapsed / snapDuration));
+            Vector3 pos = doorTransform.localPosition;
+            pos.y = Mathf.Lerp(startLocal.y, endLocal.y, t);
+            doorTransform.localPosition = pos;
+            yield return null;
+        }
+
+        Vector3 finalPos = doorTransform.localPosition;
+        finalPos.y = finalDoorWallLocalY;
+        doorTransform.localPosition = finalPos;
     }
 
     private void SnapDoorWallToFinalLocalY()
