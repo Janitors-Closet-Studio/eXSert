@@ -26,24 +26,18 @@ namespace EnemyBehavior.Boss.Cleanser
     }
 #pragma warning restore CS0414
 
-    /// <summary>
-    /// Configuration for counter chance at different aggression levels and stack states.
-    /// </summary>
-    [Serializable]
-    public class CounterChanceConfig
-    {
-        [Tooltip("Aggression level this config applies to.")]
-        public AggressionLevel Level;
-
-        [Tooltip("Chance to counter when player has 0 stacks (0-1).")]
-        [Range(0f, 1f)] public float ChanceAtZeroStacks = 0.02f;
-
-        [Tooltip("Chance to counter when player has medium stacks (0-1).")]
-        [Range(0f, 1f)] public float ChanceAtMediumStacks = 0.01f;
-
-        [Tooltip("Chance to counter when player has max stacks (0-1).")]
-        [Range(0f, 1f)] public float ChanceAtMaxStacks = 0f;
-    }
+    // COUNTER SYSTEM COMMENTED OUT — unused and not planned for use.
+    // /// <summary>
+    // /// Configuration for counter chance at different aggression levels and stack states.
+    // /// </summary>
+    // [Serializable]
+    // public class CounterChanceConfig
+    // {
+    //     public AggressionLevel Level;
+    //     [Range(0f, 1f)] public float ChanceAtZeroStacks = 0.02f;
+    //     [Range(0f, 1f)] public float ChanceAtMediumStacks = 0.01f;
+    //     [Range(0f, 1f)] public float ChanceAtMaxStacks = 0f;
+    // }
 
     /// <summary>
     /// Configuration for aggression value modifiers based on player actions.
@@ -98,6 +92,16 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("Multiplier for logarithmic scaling of idle escalation.")]
         public float IdleEscalationLogMultiplier = 3f;
+
+        [Header("Player Attack Frequency")]
+        [Tooltip("How long (seconds) the player must go without attacking the Cleanser before 'infrequent attack' penalties apply.")]
+        [Min(0.1f)] public float PlayerAttackIdleThreshold = 4f;
+
+        [Tooltip("Raw aggression added per second when the player hasn't attacked for longer than PlayerAttackIdleThreshold. Applied on top of normal sources.")]
+        [Min(0f)] public float PlayerAttackIdleRawIncreasePerSecond = 3f;
+
+        [Tooltip("Multiplier applied to all other AddAggression calls when the player hasn't attacked for longer than PlayerAttackIdleThreshold. Values > 1 amplify incoming aggression.")]
+        [Min(0f)] public float PlayerAttackIdleSourceMultiplier = 1.5f;
     }
 
     /// <summary>
@@ -223,17 +227,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Multipliers applied to aggression changes based on current level.")]
         [SerializeField] private AggressionLevelMultiplierConfig levelMultipliers = new AggressionLevelMultiplierConfig();
 
-        [Header("Counter System")]
-        [Tooltip("Counter chance configurations for each aggression level.")]
-        [SerializeField]
-        private CounterChanceConfig[] counterChances = new CounterChanceConfig[]
-        {
-            new CounterChanceConfig { Level = AggressionLevel.Level1, ChanceAtZeroStacks = 0.02f, ChanceAtMediumStacks = 0.02f, ChanceAtMaxStacks = 0f },
-            new CounterChanceConfig { Level = AggressionLevel.Level2, ChanceAtZeroStacks = 0.15f, ChanceAtMediumStacks = 0.05f, ChanceAtMaxStacks = 0f },
-            new CounterChanceConfig { Level = AggressionLevel.Level3, ChanceAtZeroStacks = 0.35f, ChanceAtMediumStacks = 0.10f, ChanceAtMaxStacks = 0f },
-            new CounterChanceConfig { Level = AggressionLevel.Level4, ChanceAtZeroStacks = 0.60f, ChanceAtMediumStacks = 0.20f, ChanceAtMaxStacks = 0.02f },
-            new CounterChanceConfig { Level = AggressionLevel.Level5, ChanceAtZeroStacks = 1.00f, ChanceAtMediumStacks = 0.35f, ChanceAtMaxStacks = 0.10f }
-        };
+        // [Header("Counter System")]
+        // private CounterChanceConfig[] counterChances — COMMENTED OUT (unused).
 
         [Header("Movement Behavior")]
         [Tooltip("Movement configurations for each aggression level.")]
@@ -247,20 +242,9 @@ namespace EnemyBehavior.Boss.Cleanser
             new AggressionMovementConfig { Level = AggressionLevel.Level5, SpeedMultiplier = 1.3f, PreferredDistance = 3f, RepositionInterval = 1f, AggressivelyClosesDistance = true, CanUseDash = true, StrafeChance = 0.1f }
         };
 
-        [Header("Counter Attack Settings")]
-        [Tooltip("Animation trigger for the Cleanser's counter attack.")]
-        [SerializeField] private string counterAnimationTrigger = "Counter";
-
-        [Tooltip("Damage dealt by the Cleanser's counter attack.")]
-        [SerializeField] private float counterDamage = 25f;
-
-        [Tooltip("Window in seconds for player to parry the Cleanser's counter.")]
-        [SerializeField] private float counterParryWindow = 0.4f;
-
-        [Header("Rumble on Counter")]
-        [SerializeField] private float counterRumbleDuration = 0.15f;
-        [SerializeField] private float counterRumbleLowFrequency = 0.35f;
-        [SerializeField] private float counterRumbleHighFrequency = 0.35f;
+        // Counter Attack Settings — COMMENTED OUT (counter system unused).
+        // counterAnimationTrigger, counterDamage, counterParryWindow,
+        // counterRumbleDuration, counterRumbleLowFrequency, counterRumbleHighFrequency
 
         [Header("Debug")]
         [Tooltip("Show aggression range gizmo in editor.")]
@@ -270,8 +254,8 @@ namespace EnemyBehavior.Boss.Cleanser
 
         // Events
         public event Action<AggressionLevel> OnAggressionLevelChanged;
-        public event Action OnCleanserCounterInitiated;
-        public event Action<bool> OnCounterResolved; // true = Cleanser wins, false = player parried
+        // public event Action OnCleanserCounterInitiated; // Counter system commented out.
+        // public event Action<bool> OnCounterResolved;    // Counter system commented out.
 
         // Runtime state
         private AggressionLevel currentLevel = AggressionLevel.Level1;
@@ -281,17 +265,18 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool playerInAggressionRange;
         private float lastPlayerActionTime;
         private float idleTime;
-        private bool isCountering;
+        // private bool isCountering; // Counter system commented out.
         private bool forcedMaxAggression;
         private bool isAggressionLocked;
         private bool isAggressionProcessingPaused;
         private SphereCollider aggressionRangeCollider;
         private float guardCheckTimer;
+        private float lastPlayerAttackTime;
 
         // Public properties
         public float AggressionValue => aggressionValue;
         public AggressionLevel CurrentLevel => currentLevel;
-        public bool IsCountering => isCountering;
+        public bool IsCountering => false; // Counter system commented out — always returns false.
         public AggressionModifierConfig Modifiers => modifiers;
         public AggressionLevelMultiplierConfig LevelMultipliers => levelMultipliers;
         public SphereCollider AggressionRangeCollider => aggressionRangeCollider;
@@ -305,6 +290,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void Start()
         {
+            lastPlayerAttackTime = Time.time;
             CachePlayerReference();
             SubscribeToEvents();
         }
@@ -321,6 +307,7 @@ namespace EnemyBehavior.Boss.Cleanser
             UpdateGuardDetection();
             UpdateIdleTracking();
             UpdateAggressionDecay();
+            UpdatePlayerAttackFrequency();
             CheckForcedMaxAggression();
             UpdateAggressionLevel();
         }
@@ -440,6 +427,12 @@ namespace EnemyBehavior.Boss.Cleanser
             if (isAggressionLocked || isAggressionProcessingPaused) return;
 
             float multiplier = levelMultipliers.GetMultiplier(currentLevel);
+
+            // When the player has been attacking infrequently, all incoming aggression is amplified.
+            bool playerIsAttackingInfrequently = (Time.time - lastPlayerAttackTime) > modifiers.PlayerAttackIdleThreshold;
+            if (playerIsAttackingInfrequently)
+                multiplier *= Mathf.Max(0f, modifiers.PlayerAttackIdleSourceMultiplier);
+
             float finalAmount = amount * multiplier;
             aggressionValue = Mathf.Clamp(aggressionValue + finalAmount, minAggressionValue, maxAggressionValue);
 
@@ -537,6 +530,22 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
+        private void UpdatePlayerAttackFrequency()
+        {
+            if (isAggressionLocked || isAggressionProcessingPaused) return;
+
+            float timeSinceAttack = Time.time - lastPlayerAttackTime;
+            if (timeSinceAttack > modifiers.PlayerAttackIdleThreshold)
+            {
+                float rawIncrease = Mathf.Max(0f, modifiers.PlayerAttackIdleRawIncreasePerSecond) * Time.deltaTime;
+                if (rawIncrease > 0f)
+                {
+                    // Bypass AddAggression (which would re-apply level/idle multipliers) and apply directly.
+                    aggressionValue = Mathf.Clamp(aggressionValue + rawIncrease, minAggressionValue, maxAggressionValue);
+                }
+            }
+        }
+
         private float GetIdleDecayMultiplier()
         {
             if (!useAggressionScaledDecay)
@@ -598,6 +607,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void OnPlayerAttackProximity()
         {
+            NotifyPlayerAttackedBoss();
             AddAggression(modifiers.PlayerAttackProximity);
         }
 
@@ -606,7 +616,17 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void OnPlayerHitsBoss()
         {
+            NotifyPlayerAttackedBoss();
             AddAggression(modifiers.PlayerHitsBoss);
+        }
+
+        /// <summary>
+        /// Records that the player attacked the boss, resetting the attack-frequency idle timer.
+        /// Call this from any player attack event (hit or near-miss) to prevent the idle penalty from triggering.
+        /// </summary>
+        public void NotifyPlayerAttackedBoss()
+        {
+            lastPlayerAttackTime = Time.time;
         }
 
         /// <summary>
@@ -660,8 +680,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 AddAggression(modifiers.PlayerCounters);
             }
 
-            // Check if Cleanser should counter
-            TryCleanserCounter(currentStacks, maxStacks);
+            // TryCleanserCounter removed — counter system commented out.
         }
 
         /// <summary>
@@ -690,128 +709,13 @@ namespace EnemyBehavior.Boss.Cleanser
 
         #endregion
 
-        #region Counter System
-
-        /// <summary>
-        /// Attempts to have the Cleanser counter the player's counter attempt.
-        /// </summary>
-        private void TryCleanserCounter(int playerStacks, int maxStacks)
-        {
-            float counterChance = GetCounterChance(playerStacks, maxStacks);
-            float roll = UnityEngine.Random.value;
-
-#if UNITY_EDITOR
-            if (enableDebugLogs)
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), string.Format("[Cleanser Counter] Chance: {0:P2}, Roll: {1:F3}", counterChance, roll));
-#endif
-
-            if (roll <= counterChance)
-            {
-                StartCoroutine(ExecuteCleanserCounter());
-            }
-            else
-            {
-                // Cleanser doesn't counter, player's counter goes through
-                OnCounterResolved?.Invoke(false);
-            }
-        }
-
-        private float GetCounterChance(int playerStacks, int maxStacks)
-        {
-            CounterChanceConfig config = GetCounterConfig(currentLevel);
-            if (config == null) return 0f;
-
-            float stackRatio = maxStacks > 0 ? (float)playerStacks / maxStacks : 0f;
-
-            // 0 stacks = ZeroStacks chance
-            // 0.5 ratio = MediumStacks chance
-            // 1.0 ratio = MaxStacks chance
-            if (stackRatio <= 0.1f)
-            {
-                return config.ChanceAtZeroStacks;
-            }
-            else if (stackRatio >= 0.9f)
-            {
-                return config.ChanceAtMaxStacks;
-            }
-            else
-            {
-                // Interpolate between zero and medium, then medium and max
-                if (stackRatio < 0.5f)
-                {
-                    float t = stackRatio / 0.5f;
-                    return Mathf.Lerp(config.ChanceAtZeroStacks, config.ChanceAtMediumStacks, t);
-                }
-                else
-                {
-                    float t = (stackRatio - 0.5f) / 0.5f;
-                    return Mathf.Lerp(config.ChanceAtMediumStacks, config.ChanceAtMaxStacks, t);
-                }
-            }
-        }
-
-        private CounterChanceConfig GetCounterConfig(AggressionLevel level)
-        {
-            foreach (var config in counterChances)
-            {
-                if (config.Level == level)
-                    return config;
-            }
-            return null;
-        }
-
-        private IEnumerator ExecuteCleanserCounter()
-        {
-            isCountering = true;
-            OnCleanserCounterInitiated?.Invoke();
-
-#if UNITY_EDITOR
-            if (enableDebugLogs)
-                EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Executing counter attack!");
-#endif
-
-            // Trigger counter animation
-            var animator = GetComponentInChildren<Animator>();
-            if (animator != null)
-            {
-                animator.SetTrigger(counterAnimationTrigger);
-            }
-
-            // Wait for counter animation wind-up (adjustable)
-            yield return new WaitForSeconds(counterParryWindow);
-
-            // Check if player parried the counter (CombatManager.isParrying)
-            if (CombatManager.isParrying)
-            {
-                // Player parried the counter - they get another chance to counter
-                isCountering = false;
-                OnCounterResolved?.Invoke(false);
-
-#if UNITY_EDITOR
-                if (enableDebugLogs)
-                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Counter was parried by player!");
-#endif
-            }
-            else
-            {
-                // Counter lands - deal damage
-                if (player != null && player.TryGetComponent<IHealthSystem>(out var health))
-                {
-                    health.LoseHP(counterDamage, counterRumbleDuration, counterRumbleLowFrequency, counterRumbleHighFrequency);
-                }
-
-                OnCleanserCounterLanded();
-                isCountering = false;
-                OnCounterResolved?.Invoke(true);
-
-#if UNITY_EDITOR
-                if (enableDebugLogs)
-                    EnemyBehaviorDebugLogBools.Log(nameof(CleanserAggressionSystem), "[Cleanser] Counter landed!");
-#endif
-            }
-        }
-
-        #endregion
+        // #region Counter System — COMMENTED OUT (unused, not planned for use)
+        //
+        // TryCleanserCounter, GetCounterChance, GetCounterConfig, ExecuteCleanserCounter
+        // were all removed here. Re-enable CounterChanceConfig, counterChances, counter fields,
+        // OnCleanserCounterInitiated, OnCounterResolved, and isCountering if re-enabling.
+        //
+        // #endregion
 
         #region Movement Behavior Queries
 

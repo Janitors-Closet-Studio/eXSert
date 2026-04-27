@@ -8,6 +8,10 @@ namespace EnemyBehavior.Boss.Cleanser
 {
     public class SpareTossVolley : MonoBehaviour
     {
+        [Header("Launch Stagger")]
+        [Tooltip("Minimum delay in seconds between each weapon's launch start. Creates a sequential rain effect instead of all weapons launching at exactly the same time.")]
+        [SerializeField, Min(0f)] private float tossLaunchDelayPerWeapon = 0.05f;
+
         [Header("Falling Damage")]
         [Tooltip("Damage dealt if a falling spare weapon passes through the player before lodging.")]
         [SerializeField] private float fallingDamage = 14f;
@@ -61,7 +65,8 @@ namespace EnemyBehavior.Boss.Cleanser
                 Vector3 landingPos = PickLandingPosition(center, usedLandingPositions, owner);
                 usedLandingPositions.Add(landingPos);
 
-                routines.Add(StartCoroutine(TossWeaponToGroundCoroutine(weapon, landingPos, owner, () => completed++)));
+                float launchStartDelay = i * Mathf.Max(0f, tossLaunchDelayPerWeapon);
+                routines.Add(StartCoroutine(TossWeaponToGroundCoroutine(weapon, landingPos, owner, launchStartDelay, () => completed++)));
             }
 
             Debug.Log($"[SpareTossVolley] Launch routines started={routines.Count}.", this);
@@ -74,11 +79,18 @@ namespace EnemyBehavior.Boss.Cleanser
             Debug.Log($"[SpareTossVolley] LaunchVolley complete. Completed={completed}.", this);
         }
 
-        private IEnumerator TossWeaponToGroundCoroutine(SpareWeapon weapon, Vector3 landingPos, CleanserDualWieldSystem owner, System.Action onComplete)
+        private IEnumerator TossWeaponToGroundCoroutine(SpareWeapon weapon, Vector3 landingPos, CleanserDualWieldSystem owner, float startDelay, System.Action onComplete)
         {
+            // Stagger launch start so weapons rain down sequentially rather than all at once.
+            if (startDelay > 0f)
+                yield return new WaitForSeconds(startDelay);
+
             Transform wt = weapon.WeaponObject.transform;
             wt.SetParent(null);
             owner.SetWeaponControlledVfxActive(weapon, true);
+
+            // Enable child trigger colliders and arm the hit relay for damage-on-contact.
+            EnableFallingColliders(wt, true);
 
             Vector3 startPos = wt.position;
             float launchHeight = Mathf.Max(0f, owner.TossLaunchHeight);
@@ -136,6 +148,9 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.IsReturning = false;
             owner.SetWeaponControlledVfxActive(weapon, false);
 
+            // Disable child trigger colliders — weapon is lodged, no longer deals falling damage.
+            EnableFallingColliders(wt, false);
+
             owner.RegisterWeaponLodged(weapon);
 
             if (owner.TossImpactVFX != null)
@@ -190,6 +205,37 @@ namespace EnemyBehavior.Boss.Cleanser
                 particleSystem.Clear(true);
                 particleSystem.Simulate(0f, true, true, true);
                 particleSystem.Play(true);
+            }
+        }
+
+        /// <summary>
+        /// Enables or disables all trigger colliders on child GameObjects of the weapon root,
+        /// and initialises/disarms the CleanserFallingWeaponHitRelay on each.
+        /// </summary>
+        private void EnableFallingColliders(Transform weaponRoot, bool enable)
+        {
+            if (weaponRoot == null) return;
+
+            Collider[] colliders = weaponRoot.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider col = colliders[i];
+                if (col == null || !col.isTrigger) continue;
+
+                if (enable)
+                {
+                    // Ensure relay exists and is initialised.
+                    CleanserFallingWeaponHitRelay relay = col.GetComponent<CleanserFallingWeaponHitRelay>();
+                    if (relay == null)
+                        relay = col.gameObject.AddComponent<CleanserFallingWeaponHitRelay>();
+
+                    relay.Initialize(fallingDamage, guardDamageMultiplier, staggerPlayerOnFallingHit, fallingHitStaggerDuration);
+                    col.enabled = true;
+                }
+                else
+                {
+                    col.enabled = false;
+                }
             }
         }
 
@@ -285,6 +331,66 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             return minDist;
+        }
+    }
+
+    public class CleanserFallingWeaponHitRelay : MonoBehaviour
+    {
+        private float damage;
+        private float guardDamageMultiplier = 0.25f;
+        private bool staggerOnHit;
+        private float staggerDuration = 0.4f;
+        private bool hasHit;
+        private Collider ownCollider;
+
+        private void Awake()
+        {
+            ownCollider = GetComponent<Collider>();
+        }
+
+        public void Initialize(float dmg, float guardMult, bool stagger, float staggerDur)
+        {
+            damage = dmg;
+            guardDamageMultiplier = guardMult;
+            staggerOnHit = stagger;
+            staggerDuration = staggerDur;
+            hasHit = false;
+        }
+
+        public void ResetForReuse()
+        {
+            hasHit = false;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (hasHit) return;
+            if (ownCollider == null || !ownCollider.enabled) return;
+
+            bool isPlayer = other.CompareTag("Player");
+            if (!isPlayer)
+            {
+                Transform check = other.transform;
+                while (check != null)
+                {
+                    if (check.CompareTag("Player")) { isPlayer = true; break; }
+                    check = check.parent;
+                }
+            }
+            if (!isPlayer) return;
+
+            IHealthSystem health = other.GetComponent<IHealthSystem>()
+                ?? other.GetComponentInParent<IHealthSystem>();
+            if (health == null) return;
+
+            hasHit = true;
+            ownCollider.enabled = false;
+
+            float finalDamage = CombatManager.isGuarding ? damage * guardDamageMultiplier : damage;
+            health.LoseHP(finalDamage, 0.15f, 0.35f, 0.35f);
+
+            if (staggerOnHit && health is PlayerHealthBarManager playerHealth)
+                playerHealth.ApplyForcedStagger(staggerDuration, resetCombo: true);
         }
     }
 }

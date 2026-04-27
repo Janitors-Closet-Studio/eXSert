@@ -126,8 +126,11 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Angular speed used while orbiting around the Cleanser during pickup travel.")]
         [SerializeField, Min(30f)] private float pickupOrbitAngularSpeed = 360f;
 
-        [Tooltip("Maximum random delay applied per pickup when queueing multiple pickups at once.")]
+        [Tooltip("Maximum random delay applied per pickup when queueing multiple pickups at once. Only used when PickupBurstSequentialDelay is 0.")]
         [Min(0f)] public float PickupBurstMaxStartDelay = 0.12f;
+
+        [Tooltip("Sequential stagger delay between each pickup in a burst (seconds). First weapon starts immediately, second starts after 1×delay, third after 2×delay, etc. Set to 0 to fall back to random delay using PickupBurstMaxStartDelay.")]
+        [Min(0f)] public float PickupBurstSequentialDelay = 0.1f;
         
         [Tooltip("VFX prefab to spawn during pickup (magnetism/telekinesis effect).")]
         public GameObject PickupVFXPrefab;
@@ -345,6 +348,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 return 0;
 
             int queued = 0;
+            float seqDelay = Mathf.Max(0f, PickupBurstSequentialDelay);
             float maxDelay = Mathf.Max(0f, PickupBurstMaxStartDelay);
             for (int i = 0; i < count; i++)
             {
@@ -365,7 +369,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 target.WeaponObject.transform.SetParent(null);
 
                 int reservedIndex = ReserveStockpileSlot(out int reservedCount);
-                float startDelay = Random.Range(0f, maxDelay);
+                float startDelay = seqDelay > 0f ? i * seqDelay : Random.Range(0f, maxDelay);
                 activePickupAnimations++;
                 StartCoroutine(PickupWeaponCoroutine(target, startDelay, reservedIndex, reservedCount));
                 queued++;
@@ -520,8 +524,10 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.IsAtRest = false;
             if (!stockpiledWeapons.Contains(weapon))
                 stockpiledWeapons.Add(weapon);
-            UpdateStockpileLayoutImmediate();
+            // Release counters before the layout update so pendingStockpileReservations
+            // accurately reflects remaining in-flight weapons and slot positions don't jump.
             ReleaseCountersOnce();
+            UpdateStockpileLayoutImmediate();
             
             // Clean up VFX
             if (vfx != null)
@@ -1009,7 +1015,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void UpdateStockpileLayoutImmediate()
         {
-            int count = stockpiledWeapons.Count;
+            // Use the same count formula as the pickup animation so slot positions remain stable
+            // while weapons are still in-flight (pendingStockpileReservations > 0).
+            int count = stockpiledWeapons.Count + pendingStockpileReservations;
             if (count == 0)
                 return;
 

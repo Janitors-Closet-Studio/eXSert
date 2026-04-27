@@ -1144,8 +1144,65 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("SFX/VFX")]
         [Tooltip("Sound effect during dash.")]
         public AudioClip DashSFX;
-        
+
         [Tooltip("VFX prefab for dash trail/afterimage.")]
         public GameObject DashVFX;
+    }
+
+    /// <summary>
+    /// Configuration for the Cleanser's retreat jump — a quick hop directly away from the player
+    /// used instead of slow backwards walking when needing to create distance.
+    /// </summary>
+    [System.Serializable]
+    public class RetreatJumpConfig
+    {
+        [Header("Animation — Single Clip (recommended)")]
+        [Tooltip("When enabled, plays a single JumpFull animation for the entire jump instead of sequencing Takeoff/InAir/Landing clips. Use this if the 3-clip sequence is unreliable.")]
+        public bool UseJumpFullAnimation = true;
+        [Tooltip("Animator state name for the single full-jump clip.")]
+        public string JumpFullAnimTrigger = "JumpFull";
+        [Tooltip("Playback speed multiplier for the JumpFull animation. Final speed scales so the clip covers the full JumpDuration.")]
+        [Min(0.1f)] public float JumpFullAnimSpeedMultiplier = 1f;
+
+        // [Header("Animation — 3-Clip Sequence (legacy)")]
+        // [Tooltip("Animator state name played during the jump takeoff phase.")]
+        // public string TakeoffAnimTrigger = "JumpTakeoff";
+        // [Tooltip("Animator state name played while in the air (arc-up phase).")]
+        // public string InAirAnimTrigger = "JumpInAir";
+        // [Tooltip("Animator state name played at the start of the descent/landing phase.")]
+        // public string LandingAnimTrigger = "JumpLanding";
+        // [Tooltip("Base playback speed multiplier for the takeoff animation.")]
+        // [Min(0.1f)] public float TakeoffAnimSpeedMultiplier = 1f;
+        // [Tooltip("Base playback speed multiplier for the in-air animation.")]
+        // [Min(0.1f)] public float InAirAnimSpeedMultiplier = 1f;
+        // [Tooltip("Base playback speed multiplier for the landing animation.")]
+        // [Min(0.1f)] public float LandingAnimSpeedMultiplier = 1f;
+        // [Range(0f, 0.48f)] public float TakeoffCalibrationPct = 0.45f;
+        // [Range(0f, 0.48f)] public float LandingCalibrationPct = 0.48f;
+
+        [Header("Jump Arc")]
+        [Tooltip("Peak height of the arc above the takeoff position.")]
+        [Min(0.1f)] public float PeakHeight = 3f;
+
+        [Tooltip("Total duration of the jump arc (up + down).")]
+        [Min(0.1f)] public float JumpDuration = 0.55f;
+
+        // JumpArcResolutionLeadTime and JumpArcResolutionAnimSpeedMultiplier were only used by the legacy
+        // 3-clip sequence (commented out above). JumpFull handles its own timing via the animation event.
+        // [Min(0f)] public float JumpArcResolutionLeadTime = 0.1f;
+        // [Min(0.1f)] public float JumpArcResolutionAnimSpeedMultiplier = 1f;
+
+        [Header("Distance")]
+        [Tooltip("Minimum flat distance to the landing point required to use a jump. If the landing spot is closer than this, the Cleanser walks instead.")]
+        [Min(0f)] public float MinJumpDistance = 2f;
+        [Tooltip("How far to jump away from the player. If 0, falls back to the desired spacing distance.")]
+        [Min(0f)] public float OverrideJumpDistance = 0f;
+
+        [Header("SFX")]
+        [Tooltip("Optional sound effect played at jump takeoff.")]
+        public AudioClip JumpSFX;
+
+        [Tooltip("Optional sound effect played on landing.")]
+        public AudioClip LandSFX;
     }
 }

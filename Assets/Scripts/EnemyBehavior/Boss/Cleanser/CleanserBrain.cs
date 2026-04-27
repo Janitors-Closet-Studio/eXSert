@@ -185,6 +185,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private bool waitForStockpileBeforeSpareToss = true;
         [Tooltip("Maximum seconds SpareToss waits for stockpile pickups to finish.")]
         [SerializeField, Min(0.1f)] private float spareTossStockpileWaitTimeout = 2.5f;
+        [Tooltip("If true, the Cleanser performs a retreat jump (or walk if too close) while waiting for spare weapons to accumulate before a SpareToss.")]
+        [SerializeField] private bool retreatDuringSpareWeaponAccumulation = true;
         [Tooltip("Visual prefabs that can be used for spare-weapon stockpile/toss. Selection avoids immediate repeats.")]
         [FormerlySerializedAs("ProjectilePrefab")]
         public List<GameObject> ProjectilePrefabs = new List<GameObject>();
@@ -195,6 +197,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("Movement Configuration")]
         [Tooltip("Configuration for the gap-closing dash (movement only, no hitbox).")]
         public GapClosingDashConfig GapCloseDashSettings = new GapClosingDashConfig();
+
+        [Header("Retreat Jump")]
+        [Tooltip("If true, the Cleanser uses a quick jump arc to retreat instead of walking backward.")]
+        [SerializeField] private bool useRetreatJump = true;
+        [Tooltip("Configuration for the retreat jump arc used when backing away from the player.")]
+        public RetreatJumpConfig RetreatJumpSettings = new RetreatJumpConfig();
 
         [Header("Gap-Close Dash Behavior")]
         [Tooltip("Preferred aggression level at which gap-close dash becomes common. Levels below this only use heavily reduced dash chance.")]
@@ -243,6 +251,19 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("SpinDash Debug")]
         [Tooltip("If true, emits detailed SpinDash diagnostics for targeting, hitstop, slowdown and hit processing.")]
         [SerializeField] private bool logSpinDashDiagnostics = true;
+
+        [Header("Walk Animation Speed Sync")]
+        [Tooltip("The agent movement speed that maps to 1x animation playback speed for the walk cycle. " +
+                 "Set this to the speed at which the walk animation looks correct without sliding. " +
+                 "Actual animator speed = (currentAgentVelocity / calibrationSpeed) * defaultAnimatorSpeed.")]
+        [SerializeField, Min(0.1f)] private float walkAnimSpeedCalibrationSpeed = 4f;
+        [Tooltip("If true, scales walk animation playback speed relative to actual movement speed so feet stay grounded. " +
+                 "Uses walkAnimSpeedCalibrationSpeed as the reference for 1x playback.")]
+        [SerializeField] private bool useWalkAnimSpeedSync = true;
+
+        [Header("Aggression Movement Debug")]
+        [Tooltip("If true, logs every dash and strafe decision with full reasoning (distance, aggression level, chance, roll, branch taken).")]
+        [SerializeField] private bool logAggressionMovement = true;
 
         [Header("Player Stagger")]
         [Tooltip("Forced stagger duration for Cleanser melee hits.")]
@@ -431,6 +452,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private Coroutine spinDashKnockbackClearCoroutine;
         private float defaultAnimatorSpeed = 1f;
         private bool isExecutingGapCloseDash;
+        private bool isExecutingRetreatJump;
         private float currentComboMovementSpeedMultiplier = 1f;
         private bool hasPostRecoveryTargetDistance;
         private float currentPostRecoveryTargetDistance;
@@ -1265,16 +1287,42 @@ namespace EnemyBehavior.Boss.Cleanser
             float normalizedSpeed = agent.speed > 0f ? speed / agent.speed : 0f;
 
             // Prevent locomotion updates from interrupting active attack/ultimate/stun animations.
-            if (isExecutingAttack || isExecutingUltimate || isStunned || isExecutingGapCloseDash)
+            if (isExecutingAttack || isExecutingUltimate || isStunned || isExecutingGapCloseDash || isExecutingRetreatJump)
                 return;
             
             // Use animation controller if available, otherwise fall back to direct animator
             if (animController != null)
             {
                 if (isStrafingMovement)
-                    animController.PlayWalk();
+                {
+                    if (currentStrafeDirection >= 0f)
+                        animController.PlayStrafeRight();
+                    else
+                        animController.PlayStrafeLeft();
+
+                    if (useWalkAnimSpeedSync && animator != null)
+                        animator.speed = defaultAnimatorSpeed;
+                }
                 else
+                {
                     animController.PlayLocomotion(normalizedSpeed);
+
+                    // Scale walk animation playback speed to match actual movement speed
+                    // so foot cycles stay grounded at all aggression multiplier levels.
+                    if (useWalkAnimSpeedSync && animator != null)
+                    {
+                        if (normalizedSpeed > 0.1f)
+                        {
+                            float actualSpeed = agent.velocity.magnitude;
+                            float walkSpeedRatio = Mathf.Clamp(actualSpeed / Mathf.Max(0.01f, walkAnimSpeedCalibrationSpeed), 0.1f, 2f);
+                            animator.speed = defaultAnimatorSpeed * walkSpeedRatio;
+                        }
+                        else
+                        {
+                            animator.speed = defaultAnimatorSpeed;
+                        }
+                    }
+                }
             }
             else if (animator != null)
             {
@@ -1653,7 +1701,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (dist < currentPostRecoveryTargetDistance - tolerance)
             {
-                yield return MoveAwayFromPlayer(duration);
+                yield return JumpAwayFromPlayer(duration);
             }
             else if (dist > currentPostRecoveryTargetDistance + tolerance)
             {
@@ -1672,22 +1720,38 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (player == null) yield break;
 
+            // Get movement behavior from aggression system first so we can gate the dash attempt.
+            AggressionMovementConfig movementConfig = aggressionSystem?.GetCurrentMovementConfig();
+
             float distToPlayer = Vector3.Distance(transform.position, player.position);
-            if (ShouldUseGapCloseDash(distToPlayer, isComboReposition: false))
+            // Only evaluate gap-close dash when the current aggression level actually allows it,
+            // so we don't spin every iteration logging "BLOCKED by CanUseDash=false".
+            if (movementConfig == null || movementConfig.CanUseDash)
             {
-                yield return ExecuteGapClosingDash();
+                if (ShouldUseGapCloseDash(distToPlayer, isComboReposition: false))
+                {
+                    yield return ExecuteGapClosingDash();
+                    yield break;
+                }
+            }
+
+            if (movementConfig == null)
+            {
+                if (logAggressionMovement)
+                    Debug.Log("[Cleanser Movement] No movementConfig found — fallback: MoveTowardPlayer", this);
+                yield return MoveTowardPlayer(duration);
                 yield break;
             }
 
-            // Get movement behavior from aggression system
-            AggressionMovementConfig movementConfig = aggressionSystem?.GetCurrentMovementConfig();
-            
-            if (movementConfig != null && movementConfig.AggressivelyClosesDistance)
+            AggressionLevel currentAggLevel = aggressionSystem != null ? aggressionSystem.CurrentLevel : AggressionLevel.Level1;
+
+            if (movementConfig.AggressivelyClosesDistance)
             {
-                // Aggressively close distance
+                if (logAggressionMovement)
+                    Debug.Log($"[Cleanser Movement] level={currentAggLevel} AggressivelyClosesDistance=true — MoveTowardPlayer", this);
                 yield return MoveTowardPlayer(duration);
             }
-            else if (movementConfig != null)
+            else
             {
                 // More passive/observant movement - strafe or maintain distance
                 float dist = Vector3.Distance(transform.position, player.position);
@@ -1695,32 +1759,33 @@ namespace EnemyBehavior.Boss.Cleanser
 
                 if (dist < preferredDist - 1f)
                 {
-                    // Too close, back off slightly
-                    yield return MoveAwayFromPlayer(duration * 0.5f);
+                    if (logAggressionMovement)
+                        Debug.Log($"[Cleanser Movement] level={currentAggLevel} dist={dist:F2} < preferred({preferredDist:F2})-1 — JumpAwayFromPlayer", this);
+                    yield return JumpAwayFromPlayer(duration * 0.5f);
                 }
                 else if (dist > preferredDist + 2f)
                 {
-                    // Too far, approach slowly
-                    yield return MoveTowardPlayer(duration * 0.5f);
+                    if (logAggressionMovement)
+                        Debug.Log($"[Cleanser Movement] level={currentAggLevel} dist={dist:F2} > preferred({preferredDist:F2})+2 — MoveTowardPlayer (slow approach)", this);
+                    yield return MoveTowardPlayer(duration);
                 }
                 else
                 {
                     // In range - strafe or idle based on strafe chance
-                    if (Random.value < movementConfig.StrafeChance)
+                    float strafeRoll = Random.value;
+                    bool willStrafe = strafeRoll < movementConfig.StrafeChance;
+                    if (logAggressionMovement)
+                        Debug.Log($"[Cleanser Movement] level={currentAggLevel} dist={dist:F2} in preferred range | strafeChance={movementConfig.StrafeChance:P0} roll={strafeRoll:F3} — {(willStrafe ? "STRAFE" : "FacePlayer (idle)")}", this);
+
+                    if (willStrafe)
                     {
                         yield return StrafeAroundPlayer(duration);
                     }
                     else
                     {
-                        // Face player and wait (observant behavior)
                         yield return FaceTarget(player, duration);
                     }
                 }
-            }
-            else
-            {
-                // Fallback to basic movement
-                yield return MoveTowardPlayer(duration);
             }
         }
 
@@ -2122,37 +2187,11 @@ namespace EnemyBehavior.Boss.Cleanser
                 }
                 else
                 {
-                    Vector3 awayDir = (transform.position - player.position);
-                    awayDir.y = 0f;
-                    if (awayDir.sqrMagnitude < 0.001f)
-                        awayDir = -transform.forward;
-
-                    awayDir.Normalize();
-
-                    float retreatDistanceNeeded = Mathf.Max(0.25f, minRange - distance);
-                    Vector3 desiredRetreatTarget = player.position + awayDir * minRange;
-                    desiredRetreatTarget.y = transform.position.y;
-
-                    Vector3 retreatTarget = transform.position + awayDir * retreatDistanceNeeded;
-                    retreatTarget.y = transform.position.y;
-
-                    if (NavMesh.SamplePosition(desiredRetreatTarget, out NavMeshHit desiredHit, 2.5f, NavMesh.AllAreas))
-                    {
-                        retreatTarget = desiredHit.position;
-                    }
-                    else if (NavMesh.SamplePosition(retreatTarget, out NavMeshHit fallbackHit, 2.5f, NavMesh.AllAreas))
-                    {
-                        retreatTarget = fallbackHit.position;
-                    }
-
-                    agent.stoppingDistance = 0.05f;
-                    agent.SetDestination(retreatTarget);
-
-                    if (!agent.hasPath || agent.pathStatus == NavMeshPathStatus.PathInvalid)
-                    {
-                        float manualBackstepSpeed = Mathf.Max(0.5f, agent.speed);
-                        agent.Move(awayDir * manualBackstepSpeed * Time.deltaTime);
-                    }
+                    // Too close — jump away rather than walking backward so the retreat
+                    // animation plays and the boss doesn't slide feet-first into position.
+                    agent.stoppingDistance = originalStoppingDistance;
+                    yield return JumpAwayFromPlayer(maxMoveDuration);
+                    break;
                 }
 
                 elapsed += Time.deltaTime;
@@ -2161,6 +2200,169 @@ namespace EnemyBehavior.Boss.Cleanser
 
             agent.stoppingDistance = originalStoppingDistance;
             agent.ResetPath();
+        }
+
+        /// <summary>
+        /// Jumps away from the player to create distance, landing at targetPos on the NavMesh.
+        /// Uses the same jump-arc mechanics as HighDive but with no damage or hitbox.
+        /// </summary>
+        private IEnumerator ExecuteRetreatJump(Vector3 targetPos)
+        {
+            if (agent == null) yield break;
+
+            var cfg = RetreatJumpSettings ?? new RetreatJumpConfig();
+            float peakHeight = Mathf.Max(0.1f, cfg.PeakHeight);
+
+            // Legacy 3-clip speed calculations — unused while UseJumpFullAnimation = true.
+            // float upDurationForCalib   = Mathf.Max(0.01f, cfg.JumpDuration * 0.45f);
+            // float downDurationForCalib = Mathf.Max(0.01f, cfg.JumpDuration - upDurationForCalib);
+            // float takeoffCalib  = Mathf.Max(0.01f, cfg.JumpDuration * Mathf.Clamp(cfg.TakeoffCalibrationPct, 0f, 0.48f));
+            // float landingCalib  = Mathf.Max(0.01f, cfg.JumpDuration * Mathf.Clamp(cfg.LandingCalibrationPct, 0f, 0.48f));
+            // float takeoffSpeed  = Mathf.Max(0.1f, cfg.TakeoffAnimSpeedMultiplier)  * (takeoffCalib / upDurationForCalib);
+            // float inAirSpeed    = Mathf.Max(0.1f, cfg.InAirAnimSpeedMultiplier)    * (takeoffCalib / upDurationForCalib);
+            // float landingSpeed  = Mathf.Max(0.1f, cfg.LandingAnimSpeedMultiplier)  * (landingCalib / downDurationForCalib);
+
+            Debug.Log($"[RetreatJump] START | peak={peakHeight:F2} | " +
+                      $"animController={(animController == null ? "NULL" : "OK")}", this);
+
+            isExecutingRetreatJump = true;
+            agent.enabled = false;
+            try
+            {
+
+            // --- Animation ---
+            bool usingJumpFull = cfg.UseJumpFullAnimation && animController != null && !string.IsNullOrEmpty(cfg.JumpFullAnimTrigger);
+            if (usingJumpFull)
+            {
+                float jumpFullSpeed = Mathf.Max(0.1f, cfg.JumpFullAnimSpeedMultiplier);
+                ApplyAnimationSpeedMultiplier(jumpFullSpeed);
+                animController.PlayCustom(cfg.JumpFullAnimTrigger, 0f, true);
+                Debug.Log($"[RetreatJump] JUMPFULL anim played: '{cfg.JumpFullAnimTrigger}' speed={jumpFullSpeed:F2}", this);
+
+                // Wait for the OnJumpFullMovementStart animation event before moving,
+                // so the visual takeoff pose plays out before the transform arc begins.
+                yield return WaitForJumpFullMovementEventOrFallback();
+                Debug.Log($"[RetreatJump] Movement event received — starting arc", this);
+            }
+            // else: legacy 3-clip path commented out — see below
+
+            PlaySFX(cfg.JumpSFX);
+
+            // Snapshot positions NOW (after the event delay) so the arc starts from the
+            // character's actual post-anticipation position.
+            Vector3 startPos  = transform.position;
+            float upDuration   = Mathf.Max(0.01f, cfg.JumpDuration * 0.45f);
+            float downDuration = Mathf.Max(0.01f, cfg.JumpDuration - upDuration);
+            Vector3 peakPos    = (startPos + targetPos) * 0.5f + Vector3.up * peakHeight;
+
+            Debug.Log($"[RetreatJump] Arc up starting | upDur={upDuration:F3}s downDur={downDuration:F3}s", this);
+
+            // Arc up
+            float elapsed = 0f;
+            while (elapsed < upDuration)
+            {
+                elapsed += Time.deltaTime;
+                transform.position = Vector3.Lerp(startPos, peakPos, elapsed / upDuration);
+
+                // Legacy 3-clip in-air / landing transitions — commented out (JumpFull handles this).
+                // if (!switchedToInAir && elapsed >= inAirSwitchTime) { ... }
+                // if (!resolutionTriggered && elapsed >= upDuration - resolutionLeadTime) { ... }
+
+                yield return null;
+            }
+
+            // Legacy post-arc landing fallback — commented out (JumpFull handles this).
+            // if (!resolutionTriggered) { ... }
+
+            // Arc down
+            elapsed = 0f;
+            Debug.Log($"[RetreatJump] Arc down starting | downDur={downDuration:F3}s", this);
+            while (elapsed < downDuration)
+            {
+                elapsed += Time.deltaTime;
+                transform.position = Vector3.Lerp(peakPos, targetPos, elapsed / downDuration);
+                yield return null;
+            }
+
+            transform.position = targetPos;
+
+            agent.enabled = true;
+            if (agent.isOnNavMesh)
+            {
+                agent.Warp(transform.position);
+            }
+            else if (NavMesh.SamplePosition(transform.position, out NavMeshHit recoverHit, 3f, NavMesh.AllAreas))
+            {
+                transform.position = recoverHit.position;
+                agent.Warp(recoverHit.position);
+            }
+            else
+            {
+                transform.position = startPos;
+                agent.enabled = true;
+                agent.Warp(startPos);
+            }
+
+            ResetAnimationSpeed();
+            PlaySFX(cfg.LandSFX);
+            Debug.Log($"[RetreatJump] LANDED at {targetPos}", this);
+            }
+            finally
+            {
+                isExecutingRetreatJump = false;
+            }
+        }
+
+        /// <summary>
+        /// Retreats away from the player using a jump arc when useRetreatJump is enabled.
+        /// Falls back to MoveAwayFromPlayer if jump is disabled or no valid NavMesh landing point is found.
+        /// </summary>
+        private IEnumerator JumpAwayFromPlayer(float duration)
+        {
+            if (!useRetreatJump || player == null || agent == null)
+            {
+                yield return MoveAwayFromPlayer(duration);
+                yield break;
+            }
+
+            Vector3 awayDir = (transform.position - player.position);
+            awayDir.y = 0f;
+            if (awayDir.sqrMagnitude < 0.001f)
+                awayDir = -transform.forward;
+            awayDir.Normalize();
+
+            var cfg = RetreatJumpSettings ?? new RetreatJumpConfig();
+            float jumpDist = cfg.OverrideJumpDistance > 0f
+                ? cfg.OverrideJumpDistance
+                : Mathf.Max(2f, aggressionSystem?.GetCurrentMovementConfig()?.PreferredDistance ?? 6f);
+
+            Vector3 desiredLanding = transform.position + awayDir * jumpDist;
+            desiredLanding.y = transform.position.y;
+
+            // Find a valid NavMesh point near the desired landing spot
+            if (!NavMesh.SamplePosition(desiredLanding, out NavMeshHit hit, 3f, NavMesh.AllAreas)
+                || Mathf.Abs(hit.position.y - transform.position.y) > 1f)
+            {
+                // Can't jump there — fall back to walking away
+                yield return MoveAwayFromPlayer(duration);
+                yield break;
+            }
+
+            Vector3 landingPos = hit.position;
+            landingPos.y = transform.position.y;
+
+            // Minimum jump distance check — if the landing spot is too close, just walk.
+            float minJump = Mathf.Max(0f, cfg.MinJumpDistance);
+            float flatDist = Vector3.Distance(
+                new Vector3(transform.position.x, 0f, transform.position.z),
+                new Vector3(landingPos.x, 0f, landingPos.z));
+            if (flatDist < minJump)
+            {
+                yield return MoveAwayFromPlayer(duration);
+                yield break;
+            }
+
+            yield return ExecuteRetreatJump(landingPos);
         }
 
         private bool ShouldUseComboGapCloseDash(float distanceToPlayer)
@@ -2183,6 +2385,18 @@ namespace EnemyBehavior.Boss.Cleanser
                 return false;
 
             AggressionLevel level = aggressionSystem != null ? aggressionSystem.CurrentLevel : AggressionLevel.Level1;
+
+            // Respect the per-level CanUseDash flag from the movement config.
+            AggressionMovementConfig dashMoveCfg = aggressionSystem?.GetCurrentMovementConfig();
+            if (dashMoveCfg != null && !dashMoveCfg.CanUseDash)
+            {
+                if (logAggressionMovement)
+                {
+                    float aggrVal = aggressionSystem != null ? aggressionSystem.AggressionValue : 0f;
+                    Debug.Log($"[Cleanser Dash] BLOCKED by CanUseDash=false | agg={aggrVal:F1} level={level}", this);
+                }
+                return false;
+            }
             float baseChance = Mathf.Clamp01(GapCloseDashSettings.GetComboDashChance(level));
             int currentLevel = Mathf.Clamp((int)level, 1, 5);
             int preferredLevel = Mathf.Clamp(preferredGapCloseDashAggressionLevel, 1, 5);
@@ -2198,12 +2412,16 @@ namespace EnemyBehavior.Boss.Cleanser
             if (shouldDash)
                 nextGapCloseDashAllowedTime = Time.time + Mathf.Max(0f, gapCloseDashCooldown);
 
-#if UNITY_EDITOR
-            float aggressionValue = aggressionSystem != null ? aggressionSystem.AggressionValue : 0f;
-            EnemyBehaviorDebugLogBools.Log(
-                nameof(CleanserBrain),
-                $"[Cleanser] {(isComboReposition ? "Combo" : "General")}Dash check: dist={distanceToPlayer:F2}, agg={aggressionValue:F2}, level={level}, baseChance={baseChance:P0}, mult={levelMultiplier:0.##}, finalChance={chance:P0}, roll={roll:F3}, dash={shouldDash}");
-#endif
+            if (logAggressionMovement)
+            {
+                float aggressionValue = aggressionSystem != null ? aggressionSystem.AggressionValue : 0f;
+                bool canUseDashAtLevel = aggressionSystem?.GetCurrentMovementConfig()?.CanUseDash ?? false;
+                Debug.Log(
+                    $"[Cleanser Dash] {(isComboReposition ? "Combo" : "General")} | dist={distanceToPlayer:F2} " +
+                    $"| agg={aggressionValue:F1} level={level} canUseDash(moveCfg)={canUseDashAtLevel} " +
+                    $"| baseChance={baseChance:P0} mult={levelMultiplier:0.##} finalChance={chance:P0} roll={roll:F3} " +
+                    $"| DASH={shouldDash}", this);
+            }
 
             return shouldDash;
         }
@@ -2348,10 +2566,12 @@ namespace EnemyBehavior.Boss.Cleanser
                     StartCoroutine(DoAttackMovement());
                 }
                 
-                // Continuous hit checking while hitbox is active (single hit per enabled window)
+                // Continuous hit checking while hitbox is active (single hit per enabled window).
+                // windowConsumed is true on both a successful hit AND a successful parry so the
+                // window does not stay open for a re-entry hit on the frame after isParrying clears.
                 if (isHitboxActive && !hasAppliedDamageThisHitboxWindow)
                 {
-                    if (CheckMeleeHit(currentAttack.BaseDamage, currentAttackCategory, 3f, currentAttack.StaggerPlayerOnHit))
+                    if (CheckMeleeHit(currentAttack.BaseDamage, currentAttackCategory, 3f, currentAttack.StaggerPlayerOnHit, out bool windowConsumed) || windowConsumed)
                         hasAppliedDamageThisHitboxWindow = true;
                 }
                 
@@ -2713,6 +2933,11 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (waitForStockpileBeforeSpareToss)
             {
+                // Optionally do a retreat jump (or walk) while weapons fly in, so the Cleanser
+                // isn't just standing idle during what can be a long accumulation window.
+                if (retreatDuringSpareWeaponAccumulation)
+                    StartCoroutine(JumpAwayFromPlayer(spareTossStockpileWaitTimeout));
+
                 float waitElapsed = 0f;
                 float waitTimeout = Mathf.Max(0.1f, spareTossStockpileWaitTimeout);
                 while (waitElapsed < waitTimeout)
@@ -3125,6 +3350,10 @@ namespace EnemyBehavior.Boss.Cleanser
                     yield break;
                 }
 
+                // Block player lock-on for the full duration of the dash — rapid boss rotation
+                // causes severe camera jitter, and re-locking mid-dash is jarring.
+                TryBlockPlayerLockOn();
+
                 ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
                 TriggerAnimation(settings.AnimationTrigger);
                 PlaySFX(settings.AttackSFX);
@@ -3273,6 +3502,8 @@ namespace EnemyBehavior.Boss.Cleanser
             }
             finally
             {
+                // Re-enable lock-on regardless of how the dash ended (completed, interrupted, exception).
+                TryUnblockPlayerLockOn();
                 cleanserVfxManager?.WingEnd();
                 cleanserVfxManager?.EndAnimeDashMeshTrail();
             }
@@ -3280,6 +3511,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator ExecuteAnimeDashSlashCircular(AnimeDashSlashConfig settings)
         {
+            // Block player lock-on for the full duration of the dash — rapid boss rotation
+            // causes severe camera jitter, and re-locking mid-dash is jarring.
+            TryBlockPlayerLockOn();
+
             ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
             TriggerAnimation(settings.AnimationTrigger);
             PlaySFX(settings.AttackSFX);
@@ -3578,6 +3813,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (settings.PostDashDelay > 0f)
                 yield return new WaitForSeconds(settings.PostDashDelay);
+
+            // Re-enable lock-on now that the circular dash is fully complete.
+            TryUnblockPlayerLockOn();
 
             ResetAnimationSpeed();
         }
@@ -3984,6 +4222,51 @@ namespace EnemyBehavior.Boss.Cleanser
             currentHealth = 0f;
             pendingUltimateByHealth = false;
             OnDefeated();
+        }
+
+        [ContextMenu("DEBUG/Test Retreat Jump")]
+        private void DebugTestRetreatJump()
+        {
+            if (!Application.isPlaying || isDefeated)
+                return;
+
+            StartCoroutine(DebugRetreatJumpSequence());
+        }
+
+        private IEnumerator DebugRetreatJumpSequence()
+        {
+            if (player == null)
+            {
+                Debug.LogWarning("[Cleanser][DEBUG] Retreat jump test skipped: no player reference.", this);
+                yield break;
+            }
+
+            Debug.Log("[Cleanser][DEBUG] Retreat jump test started.", this);
+
+            // Bypass JumpAwayFromPlayer guards (useRetreatJump flag, NavMesh fallback, minDistance check)
+            // and call ExecuteRetreatJump directly with a target behind the Cleanser.
+            var cfg = RetreatJumpSettings ?? new RetreatJumpConfig();
+            Vector3 awayDir = (transform.position - player.position);
+            awayDir.y = 0f;
+            if (awayDir.sqrMagnitude < 0.001f)
+                awayDir = -transform.forward;
+            awayDir.Normalize();
+
+            float jumpDist = cfg.OverrideJumpDistance > 0f
+                ? cfg.OverrideJumpDistance
+                : Mathf.Max(4f, aggressionSystem?.GetCurrentMovementConfig()?.PreferredDistance ?? 6f);
+
+            Vector3 desiredLanding = transform.position + awayDir * jumpDist;
+            desiredLanding.y = transform.position.y;
+
+            Vector3 landingPos;
+            if (NavMesh.SamplePosition(desiredLanding, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+                landingPos = new Vector3(hit.position.x, transform.position.y, hit.position.z);
+            else
+                landingPos = desiredLanding;
+
+            yield return ExecuteRetreatJump(landingPos);
+            Debug.Log("[Cleanser][DEBUG] Retreat jump test complete.", this);
         }
 #endif
 
@@ -4787,7 +5070,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
             float originalStoppingDistance = agent != null ? agent.stoppingDistance : 0f;
             float desiredStopDistance = GetDesiredApproachStopDistance();
-            
+
+            if (agent != null)
+                agent.stoppingDistance = desiredStopDistance;
+
             float elapsed = 0f;
             while (elapsed < duration)
             {
@@ -4803,11 +5089,10 @@ namespace EnemyBehavior.Boss.Cleanser
                     continue;
                 }
 
-                Vector3 desiredDestination = GetApproachDestination(desiredStopDistance);
-                if (agent != null)
-                    agent.stoppingDistance = desiredStopDistance;
-
-                TrySetDestinationSafe(desiredDestination);
+                // Set destination directly to player — agent.stoppingDistance handles the stand-off.
+                // Using an intermediate point offset by stoppingDistance caused the destination to fall
+                // inside agent.stoppingDistance, making the agent immediately stop without moving.
+                TrySetDestinationSafe(player.position);
                 yield return null;
             }
 
@@ -4835,26 +5120,49 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private IEnumerator StrafeAroundPlayer(float duration)
         {
-            if (player == null) yield break;
+            if (player == null || agent == null) yield break;
 
             isStrafingMovement = true;
-            float elapsed = 0f;
+
+            // Randomize initial direction so the Cleanser doesn't always open with a right strafe.
+            if (!hasLastObservedPlayerPosForStrafe)
+                currentStrafeDirection = Random.value < 0.5f ? 1f : -1f;
             UpdateStrafeDirectionFromPlayerMotion();
-            
+
+            // Clear any queued path — movement is driven directly via agent.Move this frame.
+            if (agent.hasPath)
+                agent.ResetPath();
+
+            float elapsed = 0f;
+
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
                 UpdateStrafeDirectionFromPlayerMotion();
-                
-                // Calculate strafe position (perpendicular to player direction)
-                Vector3 toPlayer = (player.position - transform.position).normalized;
-                Vector3 strafeVector = Vector3.Cross(Vector3.up, toPlayer) * currentStrafeDirection;
-                Vector3 targetPos = transform.position + strafeVector * 3f;
-                
-                // Face player while strafing
-                transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
-                
-                TrySetDestinationSafe(targetPos);
+
+                // Flat vector from Cleanser toward player — this is the inward radius of the orbit.
+                Vector3 toPlayer = player.position - transform.position;
+                toPlayer.y = 0f;
+
+                if (toPlayer.sqrMagnitude > 0.001f)
+                {
+                    Vector3 toPlayerNorm = toPlayer.normalized;
+
+                    // Face the player while strafing (flat look, no vertical tilt).
+                    transform.rotation = Quaternion.LookRotation(toPlayerNorm);
+
+                    // Tangent of the orbit circle: perpendicular to the inward radius.
+                    // Cross(up, inwardRadius) gives the tangent for counterclockwise (+1) motion.
+                    // Multiplying by currentStrafeDirection flips to clockwise when -1.
+                    // Because toPlayer updates every frame as we move, following this tangent
+                    // continuously curves the path into a circle whose radius equals the current
+                    // distance to the player — no fixed radius is needed.
+                    Vector3 tangent = Vector3.Cross(Vector3.up, toPlayerNorm) * currentStrafeDirection;
+
+                    // agent.Move respects NavMesh boundaries and does not use stopping distance.
+                    agent.Move(tangent * agent.speed * Time.deltaTime);
+                }
+
                 yield return null;
             }
 
@@ -5067,22 +5375,39 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private bool CheckMeleeHit(float damage, AttackCategory category, float range = 3f, bool shouldStaggerPlayer = false)
         {
+            return CheckMeleeHit(damage, category, range, shouldStaggerPlayer, out _);
+        }
+
+        private bool CheckMeleeHit(float damage, AttackCategory category, float range, bool shouldStaggerPlayer, out bool windowConsumed)
+        {
+            windowConsumed = false;
             if (player == null) return false;
-            
+
             float dist = Vector3.Distance(transform.position, player.position);
             if (dist > range) return false;
-            
-            return ApplyMeleeHitToPlayer(damage, category, shouldStaggerPlayer);
+
+            // In range — attempt the hit. Even a parry consumes the window so the same
+            // hitbox frame does not re-land on the frame after isParrying clears.
+            bool hit = ApplyMeleeHitToPlayer(damage, category, shouldStaggerPlayer, out bool parried);
+            windowConsumed = hit || parried;
+            return hit;
         }
 
         private bool ApplyMeleeHitToPlayer(float damage, AttackCategory category, bool shouldStaggerPlayer)
         {
+            return ApplyMeleeHitToPlayer(damage, category, shouldStaggerPlayer, out _);
+        }
+
+        private bool ApplyMeleeHitToPlayer(float damage, AttackCategory category, bool shouldStaggerPlayer, out bool parried)
+        {
+            parried = false;
             if (player == null) return false;
 
             if (category == AttackCategory.Halberd)
             {
                 if (CombatManager.isParrying)
                 {
+                    parried = true;
                     CombatManager.ParrySuccessful();
 
                     // Parry is an immediate attack interrupt, so clear attack-loop VFX that would
@@ -5101,6 +5426,7 @@ namespace EnemyBehavior.Boss.Cleanser
 #endif
                     }
 
+                    Debug.Log($"[Cleanser][Parry] Halberd parried — {damage:F1} damage MITIGATED (100%). Hitbox window consumed.", this);
 #if UNITY_EDITOR
                     EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Attack parried!");
 #endif
@@ -5111,23 +5437,26 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 if (CombatManager.isGuarding)
                 {
+                    float preMitigationDamage = damage;
                     damage *= 0.25f;
+                    Debug.Log($"[Cleanser][Guard] Wing attack guarded — {preMitigationDamage:F1} -> {damage:F1} damage (75% mitigation).", this);
 #if UNITY_EDITOR
                     EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Wing attack guarded, reduced to {damage}.");
 #endif
                 }
             }
-            
+
             if (player.TryGetComponent<IHealthSystem>(out var health))
             {
+                Debug.Log($"[Cleanser][Hit] {category} hit landed — {damage:F1} damage applied to player.", this);
                 health.LoseHP(damage, .5f, .5f, .5f);
-                
+
                 if (shouldStaggerPlayer && health is PlayerHealthBarManager playerHealth)
                     playerHealth.ApplyForcedStagger(meleeHitStaggerDuration, resetPlayerComboOnMeleeStagger);
 
                 return true;
             }
-            
+
             return false;
         }
 
@@ -5696,6 +6025,51 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 TriggerAnimation(UltimateSettings.JumpArcResolutionTrigger);
             }
+        }
+
+        /// <summary>
+        /// Releases the player's hard lock-on if one is active.
+        /// Used before attacks with rapid boss rotation that would cause jitter on a locked camera.
+        /// </summary>
+        private void TryReleasePlayerHardLock()
+        {
+            if (player == null) return;
+
+            AttackLockSystem lockSystem = player.GetComponent<AttackLockSystem>()
+                ?? player.GetComponentInParent<AttackLockSystem>()
+                ?? player.GetComponentInChildren<AttackLockSystem>();
+
+            if (lockSystem != null && lockSystem.IsHardLockActive)
+                lockSystem.ReleaseHardLock();
+        }
+
+        /// <summary>
+        /// Releases any active hard lock and prevents the player from re-acquiring lock-on.
+        /// Call <see cref="TryUnblockPlayerLockOn"/> when the suppression should end.
+        /// </summary>
+        private void TryBlockPlayerLockOn()
+        {
+            if (player == null) return;
+
+            AttackLockSystem lockSystem = player.GetComponent<AttackLockSystem>()
+                ?? player.GetComponentInParent<AttackLockSystem>()
+                ?? player.GetComponentInChildren<AttackLockSystem>();
+
+            lockSystem?.BlockLockOnToggle();
+        }
+
+        /// <summary>
+        /// Re-enables the player's lock-on toggle after a previous <see cref="TryBlockPlayerLockOn"/> call.
+        /// </summary>
+        private void TryUnblockPlayerLockOn()
+        {
+            if (player == null) return;
+
+            AttackLockSystem lockSystem = player.GetComponent<AttackLockSystem>()
+                ?? player.GetComponentInParent<AttackLockSystem>()
+                ?? player.GetComponentInChildren<AttackLockSystem>();
+
+            lockSystem?.UnblockLockOnToggle();
         }
 
         private void PlaySFX(AudioClip clip)
