@@ -232,10 +232,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         RumbleManager.Instance.StopControllerRumble();
 
-        if(LogManager.Instance.unreadLogs.Count > 0 || DiaryManager.Instance.unreadDiaries.Count > 0)
-            unreadEntriesNotif.SetActive(true);
-        else
-            unreadEntriesNotif.SetActive(false);
+        RefreshNaviEntryIndicator();
 
             // If no menu is active, open pause menu
         if (currentActiveMenu == ActiveMenu.None)
@@ -251,6 +248,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     }
 
+    private void RefreshNaviEntryIndicator()
+    {
+        if (unreadEntriesNotif == null)
+            return;
+
+        if(LogManager.Instance.unreadLogs.Count > 0 || DiaryManager.Instance.unreadDiaries.Count > 0)
+            unreadEntriesNotif.SetActive(true);
+        else
+            unreadEntriesNotif.SetActive(false);
+    }
     private void OnBack(InputAction.CallbackContext context)
     {
         if (Time.unscaledTime < ignoreBackUntilTime)
@@ -313,6 +320,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
         Debug.Log($"[PauseManager] OnNavigationMenu called - Current menu: {currentActiveMenu}, IsPaused: {IsPaused}");
+
+        RefreshNaviEntryIndicator();
         
         if (currentActiveMenu == ActiveMenu.None)
         {
@@ -330,6 +339,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void GoBackOnce()
     {
         menuListManager.GoBackToPreviousMenu();
+
+        RefreshNaviEntryIndicator();
 
         // Only skip one extra layer if the newly revealed top menu is still blocked.
         if (menuListManager.menusToManage.Count > 0
@@ -387,6 +398,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (!IsPaused || currentActiveMenu == ActiveMenu.None)
             return;
 
+        RefreshNaviEntryIndicator();
+
         if (currentActiveMenu == ActiveMenu.PauseMenu && menuListManager.menusToManage[0] == pauseMenuHolder)
         {
             // Switch from pause menu to navigation menu
@@ -417,6 +430,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if (menuListManager != null && pauseMenuHolder != null)
             menuListManager.AddToMenuList(pauseMenuHolder);
+
+        RefreshNaviEntryIndicator();
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
         SetBlurEnabled(true);
@@ -458,6 +473,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
 
         Debug.Log("Navigation Menu Opened");
+        RefreshNaviEntryIndicator();
         
         // Switch to UI input
         if (InputReader.PlayerInput != null)
@@ -476,6 +492,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         menuListManager.menusToManage.Remove(navigationMenuHolder);
 
+        RefreshNaviEntryIndicator();
+
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
         SetBlurEnabled(true);
 
@@ -489,7 +507,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (menuListManager != null && navigationMenuHolder != null)
             menuListManager.AddToMenuList(navigationMenuHolder);
 
-        
+        RefreshNaviEntryIndicator();
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
             SetBlurEnabled(true);
