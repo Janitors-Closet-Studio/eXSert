@@ -7,12 +7,36 @@ using System.ComponentModel;
 
 public abstract class CollectableInteraction : InteractionManager
 {
-    // Removed local fadeOutComplete; will use InteractionUI.Instance.fadeOutComplete
+
+    [SerializeField] private bool doNotLoadFromSave = false;
 
     protected override void Awake()
     {
         base.Awake();
 
+       if (!doNotLoadFromSave)
+            IfInInventoryDeactivate();  
+    }
+
+    private void IfInInventoryDeactivate()
+    {
+        InternalPlayerInventory inventory = InternalPlayerInventory.Instance;
+        if (inventory != null)
+        {
+            if (inventory.collectedInteractables.Contains(this.interactId.Trim().ToLowerInvariant()))
+            {
+                Debug.Log($"[CollectableInteraction] {this.interactId} already in inventory. Deactivating interactable.");
+                gameObject.SetActive(false);
+            }
+            else
+            {
+                Debug.Log($"[CollectableInteraction] {this.interactId} not in inventory. Interactable remains active.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[CollectableInteraction] Inventory instance not found. Cannot check for {this.interactId}.");
+        }
     }
 
     protected override bool Interact()

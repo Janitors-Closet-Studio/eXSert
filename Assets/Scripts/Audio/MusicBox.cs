@@ -53,20 +53,26 @@ public class MusicBox : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
 
+        cachedSoundManager = SoundManager.Instance;
         UpdateCachedVolumes();
 
-        cachedSoundManager = SoundManager.Instance;
         TryBindMusicSource();
     }
 #pragma warning restore CS0414
 
     public void UpdateCachedVolumes()
     {
-        if (SoundManager.Instance != null)
-        {
-            cachedAmbienceVolume = SoundManager.Instance.ambienceSource.volume;
-            cachedMusicVolume = SoundManager.Instance.musicSource.volume;
-        }
+        if (cachedSoundManager == null)
+            cachedSoundManager = SoundManager.Instance;
+
+        if (cachedSoundManager == null)
+            return;
+
+        if (cachedSoundManager.ambienceSource != null)
+            cachedAmbienceVolume = cachedSoundManager.ambienceSource.volume;
+
+        if (cachedSoundManager.musicSource != null)
+            cachedMusicVolume = cachedSoundManager.musicSource.volume;
     }
 
     private bool IsSceneLoaded(string sceneToCheck)

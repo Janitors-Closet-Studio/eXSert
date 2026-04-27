@@ -96939,6 +96939,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1123e87265119dc4b92e91a12125471d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ElevatorLift
+  lockedFloors:
+  - isLocked: 0
+    floorName: Floor One
+    buttonText: {fileID: 18481291}
+    keyItemID: 
+    keyDisplayName: 
+  - isLocked: 0
+    floorName: Floor Two
+    buttonText: {fileID: 1527643506}
+    keyItemID: 
+    keyDisplayName: 
+  - isLocked: 0
+    floorName: Floor Three
+    buttonText: {fileID: 1816234198}
+    keyItemID: 
+    keyDisplayName: 
   enableGroundRecallFailsafe: 1
   groundRecallRadius: 6
   groundRecallMaxHeightOffset: 3

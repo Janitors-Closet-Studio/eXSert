@@ -32,6 +32,7 @@ public class GameData
     // Last scene that was saved for this profile (stored as a scene name string for JSON persistence)
     public string lastSavedScene;
     public List<string> checkpointThrobberScenesShown;
+    public List<string> collectedInteractables;
 
 
     //Base variable definitions should be here
@@ -48,5 +49,6 @@ public class GameData
         // default last saved scene matches the current scene name on new games
         lastSavedScene = currentSceneName;
         checkpointThrobberScenesShown = new List<string>();
+        collectedInteractables = new List<string>();
     }
 }

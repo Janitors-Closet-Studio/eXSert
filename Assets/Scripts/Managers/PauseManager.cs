@@ -147,6 +147,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        MainMenu.isInMainMenu = scene.name == "MainMenu";
         TryResolveHudRoot();
         HideAllMenus();
         SetBlurEnabled(false);
@@ -213,9 +214,21 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (!pauseOverlay.activeInHierarchy)
             StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, true));
 
-        SoundManager.Instance.sfxSource.Pause();
-        SoundManager.Instance.puzzleSource.Pause();
-        SoundManager.Instance.ambienceSource.Pause();
+        if (SoundManager.Instance != null)
+        {
+            if (SoundManager.Instance.sfxSource != null)
+                SoundManager.Instance.sfxSource.Pause();
+
+            if (SoundManager.Instance.puzzleSource != null)
+                SoundManager.Instance.puzzleSource.Pause();
+
+            if (SoundManager.Instance.ambienceSource != null)
+                SoundManager.Instance.ambienceSource.Pause();
+        }
+        else
+        {
+            Debug.LogWarning("[PauseManager] OnPause: SoundManager.Instance was null, skipping audio pause.");
+        }
 
         RumbleManager.Instance.StopControllerRumble();
 
@@ -525,9 +538,17 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         ApplyResumeUiGuard();
 
 
-        SoundManager.Instance.sfxSource.UnPause();
-        SoundManager.Instance.puzzleSource.UnPause();
-        SoundManager.Instance.ambienceSource.UnPause();
+        if (SoundManager.Instance != null)
+        {
+            if (SoundManager.Instance.sfxSource != null)
+                SoundManager.Instance.sfxSource.UnPause();
+
+            if (SoundManager.Instance.puzzleSource != null)
+                SoundManager.Instance.puzzleSource.UnPause();
+
+            if (SoundManager.Instance.ambienceSource != null)
+                SoundManager.Instance.ambienceSource.UnPause();
+        }
 
         Debug.Log("Game Resumed");
         

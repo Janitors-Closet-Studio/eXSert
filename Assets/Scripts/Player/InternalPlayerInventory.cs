@@ -8,7 +8,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Singletons;
-public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
+public class InternalPlayerInventory : Singleton<InternalPlayerInventory>, IDataPersistenceManager
 {
     internal List<string> collectedInteractables = new List<string>();
 
@@ -17,6 +17,30 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
         AddCollectible("null"); // Adding "null" as a default collected item
 
         base.Awake();
+    }
+
+    public void LoadData(GameData data)
+    {
+        if (data == null)
+        {
+            Debug.LogWarning("[InternalPlayerInventory] LoadData called with null GameData.");
+            return;
+        }
+
+        collectedInteractables = new List<string>(data.collectedInteractables);
+        Debug.Log($"[InternalPlayerInventory] Loaded inventory with {collectedInteractables.Count} items.");
+    }
+
+    public void SaveData(GameData data)
+    {
+        if (data == null)
+        {
+            Debug.LogWarning("[InternalPlayerInventory] SaveData called with null GameData.");
+            return;
+        }
+
+        data.collectedInteractables = new List<string>(collectedInteractables);
+        Debug.Log($"[InternalPlayerInventory] Saved inventory with {collectedInteractables.Count} items.");
     }
 
     public void AddCollectible(string collectibleId)

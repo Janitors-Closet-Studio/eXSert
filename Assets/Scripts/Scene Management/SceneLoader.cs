@@ -455,6 +455,8 @@ public static class SceneLoader
 
     private static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame)
     {
+        MainMenu.isInMainMenu = false;
+
         // Load first gameplay scene, wait for it
         yield return LoadCoroutine(firstScene, loadScreen: false);
 
@@ -471,6 +473,8 @@ public static class SceneLoader
         var mainMenuAsset = (SceneAsset)MAIN_MENU_SCENE;
         if (mainMenuAsset != null && mainMenuAsset.IsLoaded())
             yield return UnloadCoroutine(mainMenuAsset);
+
+        MainMenu.isInMainMenu = false;
 
         Player.SpawnPlayerAtCheckpoint();
 
@@ -697,6 +701,8 @@ public static class SceneLoader
     private static IEnumerator LoadMainMenuSequenceCoroutine()
     {
         Initialize();
+
+        MainMenu.isInMainMenu = true;
 
         if (SoundManager.Instance != null)
             yield return SoundManager.Instance.FadeOutGameplayAudio(0.5f);
