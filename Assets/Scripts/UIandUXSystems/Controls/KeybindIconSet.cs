@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 #if UNITY_EDITOR
@@ -14,6 +15,14 @@ public class KeybindIconSet : ScriptableObject
     {
         public string controlPath;
         public Sprite icon;
+    }
+
+    [Serializable]
+    public struct TmpControlIcon
+    {
+        public string controlPath;
+        public TMP_SpriteAsset spriteAsset;
+        public string spriteName;
     }
 
     [Serializable]
@@ -43,6 +52,12 @@ public class KeybindIconSet : ScriptableObject
 
     [Header("Gamepad Icons")]
     [SerializeField] private List<ControlIcon> gamepadIcons = new List<ControlIcon>();
+
+    [Header("Keyboard/Mouse TMP Icons")]
+    [SerializeField] private List<TmpControlIcon> keyboardTmpIcons = new List<TmpControlIcon>();
+
+    [Header("Gamepad TMP Icons")]
+    [SerializeField] private List<TmpControlIcon> gamepadTmpIcons = new List<TmpControlIcon>();
 
     [Header("Fallback Icons")]
     [SerializeField] private Sprite keyboardFallbackIcon;
@@ -77,6 +92,18 @@ public class KeybindIconSet : ScriptableObject
         return icon != null;
     }
 
+    public bool TryGetTmpIcon(KeybindAction actionId, bool useGamepad, out TMP_SpriteAsset spriteAsset, out string spriteName, out string controlPath)
+    {
+        spriteAsset = null;
+        spriteName = string.Empty;
+        controlPath = string.Empty;
+
+        if (!TryGetBindingPath(actionId, useGamepad, out controlPath))
+            return false;
+
+        return TryGetTmpIconForControlPath(controlPath, useGamepad, out spriteAsset, out spriteName);
+    }
+
     public bool TryGetCompositePartIcon(
         KeybindAction actionId,
         bool useGamepad,
@@ -99,6 +126,24 @@ public class KeybindIconSet : ScriptableObject
 
         icon = useGamepad ? gamepadFallbackIcon : keyboardFallbackIcon;
         return icon != null;
+    }
+
+    public bool TryGetTmpCompositePartIcon(
+        KeybindAction actionId,
+        bool useGamepad,
+        string partName,
+        out TMP_SpriteAsset spriteAsset,
+        out string spriteName,
+        out string controlPath)
+    {
+        spriteAsset = null;
+        spriteName = string.Empty;
+        controlPath = string.Empty;
+
+        if (!TryGetCompositePartPath(actionId, useGamepad, partName, out controlPath))
+            return false;
+
+        return TryGetTmpIconForControlPath(controlPath, useGamepad, out spriteAsset, out spriteName);
     }
 
     public bool TryGetBindingPath(KeybindAction actionId, bool useGamepad, out string controlPath)
@@ -243,6 +288,8 @@ public class KeybindIconSet : ScriptableObject
         {
             keyboardIcons = BuildKeyboardIconLibrary();
             gamepadIcons = BuildGamepadIconLibrary();
+            keyboardTmpIcons = BuildKeyboardTmpIconLibrary();
+            gamepadTmpIcons = BuildGamepadTmpIconLibrary();
         }
         else if (autoSyncIconLists)
         {
@@ -477,6 +524,33 @@ public class KeybindIconSet : ScriptableObject
         return null;
     }
 
+    private bool TryGetTmpIconForControlPath(string controlPath, bool useGamepad, out TMP_SpriteAsset spriteAsset, out string spriteName)
+    {
+        spriteAsset = null;
+        spriteName = string.Empty;
+
+        if (string.IsNullOrEmpty(controlPath))
+            return false;
+
+        var iconList = useGamepad ? gamepadTmpIcons : keyboardTmpIcons;
+        string shortPath = ExtractControlName(controlPath);
+
+        for (int i = 0; i < iconList.Count; i++)
+        {
+            if (iconList[i].spriteAsset == null || string.IsNullOrEmpty(iconList[i].spriteName))
+                continue;
+
+            if (!PathsMatch(iconList[i].controlPath, controlPath, shortPath))
+                continue;
+
+            spriteAsset = iconList[i].spriteAsset;
+            spriteName = iconList[i].spriteName;
+            return true;
+        }
+
+        return false;
+    }
+
     private static bool PathsMatch(string candidatePath, string fullPath, string shortPath)
     {
         if (string.IsNullOrEmpty(candidatePath))
@@ -533,12 +607,104 @@ public class KeybindIconSet : ScriptableObject
     }
 
 #if UNITY_EDITOR
+    private List<TmpControlIcon> BuildKeyboardTmpIconLibrary()
+    {
+        Dictionary<string, TmpSpriteLookupEntry> spriteMap = LoadTmpSpriteMap(keyboardIconsFolder);
+        Dictionary<string, TmpSpriteLookupEntry> pathMap = new Dictionary<string, TmpSpriteLookupEntry>(StringComparer.OrdinalIgnoreCase);
+
+        PopulateKeyboardTmpIconPaths(pathMap, spriteMap);
+
+        return ConvertTmpMap(pathMap);
+    }
+
+    private List<TmpControlIcon> BuildGamepadTmpIconLibrary()
+    {
+        Dictionary<string, TmpSpriteLookupEntry> spriteMap = LoadTmpSpriteMap(gamepadIconsFolder);
+        Dictionary<string, TmpSpriteLookupEntry> pathMap = new Dictionary<string, TmpSpriteLookupEntry>(StringComparer.OrdinalIgnoreCase);
+
+        PopulateGamepadTmpIconPaths(pathMap, spriteMap);
+
+        return ConvertTmpMap(pathMap);
+    }
+
     private List<ControlIcon> BuildKeyboardIconLibrary()
     {
         Dictionary<string, Sprite> spriteMap = LoadSpriteMap(keyboardIconsFolder);
         List<ControlIcon> icons = new List<ControlIcon>();
         Dictionary<string, Sprite> pathMap = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
 
+        PopulateKeyboardIconPaths(pathMap, spriteMap);
+
+        if (keyboardFallbackIcon == null && spriteMap.TryGetValue("KB_EMPTY", out Sprite emptyKey))
+            keyboardFallbackIcon = emptyKey;
+
+        foreach (var entry in pathMap)
+            icons.Add(new ControlIcon { controlPath = entry.Key, icon = entry.Value });
+
+        return icons;
+    }
+
+    private List<ControlIcon> BuildGamepadIconLibrary()
+    {
+        Dictionary<string, Sprite> spriteMap = LoadSpriteMap(gamepadIconsFolder);
+        List<ControlIcon> icons = new List<ControlIcon>();
+        Dictionary<string, Sprite> pathMap = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
+
+        PopulateGamepadIconPaths(pathMap, spriteMap);
+
+        if (gamepadFallbackIcon == null && spriteMap.TryGetValue("Cont_Controller", out Sprite controllerIcon))
+            gamepadFallbackIcon = controllerIcon;
+
+        foreach (var entry in pathMap)
+            icons.Add(new ControlIcon { controlPath = entry.Key, icon = entry.Value });
+
+        return icons;
+    }
+
+    private static void AddIconBySpriteName(
+        Dictionary<string, Sprite> pathMap,
+        Dictionary<string, Sprite> spriteMap,
+        string spriteName,
+        string controlPath)
+    {
+        if (pathMap.ContainsKey(controlPath))
+            return;
+
+        if (spriteMap.TryGetValue(spriteName, out Sprite sprite) && sprite != null)
+            pathMap.Add(controlPath, sprite);
+    }
+
+    private static void AddTmpIconBySpriteName(
+        Dictionary<string, TmpSpriteLookupEntry> pathMap,
+        Dictionary<string, TmpSpriteLookupEntry> spriteMap,
+        string spriteName,
+        string controlPath)
+    {
+        if (pathMap.ContainsKey(controlPath))
+            return;
+
+        if (spriteMap.TryGetValue(spriteName, out TmpSpriteLookupEntry entry) && entry.SpriteAsset != null)
+            pathMap.Add(controlPath, entry);
+    }
+
+    private static List<TmpControlIcon> ConvertTmpMap(Dictionary<string, TmpSpriteLookupEntry> pathMap)
+    {
+        List<TmpControlIcon> icons = new List<TmpControlIcon>();
+        foreach (var entry in pathMap)
+        {
+            icons.Add(new TmpControlIcon
+            {
+                controlPath = entry.Key,
+                spriteAsset = entry.Value.SpriteAsset,
+                spriteName = entry.Value.SpriteName
+            });
+        }
+
+        return icons;
+    }
+
+    private static void PopulateKeyboardIconPaths(Dictionary<string, Sprite> pathMap, Dictionary<string, Sprite> spriteMap)
+    {
         for (int i = 0; i <= 9; i++)
             AddIconBySpriteName(pathMap, spriteMap, $"KB_{i}", $"<Keyboard>/{i}");
 
@@ -593,37 +759,80 @@ public class KeybindIconSet : ScriptableObject
         AddIconBySpriteName(pathMap, spriteMap, "KB_RightMouseClick", "<Mouse>/rightButton");
         AddIconBySpriteName(pathMap, spriteMap, "KB_MouseScroll", "<Mouse>/scroll");
         AddIconBySpriteName(pathMap, spriteMap, "KB_MouseDelta", "<Mouse>/delta");
-
-        if (keyboardFallbackIcon == null && spriteMap.TryGetValue("KB_EMPTY", out Sprite emptyKey))
-            keyboardFallbackIcon = emptyKey;
-
-        foreach (var entry in pathMap)
-            icons.Add(new ControlIcon { controlPath = entry.Key, icon = entry.Value });
-
-        return icons;
     }
 
-    private List<ControlIcon> BuildGamepadIconLibrary()
+    private static void PopulateKeyboardTmpIconPaths(Dictionary<string, TmpSpriteLookupEntry> pathMap, Dictionary<string, TmpSpriteLookupEntry> spriteMap)
     {
-        Dictionary<string, Sprite> spriteMap = LoadSpriteMap(gamepadIconsFolder);
-        List<ControlIcon> icons = new List<ControlIcon>();
-        Dictionary<string, Sprite> pathMap = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i <= 9; i++)
+            AddTmpIconBySpriteName(pathMap, spriteMap, $"KB_{i}", $"<Keyboard>/{i}");
 
+        for (char c = 'A'; c <= 'Z'; c++)
+            AddTmpIconBySpriteName(pathMap, spriteMap, $"KB_{c}", $"<Keyboard>/{char.ToLowerInvariant(c)}");
+
+        for (int i = 1; i <= 12; i++)
+            AddTmpIconBySpriteName(pathMap, spriteMap, $"KB_F{i}", $"<Keyboard>/f{i}");
+
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_ALT", "<Keyboard>/leftAlt");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_ALT", "<Keyboard>/rightAlt");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_CTRL", "<Keyboard>/leftCtrl");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_CTRL", "<Keyboard>/rightCtrl");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_SHIFT", "<Keyboard>/leftShift");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_SHIFT", "<Keyboard>/rightShift");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_SHIFT", "<Keyboard>/shift");
+
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_BACK", "<Keyboard>/backspace");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_CAPS", "<Keyboard>/capsLock");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_DEL", "<Keyboard>/delete");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_END", "<Keyboard>/end");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_ENTER", "<Keyboard>/enter");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_ESC", "<Keyboard>/escape");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_HOME", "<Keyboard>/home");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_INS", "<Keyboard>/insert");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_NUMLOCK", "<Keyboard>/numLock");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_PAGEDOWN", "<Keyboard>/pageDown");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_PAGEUP", "<Keyboard>/pageUp");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_SPACE", "<Keyboard>/space");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_TAB", "<Keyboard>/tab");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Tab", "<Keyboard>/tab");
+
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Comma", "<Keyboard>/comma");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Period", "<Keyboard>/period");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Colon", "<Keyboard>/semicolon");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_SemiColon", "<Keyboard>/semicolon");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Dash", "<Keyboard>/minus");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Equals", "<Keyboard>/equals");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Plus", "<Keyboard>/equals");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Tick", "<Keyboard>/backquote");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_Asterisk", "<Keyboard>/8");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_BackSlash", "<Keyboard>/backslash");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_FwdSlash", "<Keyboard>/slash");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_LeftBracket", "<Keyboard>/leftBracket");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_RightBracket", "<Keyboard>/rightBracket");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_LeftArrow", "<Keyboard>/leftArrow");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_RightArrow", "<Keyboard>/rightArrow");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_UpArrow", "<Keyboard>/upArrow");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_DownArrow", "<Keyboard>/downArrow");
+
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_LeftMouseClick", "<Mouse>/leftButton");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_RightMouseClick", "<Mouse>/rightButton");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_MouseScroll", "<Mouse>/scroll");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "KB_MouseDelta", "<Mouse>/delta");
+    }
+
+    private static void PopulateGamepadIconPaths(Dictionary<string, Sprite> pathMap, Dictionary<string, Sprite> spriteMap)
+    {
         AddIconBySpriteName(pathMap, spriteMap, "Cont_A", "<Gamepad>/buttonSouth");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_B", "<Gamepad>/buttonEast");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_X", "<Gamepad>/buttonWest");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_Y", "<Gamepad>/buttonNorth");
-
         AddIconBySpriteName(pathMap, spriteMap, "Cont_LB", "<Gamepad>/leftShoulder");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_RB", "<Gamepad>/rightShoulder");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_LT", "<Gamepad>/leftTrigger");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_RT", "<Gamepad>/rightTrigger");
-
         AddIconBySpriteName(pathMap, spriteMap, "Cont_LPress", "<Gamepad>/leftStickPress");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_RPress", "<Gamepad>/rightStickPress");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_LStick", "<Gamepad>/leftStick");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_RStick", "<Gamepad>/rightStick");
-
         AddIconBySpriteName(pathMap, spriteMap, "Cont_DpadUp", "<Gamepad>/dpad/up");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_DpadDown", "<Gamepad>/dpad/down");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_DpadLeft", "<Gamepad>/dpad/left");
@@ -631,31 +840,35 @@ public class KeybindIconSet : ScriptableObject
         AddIconBySpriteName(pathMap, spriteMap, "Cont_Dpad", "<Gamepad>/dpad");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_LeftArrow", "<Gamepad>/dpad/left");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_RightArrow", "<Gamepad>/dpad/right");
-
         AddIconBySpriteName(pathMap, spriteMap, "Cont_Setting", "<Gamepad>/start");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_Share", "<Gamepad>/select");
         AddIconBySpriteName(pathMap, spriteMap, "Cont_Setting", "<Gamepad>/select");
-
-        if (gamepadFallbackIcon == null && spriteMap.TryGetValue("Cont_Controller", out Sprite controllerIcon))
-            gamepadFallbackIcon = controllerIcon;
-
-        foreach (var entry in pathMap)
-            icons.Add(new ControlIcon { controlPath = entry.Key, icon = entry.Value });
-
-        return icons;
     }
 
-    private static void AddIconBySpriteName(
-        Dictionary<string, Sprite> pathMap,
-        Dictionary<string, Sprite> spriteMap,
-        string spriteName,
-        string controlPath)
+    private static void PopulateGamepadTmpIconPaths(Dictionary<string, TmpSpriteLookupEntry> pathMap, Dictionary<string, TmpSpriteLookupEntry> spriteMap)
     {
-        if (pathMap.ContainsKey(controlPath))
-            return;
-
-        if (spriteMap.TryGetValue(spriteName, out Sprite sprite) && sprite != null)
-            pathMap.Add(controlPath, sprite);
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_A", "<Gamepad>/buttonSouth");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_B", "<Gamepad>/buttonEast");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_X", "<Gamepad>/buttonWest");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_Y", "<Gamepad>/buttonNorth");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_LB", "<Gamepad>/leftShoulder");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_RB", "<Gamepad>/rightShoulder");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_LT", "<Gamepad>/leftTrigger");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_RT", "<Gamepad>/rightTrigger");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_LPress", "<Gamepad>/leftStickPress");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_RPress", "<Gamepad>/rightStickPress");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_LStick", "<Gamepad>/leftStick");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_RStick", "<Gamepad>/rightStick");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_DpadUp", "<Gamepad>/dpad/up");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_DpadDown", "<Gamepad>/dpad/down");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_DpadLeft", "<Gamepad>/dpad/left");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_DpadRight", "<Gamepad>/dpad/right");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_Dpad", "<Gamepad>/dpad");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_LeftArrow", "<Gamepad>/dpad/left");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_RightArrow", "<Gamepad>/dpad/right");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_Setting", "<Gamepad>/start");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_Share", "<Gamepad>/select");
+        AddTmpIconBySpriteName(pathMap, spriteMap, "Cont_Setting", "<Gamepad>/select");
     }
 
     private static Dictionary<string, Sprite> LoadSpriteMap(string folderPath)
@@ -680,6 +893,32 @@ public class KeybindIconSet : ScriptableObject
             {
                 if (assets[i] is Sprite sprite && !map.ContainsKey(sprite.name))
                     map.Add(sprite.name, sprite);
+            }
+        }
+
+        return map;
+    }
+
+    private static Dictionary<string, TmpSpriteLookupEntry> LoadTmpSpriteMap(string folderPath)
+    {
+        Dictionary<string, TmpSpriteLookupEntry> map = new Dictionary<string, TmpSpriteLookupEntry>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrEmpty(folderPath))
+            return map;
+
+        string[] guids = AssetDatabase.FindAssets("t:TMP_SpriteAsset", new[] { folderPath });
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+            TMP_SpriteAsset spriteAsset = AssetDatabase.LoadAssetAtPath<TMP_SpriteAsset>(path);
+            if (spriteAsset == null || spriteAsset.spriteCharacterTable == null)
+                continue;
+
+            foreach (TMP_SpriteCharacter spriteCharacter in spriteAsset.spriteCharacterTable)
+            {
+                if (spriteCharacter == null || string.IsNullOrEmpty(spriteCharacter.name) || map.ContainsKey(spriteCharacter.name))
+                    continue;
+
+                map.Add(spriteCharacter.name, new TmpSpriteLookupEntry(spriteAsset, spriteCharacter.name));
             }
         }
 
@@ -735,6 +974,19 @@ public class KeybindIconSet : ScriptableObject
         return updated;
     }
 #endif
+
+    [Serializable]
+    private struct TmpSpriteLookupEntry
+    {
+        public TmpSpriteLookupEntry(TMP_SpriteAsset spriteAsset, string spriteName)
+        {
+            SpriteAsset = spriteAsset;
+            SpriteName = spriteName;
+        }
+
+        public TMP_SpriteAsset SpriteAsset;
+        public string SpriteName;
+    }
 }
 
 public enum KeybindAction
