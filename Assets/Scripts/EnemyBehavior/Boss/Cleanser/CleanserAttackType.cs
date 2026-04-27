@@ -892,8 +892,11 @@ namespace EnemyBehavior.Boss.Cleanser
         public GameObject FloatingPlatformPrefabSecondary;
 
         [Header("Massive Strike")]
-        [Tooltip("Damage dealt if massive strike is NOT canceled.")]
-        public float MassiveStrikeDamage = 80f;
+        [Tooltip("Damage dealt by the massive strike as a percentage of the player's max HP (0.6 = 60%). Falls back to MassiveStrikeFallbackDamage if the player HP cannot be read.")]
+        [Range(0f, 2f)] public float MassiveStrikePlayerMaxHpPercent = 0.6f;
+
+        [Tooltip("Flat fallback damage used only if the player's max HP cannot be resolved at runtime.")]
+        public float MassiveStrikeFallbackDamage = 80f;
         
         [Tooltip("Damage mitigation cap when guarding (0.3 = 30% max reduction).")]
         [Range(0f, 0.5f)] public float GuardMitigationCap = 0.3f;

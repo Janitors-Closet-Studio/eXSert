@@ -9,6 +9,14 @@ using UnityEngine;
 
 namespace EnemyBehavior.Boss.Cleanser
 {
+    public enum StockpileHoverLayout
+    {
+        /// <summary>All weapons are arranged along a single diagonal line (original behavior).</summary>
+        Line,
+        /// <summary>Weapons fill a grid of columns and rows, producing a wall-like spread.</summary>
+        Grid
+    }
+
     /// <summary>
     /// Represents a spare weapon the Cleanser can pick up.
     /// These are pre-placed in the arena and picked up via magnetism/telekinesis.
@@ -35,6 +43,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [HideInInspector] public bool HasStockpileOffsets;
         [HideInInspector] public float StockpileVerticalOffset;
+        [HideInInspector] public Vector2 StockpileGridJitter;   // XY jitter in local space (Grid only)
         [HideInInspector] public float StockpileRollOffset;
         [HideInInspector] public float StockpileRollSpeed;
         [HideInInspector] public Vector3 StockpileFollowVelocity;
@@ -62,13 +71,31 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Local anchor around the Cleanser where stockpiled weapons hover.")]
         public Vector3 HoverAnchorLocal = new Vector3(0.8f, 1.8f, -0.2f);
 
-        [Tooltip("Horizontal spacing between stockpiled hover weapons.")]
+        [Tooltip("Line = single diagonal row (original). Grid = column/row wall like Gilgamesh UBW.")]
+        public StockpileHoverLayout HoverLayout = StockpileHoverLayout.Line;
+
+        [Tooltip("Number of columns in Grid layout. Set to 0 for automatic (≈ square root of weapon count). Rows are always determined automatically.")]
+        [Min(0)] public int HoverGridColumns = 0;
+
+        [Tooltip("Column-to-row aspect ratio used by the auto-column formula. Values above 1 produce wider grids (more columns than rows). Only used when Hover Grid Columns is 0.")]
+        [Min(1f)] public float HoverGridAspectRatio = 2f;
+
+        [Tooltip("Horizontal spacing between columns in Grid layout.")]
+        public float HoverGridColumnSpacing = 1.4f;
+
+        [Tooltip("Vertical spacing between rows in Grid layout.")]
+        public float HoverGridRowSpacing = 1.1f;
+
+        [Tooltip("Max radius of random XY offset applied per weapon in Grid layout. Adds chaos while preserving overall grid structure.")]
+        [Min(0f)] public float HoverGridJitterRadius = 0.35f;
+
+        [Tooltip("Horizontal spacing between stockpiled hover weapons (Line layout).")]
         public float HoverSpacing = 0.6f;
 
-        [Tooltip("Vertical offset per stockpiled weapon index to reduce overlap.")]
+        [Tooltip("Vertical offset per stockpiled weapon index to reduce overlap (Line layout).")]
         public float HoverVerticalStep = 0.12f;
 
-        [Tooltip("How much yaw spread is applied across stockpiled weapons.")]
+        [Tooltip("How much yaw spread is applied across stockpiled weapons (Line layout).")]
         public float HoverYawSpread = 30f;
 
         [Tooltip("Forward offset from Cleanser used as look target while spare weapons travel to stockpile.")]
@@ -425,9 +452,13 @@ namespace EnemyBehavior.Boss.Cleanser
 
             Vector3 startPos = weapon.WeaponObject.transform.position;
             Quaternion startRot = weapon.WeaponObject.transform.rotation;
-            
+
             // Unparent for smooth motion
             weapon.WeaponObject.transform.SetParent(null);
+
+            // Grid mode: pre-bake offsets immediately so the slot target is stable from frame 0.
+            if (HoverLayout == StockpileHoverLayout.Grid)
+                EnsureStockpileOffsets(weapon);
 
             float elapsed = 0f;
             float risePortion = Mathf.Clamp01(PickupVerticalRisePortion);
@@ -441,8 +472,22 @@ namespace EnemyBehavior.Boss.Cleanser
                 elapsed += Time.deltaTime;
                 int dynamicCount = Mathf.Max(reservedCount, stockpiledWeapons.Count + pendingStockpileReservations);
                 EnsureStockpileOffsets(weapon);
-                Vector3 endPos = GetStockpileSlotWorldPosition(reservedIndex, dynamicCount, weapon.StockpileVerticalOffset);
-                if (elapsed <= riseDuration)
+                Vector3 endPos = GetStockpileSlotWorldPosition(reservedIndex, dynamicCount, weapon.StockpileVerticalOffset, weapon.StockpileGridJitter);
+
+                if (HoverLayout == StockpileHoverLayout.Grid)
+                {
+                    // Single-phase arc: weapon travels directly from its spawn to its grid slot.
+                    // A mid-point control with arc height creates a cinematic swoop without any
+                    // intermediate "gather near the Cleanser" step.
+                    float tArc = PickupCurve.Evaluate(Mathf.Clamp01(elapsed / PickupAnimationDuration));
+                    Vector3 control = Vector3.Lerp(startPos, endPos, 0.5f)
+                        + Vector3.up * Mathf.Max(0f, PickupArcHeight)
+                        + transform.forward * PickupArcForwardBias
+                        + arcRandomOffset;
+                    float omt = 1f - tArc;
+                    weapon.WeaponObject.transform.position = (omt * omt * startPos) + (2f * omt * tArc * control) + (tArc * tArc * endPos);
+                }
+                else if (elapsed <= riseDuration)
                 {
                     float tRise = PickupCurve.Evaluate(elapsed / riseDuration);
                     weapon.WeaponObject.transform.position = Vector3.Lerp(startPos, risePos, tRise);
@@ -508,11 +553,11 @@ namespace EnemyBehavior.Boss.Cleanser
                     float tRot = PickupCurve.Evaluate(elapsed / PickupAnimationDuration);
                     weapon.WeaponObject.transform.rotation = Quaternion.Slerp(startRot, targetRot, tRot);
                 }
-                
+
                 // Move VFX with weapon
                 if (vfx != null)
                     vfx.transform.position = weapon.WeaponObject.transform.position;
-                
+
                 yield return null;
             }
 
@@ -683,6 +728,7 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.IsAtRest = false;
             weapon.HasStockpileOffsets = false;
             weapon.StockpileVerticalOffset = 0f;
+            weapon.StockpileGridJitter = Vector2.zero;
             weapon.StockpileRollOffset = 0f;
             weapon.StockpileRollSpeed = 0f;
             weapon.StockpileFollowVelocity = Vector3.zero;
@@ -730,6 +776,7 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.IsAtRest = true;
             weapon.HasStockpileOffsets = false;
             weapon.StockpileVerticalOffset = 0f;
+            weapon.StockpileGridJitter = Vector2.zero;
             weapon.StockpileRollOffset = 0f;
             weapon.StockpileRollSpeed = 0f;
             weapon.StockpileFollowVelocity = Vector3.zero;
@@ -1032,7 +1079,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     t.SetParent(null, true);
 
                 EnsureStockpileOffsets(weapon);
-                Vector3 targetWorldPos = GetStockpileSlotWorldPosition(i, count, weapon.StockpileVerticalOffset);
+                Vector3 targetWorldPos = GetStockpileSlotWorldPosition(i, count, weapon.StockpileVerticalOffset, weapon.StockpileGridJitter);
                 Quaternion baseRotation = Quaternion.Euler(stockpileLocalRotationEuler);
                 float animatedRoll = weapon.StockpileRollOffset + (Time.time * weapon.StockpileRollSpeed);
                 Quaternion targetWorldRot = transform.rotation * baseRotation * Quaternion.AngleAxis(animatedRoll, Vector3.forward);
@@ -1085,9 +1132,9 @@ namespace EnemyBehavior.Boss.Cleanser
             return transform.TransformPoint(GetStockpileSlotLocalPosition(index, Mathf.Max(1, count)));
         }
 
-        private Vector3 GetStockpileSlotWorldPosition(int index, int count, float verticalOffset)
+        private Vector3 GetStockpileSlotWorldPosition(int index, int count, float verticalOffset, Vector2 gridJitter = default)
         {
-            return transform.TransformPoint(GetStockpileSlotLocalPosition(index, Mathf.Max(1, count), verticalOffset));
+            return transform.TransformPoint(GetStockpileSlotLocalPosition(index, Mathf.Max(1, count), verticalOffset, gridJitter));
         }
 
         private int ReserveStockpileSlot(out int reservedCount)
@@ -1098,8 +1145,35 @@ namespace EnemyBehavior.Boss.Cleanser
             return index;
         }
 
-        private Vector3 GetStockpileSlotLocalPosition(int index, int count, float verticalOffset = 0f)
+        private Vector3 GetStockpileSlotLocalPosition(int index, int count, float verticalOffset = 0f, Vector2 gridJitter = default)
         {
+            if (HoverLayout == StockpileHoverLayout.Grid)
+            {
+                // Auto-compute columns when HoverGridColumns == 0.
+                // Aspect ratio > 1 biases toward more columns than rows (wide wall).
+                int cols = HoverGridColumns > 0
+                    ? Mathf.Min(HoverGridColumns, count)
+                    : Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(count * Mathf.Max(1f, HoverGridAspectRatio))));
+                int rows = Mathf.Max(1, Mathf.CeilToInt((float)count / cols));
+                int col = index % cols;
+                int row = index / cols;
+
+                // Horizontally centre columns around the anchor X.
+                float colNorm = cols <= 1 ? 0f : (col / (float)(cols - 1) - 0.5f);
+                float x = colNorm * HoverGridColumnSpacing * (cols - 1) + gridJitter.x;
+
+                // Rows grow UPWARD from the anchor: last row sits at anchor Y (the floor),
+                // earlier rows are progressively higher above it.
+                int rowFromBottom = (rows - 1) - row;
+                float y = rowFromBottom * HoverGridRowSpacing + verticalOffset + gridJitter.y;
+
+                // Hard floor: never let a weapon dip below HoverAnchorLocal.y.
+                y = Mathf.Max(0f, y);
+
+                return HoverAnchorLocal + new Vector3(x, y, 0f);
+            }
+
+            // --- Original Line layout ---
             float normalized = count <= 1 ? 0f : (index / (float)(count - 1) - 0.5f);
             float yaw = normalized * HoverYawSpread;
             Vector3 lateral = Quaternion.Euler(0f, yaw, 0f) * Vector3.right * HoverSpacing * normalized * 2f;
@@ -1123,6 +1197,12 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.StockpileVerticalOffset = Random.Range(minVertical, maxVertical);
             weapon.StockpileRollOffset = Random.Range(minRoll, maxRoll);
             weapon.StockpileRollSpeed = Random.Range(minRollSpeed, maxRollSpeed);
+
+            float jitterRadius = Mathf.Max(0f, HoverGridJitterRadius);
+            float jitterAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float jitterMag = Random.Range(0f, jitterRadius);
+            weapon.StockpileGridJitter = new Vector2(Mathf.Cos(jitterAngle), Mathf.Sin(jitterAngle)) * jitterMag;
+
             weapon.HasStockpileOffsets = true;
         }
 
