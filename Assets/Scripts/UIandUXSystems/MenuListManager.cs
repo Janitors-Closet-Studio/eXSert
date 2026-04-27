@@ -642,11 +642,22 @@ public class MenuListManager : MonoBehaviour
     {
         temporarilyHiddenMenusByOwner.Clear();
 
-        foreach(GameObject menu in menusToManage)
+        if (menusToManage == null)
         {
-            if (!IsProtectedMenu(menu))
-                menusToManage.Remove(menu);
-            menu.SetActive(false);
+            selectionHistory.Clear();
+            UpdateFooterForCurrentTopMenu();
+            return;
+        }
+
+        for (int i = menusToManage.Count - 1; i >= 0; i--)
+        {
+            GameObject menu = menusToManage[i];
+
+            if (menu != null)
+                menu.SetActive(false);
+
+            if (menu == null || !IsProtectedMenu(menu))
+                menusToManage.RemoveAt(i);
         }
 
         selectionHistory.Clear();
