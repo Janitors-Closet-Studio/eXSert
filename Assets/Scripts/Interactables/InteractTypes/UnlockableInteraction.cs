@@ -18,7 +18,7 @@ public abstract class UnlockableInteraction : InteractionManager
     [SerializeField] private string requiredItemDisplayName = "";
 
     [Tooltip("Prompt shown while the required item is missing.")]
-    [SerializeField] private string lockedInteractionPrompt = "LOCKED";
+    [SerializeField] protected string lockedInteractionPrompt = "LOCKED";
 
     [SerializeField] private bool interactOnce = true;
 

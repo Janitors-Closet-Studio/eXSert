@@ -411,7 +411,7 @@ public static class SceneLoader
     }
 
     /// <summary>Load the first gameplay scene then the player scene. (Legacy API)</summary>
-    public static void LoadIntoGame(SceneAsset firstScene, bool newGame = false)
+    public static void LoadIntoGame(SceneAsset firstScene, bool newGame = false, bool forceReloadFirstScene = false)
     {
         if (firstScene == null)
         {
@@ -421,9 +421,9 @@ public static class SceneLoader
 
         Initialize();
 
-        CoroutineRunner.Run(LoadIntoGameTransitionRoutine(firstScene, newGame));
+        CoroutineRunner.Run(LoadIntoGameTransitionRoutine(firstScene, newGame, forceReloadFirstScene));
 
-        static IEnumerator LoadIntoGameTransitionRoutine(SceneAsset firstScene, bool newGame)
+        static IEnumerator LoadIntoGameTransitionRoutine(SceneAsset firstScene, bool newGame, bool forceReloadFirstScene)
         {
             if (newGame)
             {
@@ -433,7 +433,7 @@ public static class SceneLoader
                 if (openingCutscene != null)
                 {
                     CutsceneManager.PlayCutscene(openingCutscene);
-                    yield return LoadIntoGameCoroutine(firstScene, newGame: false);
+                    yield return LoadIntoGameCoroutine(firstScene, newGame: false, forceReloadFirstScene: forceReloadFirstScene);
                     yield break;
                 }
 
@@ -445,20 +445,20 @@ public static class SceneLoader
             if (!LoadingScreenController.HasInstance)
             {
                 Debug.LogWarning("[Scene Loader] LoadingScreenController is unavailable. Falling back to direct game load.");
-                yield return LoadIntoGameCoroutine(firstScene, newGame);
+                yield return LoadIntoGameCoroutine(firstScene, newGame, forceReloadFirstScene);
                 yield break;
             }
 
-            LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame));
+            LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame, forceReloadFirstScene));
         }
     }
 
-    private static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame)
+    private static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame, bool forceReloadFirstScene)
     {
         MainMenu.isInMainMenu = false;
 
         // Load first gameplay scene, wait for it
-        yield return LoadCoroutine(firstScene, loadScreen: false);
+        yield return LoadCoroutine(firstScene, forceReload: forceReloadFirstScene, loadScreen: false);
 
         // Sets the first checkpoint to the first scene so that the player will spawn there when the player scene loads
         CheckpointBehavior.OverrideCurrentCheckpoint(ProgressionManager.GetInstance(firstScene).FirstCheckpoint);

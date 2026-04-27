@@ -423,7 +423,7 @@ public class ActsManager : Singleton<ActsManager>
     private void SetCheckpointForScene(string sceneName)
     {
         // Find all loaded checkpoints
-        var checkpoints = GameObject.FindObjectsOfType<Progression.Checkpoints.CheckpointBehavior>(true);
+        var checkpoints = GameObject.FindObjectsByType<Progression.Checkpoints.CheckpointBehavior>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var checkpoint in checkpoints)
         {
             var sceneAsset = checkpoint.CheckpointSceneAsset;
@@ -455,24 +455,58 @@ public class ActsManager : Singleton<ActsManager>
         }
     }
 
+    private static bool TryResolveSceneAssetByName(string rawSceneName, out SceneAsset sceneAsset)
+    {
+        sceneAsset = null;
+        if (string.IsNullOrWhiteSpace(rawSceneName))
+            return false;
+
+        string trimmedName = rawSceneName.Trim();
+        sceneAsset = SceneAsset.GetSceneAsset(trimmedName);
+        if (sceneAsset != null)
+            return true;
+
+        SceneAsset[] allSceneAssets = Resources.LoadAll<SceneAsset>("Scene Assets");
+        if (allSceneAssets == null || allSceneAssets.Length == 0)
+            return false;
+
+        for (int i = 0; i < allSceneAssets.Length; i++)
+        {
+            SceneAsset candidate = allSceneAssets[i];
+            if (candidate == null)
+                continue;
+
+            if (!string.Equals(candidate.SceneName, trimmedName, System.StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            sceneAsset = candidate;
+            return true;
+        }
+
+        return false;
+    }
+
     /// Loads the given scene, then respawns the player at a checkpoint in that scene.
     public void LoadSceneAndRespawnAtCheckpoint(string sceneName)
     {
+        if (!TryResolveSceneAssetByName(sceneName, out SceneAsset sceneAsset) || sceneAsset == null)
+        {
+            Debug.LogError($"[ActsManager] Unable to resolve SceneAsset from '{sceneName}'. Teleport canceled.");
+            return;
+        }
 
-
-        // SceneAsset appears to support explicit casting from a string based on SceneLoader's usage
-        SceneAsset sceneAsset = (SceneAsset)sceneName;
-
-
-        // Load the selected scene using SceneLoader
         InputReader.inputBusy = false;
         if (InputReader.PlayerInput != null)
             InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
 
-        StartCoroutine(SoundManager.Instance.FadeOutGameplayAudio(1f)); // Fade out music over 1 second
+        if (SoundManager.Instance != null)
+            StartCoroutine(SoundManager.Instance.FadeOutGameplayAudio(1f)); // Fade out music over 1 second
 
-        SceneLoader.Load(sceneAsset, forceReload: false);
-        PauseManager.Instance.ResumeGame();
+        PrepareForSceneLoad(resumeImmediately: false);
+
+        // Unload other tracked gameplay scenes first so special transitions (like EngineCore)
+        // do not stack over previously loaded scenes.
+        StartCoroutine(LoadActSceneFromCleanState(sceneAsset));
 
         SceneAsset currentSceneAsset = SceneAsset.GetSceneAssetOfObject(this.gameObject);
         MasterObjectiveClass masterObjective = currentSceneAsset != null
@@ -481,8 +515,8 @@ public class ActsManager : Singleton<ActsManager>
         if (masterObjective != null)
             masterObjective.ForceStopNoticeCoroutines();
 
-
-        actsHolder.SetActive(false);
+        if (actsHolder != null)
+            actsHolder.SetActive(false);
 
         MenuListManager menuListManager = GetComponent<MenuListManager>();
 
@@ -490,9 +524,36 @@ public class ActsManager : Singleton<ActsManager>
         {
             menuListManager.ClearMenuList();
         }
+    }
 
-        
-        ActivateAllImagesBefore();
+    private IEnumerator LoadActSceneFromCleanState(SceneAsset targetScene)
+    {
+        if (targetScene == null)
+            yield break;
+
+        string targetName = targetScene.SceneName;
+
+        for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+        {
+            Scene loadedScene = SceneManager.GetSceneAt(i);
+            if (!loadedScene.IsValid() || !loadedScene.isLoaded)
+                continue;
+
+            bool isTrackedGameplayScene = sceneNames.ContainsValue(loadedScene.name);
+            if (!isTrackedGameplayScene)
+                continue;
+
+            if (string.Equals(loadedScene.name, targetName, System.StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(loadedScene);
+            if (unloadOperation != null)
+                yield return unloadOperation;
+        }
+
+        // Use the same startup flow as initial game load, but force-reload the selected scene
+        // so collectibles, encounters, and scene-local runtime state reset every teleport.
+        SceneLoader.LoadIntoGame(targetScene, newGame: false, forceReloadFirstScene: true);
     }
 
 

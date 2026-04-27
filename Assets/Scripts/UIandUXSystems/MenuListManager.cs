@@ -159,6 +159,7 @@ public class MenuListManager : MonoBehaviour
         EnsureHierarchyIsActive(menuToAdd);
         RemoveOtherOpenSettingPageMenu(menuToAdd);
         ClearOpenSubmenusOnSettingsSwitch(menuToAdd);
+        PruneStaleSettingsSubmenus(menuToAdd);
         ReplaceTopMenuIfSwitchingSiblingSubmenu(menuToAdd);
 
         if (menusToManage.Contains(menuToAdd))
@@ -201,6 +202,15 @@ public class MenuListManager : MonoBehaviour
         if (currentTop == null || currentTop == menuToAdd)
             return;
 
+        GameObject currentSettingsRoot = GetOwningSettingsRoot(currentTop);
+        GameObject targetSettingsRoot = GetOwningSettingsRoot(menuToAdd);
+        if (currentSettingsRoot == null || currentSettingsRoot != targetSettingsRoot)
+            return;
+
+        // Keep the owning settings page/root in the stack while drilling into deeper panels.
+        if (currentTop == currentSettingsRoot || menuToAdd == targetSettingsRoot)
+            return;
+
         bool sharesSettingsRoot = ShareSettingsRoot(currentTop, menuToAdd);
         if (!sharesSettingsRoot)
             return;
@@ -212,6 +222,39 @@ public class MenuListManager : MonoBehaviour
             return;
 
         CloseAndRemoveMenuAt(0);
+    }
+
+    private void PruneStaleSettingsSubmenus(GameObject menuToAdd)
+    {
+        if (menusToManage == null || menusToManage.Count == 0 || menuToAdd == null)
+            return;
+
+        GameObject settingsRoot = GetOwningSettingsRoot(menuToAdd);
+        if (settingsRoot == null || menuToAdd == settingsRoot)
+            return;
+
+        for (int i = menusToManage.Count - 1; i >= 0; i--)
+        {
+            GameObject openMenu = menusToManage[i];
+            if (openMenu == null)
+            {
+                menusToManage.RemoveAt(i);
+                continue;
+            }
+
+            if (openMenu == menuToAdd || openMenu == settingsRoot || IsProtectedMenu(openMenu))
+                continue;
+
+            bool openUnderSameRoot = openMenu.transform.IsChildOf(settingsRoot.transform);
+            if (!openUnderSameRoot)
+                continue;
+
+            bool isAncestorOfTarget = menuToAdd.transform.IsChildOf(openMenu.transform);
+            if (isAncestorOfTarget)
+                continue;
+
+            CloseAndRemoveMenuAt(i);
+        }
     }
 
     // Returns true if both menus share the same root settings page in the hierarchy, 
@@ -236,6 +279,23 @@ public class MenuListManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    private GameObject GetOwningSettingsRoot(GameObject menu)
+    {
+        if (menu == null || settingPageMenus == null)
+            return null;
+
+        foreach (GameObject root in settingPageMenus)
+        {
+            if (root == null)
+                continue;
+
+            if (menu == root || menu.transform.IsChildOf(root.transform))
+                return root;
+        }
+
+        return null;
     }
 
     // Ensures the entire parent chain of the menu is active so that it can be properly displayed and interacted with.
@@ -464,15 +524,8 @@ public class MenuListManager : MonoBehaviour
     // Same as above but with a float parameter so it can be used by a slider for onValueChanged
     public void SwapBetweenMenus(float _)
     {
-        EventSystem currentEventSystem = EventSystem.current;
-        if (currentEventSystem == null)
-            return;
-
-        GameObject selected = currentEventSystem.currentSelectedGameObject;
-        bool editingSlider = selected != null && selected.GetComponentInParent<Slider>() != null;
-
         // Ignore active slider callbacks so dragging does not trigger menu close logic.
-        if (editingSlider)
+        if (ShouldIgnoreMenuSwap())
             return;
 
         // Only close a true nested submenu; never fall back to closing the whole page/screen.
@@ -482,8 +535,7 @@ public class MenuListManager : MonoBehaviour
         {
             CloseAndRemoveMenuAt(menuIndexToClose);
 
-            // If no slider is currently selected, restore focus to revealed menu.
-            if (!editingSlider && menusToManage.Count > 0)
+            if (menusToManage.Count > 0)
                 EnsureSelectionForMenu(menusToManage[0]);
         }
     }
@@ -642,11 +694,22 @@ public class MenuListManager : MonoBehaviour
     {
         temporarilyHiddenMenusByOwner.Clear();
 
-        foreach(GameObject menu in menusToManage)
+        if (menusToManage == null)
         {
-            if (!IsProtectedMenu(menu))
-                menusToManage.Remove(menu);
-            menu.SetActive(false);
+            selectionHistory.Clear();
+            UpdateFooterForCurrentTopMenu();
+            return;
+        }
+
+        for (int i = menusToManage.Count - 1; i >= 0; i--)
+        {
+            GameObject menu = menusToManage[i];
+
+            if (menu != null)
+                menu.SetActive(false);
+
+            if (menu == null || !IsProtectedMenu(menu))
+                menusToManage.RemoveAt(i);
         }
 
         selectionHistory.Clear();
