@@ -28,6 +28,9 @@ namespace Progression.Encounters
 
         public event Action<Wave> OnWaveComplete;
         public event Action<Vector3> UpdateLastEnemyPosition;
+        public event Action<BaseEnemyCore> OnEnemySpawned;
+
+        public IReadOnlyList<BaseEnemyCore> TrackedEnemies => enemies;
 
         /// <summary>
         /// Initializes the wave by assigning enemy spawn markers from the specified child GameObjects.
@@ -85,6 +88,7 @@ namespace Progression.Encounters
                 enemies.Add(enemy);
                 enemy.OnDeath -= OnEnemyDefeated; // Prevent double-subscription
                 enemy.OnDeath += OnEnemyDefeated;
+                OnEnemySpawned?.Invoke(enemy);
             }
         }
 

@@ -128,6 +128,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private bool isParryStunned;
     private bool isQueuedAttackActive;
     private bool suppressAnimationEventDamageUntilAttackEnds;
+    private float defaultDamage;
+    private bool incomingDamageEnabled = true;
 
     // Cached animator parameter checks to avoid allocations from repeated animator.parameters access
     private bool _hasIsMovingParam;
@@ -423,6 +425,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     {
         SceneManager.sceneLoaded += HandleSceneLoaded;
 
+        defaultDamage = damage;
+
         agent = this.gameObject.GetComponent<NavMeshAgent>();
         
         // Apply behavior profile if assigned
@@ -489,6 +493,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     
     protected virtual void OnEnable()
     {
+        if (defaultDamage <= 0f)
+            defaultDamage = damage;
+
         // Subscribe to pause events for audio handling
         PauseCoordinator.OnPaused += PauseAllAudioSources;
         PauseCoordinator.OnResumed += ResumeAllAudioSources;
@@ -1019,6 +1026,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
                     if (Utilities.Combat.CombatManager.isGuarding)
                     {
                         dmg *= 0.25f;
+                        Utilities.Combat.CombatManager.GuardSuccessful();
 #if UNITY_EDITOR
                         EnemyBehaviorDebugLogBools.Log("BaseEnemy", $"[{name}] Attack guarded. Applying reduced damage {dmg}.");
 #endif
@@ -1257,7 +1265,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     // LoseHP is called to apply damage to the enemy
     public override void LoseHP(float damage, float rumbleDuration = 0f, float lowFrequency = 0f, float highFrequency = 0f)
     {
-        if (damage <= 0f)
+        if (!incomingDamageEnabled || damage <= 0f)
             return;
 
         float previousHealth = currentHealth;
@@ -1274,6 +1282,22 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     public override void HealHP(float hp)
     {
         SetHealth(currentHealth + hp);
+    }
+
+    public override void SetIncomingDamageEnabled(bool enabled)
+    {
+        incomingDamageEnabled = enabled;
+    }
+
+    public override void SetOutgoingDamageMultiplier(float multiplier)
+    {
+        damage = Mathf.Max(0f, defaultDamage * Mathf.Max(0f, multiplier));
+    }
+
+    public override void ClearRuntimeCombatOverrides()
+    {
+        incomingDamageEnabled = true;
+        damage = defaultDamage;
     }
 
     private void PlaySFXOnHit()
@@ -1558,6 +1582,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         // Fire the spawn event for encounter tracking
         InvokeOnSpawn();
 
+        ClearRuntimeCombatOverrides();
+
         RestoreExternalHelpers();
 
         gameObject.SetActive(true);
@@ -1576,6 +1602,8 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     /// </summary>
     public override void ResetEnemy()
     {
+        ClearRuntimeCombatOverrides();
+
         // Restore health to max
         currentHealth = maxHealth;
 

@@ -272,6 +272,7 @@ namespace Behaviors
             if (CombatManager.isGuarding)
             {
                 dmg *= 0.25f;
+                CombatManager.GuardSuccessful();
 #if UNITY_EDITOR
                 EnemyBehaviorDebugLogBools.Log("AttackBehavior", $"{enemy.gameObject.name} attack guarded. Applying reduced damage {dmg}.");
 #endif

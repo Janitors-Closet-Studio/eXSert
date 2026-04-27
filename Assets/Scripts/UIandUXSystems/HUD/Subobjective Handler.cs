@@ -44,7 +44,7 @@ public class SubobjectiveHandler : MonoBehaviour
             textComponent.text = "";
             activeSubobjectives.Add(newSubobjective);
             // Animate typing in
-            WritingTextUI.AddWriter_Static(textComponent, KeybindRichTextFormatter.Format(subObj.DisplayText), 0.025f, false, true);
+            WritingTextUI.AddWriter_Static(textComponent, KeybindRichTextFormatter.Format(textComponent, subObj.DisplayText), 0.025f, false, true);
             // Set color based on completion status
             textComponent.color = subObj.IsCompleted ? completedColor : activeColor;
         }
