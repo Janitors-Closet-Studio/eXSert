@@ -71,6 +71,7 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField] private bool tutorialCompleteMessageUseSelectedIcon;
     [SerializeField] private KeybindAction tutorialCompleteMessageAction = KeybindAction.GP_Interact;
     [SerializeField, Min(0f)] private float postEncounterFeedbackDelay = 1.25f;
+    [SerializeField, Min(0f)] private float playerTurnMessageRestoreDelay = 0.35f;
     [SerializeField] private Color tutorialIconColor = Color.white;
     [SerializeField, Min(0.1f)] private float tutorialIconSize = 1f;
     [SerializeField, Min(0f)] private float tutorialIconGrowthPerCorrectPress = 0.08f;
@@ -111,6 +112,8 @@ public class TutorialHandler : MonoBehaviour
     private CombatEncounter currentStepEncounter;
     private Coroutine postEncounterFeedbackRoutine;
     private bool pendingPlayerTurnReadyMessage;
+    private bool pendingStepInstructionRestore;
+    private Coroutine stepInstructionRestoreRoutine;
     private Coroutine tutorialIconPulseRoutine;
 
     #region Couroutines
@@ -213,6 +216,12 @@ public class TutorialHandler : MonoBehaviour
             postEncounterFeedbackRoutine = null;
         }
 
+        if (stepInstructionRestoreRoutine != null)
+        {
+            StopCoroutine(stepInstructionRestoreRoutine);
+            stepInstructionRestoreRoutine = null;
+        }
+
         if (tutorialIconPulseRoutine != null)
         {
             StopCoroutine(tutorialIconPulseRoutine);
@@ -220,6 +229,7 @@ public class TutorialHandler : MonoBehaviour
         }
 
         pendingPlayerTurnReadyMessage = false;
+        pendingStepInstructionRestore = false;
 
         ReleaseCurrentStepEnemyOverrides();
         SetTutorialPlayerProtection(false);
@@ -240,9 +250,16 @@ public class TutorialHandler : MonoBehaviour
             postEncounterFeedbackRoutine = null;
         }
 
+        if (stepInstructionRestoreRoutine != null)
+        {
+            StopCoroutine(stepInstructionRestoreRoutine);
+            stepInstructionRestoreRoutine = null;
+        }
+
         currentStep = step;
         currentStepCompleted = false;
         pendingPlayerTurnReadyMessage = false;
+        pendingStepInstructionRestore = false;
 
         switch (step)
         {
@@ -371,6 +388,14 @@ public class TutorialHandler : MonoBehaviour
     private void HandleObjectiveTypingCompleted()
     {
         TryDisplayPendingPlayerTurnReadyMessage();
+
+        if (pendingStepInstructionRestore)
+        {
+            if (stepInstructionRestoreRoutine != null)
+                StopCoroutine(stepInstructionRestoreRoutine);
+
+            stepInstructionRestoreRoutine = StartCoroutine(RestoreCurrentStepInstructionAfterDelay());
+        }
     }
 
     private void TryDisplayPendingPlayerTurnReadyMessage()
@@ -382,10 +407,35 @@ public class TutorialHandler : MonoBehaviour
             return;
 
         pendingPlayerTurnReadyMessage = false;
+        pendingStepInstructionRestore = true;
         DisplayTutorialObjective(
             GetRandomPlayerTurnReadyMessage(),
             playerTurnReadyMessageUseSelectedIcon,
             playerTurnReadyMessageAction);
+    }
+
+    private void TryRestoreCurrentStepInstruction()
+    {
+        if (!pendingStepInstructionRestore || !currentStepCompleted)
+            return;
+
+        if (ObjectiveText.IsCurrentObjectiveTyping || postEncounterFeedbackRoutine != null)
+            return;
+
+        if (!TryGetCurrentStepInstruction(out string message, out bool useSelectedIcon, out KeybindAction selectedAction))
+            return;
+
+        pendingStepInstructionRestore = false;
+        stepInstructionRestoreRoutine = null;
+        DisplayTutorialObjective(message, useSelectedIcon, selectedAction);
+    }
+
+    private IEnumerator RestoreCurrentStepInstructionAfterDelay()
+    {
+        if (playerTurnMessageRestoreDelay > 0f)
+            yield return new WaitForSeconds(playerTurnMessageRestoreDelay);
+
+        TryRestoreCurrentStepInstruction();
     }
 
     private IEnumerator ShowPostEncounterFeedbackThenAdvance(TutorialStep completedStep)
@@ -506,6 +556,36 @@ public class TutorialHandler : MonoBehaviour
             TutorialStep.Parry => TutorialStep.Complete,
             _ => TutorialStep.Complete,
         };
+    }
+
+    private bool TryGetCurrentStepInstruction(out string message, out bool useSelectedIcon, out KeybindAction selectedAction)
+    {
+        switch (currentStep)
+        {
+            case TutorialStep.Dash:
+                message = dashMessage;
+                useSelectedIcon = dashMessageUseSelectedIcon;
+                selectedAction = dashMessageAction;
+                return true;
+
+            case TutorialStep.Guard:
+                message = guardFightMessage;
+                useSelectedIcon = guardFightMessageUseSelectedIcon;
+                selectedAction = guardFightMessageAction;
+                return true;
+
+            case TutorialStep.Parry:
+                message = parryFightMessage;
+                useSelectedIcon = parryFightMessageUseSelectedIcon;
+                selectedAction = parryFightMessageAction;
+                return true;
+
+            default:
+                message = string.Empty;
+                useSelectedIcon = false;
+                selectedAction = default;
+                return false;
+        }
     }
 
     private void HandleSceneLoaded(Scene _, LoadSceneMode __)
