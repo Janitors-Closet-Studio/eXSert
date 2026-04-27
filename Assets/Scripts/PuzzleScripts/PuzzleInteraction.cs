@@ -79,7 +79,8 @@ public class PuzzleInteraction : UnlockableInteraction
 
         if (!needsItem)
         {
-            InteractionUI.Instance.OnCollectedItem(optionalStringMessage, null);
+            if (masterObjective != null)
+                masterObjective.CreateAndShowNotice(this, $"{this.interactId}_puzzle", optionalStringMessage, "", 0.5f, 1.5f, priority: 5);
         }
     }
 

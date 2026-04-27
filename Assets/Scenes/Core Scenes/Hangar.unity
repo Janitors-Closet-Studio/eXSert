@@ -3940,11 +3940,14 @@ MonoBehaviour:
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: Platform Extender
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 1994980444}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
-  displayName: Platform Extender
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED
@@ -14514,6 +14517,7 @@ Transform:
   - {fileID: 2039829721}
   - {fileID: 1798321439}
   - {fileID: 899769286}
+  - {fileID: 750281717}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &168637180
@@ -50979,11 +50983,14 @@ MonoBehaviour:
   _interactId: hgreenkeycard
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: South Crane Console
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
-  displayName: South Crane Console
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED
@@ -66839,6 +66846,72 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1001 &750281716
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 167190254}
+    m_Modifications:
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectiveNotices.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1685.0094
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.3213997
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 568.4675
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7259501367457533165, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_Name
+      value: SceneObjectiveManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+--- !u!4 &750281717 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+  m_PrefabInstance: {fileID: 750281716}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &755956406
 GameObject:
   m_ObjectHideFlags: 0
@@ -71405,11 +71478,14 @@ MonoBehaviour:
   _interactId: hwhitekeycard
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: North Crane Console
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
-  displayName: North Crane Console
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: White Keycard
   lockedInteractionPrompt: LOCKED
@@ -96764,6 +96840,7 @@ MonoBehaviour:
   elevatorCamera: {fileID: 1069724963}
   elevatorUI:
   - {fileID: 1239274324}
+  elevatorTriggerCollider: {fileID: 1120867918}
   desiredLiftPosition:
   - {x: 12.35, y: 0, z: 5.69}
   - {x: 12.35, y: 9.228, z: 5.69}
@@ -131131,11 +131208,14 @@ MonoBehaviour:
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: Elevator Lift
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 1375132224}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
-  displayName: Elevator Lift
   requiredItemID: hwhitekeycard
   requiredItemDisplayName: Lift Keycard
   lockedInteractionPrompt: LOCKED
@@ -142484,11 +142564,14 @@ MonoBehaviour:
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
   _interactionPrompt: Press to Interact
+  displayName: Lift Return Console
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 1375132224}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
-  displayName: Lift Return Console
   requiredItemID: 
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
@@ -145713,11 +145796,14 @@ MonoBehaviour:
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: Platform Rotator
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 917917060}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
-  displayName: Platform Rotator
   requiredItemID: hgreenkeycard
   requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED

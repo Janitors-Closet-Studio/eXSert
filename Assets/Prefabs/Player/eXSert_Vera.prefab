@@ -1526,6 +1526,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4360433577188796707}
   - component: {fileID: 5480205498155007657}
+  - component: {fileID: 1707564306165916711}
   m_Layer: 17
   m_Name: -Cameras-
   m_TagString: PlayerCamera
@@ -1577,6 +1578,46 @@ MonoBehaviour:
   gameplayCombatRadiusLerpSpeed: 1.5
   gameplayCombatFovLerpSpeed: 1.5
   logCombatCameraDebug: 0
+--- !u!114 &1707564306165916711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748908185219209484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e2b8f66fb784674982ed91c17108b88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DistanceMaterialTransparencyController
+  firstTarget: {fileID: 7661644115035956107}
+  secondTarget: {fileID: 1616815310529457648}
+  toonMeshes: []
+  toonMaterialAssets:
+  - {fileID: 2100000, guid: 2a63207a587c77743868737fc76ae53c, type: 2}
+  - {fileID: 2100000, guid: 9f49e7d25434934409a771b72aee3999, type: 2}
+  - {fileID: 2100000, guid: 19edcdb52f6a8be42ba477914e9a7003, type: 2}
+  - {fileID: 2100000, guid: 03ec3dafb28cb9847b6e1d06b9751d77, type: 2}
+  - {fileID: 2100000, guid: c35eb06873ad1e64b874a638531f5998, type: 2}
+  - {fileID: 2100000, guid: 42a6baca74729ea4797495849bbafb5d, type: 2}
+  - {fileID: 2100000, guid: 59e522ef0b994684cb39212fb9491085, type: 2}
+  - {fileID: 2100000, guid: dcbcd8ca03b2d844eb9b51b3826ddc87, type: 2}
+  - {fileID: 2100000, guid: ddb233d29021c8f4faa31aa86b8709d3, type: 2}
+  - {fileID: 2100000, guid: 63ee91363a066104cb40522f1a7a5d2e, type: 2}
+  restoredToonTransparency: 0
+  hiddenToonTransparency: -1
+  litMeshes:
+  - {fileID: 5850927340999213315}
+  litMaterialAssets:
+  - {fileID: 2100000, guid: 53e2e17a3a3cae44ba4acb6b0f929840, type: 2}
+  - {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
+  - {fileID: 2100000, guid: 5cc6b48c2c92eea4f9503accbcd9da4b, type: 2}
+  - {fileID: 2100000, guid: d61d74e5ea513e34d9b7c7e7ec15e6fb, type: 2}
+  - {fileID: 2100000, guid: 57224fe96020fc440ae6fe1f59cad2b4, type: 2}
+  restoredLitAlpha: 1
+  hiddenLitAlpha: 0
+  immediateHideDistance: 0.3
+  fadeStartDistance: 0.7
 --- !u!1 &749378645244079403
 GameObject:
   m_ObjectHideFlags: 0
@@ -3727,8 +3768,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.074492484, y: -0.0019247105, z: 0.00014378343, w: -0.99721974}
-  m_LocalPosition: {x: 0.020154346, y: 1.9423591, z: -3.448123}
+  m_LocalRotation: {x: -0.07450934, y: -0.001928752, z: 0.00014411089, w: -0.99721843}
+  m_LocalPosition: {x: 0.020154344, y: 1.9423592, z: -3.4481235}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3765,9 +3806,9 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.1
   far clip plane: 1000
-  field of view: 59
+  field of view: 60
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -4355,7 +4396,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  - {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4564,7 +4605,7 @@ MonoBehaviour:
   OverallDivision: 9
   ropeWidth: 0.01
   radialDivision: 8
-  material: {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  material: {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   tilingPerMeter: 1.95
 --- !u!1 &2000819600026893149
 GameObject:
@@ -5012,7 +5053,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  - {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5221,7 +5262,7 @@ MonoBehaviour:
   OverallDivision: 9
   ropeWidth: 0.01
   radialDivision: 8
-  material: {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  material: {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   tilingPerMeter: 1.95
 --- !u!1 &2254148831329199080
 GameObject:
@@ -6962,7 +7003,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 3676963245011784373, guid: ac1806a62caf0b14682b1327f386b877, type: 3}
+  - {fileID: 2100000, guid: 19edcdb52f6a8be42ba477914e9a7003, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12387,7 +12428,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  - {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12596,7 +12637,7 @@ MonoBehaviour:
   OverallDivision: 9
   ropeWidth: 0.01
   radialDivision: 8
-  material: {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  material: {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   tilingPerMeter: 1.95
 --- !u!1 &5141941922336747133
 GameObject:
@@ -15519,7 +15560,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6626823234369765875}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.074509345, y: -0.0019393449, z: 0.00014490238, w: -0.99721843}
+  m_LocalRotation: {x: -0.07450934, y: -0.001928752, z: 0.0001441111, w: -0.99721843}
   m_LocalPosition: {x: 0.020154463, y: 1.9423591, z: -3.4481235}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -15550,9 +15591,9 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 59
+    FieldOfView: 60
     OrthographicSize: 5
-    NearClipPlane: 0.3
+    NearClipPlane: 0.1
     FarClipPlane: 1000
     Dutch: 0
     ModeOverride: 0
@@ -15756,7 +15797,7 @@ MonoBehaviour:
   TransparentLayers:
     serializedVersion: 2
     m_Bits: 64
-  MinimumDistanceFromTarget: 0.5
+  MinimumDistanceFromTarget: 0.1
   AvoidObstacles:
     Enabled: 1
     DistanceLimit: 0
@@ -18940,7 +18981,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  - {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -19149,7 +19190,7 @@ MonoBehaviour:
   OverallDivision: 9
   ropeWidth: 0.01
   radialDivision: 8
-  material: {fileID: 2100000, guid: 0c1cc079d7f3bc14286d291a8bd8c31b, type: 2}
+  material: {fileID: 2100000, guid: 5222fe481c4c7af4c83c4ec21412bb8f, type: 2}
   tilingPerMeter: 1.95
 --- !u!1 &7975258281889835310
 GameObject:
@@ -21146,7 +21187,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8983900087774367925}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.08229255, y: -0.0024898509, z: 0.00020559414, w: -0.9966051}
+  m_LocalRotation: {x: -0.08229256, y: -0.002489897, z: 0.00020559845, w: -0.9966051}
   m_LocalPosition: {x: 0.017789979, y: 2.0709276, z: -3.8790252}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

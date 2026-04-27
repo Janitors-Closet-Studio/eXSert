@@ -64,6 +64,10 @@ public class SceneAsset : ScriptableObject
         if (!scene.IsValid() || string.IsNullOrWhiteSpace(scene.name))
             return null;
 
+        // Unity's synthetic DontDestroyOnLoad scene does not have a SceneAsset by design.
+        if (scene.name == "DontDestroyOnLoad")
+            return null;
+
         SceneAsset asset = Resources.Load<SceneAsset>($"Scene Assets/{scene.name}");
         if (asset == null)
             Debug.LogError($"Unable to find scene asset {scene.name}. Ensure one is created in Scene/Resources/Scene Assets");
