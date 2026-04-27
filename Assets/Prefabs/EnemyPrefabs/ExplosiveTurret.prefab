@@ -507,19 +507,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.11025579
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.00000013732706
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.9939032
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.00000011476588
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -527,7 +527,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -167.34
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 50d59b97c27e4a04ead0d3d35489ca7e, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -851,15 +851,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.039
+      value: -0.7244
       objectReference: {fileID: 0}
     - target: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.015
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 602533745100996598, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.105
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 19c3c3d0528f8df4eb99ecd98355e2cf, type: 3}
       propertyPath: m_Name
@@ -1154,6 +1154,9 @@ MonoBehaviour:
   movementSFXFadeOutDuration: 0.3
   movementSFXSpeedThreshold: 0.1
   loopSFXContinuously: 1
+  _rumbleDuration: 0.15
+  _lowFrequency: 0.5
+  _highFrequency: 0.75
   behaviorProfile: {fileID: 0}
   patrolColor: {r: 0, g: 1, b: 0, a: 1}
   chaseColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
