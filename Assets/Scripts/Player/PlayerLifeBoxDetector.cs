@@ -17,10 +17,16 @@ public class PlayerLifeBoxDetector : MonoBehaviour
     protected string lifeBoxTag = "LifeBox";
 
     private PlayerHealthBarManager healthBarManager;
+    private CharacterController characterController;
+
+    private void Awake()
+    {
+        healthBarManager = GetComponent<PlayerHealthBarManager>();
+        characterController = GetComponent<CharacterController>();
+    }
 
     private void Start()
     {
-        healthBarManager = GetComponent<PlayerHealthBarManager>();
         StartCoroutine(CheckIfInLifeBox());
     }
 
@@ -29,10 +35,10 @@ public class PlayerLifeBoxDetector : MonoBehaviour
     {
         while(true)
         {
-            if (CheckIfLifeBoxesEmpty())
+            if (!IsInsideAnyLifeBox())
             {
-                TryKillPlayer();
-                yield break; // Exit the coroutine after death
+                if (TryKillPlayer())
+                    yield break; // Exit only after we successfully initiated death.
             }
             yield return new WaitForSeconds(checkInterval); // Check every half second            
         }
@@ -52,24 +58,70 @@ public class PlayerLifeBoxDetector : MonoBehaviour
         return lifeBoxes.Count == 0;
     }
 
-    private void TryKillPlayer()
+    private bool IsInsideAnyLifeBox()
+    {
+        // Remove stale tracked entries (destroyed/disabled or no longer containing the player).
+        lifeBoxes.RemoveAll(box => box == null || !box.gameObject.activeInHierarchy || !IsPlayerInsideLifeBox(box));
+
+        if (lifeBoxes.Count > 0)
+            return true;
+
+        // Fallback for builds where trigger enter/exit timing can be inconsistent.
+        LifeBox[] allLifeBoxes = FindObjectsByType<LifeBox>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        if (allLifeBoxes == null || allLifeBoxes.Length == 0)
+            return false;
+
+        for (int i = 0; i < allLifeBoxes.Length; i++)
+        {
+            LifeBox candidate = allLifeBoxes[i];
+            if (candidate == null || !IsPlayerInsideLifeBox(candidate))
+                continue;
+
+            lifeBoxes.Add(candidate);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsPlayerInsideLifeBox(LifeBox box)
+    {
+        if (box == null)
+            return false;
+
+        Collider boxCollider = box.GetComponent<Collider>();
+        if (boxCollider == null || !boxCollider.enabled)
+            return false;
+
+        Vector3 probePoint = transform.position;
+        if (characterController != null)
+            probePoint = transform.TransformPoint(characterController.center);
+
+        return boxCollider.bounds.Contains(probePoint);
+    }
+
+    private bool TryKillPlayer()
     {
         if (PlayerMovement.IsTestingOrDebugMode)
         {
             Debug.Log("[PlayerLifeBoxDetector] Testing/Debug mode enabled on PlayerMovement. Skipping out-of-lifebox death handling.");
-            return;
+            return false;
         }
 
-        if (!killPlayerWhenOutOfLifeBox) return;
+        if (!killPlayerWhenOutOfLifeBox)
+            return false;
 
         Debug.Log("Player is out of bounds of life boxes! Killing player");
 
         if (healthBarManager == null)
         {
-            return;
+            healthBarManager = GetComponent<PlayerHealthBarManager>();
+            if (healthBarManager == null)
+                return false;
         }
 
         healthBarManager.HandleDeath(false);
+        return true;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -86,7 +138,7 @@ public class PlayerLifeBoxDetector : MonoBehaviour
         if (other.CompareTag(lifeBoxTag))
         { 
             RemoveLifeBox(other.GetComponent<LifeBox>());
-            if (CheckIfLifeBoxesEmpty())
+            if (!IsInsideAnyLifeBox())
             {
                 TryKillPlayer();
             }

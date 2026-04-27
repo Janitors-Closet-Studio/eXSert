@@ -39,7 +39,7 @@ public class BrightnessOverlayController : Singleton<BrightnessOverlayController
     [Header("Slider Bounds")]
     [SerializeField]
     [Tooltip("Highest brightness slider value (used for normalization).")]
-    private float maxSliderValue = 3f;
+    private float maxSliderValue = 1f;
     [SerializeField]
     [Tooltip("Lowest brightness slider value (used for normalization).")]
     private float minSliderValue = 0f;

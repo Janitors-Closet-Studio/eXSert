@@ -42,7 +42,6 @@ public class GeneralSettings : MonoBehaviour
     [Space(20)]
 
     [SerializeField] private InputActionReference _applyAction;
-    [SerializeField] private InputActionReference _resetAction;
 
     private void OnEnable()
     {
