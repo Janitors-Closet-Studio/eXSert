@@ -13,6 +13,11 @@ public class WritingTextUI : MonoBehaviour
     private static WritingTextUI instance;
     private static List<Coroutine> activeCoroutines = new List<Coroutine>();
     private List<TextWriterSingle> textWriterSingles;
+
+    [Header("Debug")]
+    [Tooltip("Enable verbose WritingTextUI debug logs.")]
+    [SerializeField] private bool debugLogging = false;
+    internal static bool DebugLogging = false;
   
     public static List<AudioClip> keyboardTypingSounds = new List<AudioClip>();
     public List<AudioClip> keyboardTypingSoundsList = new List<AudioClip>();
@@ -20,6 +25,7 @@ public class WritingTextUI : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        DebugLogging = debugLogging;
         textWriterSingles = new List<TextWriterSingle>();
 
         foreach (AudioClip clip in keyboardTypingSoundsList)
@@ -32,7 +38,7 @@ public class WritingTextUI : MonoBehaviour
 
     public static TextWriterSingle AddWriter_Static(TextMeshProUGUI textComponent, string textToWrite, float timePerCharacter, bool invisibleCharacters, bool removeWriterBeforeAdd = true)
     {
-        Debug.Log($"[WritingTextUI] AddWriter_Static called. textComponent: {textComponent}, textToWrite: '{textToWrite}', timePerCharacter: {timePerCharacter}, invisibleCharacters: {invisibleCharacters}, removeWriterBeforeAdd: {removeWriterBeforeAdd}");
+        if (DebugLogging) Debug.Log($"[WritingTextUI] AddWriter_Static called. textComponent: {textComponent}, textToWrite: '{textToWrite}', timePerCharacter: {timePerCharacter}, invisibleCharacters: {invisibleCharacters}, removeWriterBeforeAdd: {removeWriterBeforeAdd}");
         if (removeWriterBeforeAdd)
             instance.RemoveWriter(textComponent);
 
@@ -116,7 +122,7 @@ public class WritingTextUI : MonoBehaviour
             while (Time.timeScale == 0f)
                 yield return null;
 
-            Debug.Log($"[WritingTextUI] WriteTextCoroutine started for '{fullText}'");
+            if (WritingTextUI.DebugLogging) Debug.Log($"[WritingTextUI] WriteTextCoroutine started for '{fullText}'");
 
             while (true)
             {
@@ -135,12 +141,12 @@ public class WritingTextUI : MonoBehaviour
                     PlayRandomTypingSound();
 
                     textComponent.text = textToShow;
-                    Debug.Log($"[WritingTextUI] Typing: '{textToShow}'");
+                    if (WritingTextUI.DebugLogging) Debug.Log($"[WritingTextUI] Typing: '{textToShow}'");
 
                     if (rawTextIndex >= fullText.Length)
                     {
                         isWriting = false;
-                        Debug.Log("[WritingTextUI] Typing complete.");
+                        if (WritingTextUI.DebugLogging) Debug.Log("[WritingTextUI] Typing complete.");
                         yield break;
                     }
                 }

@@ -15,6 +15,10 @@ internal class ObjectiveText : MonoBehaviour
     private string currentMessageString => currentMessage?.DisplayText ?? "";
     private bool isSubscribed;
 
+    [Header("Debug")]
+    [Tooltip("Enable verbose ObjectiveText debug logs.")]
+    [SerializeField] private bool debugLogging = false;
+
     private void OnEnable()
     {
         ObjectiveManager.OnObjectiveChanged += UpdateText;
@@ -31,7 +35,7 @@ internal class ObjectiveText : MonoBehaviour
 
     private void UpdateText(Objective newObjective)
     {
-        Debug.Log($"[HUDTextHandler] Setting new message: {newObjective}");
+        if (debugLogging) Debug.Log($"[HUDTextHandler] Setting new message: {newObjective}");
         currentMessage = newObjective;
 
         RefreshCurrentText();
