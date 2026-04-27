@@ -97,6 +97,11 @@ public class WarningButtonFunctionality : MonoBehaviour
         HideWarningUI();
     }
 
+    public void ForceHideWarningUI()
+    {
+        HideWarningUI();
+    }
+
     private void PrepareWarning(WarningAction action, GameObject textToEnable)
     {
         pendingAction = action;

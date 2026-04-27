@@ -5,6 +5,7 @@ public class ResetSettings : MonoBehaviour
     [SerializeField] private InputActionReference _resetAction;
 
     [Header("Settings Containers")]
+    [SerializeField] private GameObject settingsContainer;
     [SerializeField] private GeneralSettings generalSettingsContainer;
     [SerializeField] private GraphicsSettings graphicsSettingsContainer;
     [SerializeField] private AudioSettings audioSettingsContainer;
@@ -23,6 +24,9 @@ public class ResetSettings : MonoBehaviour
 
     public void ResetAllSettings()
     {
+        if (!settingsContainer.activeInHierarchy)
+            return;
+
         if (generalSettingsContainer != null)
             generalSettingsContainer.ResetButton();
         if (graphicsSettingsContainer != null)

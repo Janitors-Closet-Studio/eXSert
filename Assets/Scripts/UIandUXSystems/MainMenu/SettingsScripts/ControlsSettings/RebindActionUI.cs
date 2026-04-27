@@ -19,6 +19,14 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
     /// </summary>
     public class RebindActionUI : MonoBehaviour
     {
+        private static readonly string[] ReservedKeyboardPaths =
+        {
+            "<Keyboard>/w",
+            "<Keyboard>/a",
+            "<Keyboard>/s",
+            "<Keyboard>/d"
+        };
+
         /// <summary>
         /// Reference to the action that is to be rebound.
         /// </summary>
@@ -358,7 +366,7 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
         {
             m_RebindOperation?.Cancel(); // Will null out m_RebindOperation.
 
-            var binding = action.bindings[bindingIndex];
+            var originalBinding = action.bindings[bindingIndex];
 
             void CleanUp()
             {
@@ -397,7 +405,11 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
 
                         if (CheckDuplicateBindings(action, bindingIndex, allCompositeParts))
                         {
-                            ClearDuplicateBinding(action, bindingIndex);
+                            RestoreBinding(action, bindingIndex, originalBinding);
+                            UpdateBindingDisplay();
+                            action.Enable();
+                            CleanUp();
+                            return;
                         }
 
 
@@ -427,6 +439,9 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                         }
                     });
 
+            for (int i = 0; i < ReservedKeyboardPaths.Length; i++)
+                m_RebindOperation.WithControlsExcluding(ReservedKeyboardPaths[i]);
+
             // If it's a part binding, show the name of the part in the UI.
             var partName = default(string);
             if (action.bindings[bindingIndex].isPartOfComposite)
@@ -453,6 +468,24 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             m_RebindOperation.Start();
         }
 
+        private static void RestoreBinding(InputAction action, int bindingIndex, InputBinding originalBinding)
+        {
+            if (string.IsNullOrEmpty(originalBinding.overridePath)
+                && string.IsNullOrEmpty(originalBinding.overrideInteractions)
+                && string.IsNullOrEmpty(originalBinding.overrideProcessors))
+            {
+                action.RemoveBindingOverride(bindingIndex);
+                return;
+            }
+
+            action.ApplyBindingOverride(bindingIndex, new InputBinding
+            {
+                overridePath = originalBinding.overridePath,
+                overrideInteractions = originalBinding.overrideInteractions,
+                overrideProcessors = originalBinding.overrideProcessors
+            });
+        }
+
         private bool CheckDuplicateBindings(InputAction action, int bindingIndex, bool allCompositeParts = false)
         {
             InputBinding newBinding = action.bindings[bindingIndex];
@@ -473,41 +506,39 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                 if (string.IsNullOrEmpty(newPath) || string.IsNullOrEmpty(otherPath))
                     continue;
 
-                if (otherPath == newPath)
+                if (string.Equals(otherPath, newPath, StringComparison.Ordinal)
+                    && BindingsShareGroup(newBinding, otherBinding))
                 {
                     return true;
                 }
             }
 
-            // Also check bindings in other actions within the same action map
-            if (action.actionMap != null)
+            // Also check bindings across the whole action asset.
+            if (action.actionMap?.asset != null)
             {
-                int actionMapBindingIndex = -1;
-                for (int i = 0; i < action.actionMap.bindings.Count; i++)
+                var asset = action.actionMap.asset;
+                foreach (var actionMap in asset.actionMaps)
                 {
-                    if (action.actionMap.bindings[i].id == newBinding.id)
+                    foreach (var otherAction in actionMap.actions)
                     {
-                        actionMapBindingIndex = i;
-                        break;
-                    }
-                }
+                        for (int i = 0; i < otherAction.bindings.Count; i++)
+                        {
+                            InputBinding otherBinding = otherAction.bindings[i];
 
-                for (int i = 0; i < action.actionMap.bindings.Count; i++)
-                {
-                    // Skip current binding
-                    if (i == actionMapBindingIndex)
-                        continue;
+                            if (otherBinding.id == newBinding.id)
+                                continue;
 
-                    InputBinding otherBinding = action.actionMap.bindings[i];
-                    string otherPath = otherBinding.effectivePath;
+                            string otherPath = otherBinding.effectivePath;
 
-                    // Skip empty paths
-                    if (string.IsNullOrEmpty(newPath) || string.IsNullOrEmpty(otherPath))
-                        continue;
+                            if (string.IsNullOrEmpty(newPath) || string.IsNullOrEmpty(otherPath))
+                                continue;
 
-                    if (otherPath == newPath)
-                    {
-                        return true;
+                            if (string.Equals(otherPath, newPath, StringComparison.Ordinal)
+                                && BindingsShareGroup(newBinding, otherBinding))
+                            {
+                                return true;
+                            }
+                        }
                     }
                 }
             }
@@ -515,72 +546,33 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             return false;
         }
 
-        private void ClearDuplicateBinding(InputAction action, int bindingIndex)
+        private static bool BindingsShareGroup(InputBinding firstBinding, InputBinding secondBinding)
         {
-            InputBinding newBinding = action.bindings[bindingIndex];
-            string newPath = newBinding.effectivePath;
+            if (string.IsNullOrWhiteSpace(firstBinding.groups) || string.IsNullOrWhiteSpace(secondBinding.groups))
+                return true;
 
-            if (string.IsNullOrEmpty(newPath))
-                return;
+            string[] firstGroups = firstBinding.groups.Split(';');
+            string[] secondGroups = secondBinding.groups.Split(';');
 
-            // Find and clear bindings in other actions that use the same path
-            if (action.actionMap != null)
+            for (int i = 0; i < firstGroups.Length; i++)
             {
-                for (int i = 0; i < action.actionMap.bindings.Count; i++)
+                string firstGroup = firstGroups[i].Trim();
+                if (string.IsNullOrEmpty(firstGroup))
+                    continue;
+
+                for (int j = 0; j < secondGroups.Length; j++)
                 {
-                    InputBinding otherBinding = action.actionMap.bindings[i];
-                    
-                    // Skip the binding we just changed
-                    if (otherBinding.id == newBinding.id)
+                    string secondGroup = secondGroups[j].Trim();
+                    if (string.IsNullOrEmpty(secondGroup))
                         continue;
 
-                    string otherPath = otherBinding.effectivePath;
-                    
-                    if (otherPath == newPath)
-                    {
-                        // Find the action that owns this binding
-                        var otherAction = action.actionMap.FindAction(otherBinding.action);
-                        if (otherAction != null)
-                        {
-                            // Find the binding index in that action
-                            int otherBindingIndex = otherAction.bindings.IndexOf(x => x.id == otherBinding.id);
-                            if (otherBindingIndex >= 0)
-                            {
-                                // Apply an empty binding override to show "-" in the UI
-                                otherAction.ApplyBindingOverride(otherBindingIndex, "");
-                                
-                                // Force update all RebindActionUI components that display this action
-                                UpdateRebindUIForAction(otherAction);
-                            }
-                        }
-                    }
+                    if (string.Equals(firstGroup, secondGroup, StringComparison.OrdinalIgnoreCase))
+                        return true;
                 }
             }
-        }
-        private void UpdateRebindUIForAction(InputAction targetAction)
-        {
-            if (s_RebindActionUIs == null)
-                return;
 
-            for (int i = 0; i < s_RebindActionUIs.Count; i++)
-            {
-                var ui = s_RebindActionUIs[i];
-                var referencedAction = ui.actionReference?.action;
-                
-                if (referencedAction == targetAction)
-                {
-                    // Disable and re-enable the action to force binding re-evaluation
-                    bool wasEnabled = referencedAction.enabled;
-                    referencedAction.Disable();
-                    
-                    ui.UpdateBindingDisplay();
-                    
-                    if (wasEnabled)
-                        referencedAction.Enable();
-                }
-            }
+            return false;
         }
-
         protected void OnEnable()
         {
             if (s_RebindActionUIs == null)

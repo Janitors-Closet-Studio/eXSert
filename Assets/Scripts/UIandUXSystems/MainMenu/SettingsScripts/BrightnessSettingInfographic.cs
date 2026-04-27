@@ -13,14 +13,34 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     [SerializeField] private Color32 infographicBaseColor = new Color32(63, 63, 63, 255);
     [SerializeField] private float brightnessMin = 0f;
     [SerializeField] private float brightnessMax = 1f;
+    [SerializeField] private RectTransform hoverTargetOverride;
+    [SerializeField] private float gearRotationDegreesPerSecond = 900f;
     private float _previousSliderValue;
     private bool isMainMenuScene;
     private bool visualsVisible;
     private bool isSelected;
+    private bool isHovered;
+    private bool hasExternalSelection;
+    private RectTransform sliderRect;
+    private RectTransform parentRowRect;
+    private int hoverSourceCount;
+    private int selectionSourceCount;
+    private float pendingRotationDegrees;
+    private Coroutine rotationRoutine;
+    private UIHoverRelay sliderHoverRelay;
+    private UIHoverRelay parentHoverRelay;
 
     private void Start() 
     {
         isMainMenuScene = SceneManager.GetActiveScene().name == "MainMenu";
+        sliderRect = brightnessSlider != null ? brightnessSlider.transform as RectTransform : null;
+        parentRowRect = hoverTargetOverride != null
+            ? hoverTargetOverride
+            : (brightnessSlider != null ? brightnessSlider.transform.parent as RectTransform : null);
+
+        AttachHoverRelay(sliderRect, ref sliderHoverRelay);
+        if (parentRowRect != sliderRect)
+            AttachHoverRelay(parentRowRect, ref parentHoverRelay);
 
         float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
         _previousSliderValue = initialBrightness; // Initialize here
@@ -34,46 +54,133 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        Debug.Log("Pointer entered brightness infographic");
-        SetVisualsVisible(true, 0.25f);
-
-        if (!isMainMenuScene)
-        {
-            // In player scene, don't close other menus
-            return;
-        }
-        else
-        {
-            FadeOutTopMenuIfItIsASubMenu();
-        }
+        SetHoverSourceState(true);
     }
 
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        Debug.Log("Pointer exited brightness infographic");
-        SetVisualsVisible(false, 0.25f);
+        SetHoverSourceState(false);
     }
 
     public void OnSelect(BaseEventData eventData)
     {
-        // In player scene, selection can stick and never deselect. Hover should own visibility there.
-        if (!isMainMenuScene)
-            return;
-
         isSelected = true;
         SetVisualsVisible(true, 0.25f);
 
-        FadeOutTopMenuIfItIsASubMenu();
+        if (isMainMenuScene)
+            FadeOutTopMenuIfItIsASubMenu();
     }
 
     public void OnDeselect(BaseEventData eventData)
     {
-        if (!isMainMenuScene)
+        isSelected = false;
+        SetVisualsVisible(isHovered || hasExternalSelection, 0.25f);
+    }
+
+    private void OnDisable()
+    {
+        if (brightnessSlider != null)
+            brightnessSlider.onValueChanged.RemoveListener(UpdateBrightnessInfographic);
+
+        DetachHoverRelay(ref sliderHoverRelay);
+        DetachHoverRelay(ref parentHoverRelay);
+
+        hoverSourceCount = 0;
+        selectionSourceCount = 0;
+        isHovered = false;
+        hasExternalSelection = false;
+        pendingRotationDegrees = 0f;
+
+        if (rotationRoutine != null)
+        {
+            StopCoroutine(rotationRoutine);
+            rotationRoutine = null;
+        }
+    }
+
+    private void AttachHoverRelay(RectTransform target, ref UIHoverRelay relay)
+    {
+        if (target == null)
             return;
 
-        isSelected = false;
-        SetVisualsVisible(false, 0.25f);
+        relay = target.GetComponent<UIHoverRelay>();
+        if (relay == null)
+            relay = target.gameObject.AddComponent<UIHoverRelay>();
+
+        relay.HoverChanged -= OnExternalHoverChanged;
+        relay.HoverChanged += OnExternalHoverChanged;
+        relay.SelectionChanged -= OnExternalSelectionChanged;
+        relay.SelectionChanged += OnExternalSelectionChanged;
+    }
+
+    private void DetachHoverRelay(ref UIHoverRelay relay)
+    {
+        if (relay == null)
+            return;
+
+        relay.HoverChanged -= OnExternalHoverChanged;
+        relay.SelectionChanged -= OnExternalSelectionChanged;
+        relay = null;
+    }
+
+    private void OnExternalHoverChanged(bool isEntered)
+    {
+        SetHoverSourceState(isEntered);
+    }
+
+    private void OnExternalSelectionChanged(bool isSelectedNow)
+    {
+        if (isSelectedNow)
+            selectionSourceCount++;
+        else
+            selectionSourceCount = Mathf.Max(0, selectionSourceCount - 1);
+
+        bool selectedNow = selectionSourceCount > 0;
+        if (hasExternalSelection == selectedNow)
+            return;
+
+        hasExternalSelection = selectedNow;
+
+        if (hasExternalSelection)
+        {
+            SetVisualsVisible(true, 0.25f);
+            if (isMainMenuScene)
+                FadeOutTopMenuIfItIsASubMenu();
+            return;
+        }
+
+        if (!isSelected && !isHovered)
+            SetVisualsVisible(false, 0.25f);
+    }
+
+    private void SetHoverSourceState(bool isEntered)
+    {
+        if (isEntered)
+            hoverSourceCount++;
+        else
+            hoverSourceCount = Mathf.Max(0, hoverSourceCount - 1);
+
+        bool shouldBeHovered = hoverSourceCount > 0;
+        if (isHovered == shouldBeHovered)
+            return;
+
+        isHovered = shouldBeHovered;
+        ApplyHoverState(isHovered);
+    }
+
+    private void ApplyHoverState(bool hovered)
+    {
+        if (hovered)
+        {
+            SetVisualsVisible(true, 0.25f);
+            if (isMainMenuScene)
+                FadeOutTopMenuIfItIsASubMenu();
+            return;
+        }
+
+        if (!isSelected && !hasExternalSelection)
+            SetVisualsVisible(false, 0.25f);
     }
 
     private void SetVisualsVisible(bool visible, float duration)
@@ -202,19 +309,38 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
         float delta = value - _previousSliderValue;
         float rotationAmount = delta * 360f; // Adjust 360 to change sensitivity
 
-        RotateGear(darkestImage, rotationAmount);
-        RotateGear(midBrightnessImage, rotationAmount);
-        RotateGear(brightestImage, rotationAmount);
+        pendingRotationDegrees += -rotationAmount;
+        if (rotationRoutine == null)
+            rotationRoutine = StartCoroutine(ApplyPendingRotation());
 
 
         _previousSliderValue = value;
     }
 
-    private void RotateGear(Image img, float amount) {
-        if (img != null) {
-            // Rotates the object on the Z axis relative to its current rotation
-            img.transform.Rotate(Vector3.forward, -amount);
+    private IEnumerator ApplyPendingRotation()
+    {
+        while (Mathf.Abs(pendingRotationDegrees) > 0.01f)
+        {
+            float maxStep = Mathf.Max(60f, gearRotationDegreesPerSecond) * Time.unscaledDeltaTime;
+            float step = Mathf.Clamp(pendingRotationDegrees, -maxStep, maxStep);
+            pendingRotationDegrees -= step;
+
+            RotateGearByStep(darkestImage, step);
+            RotateGearByStep(midBrightnessImage, step);
+            RotateGearByStep(brightestImage, step);
+            yield return null;
         }
+
+        pendingRotationDegrees = 0f;
+        rotationRoutine = null;
+    }
+
+    private static void RotateGearByStep(Image img, float step)
+    {
+        if (img == null)
+            return;
+
+        img.transform.Rotate(Vector3.forward, step);
     }
 
     public void OnSliderMove(float newValue)
@@ -235,5 +361,31 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
         Color color = infographicBaseColor;
         color.a = Mathf.Clamp01(alpha);
         return color;
+    }
+}
+
+public sealed class UIHoverRelay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+{
+    public event System.Action<bool> HoverChanged;
+    public event System.Action<bool> SelectionChanged;
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        HoverChanged?.Invoke(true);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        HoverChanged?.Invoke(false);
+    }
+
+    public void OnSelect(BaseEventData eventData)
+    {
+        SelectionChanged?.Invoke(true);
+    }
+
+    public void OnDeselect(BaseEventData eventData)
+    {
+        SelectionChanged?.Invoke(false);
     }
 }

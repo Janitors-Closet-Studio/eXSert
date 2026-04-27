@@ -131,14 +131,25 @@ public class MusicBox : MonoBehaviour
     {
         if (musicSource == null)
             yield break;
-        float t = 0f;
-        while (t < fadeDuration)
+
+        float duration = Mathf.Max(0.01f, fadeDuration);
+        float startVolume = musicSource.volume;
+        float targetVolume = cachedMusicVolume;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
         {
-            t += Time.deltaTime;
-            musicSource.volume = Mathf.MoveTowards(musicSource.volume, cachedMusicVolume, cachedMusicVolume * (Time.deltaTime / fadeDuration));
+            if (musicSource == null)
+                yield break;
+
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            musicSource.volume = Mathf.Lerp(startVolume, targetVolume, t);
             yield return null;
         }
-        musicSource.volume = cachedMusicVolume;
+
+        if (musicSource != null)
+            musicSource.volume = targetVolume;
     }
 
     private void PlayAmbience()
@@ -172,15 +183,32 @@ public class MusicBox : MonoBehaviour
         if (musicSource == null || !musicSource.isPlaying)
             yield break;
 
-        float t = 0f;
-        while (t < fadeDuration)
+        float duration = Mathf.Max(0.01f, fadeDuration);
+        float startVolume = musicSource.volume;
+        AudioClip fadingClip = musicSource.clip;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
         {
-            t += Time.deltaTime;
-            musicSource.volume = Mathf.MoveTowards(musicSource.volume, 0, cachedMusicVolume * (Time.deltaTime / fadeDuration));
+            // If another MusicBox took over this shared source, do not stop its audio.
+            if (musicSource == null || musicSource.clip != fadingClip)
+            {
+                fadeOutMusicRoutine = null;
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            musicSource.volume = Mathf.Lerp(startVolume, 0f, t);
             yield return null;
         }
-        musicSource.Stop();
-        musicSource.volume = cachedMusicVolume; // Reset volume for next time
+
+        if (musicSource != null && musicSource.clip == fadingClip)
+        {
+            musicSource.Stop();
+            musicSource.volume = cachedMusicVolume; // Reset volume for next time
+        }
+
         fadeOutMusicRoutine = null;
     }
 
@@ -188,15 +216,33 @@ public class MusicBox : MonoBehaviour
     {
         if (ambienceSource == null || !ambienceSource.isPlaying)
             yield break;
-        float t = 0f;
-        while (t < fadeDuration)
+
+        float duration = Mathf.Max(0.01f, fadeDuration);
+        float startVolume = ambienceSource.volume;
+        AudioClip fadingClip = ambienceSource.clip;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
         {
-            t += Time.deltaTime;
-            ambienceSource.volume = Mathf.MoveTowards(ambienceSource.volume, 0, cachedAmbienceVolume * (Time.deltaTime / fadeDuration));
+            // If another MusicBox took over this shared source, do not stop its audio.
+            if (ambienceSource == null || ambienceSource.clip != fadingClip)
+            {
+                fadeOutAmbienceRoutine = null;
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            ambienceSource.volume = Mathf.Lerp(startVolume, 0f, t);
             yield return null;
         }
-        ambienceSource.Stop();
-        ambienceSource.volume = cachedAmbienceVolume; // Reset volume for next time
+
+        if (ambienceSource != null && ambienceSource.clip == fadingClip)
+        {
+            ambienceSource.Stop();
+            ambienceSource.volume = cachedAmbienceVolume; // Reset volume for next time
+        }
+
         fadeOutAmbienceRoutine = null;
     }
 
