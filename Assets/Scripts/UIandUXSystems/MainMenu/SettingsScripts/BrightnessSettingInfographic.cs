@@ -22,7 +22,7 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     {
         isMainMenuScene = SceneManager.GetActiveScene().name == "MainMenu";
 
-        float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
+        float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 1.25f);
         _previousSliderValue = initialBrightness; // Initialize here
     
         if (brightnessSlider != null) 
