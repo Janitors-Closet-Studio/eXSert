@@ -10,6 +10,8 @@ namespace Progression
     [DefaultExecutionOrder(10)] // Ensure this executes after the ProgressionManager, which may rely on it to register itself in Awake
     public abstract class ProgressionZone : MonoBehaviour
     {
+        public event Action<ProgressionZone, bool> ZoneEnabledStateChanged;
+
         #region Inspector Setup
         [Header("Progression Zone Settings")]
         [SerializeField, Tooltip("Whether the zone is enabled at the start of the scene. If false, the player will not trigger the zone until it is enabled by another encounter.")]
@@ -50,6 +52,8 @@ namespace Progression
         /// </summary>
         protected bool zoneEnabled = true;
 
+        public bool IsZoneEnabled => zoneEnabled;
+
         /// <summary>
         /// Indicates whether the player is currently within the encounter zone
         /// </summary>
@@ -88,6 +92,7 @@ namespace Progression
                 return;
             }
             UpdateCollider();
+            ZoneEnabledStateChanged?.Invoke(this, true);
 
             // If the player is already in the zone when it gets enabled, we need to manually trigger the enter logic since OnTriggerEnter won't be called until they exit and re-enter.
             if (zoneActive) PlayerEnteredZone();
@@ -106,6 +111,7 @@ namespace Progression
                 return;
             }
             UpdateCollider();
+            ZoneEnabledStateChanged?.Invoke(this, false);
         }
 
         private void UpdateCollider() => progressionCollider.enabled = zoneEnabled;

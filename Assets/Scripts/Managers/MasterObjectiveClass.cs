@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using Progression;
+using Progression.Checkpoints;
+using Progression.Encounters;
 using Singletons;
 using UnityEngine;
 
@@ -13,6 +16,10 @@ public enum ObjectiveEntryType
 public class ObjectiveData
 {
     public InteractionManager interactionToActivate;
+    [Tooltip("Optional source that shows this objective when it becomes active. Supports InteractionManager, ProgressionZone/Encounter, and Wave.")]
+    public MonoBehaviour triggerSource;
+    [Tooltip("When the trigger source is a Wave, show this objective after the enemy wave completes instead of when the wave starts.")]
+    public bool triggerOnWaveCompletion;
     public string objectiveID;
     [TextArea] public string objectiveText;
     public ObjectiveEntryType objectiveType = ObjectiveEntryType.Main;
@@ -38,6 +45,7 @@ public class NoticeData
 public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 {
     [SerializeField] private NoticeManager noticeManager;
+    private bool subscribedToCheckpointTriggers;
 
     [Header("Objectives")]
     [SerializeField] public List<ObjectiveData> objectives = new List<ObjectiveData>();
@@ -65,6 +73,195 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     private void Start()
     {
         CorrectIDsIfIsEntry();
+        SubscribeObjectiveTriggers();
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeObjectiveTriggers();
+    }
+
+    private MonoBehaviour GetObjectiveTriggerSource(ObjectiveData objective)
+    {
+        if (objective == null)
+            return null;
+
+        return objective.triggerSource != null
+            ? objective.triggerSource
+            : objective.interactionToActivate;
+    }
+
+    private static string BuildGeneratedObjectiveID(MonoBehaviour triggerSource)
+    {
+        if (triggerSource == null)
+            return string.Empty;
+
+        return NormalizeNoticeID($"{triggerSource.GetType().Name}_{triggerSource.gameObject.name}");
+    }
+
+    private static string ResolveObjectiveID(string objectiveID, InteractionManager interaction, MonoBehaviour triggerSource)
+    {
+        if (!string.IsNullOrWhiteSpace(objectiveID))
+            return NormalizeNoticeID(objectiveID);
+
+        if (interaction != null)
+            return NormalizeNoticeID(interaction.interactId);
+
+        if (triggerSource is InteractionManager triggerInteraction)
+            return NormalizeNoticeID(triggerInteraction.interactId);
+
+        return BuildGeneratedObjectiveID(triggerSource);
+    }
+
+    private void SubscribeObjectiveTriggers()
+    {
+        foreach (ObjectiveData objective in objectives)
+        {
+            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+            switch (triggerSource)
+            {
+                case CheckpointBehavior:
+                    EnsureCheckpointTriggerSubscription();
+                    break;
+
+                case InteractionManager interaction:
+                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    break;
+
+                case ProgressionZone zone:
+                    zone.ZoneEnabledStateChanged -= HandleZoneTriggerStateChanged;
+                    zone.ZoneEnabledStateChanged += HandleZoneTriggerStateChanged;
+                    break;
+
+                case Wave wave:
+                    wave.OnWaveStarted -= HandleWaveStarted;
+                    wave.OnWaveStarted += HandleWaveStarted;
+                    wave.OnWaveComplete -= HandleWaveCompleted;
+                    wave.OnWaveComplete += HandleWaveCompleted;
+                    break;
+            }
+        }
+    }
+
+    private void UnsubscribeObjectiveTriggers()
+    {
+        foreach (ObjectiveData objective in objectives)
+        {
+            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+            switch (triggerSource)
+            {
+                case CheckpointBehavior:
+                    RemoveCheckpointTriggerSubscription();
+                    break;
+
+                case InteractionManager interaction:
+                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    break;
+
+                case ProgressionZone zone:
+                    zone.ZoneEnabledStateChanged -= HandleZoneTriggerStateChanged;
+                    break;
+
+                case Wave wave:
+                    wave.OnWaveStarted -= HandleWaveStarted;
+                    wave.OnWaveComplete -= HandleWaveCompleted;
+                    break;
+            }
+        }
+    }
+
+    private void EnsureCheckpointTriggerSubscription()
+    {
+        if (subscribedToCheckpointTriggers)
+            return;
+
+        CheckpointBehavior.OnCheckpointTriggered -= HandleCheckpointTriggered;
+        CheckpointBehavior.OnCheckpointTriggered += HandleCheckpointTriggered;
+        subscribedToCheckpointTriggers = true;
+    }
+
+    private void RemoveCheckpointTriggerSubscription()
+    {
+        if (!subscribedToCheckpointTriggers)
+            return;
+
+        CheckpointBehavior.OnCheckpointTriggered -= HandleCheckpointTriggered;
+        subscribedToCheckpointTriggers = false;
+    }
+
+    private void HandleInteractionTriggerStateChanged(InteractionManager interaction, bool isEnabled)
+    {
+        if (isEnabled)
+            ShowObjectivesForTrigger(interaction);
+    }
+
+    private void HandleZoneTriggerStateChanged(ProgressionZone zone, bool isEnabled)
+    {
+        if (isEnabled)
+            ShowObjectivesForTrigger(zone);
+    }
+
+    private void HandleWaveStarted(Wave wave)
+    {
+        ShowObjectivesForWave(wave, triggerOnCompletion: false);
+    }
+
+    private void HandleWaveCompleted(Wave wave)
+    {
+        ShowObjectivesForWave(wave, triggerOnCompletion: true);
+    }
+
+    private void HandleCheckpointTriggered(CheckpointBehavior checkpoint)
+    {
+        ShowObjectivesForTrigger(checkpoint);
+    }
+
+    private void ShowObjectivesForWave(Wave wave, bool triggerOnCompletion)
+    {
+        if (wave == null)
+            return;
+
+        foreach (ObjectiveData objective in objectives)
+        {
+            if (objective == null || GetObjectiveTriggerSource(objective) != wave)
+                continue;
+
+            if (objective.triggerOnWaveCompletion != triggerOnCompletion)
+                continue;
+
+            string effectiveObjectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, wave);
+            if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
+            {
+                Debug.LogWarning($"[MasterObjectiveClass] Objective triggered by {wave.name} has no valid objective ID.");
+                continue;
+            }
+
+            objective.objectiveID = effectiveObjectiveID;
+            ShowObjective(effectiveObjectiveID);
+        }
+    }
+
+    private void ShowObjectivesForTrigger(MonoBehaviour triggerSource)
+    {
+        if (triggerSource == null)
+            return;
+
+        foreach (ObjectiveData objective in objectives)
+        {
+            if (objective == null || GetObjectiveTriggerSource(objective) != triggerSource)
+                continue;
+
+            string effectiveObjectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, triggerSource);
+            if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
+            {
+                Debug.LogWarning($"[MasterObjectiveClass] Objective triggered by {triggerSource.name} has no valid objective ID.");
+                continue;
+            }
+
+            objective.objectiveID = effectiveObjectiveID;
+            ShowObjective(effectiveObjectiveID);
+        }
     }
 
     private ObjectiveData FindIdInObjectives(string idToFind)
@@ -157,10 +354,16 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     {
         foreach (ObjectiveData objective in objectives)
         {
+            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+
             if (objective?.interactionToActivate is NavigationEntryInteraction)
             {
                 objective.objectiveID = NormalizeNoticeID(objective.interactionToActivate.interactId);
                 Debug.Log($"Corrected objective ID for entry interaction {objective.interactionToActivate.interactId}");
+            }
+            else if (objective != null && string.IsNullOrWhiteSpace(objective.objectiveID))
+            {
+                objective.objectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, triggerSource);
             }
         }
 
@@ -242,13 +445,24 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         bool disableInteraction = false,
         InteractionManager interactionToDisable = null)
     {
-        string effectiveObjectiveID = NormalizeNoticeID(!string.IsNullOrWhiteSpace(objectiveID)
-            ? objectiveID
-            : interaction != null ? interaction.interactId : string.Empty);
+        CreateAndShowObjective(interaction, interaction, objectiveID, objectiveText, objectiveType, priority, disableInteraction, interactionToDisable);
+    }
+
+    public void CreateAndShowObjective(
+        InteractionManager interaction,
+        MonoBehaviour triggerSource,
+        string objectiveID,
+        string objectiveText,
+        ObjectiveEntryType objectiveType = ObjectiveEntryType.Main,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        string effectiveObjectiveID = ResolveObjectiveID(objectiveID, interaction, triggerSource);
 
         if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
         {
-            Debug.LogWarning("[MasterObjectiveClass] CreateAndShowObjective called without a valid objectiveID or interaction.interactId.");
+            Debug.LogWarning("[MasterObjectiveClass] CreateAndShowObjective called without a valid objectiveID, interaction.interactId, or trigger source.");
             return;
         }
 
@@ -257,6 +471,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         {
             Debug.Log($"Objective with ID {effectiveObjectiveID} already exists, updating and showing.");
             existingObjective.interactionToActivate = interaction;
+            existingObjective.triggerSource = triggerSource;
             existingObjective.objectiveID = effectiveObjectiveID;
             existingObjective.objectiveText = objectiveText;
             existingObjective.objectiveType = objectiveType;
@@ -272,6 +487,8 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         ObjectiveData newObjective = new ObjectiveData
         {
             interactionToActivate = interaction,
+            triggerSource = triggerSource,
+            triggerOnWaveCompletion = existingObjective?.triggerOnWaveCompletion ?? false,
             objectiveID = effectiveObjectiveID,
             objectiveText = objectiveText,
             objectiveType = objectiveType,
@@ -299,6 +516,18 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         CreateAndShowObjective(interaction, objectiveID, objectiveText, ObjectiveEntryType.Main, priority, disableInteraction, interactionToDisable);
     }
 
+    public void CreateAndShowMainObjective(
+        InteractionManager interaction,
+        MonoBehaviour triggerSource,
+        string objectiveID,
+        string objectiveText,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        CreateAndShowObjective(interaction, triggerSource, objectiveID, objectiveText, ObjectiveEntryType.Main, priority, disableInteraction, interactionToDisable);
+    }
+
     public void CreateAndShowSubObjective(
         InteractionManager interaction,
         string objectiveID,
@@ -308,6 +537,18 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         InteractionManager interactionToDisable = null)
     {
         CreateAndShowObjective(interaction, objectiveID, objectiveText, ObjectiveEntryType.Sub, priority, disableInteraction, interactionToDisable);
+    }
+
+    public void CreateAndShowSubObjective(
+        InteractionManager interaction,
+        MonoBehaviour triggerSource,
+        string objectiveID,
+        string objectiveText,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        CreateAndShowObjective(interaction, triggerSource, objectiveID, objectiveText, ObjectiveEntryType.Sub, priority, disableInteraction, interactionToDisable);
     }
 
     public void CompleteObjective(string objectiveID)

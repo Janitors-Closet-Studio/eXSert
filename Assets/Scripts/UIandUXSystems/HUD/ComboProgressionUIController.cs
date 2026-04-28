@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Utilities.Combat.Attacks;
 
+[RequireComponent(typeof(CanvasGroup))]
 public class ComboProgressionUIController : MonoBehaviour
 {
     [Serializable]
@@ -37,6 +37,7 @@ public class ComboProgressionUIController : MonoBehaviour
 
     [Header("Timing")]
     [SerializeField, Range(0.1f, 5f)] private float postComboHideDelay = 1f;
+    [SerializeField, Range(0.05f, 2f)] private float hideFadeDuration = 0.25f;
 
     [Header("Pop Animation")]
     [SerializeField, Range(1f, 2f)] private float popScale = 1.15f;
@@ -53,11 +54,14 @@ public class ComboProgressionUIController : MonoBehaviour
     private readonly Dictionary<(ComboStep, ComboStep), GameObject> arrowLookup = new Dictionary<(ComboStep, ComboStep), GameObject>();
     private readonly Dictionary<GameObject, Vector3> baseScales = new Dictionary<GameObject, Vector3>();
     private readonly Dictionary<GameObject, Coroutine> popRoutines = new Dictionary<GameObject, Coroutine>();
+    private CanvasGroup canvasGroup;
     private Coroutine hideCoroutine;
 
     private void Awake()
     {
+        canvasGroup = GetComponent<CanvasGroup>();
         BuildLookups();
+        SetCanvasAlpha(0f);
     }
 
     private void OnEnable()
@@ -68,7 +72,6 @@ public class ComboProgressionUIController : MonoBehaviour
             return;
         }
 
-        PlayerAttackManager.OnAttack += HandleAttack;
         if (tierComboManager == null)
             tierComboManager = FindFirstObjectByType<TierComboManager>(FindObjectsInactive.Include);
 
@@ -82,11 +85,22 @@ public class ComboProgressionUIController : MonoBehaviour
 
     private void OnDisable()
     {
-        PlayerAttackManager.OnAttack -= HandleAttack;
         if (tierComboManager != null)
         {
             tierComboManager.ComboResetDetailed -= HandleComboResetDetailed;
         }
+    }
+
+    private void Update()
+    {
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+            return;
+
+        if (InputReader.LightAttackTriggered)
+            HandleAttackInput(isHeavyAttack: false);
+
+        if (InputReader.HeavyAttackTriggered)
+            HandleAttackInput(isHeavyAttack: true);
     }
 
     private void BuildLookups()
@@ -112,46 +126,46 @@ public class ComboProgressionUIController : MonoBehaviour
         }
     }
 
-    private void HandleAttack(PlayerAttack attack)
+    private void HandleAttackInput(bool isHeavyAttack)
     {
-        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
-            return;
-
-        if (attack == null)
-            return;
-
         CancelHideTimer();
 
-        if (!TryResolveStep(attack, out ComboStep step))
+        if (!TryResolveStep(isHeavyAttack, out ComboStep step))
             return;
+
+        ShowCanvasImmediate();
 
         if (progression.Count > 0 && IsTerminal(progression[progression.Count - 1]))
         {
             ResetDisplay();
+            ShowCanvasImmediate();
         }
 
         if (progression.Count == 0)
         {
             ShowStep(step);
             progression.Add(step);
+            StartHideTimer();
             return;
         }
 
         ComboStep previous = progression[progression.Count - 1];
         if (previous == step)
+        {
+            StartHideTimer();
             return;
+        }
 
         ShowStep(step);
         ShowArrow(previous, step);
         progression.Add(step);
 
-        if (IsTerminal(step))
-            StartHideTimer();
+        StartHideTimer();
     }
 
     private void HandleComboResetDetailed(TierComboManager.ComboResetReason reason)
     {
-        if (reason == TierComboManager.ComboResetReason.Finisher)
+        if (progression.Count > 0 || GetCurrentAlpha() > 0f)
         {
             StartHideTimer();
             return;
@@ -169,6 +183,8 @@ public class ComboProgressionUIController : MonoBehaviour
 
         foreach (var entry in arrowLookup)
             entry.Value.SetActive(false);
+
+        SetCanvasAlpha(0f);
     }
 
     private void StartHideTimer()
@@ -194,9 +210,46 @@ public class ComboProgressionUIController : MonoBehaviour
 
     private System.Collections.IEnumerator HideAfterDelay()
     {
-        yield return new WaitForSeconds(postComboHideDelay);
+        float delayElapsed = 0f;
+        while (delayElapsed < postComboHideDelay)
+        {
+            delayElapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        float startAlpha = GetCurrentAlpha();
+        float fadeDuration = Mathf.Max(0.01f, hideFadeDuration);
+        float fadeElapsed = 0f;
+
+        while (fadeElapsed < fadeDuration)
+        {
+            fadeElapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(fadeElapsed / fadeDuration);
+            SetCanvasAlpha(Mathf.Lerp(startAlpha, 0f, t));
+            yield return null;
+        }
+
+        SetCanvasAlpha(0f);
         hideCoroutine = null;
         ResetDisplay();
+    }
+
+    private void ShowCanvasImmediate()
+    {
+        SetCanvasAlpha(1f);
+    }
+
+    private float GetCurrentAlpha()
+    {
+        return canvasGroup != null ? canvasGroup.alpha : 1f;
+    }
+
+    private void SetCanvasAlpha(float alpha)
+    {
+        if (canvasGroup == null)
+            return;
+
+        canvasGroup.alpha = Mathf.Clamp01(alpha);
     }
 
     private void ShowStep(ComboStep step)
@@ -265,45 +318,42 @@ public class ComboProgressionUIController : MonoBehaviour
         return step == ComboStep.S5 || step == ComboStep.A3;
     }
 
-    private static bool TryResolveStep(PlayerAttack attack, out ComboStep step)
+    private bool TryResolveStep(bool isHeavyAttack, out ComboStep step)
     {
         step = default;
 
-        if (attack == null)
+        if (progression.Count == 0)
+        {
+            step = isHeavyAttack ? ComboStep.A1 : ComboStep.S1;
+            return true;
+        }
+
+        ComboStep previous = progression[progression.Count - 1];
+        string requestedPrefix = isHeavyAttack ? "A" : "S";
+        List<ComboStep> candidates = GetNextSteps(previous, requestedPrefix);
+        if (candidates.Count == 0)
             return false;
 
-        string attackId = attack.attackId ?? string.Empty;
-        attackId = attackId.Trim();
-
-        if (attackId.StartsWith("SX", StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseStage(attackId, 2, out int stage))
-            {
-                step = (ComboStep)Enum.Parse(typeof(ComboStep), $"S{Mathf.Clamp(stage, 1, 5)}");
-                return true;
-            }
-        }
-
-        if (attackId.StartsWith("AY", StringComparison.OrdinalIgnoreCase)
-            || attackId.StartsWith("AX", StringComparison.OrdinalIgnoreCase))
-        {
-            if (TryParseStage(attackId, 2, out int stage))
-            {
-                step = (ComboStep)Enum.Parse(typeof(ComboStep), $"A{Mathf.Clamp(stage, 1, 3)}");
-                return true;
-            }
-        }
-
-        return false;
+        step = candidates[0];
+        return true;
     }
 
-    private static bool TryParseStage(string attackId, int startIndex, out int stage)
+    private List<ComboStep> GetNextSteps(ComboStep from, string stepPrefix)
     {
-        stage = 0;
-        if (attackId.Length <= startIndex)
-            return false;
+        List<ComboStep> results = new List<ComboStep>();
+        foreach (var entry in arrowLookup)
+        {
+            if (entry.Key.Item1 != from)
+                continue;
 
-        string digits = attackId.Substring(startIndex);
-        return int.TryParse(digits, out stage);
+            ComboStep candidate = entry.Key.Item2;
+            if (!candidate.ToString().StartsWith(stepPrefix, StringComparison.Ordinal))
+                continue;
+
+            results.Add(candidate);
+        }
+
+        results.Sort(static (left, right) => string.CompareOrdinal(left.ToString(), right.ToString()));
+        return results;
     }
 }
