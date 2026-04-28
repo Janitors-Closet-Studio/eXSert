@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
 
 public class CargoBayCrane : CranePuzzle, IConsoleSelectable
 {
@@ -105,6 +106,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     internal GameObject targetObject;
     private GameObject activeTargetDropZone;
     private LineRenderer magnetIndicator;
+    private Material magnetIndicatorMaterial;
     private bool indicatorActive;
     private int activeConsoleIndex;
     private readonly bool[] consoleCompleted = new bool[2];
@@ -832,6 +834,8 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
             return;
 
         consoleCompleted[activeConsoleIndex] = true;
+        NotifyPuzzleCompleted();
+        activeConsoleInteraction?.NotifyInteractionCompleted();
         activeConsoleInteraction?.SetInteractionEnabled(false);
     }
 
@@ -1187,13 +1191,35 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         lineObj.transform.localPosition = Vector3.zero;
         lineObj.transform.localRotation = Quaternion.identity;
         lineObj.transform.localScale = Vector3.one;
+        lineObj.layer = magnetExtender.layer;
 
         magnetIndicator = lineObj.AddComponent<LineRenderer>();
         magnetIndicator.useWorldSpace = true;
         magnetIndicator.positionCount = 2;
         magnetIndicator.startWidth = Mathf.Max(0.001f, indicatorWidth);
         magnetIndicator.endWidth = Mathf.Max(0.001f, indicatorWidth);
-        magnetIndicator.material = new Material(Shader.Find("Sprites/Default"));
+
+        Shader indicatorShader = Shader.Find("Legacy Shaders/Particles/Alpha Blended");
+        if (indicatorShader == null)
+            indicatorShader = Shader.Find("Particles/Standard Unlit");
+        if (indicatorShader == null)
+            indicatorShader = Shader.Find("Unlit/Transparent");
+        if (indicatorShader == null)
+            indicatorShader = Shader.Find("Sprites/Default");
+
+        magnetIndicatorMaterial = new Material(indicatorShader);
+        magnetIndicator.material = magnetIndicatorMaterial;
+        magnetIndicator.textureMode = LineTextureMode.Tile;
+        magnetIndicator.alignment = LineAlignment.View;
+        magnetIndicator.numCapVertices = 4;
+        magnetIndicator.shadowCastingMode = ShadowCastingMode.Off;
+        magnetIndicator.receiveShadows = false;
+        if (magnetIndicatorMaterial != null)
+        {
+            magnetIndicatorMaterial.renderQueue = (int)RenderQueue.Transparent;
+            ApplyIndicatorMaterialColor(indicatorColor);
+        }
+
         magnetIndicator.startColor = indicatorColor;
         magnetIndicator.endColor = indicatorColor;
         magnetIndicator.enabled = false;
@@ -1224,8 +1250,8 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         float maxDist = Mathf.Max(0.01f, indicatorMaxDistance);
 
         Vector3 end = start + dir * maxDist;
-        if (Physics.Raycast(start, dir, out var hit, maxDist, indicatorMask, QueryTriggerInteraction.Ignore))
-            end = hit.point;
+        if (TryGetIndicatorHitPoint(start, dir, maxDist, out Vector3 hitPoint))
+            end = hitPoint;
 
         Color baseColor = indicatorColor;
         if (IsIndicatorNearTarget(end))
@@ -1235,10 +1261,49 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         Color pulseColor = new Color(baseColor.r, baseColor.g, baseColor.b, pulseAlpha);
         magnetIndicator.startColor = pulseColor;
         magnetIndicator.endColor = pulseColor;
+        ApplyIndicatorMaterialColor(pulseColor);
 
         magnetIndicator.SetPosition(0, start);
         magnetIndicator.SetPosition(1, end);
         magnetIndicator.enabled = true;
+    }
+
+    private void ApplyIndicatorMaterialColor(Color color)
+    {
+        if (magnetIndicatorMaterial == null)
+            return;
+
+        if (magnetIndicatorMaterial.HasProperty("_Color"))
+            magnetIndicatorMaterial.SetColor("_Color", color);
+
+        if (magnetIndicatorMaterial.HasProperty("_BaseColor"))
+            magnetIndicatorMaterial.SetColor("_BaseColor", color);
+
+        if (magnetIndicatorMaterial.HasProperty("_TintColor"))
+            magnetIndicatorMaterial.SetColor("_TintColor", color);
+    }
+
+    private bool TryGetIndicatorHitPoint(Vector3 start, Vector3 direction, float maxDistance, out Vector3 hitPoint)
+    {
+        hitPoint = start + direction * maxDistance;
+
+        RaycastHit[] hits = Physics.RaycastAll(start, direction, maxDistance, indicatorMask, QueryTriggerInteraction.Ignore);
+        if (hits == null || hits.Length == 0)
+            return false;
+
+        Array.Sort(hits, static (left, right) => left.distance.CompareTo(right.distance));
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider collider = hits[i].collider;
+            if (ShouldIgnoreHitCollider(collider))
+                continue;
+
+            hitPoint = hits[i].point;
+            return true;
+        }
+
+        return false;
     }
 
     private bool IsIndicatorNearTarget(Vector3 indicatorEnd)

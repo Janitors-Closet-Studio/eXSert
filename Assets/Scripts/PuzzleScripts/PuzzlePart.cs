@@ -5,11 +5,18 @@
  * Helps organize puzzle-related scripts for PuzzleEncounter script.
  */
 
+using System;
 using UnityEngine;
 
 public abstract class PuzzlePart : MonoBehaviour
 {
     public bool isCompleted { get; protected set; }
+    public event Action<PuzzlePart> PuzzleCompleted;
+
+    protected void NotifyPuzzleCompleted()
+    {
+        PuzzleCompleted?.Invoke(this);
+    }
     
     public abstract void StartPuzzle();
     public abstract void EndPuzzle();

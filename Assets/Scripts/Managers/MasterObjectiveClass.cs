@@ -16,12 +16,16 @@ public enum ObjectiveEntryType
 public class ObjectiveData
 {
     public InteractionManager interactionToActivate;
-    [Tooltip("Optional source that shows this objective when it becomes active. Supports InteractionManager, ProgressionZone/Encounter, and Wave.")]
+    [Tooltip("Optional source that shows this objective when it becomes active. Supports InteractionManager, ProgressionZone/Encounter, PuzzlePart, and Wave.")]
     public MonoBehaviour triggerSource;
+    [Tooltip("Optional plain trigger-box source. Assign a BoxCollider trigger here when you want the objective to fire from entering a basic trigger volume without a custom script.")]
+    public BoxCollider triggerZoneSource;
+    [Tooltip("When the trigger source is a PuzzleInteraction, show this objective after that puzzle interaction fully completes instead of when the normal trigger fires.")]
+    public bool triggerOnPuzzleInteractionComplete;
     [Tooltip("When the trigger source is a Wave, show this objective after the enemy wave completes instead of when the wave starts.")]
     public bool triggerOnWaveCompletion;
     public string objectiveID;
-    [TextArea] public string objectiveText;
+    [TextArea(3, 6)] public string objectiveText;
     public ObjectiveEntryType objectiveType = ObjectiveEntryType.Main;
     public bool disableInteraction;
     public InteractionManager interactionToDisable;
@@ -81,17 +85,19 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         UnsubscribeObjectiveTriggers();
     }
 
-    private MonoBehaviour GetObjectiveTriggerSource(ObjectiveData objective)
+    private Component GetObjectiveTriggerSource(ObjectiveData objective)
     {
         if (objective == null)
             return null;
 
         return objective.triggerSource != null
             ? objective.triggerSource
+            : objective.triggerZoneSource != null
+                ? objective.triggerZoneSource
             : objective.interactionToActivate;
     }
 
-    private static string BuildGeneratedObjectiveID(MonoBehaviour triggerSource)
+    private static string BuildGeneratedObjectiveID(Component triggerSource)
     {
         if (triggerSource == null)
             return string.Empty;
@@ -99,7 +105,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         return NormalizeNoticeID($"{triggerSource.GetType().Name}_{triggerSource.gameObject.name}");
     }
 
-    private static string ResolveObjectiveID(string objectiveID, InteractionManager interaction, MonoBehaviour triggerSource)
+    private static string ResolveObjectiveID(string objectiveID, InteractionManager interaction, Component triggerSource)
     {
         if (!string.IsNullOrWhiteSpace(objectiveID))
             return NormalizeNoticeID(objectiveID);
@@ -117,9 +123,36 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     {
         foreach (ObjectiveData objective in objectives)
         {
-            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+            Component triggerSource = GetObjectiveTriggerSource(objective);
             switch (triggerSource)
             {
+                case BoxCollider triggerZone:
+                    ObjectiveTriggerZoneRelay relay = ObjectiveTriggerZoneRelay.GetOrAdd(triggerZone);
+                    relay.Triggered -= HandleTriggerZoneEntered;
+                    relay.Triggered += HandleTriggerZoneEntered;
+                    break;
+
+                case PuzzlePart puzzlePart:
+                    if (objective.triggerOnPuzzleInteractionComplete)
+                    {
+                        puzzlePart.PuzzleCompleted -= HandlePuzzleCompleted;
+                        puzzlePart.PuzzleCompleted += HandlePuzzleCompleted;
+                    }
+                    break;
+
+                case PuzzleInteraction puzzleInteraction:
+                    if (objective.triggerOnPuzzleInteractionComplete)
+                    {
+                        puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
+                        puzzleInteraction.InteractionCompleted += HandlePuzzleInteractionCompleted;
+                    }
+                    else
+                    {
+                        puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                        puzzleInteraction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    }
+                    break;
+
                 case CheckpointBehavior:
                     EnsureCheckpointTriggerSubscription();
                     break;
@@ -130,8 +163,8 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                     break;
 
                 case ProgressionZone zone:
-                    zone.ZoneEnabledStateChanged -= HandleZoneTriggerStateChanged;
-                    zone.ZoneEnabledStateChanged += HandleZoneTriggerStateChanged;
+                    zone.ZoneEntered -= HandleZoneEntered;
+                    zone.ZoneEntered += HandleZoneEntered;
                     break;
 
                 case Wave wave:
@@ -148,9 +181,23 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     {
         foreach (ObjectiveData objective in objectives)
         {
-            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+            Component triggerSource = GetObjectiveTriggerSource(objective);
             switch (triggerSource)
             {
+                case BoxCollider triggerZone:
+                    ObjectiveTriggerZoneRelay relay = ObjectiveTriggerZoneRelay.GetOrAdd(triggerZone);
+                    relay.Triggered -= HandleTriggerZoneEntered;
+                    break;
+
+                case PuzzlePart puzzlePart:
+                    puzzlePart.PuzzleCompleted -= HandlePuzzleCompleted;
+                    break;
+
+                case PuzzleInteraction puzzleInteraction:
+                    puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
+                    puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    break;
+
                 case CheckpointBehavior:
                     RemoveCheckpointTriggerSubscription();
                     break;
@@ -160,7 +207,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                     break;
 
                 case ProgressionZone zone:
-                    zone.ZoneEnabledStateChanged -= HandleZoneTriggerStateChanged;
+                    zone.ZoneEntered -= HandleZoneEntered;
                     break;
 
                 case Wave wave:
@@ -196,10 +243,9 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             ShowObjectivesForTrigger(interaction);
     }
 
-    private void HandleZoneTriggerStateChanged(ProgressionZone zone, bool isEnabled)
+    private void HandleZoneEntered(ProgressionZone zone)
     {
-        if (isEnabled)
-            ShowObjectivesForTrigger(zone);
+        ShowObjectivesForTrigger(zone);
     }
 
     private void HandleWaveStarted(Wave wave)
@@ -212,9 +258,74 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         ShowObjectivesForWave(wave, triggerOnCompletion: true);
     }
 
+    private void HandlePuzzleInteractionCompleted(PuzzleInteraction interaction)
+    {
+        ShowObjectivesForPuzzleInteraction(interaction, triggerOnCompletion: true);
+    }
+
+    private void HandlePuzzleCompleted(PuzzlePart puzzlePart)
+    {
+        ShowObjectivesForPuzzlePart(puzzlePart, triggerOnCompletion: true);
+    }
+
     private void HandleCheckpointTriggered(CheckpointBehavior checkpoint)
     {
         ShowObjectivesForTrigger(checkpoint);
+    }
+
+    private void HandleTriggerZoneEntered(BoxCollider triggerZone)
+    {
+        ShowObjectivesForTrigger(triggerZone);
+    }
+
+    private void ShowObjectivesForPuzzleInteraction(PuzzleInteraction interaction, bool triggerOnCompletion)
+    {
+        if (interaction == null)
+            return;
+
+        foreach (ObjectiveData objective in objectives)
+        {
+            if (objective == null || GetObjectiveTriggerSource(objective) != interaction)
+                continue;
+
+            if (objective.triggerOnPuzzleInteractionComplete != triggerOnCompletion)
+                continue;
+
+            string effectiveObjectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, interaction);
+            if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
+            {
+                Debug.LogWarning($"[MasterObjectiveClass] Objective triggered by {interaction.name} has no valid objective ID.");
+                continue;
+            }
+
+            objective.objectiveID = effectiveObjectiveID;
+            ShowObjective(effectiveObjectiveID);
+        }
+    }
+
+    private void ShowObjectivesForPuzzlePart(PuzzlePart puzzlePart, bool triggerOnCompletion)
+    {
+        if (puzzlePart == null)
+            return;
+
+        foreach (ObjectiveData objective in objectives)
+        {
+            if (objective == null || GetObjectiveTriggerSource(objective) != puzzlePart)
+                continue;
+
+            if (objective.triggerOnPuzzleInteractionComplete != triggerOnCompletion)
+                continue;
+
+            string effectiveObjectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, puzzlePart);
+            if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
+            {
+                Debug.LogWarning($"[MasterObjectiveClass] Objective triggered by {puzzlePart.name} has no valid objective ID.");
+                continue;
+            }
+
+            objective.objectiveID = effectiveObjectiveID;
+            ShowObjective(effectiveObjectiveID);
+        }
     }
 
     private void ShowObjectivesForWave(Wave wave, bool triggerOnCompletion)
@@ -242,7 +353,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         }
     }
 
-    private void ShowObjectivesForTrigger(MonoBehaviour triggerSource)
+    private void ShowObjectivesForTrigger(Component triggerSource)
     {
         if (triggerSource == null)
             return;
@@ -250,6 +361,9 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         foreach (ObjectiveData objective in objectives)
         {
             if (objective == null || GetObjectiveTriggerSource(objective) != triggerSource)
+                continue;
+
+            if ((triggerSource is PuzzleInteraction || triggerSource is PuzzlePart) && objective.triggerOnPuzzleInteractionComplete)
                 continue;
 
             string effectiveObjectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, triggerSource);
@@ -354,7 +468,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     {
         foreach (ObjectiveData objective in objectives)
         {
-            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+            Component triggerSource = GetObjectiveTriggerSource(objective);
 
             if (objective?.interactionToActivate is NavigationEntryInteraction)
             {
@@ -472,6 +586,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             Debug.Log($"Objective with ID {effectiveObjectiveID} already exists, updating and showing.");
             existingObjective.interactionToActivate = interaction;
             existingObjective.triggerSource = triggerSource;
+            existingObjective.triggerZoneSource = null;
             existingObjective.objectiveID = effectiveObjectiveID;
             existingObjective.objectiveText = objectiveText;
             existingObjective.objectiveType = objectiveType;
@@ -488,6 +603,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         {
             interactionToActivate = interaction,
             triggerSource = triggerSource,
+            triggerZoneSource = null,
             triggerOnWaveCompletion = existingObjective?.triggerOnWaveCompletion ?? false,
             objectiveID = effectiveObjectiveID,
             objectiveText = objectiveText,
