@@ -132,7 +132,8 @@ public class MenuEventSystemHandler : MonoBehaviour
         if (EventSystem.current.currentSelectedGameObject != null)
         {
             GameObject currentSelected = EventSystem.current.currentSelectedGameObject;
-            if (currentSelected.activeInHierarchy && currentSelected.transform.IsChildOf(transform))
+            // Do not steal selection when another valid UI element is already selected.
+            if (currentSelected.activeInHierarchy)
                 yield break;
         }
 

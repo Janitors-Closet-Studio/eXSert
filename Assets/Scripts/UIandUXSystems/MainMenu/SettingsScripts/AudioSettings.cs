@@ -37,6 +37,8 @@ public class AudioSettings : MonoBehaviour
 
     void Awake()
     {
+        EnsureAudioSliderRanges();
+
         if (HasSavedVolumes())
         {
             CacheRawVolumesFromSources();
@@ -50,6 +52,24 @@ public class AudioSettings : MonoBehaviour
             ApplyScaledVolumes();
         }
         SetCurrentValuesOnSliders();
+    }
+
+    private void EnsureAudioSliderRanges()
+    {
+        SetSliderRange(masterVolumeSlider);
+        SetSliderRange(musicVolumeSlider);
+        SetSliderRange(sfxVolumeSlider);
+        SetSliderRange(voiceVolumeSlider);
+    }
+
+    private static void SetSliderRange(Slider slider)
+    {
+        if (slider == null)
+            return;
+
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+        slider.wholeNumbers = false;
     }
 
     private void OnEnable()

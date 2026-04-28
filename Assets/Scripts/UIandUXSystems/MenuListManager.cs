@@ -17,7 +17,8 @@ public class MenuListManager : MonoBehaviour
     [SerializeField] private GameObject firstMenuToOpen;
     [SerializeField] private GameObject canvas;
 
-    [SerializeField] private List<GameObject> additionalNonMenusToClear = new List<GameObject>(); 
+    [SerializeField] private List<GameObject> additionalNonMenusToClear = new List<GameObject>();
+
 
     // Tracks the last selected element before opening each menu (acts as a stack)
     public List<Selectable> selectionHistory = new List<Selectable>();
@@ -152,6 +153,9 @@ public class MenuListManager : MonoBehaviour
     // Central function to add a menu to the stack and handle all related logic (selection, sibling order, fading, etc.)
     public void AddToMenuList(GameObject menuToAdd)
     {
+        if (ResetSettings.WarningOpen || ResetDeviceBindings.WarningOpen)
+            return;
+
         if (menuToAdd == null)
             return;
 
@@ -312,6 +316,9 @@ public class MenuListManager : MonoBehaviour
     // Central back function to return to the previous menu, with guards against edge cases and double-back issues.
     public void GoBackToPreviousMenu()
     {
+        if (ResetSettings.WarningOpen || ResetDeviceBindings.WarningOpen)
+            return;
+
         if (backGuardActive)
             return;
         StartCoroutine(BackGuardCooldown());
@@ -447,6 +454,9 @@ public class MenuListManager : MonoBehaviour
     // or if coming from a slider interaction, just goes back one menu without affecting selection
     public void SwapBetweenMenus(int numberOfMenusToGoBack)
     {
+        if (ResetSettings.WarningOpen || ResetDeviceBindings.WarningOpen)
+            return;
+
         if (ShouldIgnoreMenuSwap())
             return;
 
@@ -460,6 +470,9 @@ public class MenuListManager : MonoBehaviour
     // Same as above but with a float parameter so it can be used by a slider for onValueChanged
     public void SwapBetweenMenus(float _)
     {
+        if (ResetSettings.WarningOpen || ResetDeviceBindings.WarningOpen)
+            return;
+
         // Ignore active slider callbacks so dragging does not trigger menu close logic.
         if (ShouldIgnoreMenuSwap())
             return;
@@ -648,15 +661,13 @@ public class MenuListManager : MonoBehaviour
                 menusToManage.RemoveAt(i);
         }
 
-        if (additionalNonMenusToClear != null)
+        for (int i = additionalNonMenusToClear.Count - 1; i >= 0; i--)
         {
-            for (int i = additionalNonMenusToClear.Count - 1; i >= 0; i--)
-            {
-                GameObject obj = additionalNonMenusToClear[i];
-                if (obj != null)
-                    obj.SetActive(false);
-            }
+            GameObject obj = additionalNonMenusToClear[i];
+            if (obj != null)
+                obj.SetActive(false);
         }
+
 
         selectionHistory.Clear();
         UpdateFooterForCurrentTopMenu();
