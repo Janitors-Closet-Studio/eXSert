@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Utilities.Combat;
 using Utilities.Combat.Attacks;
 
+[RequireComponent(typeof(CanvasGroup))]
 public class ComboProgressionUIController : MonoBehaviour
 {
     [Serializable]
@@ -37,6 +39,7 @@ public class ComboProgressionUIController : MonoBehaviour
 
     [Header("Timing")]
     [SerializeField, Range(0.1f, 5f)] private float postComboHideDelay = 1f;
+    [SerializeField, Range(0.05f, 2f)] private float hideFadeDuration = 0.25f;
 
     [Header("Pop Animation")]
     [SerializeField, Range(1f, 2f)] private float popScale = 1.15f;
@@ -53,11 +56,14 @@ public class ComboProgressionUIController : MonoBehaviour
     private readonly Dictionary<(ComboStep, ComboStep), GameObject> arrowLookup = new Dictionary<(ComboStep, ComboStep), GameObject>();
     private readonly Dictionary<GameObject, Vector3> baseScales = new Dictionary<GameObject, Vector3>();
     private readonly Dictionary<GameObject, Coroutine> popRoutines = new Dictionary<GameObject, Coroutine>();
+    private CanvasGroup canvasGroup;
     private Coroutine hideCoroutine;
 
     private void Awake()
     {
+        canvasGroup = GetComponent<CanvasGroup>();
         BuildLookups();
+        SetCanvasAlpha(0f);
     }
 
     private void OnEnable()
@@ -69,6 +75,7 @@ public class ComboProgressionUIController : MonoBehaviour
         }
 
         PlayerAttackManager.OnAttack += HandleAttack;
+        CombatManager.OnInCombatChanged += HandleInCombatChanged;
         if (tierComboManager == null)
             tierComboManager = FindFirstObjectByType<TierComboManager>(FindObjectsInactive.Include);
 
@@ -83,6 +90,7 @@ public class ComboProgressionUIController : MonoBehaviour
     private void OnDisable()
     {
         PlayerAttackManager.OnAttack -= HandleAttack;
+        CombatManager.OnInCombatChanged -= HandleInCombatChanged;
         if (tierComboManager != null)
         {
             tierComboManager.ComboResetDetailed -= HandleComboResetDetailed;
@@ -125,39 +133,62 @@ public class ComboProgressionUIController : MonoBehaviour
         if (!TryResolveStep(attack, out ComboStep step))
             return;
 
+        ShowCanvasImmediate();
+
         if (progression.Count > 0 && IsTerminal(progression[progression.Count - 1]))
         {
             ResetDisplay();
+            ShowCanvasImmediate();
         }
 
         if (progression.Count == 0)
         {
             ShowStep(step);
             progression.Add(step);
+            StartHideTimer();
             return;
         }
 
         ComboStep previous = progression[progression.Count - 1];
         if (previous == step)
+        {
+            StartHideTimer();
             return;
+        }
 
         ShowStep(step);
         ShowArrow(previous, step);
         progression.Add(step);
 
-        if (IsTerminal(step))
-            StartHideTimer();
+        StartHideTimer();
     }
 
     private void HandleComboResetDetailed(TierComboManager.ComboResetReason reason)
     {
-        if (reason == TierComboManager.ComboResetReason.Finisher)
+        if (CombatManager.isInCombat)
+            return;
+
+        if (progression.Count > 0 || GetCurrentAlpha() > 0f)
         {
             StartHideTimer();
             return;
         }
 
         ResetDisplay();
+    }
+
+    private void HandleInCombatChanged(bool isInCombat)
+    {
+        if (isInCombat)
+        {
+            CancelHideTimer();
+            if (progression.Count > 0 || GetCurrentAlpha() > 0f)
+                ShowCanvasImmediate();
+            return;
+        }
+
+        if (progression.Count > 0 || GetCurrentAlpha() > 0f)
+            StartHideTimer();
     }
 
     private void ResetDisplay()
@@ -169,10 +200,18 @@ public class ComboProgressionUIController : MonoBehaviour
 
         foreach (var entry in arrowLookup)
             entry.Value.SetActive(false);
+
+        SetCanvasAlpha(0f);
     }
 
     private void StartHideTimer()
     {
+        if (CombatManager.isInCombat)
+        {
+            CancelHideTimer();
+            return;
+        }
+
         CancelHideTimer();
         if (postComboHideDelay <= 0f)
         {
@@ -194,9 +233,46 @@ public class ComboProgressionUIController : MonoBehaviour
 
     private System.Collections.IEnumerator HideAfterDelay()
     {
-        yield return new WaitForSeconds(postComboHideDelay);
+        float delayElapsed = 0f;
+        while (delayElapsed < postComboHideDelay)
+        {
+            delayElapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        float startAlpha = GetCurrentAlpha();
+        float fadeDuration = Mathf.Max(0.01f, hideFadeDuration);
+        float fadeElapsed = 0f;
+
+        while (fadeElapsed < fadeDuration)
+        {
+            fadeElapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(fadeElapsed / fadeDuration);
+            SetCanvasAlpha(Mathf.Lerp(startAlpha, 0f, t));
+            yield return null;
+        }
+
+        SetCanvasAlpha(0f);
         hideCoroutine = null;
         ResetDisplay();
+    }
+
+    private void ShowCanvasImmediate()
+    {
+        SetCanvasAlpha(1f);
+    }
+
+    private float GetCurrentAlpha()
+    {
+        return canvasGroup != null ? canvasGroup.alpha : 1f;
+    }
+
+    private void SetCanvasAlpha(float alpha)
+    {
+        if (canvasGroup == null)
+            return;
+
+        canvasGroup.alpha = Mathf.Clamp01(alpha);
     }
 
     private void ShowStep(ComboStep step)
