@@ -1,5 +1,4 @@
 {
-
     "version": 1,
     "name": "PlayerControls",
     "maps": [
@@ -411,7 +410,7 @@
                 {
                     "name": "",
                     "id": "860224b9-93ab-4a09-8b81-7d63e0171ad8",
-                    "path": "<Gamepad>/dpad/up",
+                    "path": "<Gamepad>/rightStickPress",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
@@ -1020,10 +1019,10 @@
                 {
                     "name": "",
                     "id": "91a4a5ac-3ab5-4317-8449-fd9932618ebb",
-                    "path": "<Gamepad>/rightShoulder",
+                    "path": "<Gamepad>/leftStickPress",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Gamepad",
                     "action": "ResetDefault",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -1034,7 +1033,7 @@
                     "path": "<Keyboard>/r",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": ";Keyboard&Mouse",
                     "action": "ResetDefault",
                     "isComposite": false,
                     "isPartOfComposite": false

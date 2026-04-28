@@ -81,8 +81,6 @@ public class SelectFirstOnLoad : MonoBehaviour
         if (firstSelectedObject != null && firstSelectedObject.activeInHierarchy)
         {
             toSelect = firstSelectedObject;
-            toSelect.GetComponent<Button>().enabled = false;
-            toSelect.GetComponent<Button>().enabled = true;
         }
         else if (eventSystem.firstSelectedGameObject != null && eventSystem.firstSelectedGameObject.activeInHierarchy)
         {
@@ -97,6 +95,7 @@ public class SelectFirstOnLoad : MonoBehaviour
         }
         if (toSelect != null)
         {
+            eventSystem.SetSelectedGameObject(null);
             eventSystem.SetSelectedGameObject(toSelect);
             Debug.Log($"[SelectFirstOnLoad] Selected first selectable: {toSelect.name}");
         }

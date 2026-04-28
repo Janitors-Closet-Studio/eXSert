@@ -8,6 +8,8 @@
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using Progression.Checkpoints;
 using Unity.VisualScripting;
 
@@ -38,12 +40,12 @@ public class WarningButtonFunctionality : MonoBehaviour
     [SerializeField] private GameObject pauseMenu;
 
     private GameObject originalFooterParent;
-    private bool ownsFooterParenting;
 
     [Header("Action Handler")]
     [SerializeField] private GameActionHandler actionHandler;
 
     private WarningAction pendingAction = WarningAction.None;
+    private Selectable _previousSelected;
 
     private void Awake()
     {
@@ -57,6 +59,9 @@ public class WarningButtonFunctionality : MonoBehaviour
     /// </summary>
     public void WhichFunctionToCarryOut()
     {
+        if (!IsWarningVisible())
+            return;
+
         Debug.Log("[WarningButtonFunctionality] WhichFunctionToCarryOut called - delegating to OnConfirmPressed.");
         OnConfirmPressed();
     }
@@ -78,6 +83,12 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     public void OnConfirmPressed()
     {
+        if (!IsWarningVisible())
+        {
+            Debug.Log("[WarningButtonFunctionality] OnConfirmPressed ignored because warning is not visible.");
+            return;
+        }
+
         Debug.Log("[WarningButtonFunctionality] OnConfirmPressed called - START");
         var actionToRun = ResolvePendingAction();
         Debug.Log($"[WarningButtonFunctionality] OnConfirmPressed - Resolved action: {actionToRun}");
@@ -106,10 +117,18 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     private void PrepareWarning(WarningAction action, GameObject textToEnable)
     {
+        if (EventSystem.current != null)
+        {
+            GameObject current = EventSystem.current.currentSelectedGameObject;
+            if (current != null)
+                _previousSelected = current.GetComponent<Selectable>();
+        }
+
         pendingAction = action;
-        ActivateTextBlock(textToEnable);
         SetWarningVisible(true);
-        ownsFooterParenting = ParentFooterToPauseMenu(true);
+        ActivateTextBlock(textToEnable);
+        ParentFooterToPauseMenu(true);
+        FocusWarningSelection();
     }
 
     private void ActivateTextBlock(GameObject target)
@@ -145,57 +164,58 @@ public class WarningButtonFunctionality : MonoBehaviour
         pendingAction = WarningAction.None;
         ActivateTextBlock(null);
         SetWarningVisible(false);
-
-        if (ownsFooterParenting)
-        {
-            ParentFooterToPauseMenu(false);
-            ownsFooterParenting = false;
-        }
-
+        ParentFooterToPauseMenu(false);
+        RestorePreviousSelection();
         Debug.Log("[WarningButtonFunctionality] HideWarningUI completed");
     }
 
-    private bool ParentFooterToPauseMenu(bool parentToPause)
+    private bool IsWarningVisible()
     {
-        if (footerPanel == null)
-            return false;
+        return warningCanvas != null && warningCanvas.activeInHierarchy;
+    }
+
+    private void FocusWarningSelection()
+    {
+        if (EventSystem.current == null)
+            return;
+
+        Selectable target = null;
+        if (confirmIcon != null)
+            target = confirmIcon.GetComponentInChildren<Selectable>(true);
+        if (target == null && rejectIcon != null)
+            target = rejectIcon.GetComponentInChildren<Selectable>(true);
+
+        if (target != null)
+            EventSystem.current.SetSelectedGameObject(target.gameObject);
+    }
+
+    private void RestorePreviousSelection()
+    {
+        if (EventSystem.current == null)
+            return;
+
+        if (_previousSelected != null
+            && _previousSelected.gameObject.activeInHierarchy
+            && _previousSelected.IsInteractable())
+        {
+            EventSystem.current.SetSelectedGameObject(_previousSelected.gameObject);
+        }
+    }
+
+    private void ParentFooterToPauseMenu(bool parentToPause)
+    {
+        if (footerPanel == null || pauseMenu == null)
+            return;
 
         if (parentToPause) 
         {
-            if (pauseMenu == null)
-                return false;
-
-            Transform currentParent = footerPanel.transform.parent;
-            if (currentParent != null && currentParent != pauseMenu.transform)
-                originalFooterParent = currentParent.gameObject;
-
             footerPanel.transform.SetParent(pauseMenu.transform, worldPositionStays: false);
             footerPanel.transform.SetSiblingIndex(1); // Above pause ui but below warning canvas
-            return true;
         }
-
-        Transform restoreParent = null;
-
-        if (originalFooterParent != null && (pauseMenu == null || originalFooterParent != pauseMenu))
-            restoreParent = originalFooterParent.transform;
-        else if (warningCanvas != null && warningCanvas.transform.parent != null)
-            restoreParent = warningCanvas.transform.parent;
-
-        if (restoreParent != null)
-            footerPanel.transform.SetParent(restoreParent, worldPositionStays: false);
-
-        if (footerPanel.transform.parent != null)
-            footerPanel.transform.SetAsLastSibling(); // Ensure footer is on top of other UI elements in the warning canvas
-
-        return restoreParent != null;
-    }
-
-    private void OnDisable()
-    {
-        if (ownsFooterParenting)
+        else 
         {
-            ParentFooterToPauseMenu(false);
-            ownsFooterParenting = false;
+            footerPanel.transform.SetParent(originalFooterParent.transform, worldPositionStays: false);
+            footerPanel.transform.SetAsLastSibling(); // Ensure footer is on top of other UI elements in the warning canvas
         }
     }
 

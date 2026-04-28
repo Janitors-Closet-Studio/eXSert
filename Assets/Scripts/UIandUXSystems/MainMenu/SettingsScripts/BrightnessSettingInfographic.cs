@@ -27,29 +27,56 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
     private int selectionSourceCount;
     private float pendingRotationDegrees;
     private Coroutine rotationRoutine;
+    private Coroutine darkestFadeRoutine;
+    private Coroutine midFadeRoutine;
+    private Coroutine brightestFadeRoutine;
     private UIHoverRelay sliderHoverRelay;
     private UIHoverRelay parentHoverRelay;
+    private bool initialized;
 
     private void Start() 
     {
+        InitializeIfNeeded();
+        RefreshFromCurrentBrightness();
+    }
+
+    private void OnEnable()
+    {
+        InitializeIfNeeded();
+
+        if (brightnessSlider != null)
+            brightnessSlider.onValueChanged.AddListener(UpdateBrightnessInfographic);
+
+        AttachHoverRelay(sliderRect, ref sliderHoverRelay);
+        if (parentRowRect != sliderRect)
+            AttachHoverRelay(parentRowRect, ref parentHoverRelay);
+
+        RefreshFromCurrentBrightness();
+    }
+
+    private void InitializeIfNeeded()
+    {
+        if (initialized)
+            return;
+
         isMainMenuScene = SceneManager.GetActiveScene().name == "MainMenu";
         sliderRect = brightnessSlider != null ? brightnessSlider.transform as RectTransform : null;
         parentRowRect = hoverTargetOverride != null
             ? hoverTargetOverride
             : (brightnessSlider != null ? brightnessSlider.transform.parent as RectTransform : null);
 
-        AttachHoverRelay(sliderRect, ref sliderHoverRelay);
-        if (parentRowRect != sliderRect)
-            AttachHoverRelay(parentRowRect, ref parentHoverRelay);
+        initialized = true;
+    }
 
-        float initialBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
-        _previousSliderValue = initialBrightness; // Initialize here
-    
-        if (brightnessSlider != null) 
-        {
-            brightnessSlider.onValueChanged.AddListener(UpdateBrightnessInfographic);
-        }
-        InitializeGearVisuals(initialBrightness);
+    private void RefreshFromCurrentBrightness()
+    {
+        float currentBrightness = brightnessSlider != null ? brightnessSlider.value : PlayerPrefs.GetFloat("masterBrightness", 0.5f);
+        _previousSliderValue = currentBrightness;
+        pendingRotationDegrees = 0f;
+        InitializeGearVisuals(currentBrightness);
+
+        bool shouldShow = isSelected || isHovered || hasExternalSelection;
+        SetVisualsVisible(shouldShow, 0f);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -97,6 +124,8 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
             StopCoroutine(rotationRoutine);
             rotationRoutine = null;
         }
+
+        StopVisualCoroutines();
     }
 
     private void AttachHoverRelay(RectTransform target, ref UIHoverRelay relay)
@@ -254,31 +283,52 @@ public class BrightnessSettingInfographic : MonoBehaviour, IPointerEnterHandler,
 
     private void FadeOutAllImages(float duration)
     {
-        StopAllCoroutines();
+        StopVisualCoroutines();
 
         if (darkestImage != null)
-            StartCoroutine(FadeOutScaleForImage(darkestImage, duration));
+            darkestFadeRoutine = StartCoroutine(FadeOutScaleForImage(darkestImage, duration));
 
         if (midBrightnessImage != null)
-            StartCoroutine(FadeOutScaleForImage(midBrightnessImage, duration));
+            midFadeRoutine = StartCoroutine(FadeOutScaleForImage(midBrightnessImage, duration));
 
         if (brightestImage != null)
-            StartCoroutine(FadeOutScaleForImage(brightestImage, duration));
+            brightestFadeRoutine = StartCoroutine(FadeOutScaleForImage(brightestImage, duration));
     }
 
 
     private void FadeInAllImages(float duration)
     {
-        StopAllCoroutines(); // Stop any ongoing animations to prevent conflicts
+        StopVisualCoroutines();
 
         if (darkestImage != null)
-            StartCoroutine(FadeInScaleForImage(darkestImage, duration));
+            darkestFadeRoutine = StartCoroutine(FadeInScaleForImage(darkestImage, duration));
 
         if (midBrightnessImage != null)
-            StartCoroutine(FadeInScaleForImage(midBrightnessImage, duration));
+            midFadeRoutine = StartCoroutine(FadeInScaleForImage(midBrightnessImage, duration));
 
         if (brightestImage != null)
-            StartCoroutine(FadeInScaleForImage(brightestImage, duration));
+            brightestFadeRoutine = StartCoroutine(FadeInScaleForImage(brightestImage, duration));
+    }
+
+    private void StopVisualCoroutines()
+    {
+        if (darkestFadeRoutine != null)
+        {
+            StopCoroutine(darkestFadeRoutine);
+            darkestFadeRoutine = null;
+        }
+
+        if (midFadeRoutine != null)
+        {
+            StopCoroutine(midFadeRoutine);
+            midFadeRoutine = null;
+        }
+
+        if (brightestFadeRoutine != null)
+        {
+            StopCoroutine(brightestFadeRoutine);
+            brightestFadeRoutine = null;
+        }
     }
 
     private void InitializeGearVisuals(float value)
