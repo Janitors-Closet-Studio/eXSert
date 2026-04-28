@@ -1466,6 +1466,9 @@ public class PlayerAttackManager : MonoBehaviour
                 // if the player is already holding movement input the next Walk/Jog/Sprint
                 // CrossFade uses a smooth transition instead of snapping.
                 animationController?.SetNextLocomotionBlendOverride(plungeToLocomotionBlendTime);
+                // Separate dash override — locomotion won't consume it, so it survives until
+                // the dash input lock clears and PlayDash actually fires.
+                animationController?.SetNextDashBlendOverride(plungeToLocomotionBlendTime);
                 PlayCombatIdle(plungeIdleBlendTime);
             }
         }

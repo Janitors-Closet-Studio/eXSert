@@ -137,6 +137,10 @@ public class PlayerAnimationController : MonoBehaviour
     // Set before ForceLocomotionRefresh() on plunge exit so the blend feels smooth.
     private float nextLocomotionBlendOverride = -1f;
 
+    // Separate one-shot override consumed only by PlayDash, so locomotion can't eat it
+    // before the dash input unlocks on the frame after CompleteCancelWindow fires.
+    private float nextDashBlendOverride = -1f;
+
     /// <summary>
     /// True while the Plunge animation is frozen mid-air waiting for the player to land.
     /// External systems (e.g. EnsureAnimatorRuntimeHealthy) must respect this and not reset animator speed.
@@ -253,6 +257,15 @@ public class PlayerAnimationController : MonoBehaviour
         nextLocomotionBlendOverride = Mathf.Max(0f, duration);
     }
 
+    /// <summary>
+    /// Primes a one-shot blend duration consumed exclusively by the next <see cref="PlayDash"/>
+    /// call. Kept separate from the locomotion override so locomotion can't consume it first.
+    /// </summary>
+    public void SetNextDashBlendOverride(float duration)
+    {
+        nextDashBlendOverride = Mathf.Max(0f, duration);
+    }
+
     public void PlayIdle() => CrossFade(PlayerAnim.SingleTarget.Breathing);
 
     public void PlaySingleTargetBreathing(float transition = -1f) => CrossFade(PlayerAnim.SingleTarget.Breathing, transition);
@@ -272,7 +285,7 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayDash(float transition = 0.08f)
     {
         StartHardLock(PlayerAnim.Locomotion.Dash);
-        CrossFade(PlayerAnim.Locomotion.Dash, Mathf.Max(transition, ConsumeLocomotionBlendOverride()), true);
+        CrossFade(PlayerAnim.Locomotion.Dash, Mathf.Max(transition, ConsumeDashBlendOverride()), true);
     }
 
     public void PlayLocomotion(float moveAmount01)
@@ -432,6 +445,16 @@ public class PlayerAnimationController : MonoBehaviour
 
         float value = nextLocomotionBlendOverride;
         nextLocomotionBlendOverride = -1f;
+        return value;
+    }
+
+    private float ConsumeDashBlendOverride()
+    {
+        if (nextDashBlendOverride < 0f)
+            return -1f;
+
+        float value = nextDashBlendOverride;
+        nextDashBlendOverride = -1f;
         return value;
     }
 
