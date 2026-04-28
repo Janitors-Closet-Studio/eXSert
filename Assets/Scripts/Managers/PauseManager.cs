@@ -154,6 +154,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         MufffleMusicForMenu(false);
         TryResolveHudRoot();
         HideAllMenus();
+        menuListManager?.ResetForGameplay();
         if (!MainMenu.isInMainMenu)
             SetHUDVisible(true);
         SetBlurEnabled(false);
@@ -821,6 +822,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
+        menuListManager?.ResetForGameplay();
         SetHUDVisible(true);
         SetBlurEnabled(false);
 

@@ -711,6 +711,42 @@ public class MenuListManager : MonoBehaviour
         UpdateFooterForCurrentTopMenu();
     }
 
+    public void ResetForGameplay()
+    {
+        temporarilyHiddenMenusByOwner.Clear();
+        selectionHistory.Clear();
+
+        if (menusToManage != null)
+        {
+            for (int i = menusToManage.Count - 1; i >= 0; i--)
+            {
+                GameObject menu = menusToManage[i];
+                if (menu == null)
+                    continue;
+
+                if (menu != canvas)
+                    menu.SetActive(false);
+            }
+
+            menusToManage.Clear();
+            if (canvas != null)
+                menusToManage.Add(canvas);
+        }
+
+        for (int i = additionalNonMenusToClear.Count - 1; i >= 0; i--)
+        {
+            GameObject obj = additionalNonMenusToClear[i];
+            if (obj != null)
+                obj.SetActive(false);
+        }
+
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
+
+        FooterManager footerManager = FooterManagerComponent;
+        footerManager?.UpdateFooterForMenu(null);
+    }
+
     // Checks if menu is protected
     private bool IsProtectedMenu(GameObject menu)
     {
