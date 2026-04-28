@@ -522,6 +522,11 @@ namespace EnemyBehavior.Boss
 
         // Debug vacuum sequence tracking
         private Coroutine debugVacuumCoroutine;
+
+        // Set true while a vacuum sequence is actively running
+        private bool _isInVacuumSequence;
+        // Set true while a dash lunge is actively executing
+        private bool _isDashing;
         
         // Debug test mode - prevents normal AI from interfering
         private bool isDebugTestRunning;
@@ -1154,9 +1159,11 @@ namespace EnemyBehavior.Boss
 
             BeginRetryingPlayerReferenceIfNeeded();
 
-            // If a BossRoombaEnabler is present it will call StartFight() when the player enters the trigger.
-            // Otherwise start automatically as before.
-            if (GetComponentInParent<BossRoombaEnabler>() == null && GetComponent<BossRoombaEnabler>() == null)
+            // If a BossRoombaEnabler exists anywhere in the scene it controls fight start.
+            // This covers the common case where the Enabler is on a separate trigger object,
+            // NOT parented to or on the same GameObject as the boss.
+            // Only auto-start if no Enabler is present anywhere in the scene.
+            if (FindObjectOfType<BossRoombaEnabler>() == null)
                 StartCoroutine(DelayedFightStart());
         }
 
@@ -1355,6 +1362,11 @@ namespace EnemyBehavior.Boss
                 ctrl.ActivateAlarmWithDelay();
             }
 
+            // Wait out any active stun before beginning Duelist behavior.
+            // This prevents Duelist logic from running in parallel with a stun
+            // that was triggered during a CageBull → Duelist form transition.
+            while (isStunned && !isDefeated)
+                yield return null;
 
             while (form == RoombaForm.DuelistSummoner && !isDefeated)
             {
@@ -1409,8 +1421,11 @@ namespace EnemyBehavior.Boss
         private IEnumerator ExecuteVacuumSequence()
         {
             PushAction("Vacuum sequence START");
+            _isInVacuumSequence = true;
 
-            // CRITICAL: Stop the controller's follow behavior so it doesn't override our destination
+            // CRITICAL: Stop top-wander FIRST (StopTopWander internally restarts FollowLoop),
+            // then stop follow so FollowLoop does not override our destination.
+            ctrl.StopTopWander();
             ctrl.StopFollowing();
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[Boss] Stopped controller follow behavior for vacuum sequence");
@@ -1610,7 +1625,9 @@ namespace EnemyBehavior.Boss
                 // Resume the controller's follow behavior now that vacuum is complete
                 ctrl.StartFollowingPlayer(0.1f);
             }
-            
+
+            _isInVacuumSequence = false;
+
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), $"[Boss] Vacuum sequence END - form is {form}");
 #endif
@@ -1841,16 +1858,16 @@ namespace EnemyBehavior.Boss
         private IEnumerator CageBullLoop()
         {
             PushAction("Cage Bull loop START");
-            
+
             // Early exit if defeated
             if (isDefeated) yield break;
 
             // Cache base agent settings for charge modifications
             CacheAgentSettings();
-            
+
             // IMPORTANT: Stop following player - CageBull uses charge movement only!
             ctrl.StopFollowing();
-            
+
             // Also stop top wander if active - player shouldn't be riding during cage match
             ctrl.StopTopWander();
 
@@ -1864,14 +1881,19 @@ namespace EnemyBehavior.Boss
             {
                 int comboCount = Random.Range(StaticChargeCountRange.x, StaticChargeCountRange.y + 1);
                 PushAction($"Cage Bull: Executing {comboCount} random charge combos");
-                
+
                 for (int i = 0; i < comboCount && !isStunned && !isDefeated; i++)
                 {
+                    // STRICT FORM CHECK: stop CageBull behavior immediately if form changed
+                    if (form != RoombaForm.CageBull) yield break;
+
                     yield return ExecuteRandomChargeCombo(i + 1, comboCount);
-                    
+
                     // Brief rest between combos
                     if (i < comboCount - 1 && !isStunned && !isDefeated)
                     {
+                        // STRICT FORM CHECK after each combo
+                        if (form != RoombaForm.CageBull) yield break;
                         yield return WaitForSecondsCache.Get(0.5f);
                     }
                 }
@@ -1881,10 +1903,15 @@ namespace EnemyBehavior.Boss
                 PushAction("No valid combos configured - skipping static charges");
             }
 
+            // STRICT FORM CHECK before targeted charge
+            if (form != RoombaForm.CageBull) yield break;
+
             // Brief rest before targeted charge
             if (!isStunned && !isDefeated)
             {
                 yield return WaitForSecondsCache.Get(ChargeRestDuration);
+                // STRICT FORM CHECK after rest
+                if (form != RoombaForm.CageBull) yield break;
                 // Targeted charge at player with overshoot (can hit pillars!)
                 yield return ExecuteTargetedChargeWithOvershoot();
             }
@@ -1922,7 +1949,7 @@ namespace EnemyBehavior.Boss
         // Execute each segment in this combo
             for (int i = 0; i < segments.Length; i++)
             {
-                if (isStunned || isDefeated) break;
+                if (isStunned || isDefeated || form != RoombaForm.CageBull) break;
 
                 var (start, end) = segments[i];
                 
@@ -2853,6 +2880,7 @@ namespace EnemyBehavior.Boss
             
             // CRITICAL: Stop following during dash - prevents destination fighting
             ctrl.StopFollowing();
+            _isDashing = true;
 
             // ALWAYS cancel pending retraction when ANY attack starts
             if (armsRetractRoutine != null)
@@ -3058,8 +3086,9 @@ namespace EnemyBehavior.Boss
             yield return WaitForSecondsCache.Get(a.RecoverySpeedMultiplier * GetClipLength(animator, a.RecoveryClipName));
 
             MarkCooldown(a);
-            
+
             // Resume following after dash completes
+            _isDashing = false;
             ctrl.StartFollowingPlayer(0.1f);
 
             // Only schedule auto-retract if arms are currently deployed
@@ -4682,6 +4711,24 @@ namespace EnemyBehavior.Boss
             {
                 EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Ignoring top mount during CageBull form - player should be dodging charges!");
                 // Still track the mount state, but don't trigger wander behavior
+                return;
+            }
+
+            // During an active vacuum sequence, track mount state but don't start top wander
+            // (top wander would fight the NavMeshAgent destination used by the vacuum sequence)
+            if (_isInVacuumSequence)
+            {
+                if (value) { lastMountedTime = Time.time; hasEverMounted = true; }
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Ignoring top wander start - vacuum sequence in progress.");
+                return;
+            }
+
+            // During an active dash, track mount state but don't call StopTopWander (which restarts FollowLoop)
+            // FollowLoop restarting mid-dash would override the committed dash destination
+            if (_isDashing)
+            {
+                if (value) { lastMountedTime = Time.time; hasEverMounted = true; }
+                EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaBrain), "[BossRoombaBrain] Ignoring top wander change - dash in progress.");
                 return;
             }
 

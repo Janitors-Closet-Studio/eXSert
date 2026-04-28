@@ -123,7 +123,7 @@ namespace EnemyBehavior.Boss
             Vector3 bossPos = BossCenter.position;
             Vector3 playerPos = player.position;
             float yDifference = playerPos.y - bossPos.y;
-            
+
             if (yDifference > OnTopHeightThreshold)
             {
                 // Player is on top - clear any active repulsion and skip
@@ -140,7 +140,16 @@ namespace EnemyBehavior.Boss
             Vector3 playerPos2D = new Vector3(playerPos.x, 0, playerPos.z);
             float distance2D = Vector3.Distance(bossPos2D, playerPos2D);
 
-            if (distance2D < RepulsionRadius && distance2D > 0.01f)
+            // Only apply repulsion/ejection during dashes or charges, OR when player is very deeply inside boss.
+            // During normal melee range the player SHOULD be close — repulsion here causes the push-back on attack.
+            bool bossIsDashingOrCharging = bossBrain != null && bossBrain.IsCharging;
+            float deepOverlapThreshold = RepulsionRadius * 0.4f; // Emergency-only zone (well inside boss)
+            bool isDeepOverlap = distance2D < deepOverlapThreshold && distance2D > 0.01f;
+            bool shouldRepulse = bossIsDashingOrCharging
+                ? (distance2D < RepulsionRadius && distance2D > 0.01f)
+                : isDeepOverlap;
+
+            if (shouldRepulse)
             {
                 ApplyRepulsionForce(bossPos, playerPos);
 
