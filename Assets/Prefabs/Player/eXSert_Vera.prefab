@@ -5552,6 +5552,10 @@ MonoBehaviour:
   guardAttackAutoGenerateHitbox: 0
   plungeRecoveryDelay: 0
   plungeIdleBlendTime: 0.757
+  plungeToLocomotionBlendTime: 0.25
+  plungeToAttackBlendTime: 0.3
+  plungeToSingleTargetBlendTime: 0.3
+  plungeAoeUnlockDelay: 0.07
   enablePlungeDroneEffects: 1
   enablePlungeDronePhysicsCollapse: 1
   plungeDroneSharedSplashRadius: 2.5
@@ -5592,6 +5596,7 @@ MonoBehaviour:
   debugPlungeDamageInitialized: 1
   attackAudioSource: {fileID: 0}
   inputBufferWindow: 0.25
+  maxBufferLifetime: 0.6
   groundedAttackGraceSeconds: 0.12
   groundedAttackProbeDistance: 0.2
   groundedAttackProbeMask:

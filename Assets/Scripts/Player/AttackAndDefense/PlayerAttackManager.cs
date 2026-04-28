@@ -46,6 +46,12 @@ public class PlayerAttackManager : MonoBehaviour
     [Range(0f, 1f)] private float plungeIdleBlendTime = 0.25f;
     [SerializeField, Tooltip("Cross-fade duration when the plunge exit blends directly into a locomotion state (walk/jog/sprint). Prevents the snap when the player is already moving on landing.")]
     [Range(0f, 1f)] private float plungeToLocomotionBlendTime = 0.25f;
+    [SerializeField, Tooltip("Cross-fade duration when the first attack after a plunge starts. Kept shorter than the locomotion blend so the attack animation is not cut off prematurely by an early cancel window.")]
+    [Range(0f, 0.3f)] private float plungeToAttackBlendTime = 0.08f;
+    [SerializeField, Tooltip("Cross-fade duration when the first single-target attack after a plunge starts. Can be longer than the AoE blend because ST animations are shorter and their cancel windows don't conflict with the blend.")]
+    [Range(0f, 0.5f)] private float plungeToSingleTargetBlendTime = 0.25f;
+    [SerializeField, Tooltip("Minimum delay after a plunge resolves before an AoE (heavy grounded) attack can actually execute. Single-target attacks are unaffected. Input pressed during this window is buffered normally.")]
+    [Range(0f, 0.5f)] private float plungeAoeUnlockDelay = 0.08f;
 
     [Header("Plunge Drone Effects")]
     [SerializeField, Tooltip("Enable plunge-specific drone effects (shared splash + optional physics collapse).")]
@@ -141,6 +147,9 @@ public class PlayerAttackManager : MonoBehaviour
     private Coroutine guardAttackFlowRoutine;
     private Coroutine specialAttackAutoCancelRoutine;
     private Coroutine heavyMoveRoutine;
+    // Time.time value before which grounded AoE (heavy) attacks are blocked after a plunge landing.
+    // Single-target attacks are unaffected. -1 means no lockout is active.
+    private float plungeAoeUnlockReadyTime = -1f;
     private bool lastAttackWasAoe;
     private float currentAttackDamageMultiplier = 1f;
     private readonly Collider[] forwardMoveBlockHits = new Collider[24];
@@ -166,6 +175,8 @@ public class PlayerAttackManager : MonoBehaviour
 
     [Header("Input Buffering")]
     [SerializeField, Range(0.05f, 0.6f)] private float inputBufferWindow = 0.25f;
+    [SerializeField, Range(0.1f, 2f), Tooltip("Hard cap on how long a buffered attack input can survive from the moment it was pressed, regardless of animation length. Prevents unintended attacks when spamming during long animations.")]
+    private float maxBufferLifetime = 0.6f;
 
     [Header("Ground Attack Grace")]
     [SerializeField, Range(0f, 0.5f), Tooltip("Short coyote-time window where grounded attacks are still allowed right after leaving the floor.")]
@@ -357,6 +368,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttackSpeedMultiplier = 1f;
         currentAttackEarliestEndTime = -1f;
         currentAttackLockFailsafeTime = -1f;
+        plungeAoeUnlockReadyTime = -1f;
         animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
     }
@@ -565,9 +577,15 @@ public class PlayerAttackManager : MonoBehaviour
     {
         bufferedAttackButton = lightAttack ? AttackButton.Light : AttackButton.Heavy;
 
-        float expiresAt = Time.time + inputBufferWindow;
+        float inputTime = Time.time;
+        float expiresAt = inputTime + inputBufferWindow;
         if (requireFullAnimationPlaybackBeforeNextAttack && currentAttack != null && currentAttackEarliestEndTime > 0f)
             expiresAt = Mathf.Max(expiresAt, currentAttackEarliestEndTime + 0.1f);
+
+        // Never let the buffer survive longer than maxBufferLifetime seconds from the moment
+        // the player actually pressed the button. Without this cap, spamming during a long
+        // animation (e.g. AoE step 3) stores a buffer that outlives the player's intent.
+        expiresAt = Mathf.Min(expiresAt, inputTime + maxBufferLifetime);
 
         bufferedAttackExpiresAt = expiresAt;
     }
@@ -594,6 +612,20 @@ public class PlayerAttackManager : MonoBehaviour
                 Debug.Log($"[DIAG-Attack] BLOCKED by jump-pending guard | frame={Time.frameCount}");
                 return;
             }
+
+            // AoE (heavy grounded) attacks are blocked for a short window after a plunge lands
+            // so the blend has time to settle before the attack animation starts. Single-target
+            // attacks are always allowed. Input is buffered so the player's intent is preserved.
+            if (!lightAttack && plungeAoeUnlockReadyTime > 0f && Time.time < plungeAoeUnlockReadyTime)
+            {
+                Debug.Log($"[DIAG-Attack] AoE blocked by post-plunge unlock delay | remaining={(plungeAoeUnlockReadyTime - Time.time) * 1000f:F1}ms | frame={Time.frameCount}");
+                BufferAttack(lightAttack);
+                return;
+            }
+
+            // Lockout has been satisfied; clear it so it doesn't affect later combo steps.
+            plungeAoeUnlockReadyTime = -1f;
+
             attackId = ResolveGroundAttackId(lightAttack);
             if (string.IsNullOrEmpty(attackId))
                 return;
@@ -632,6 +664,10 @@ public class PlayerAttackManager : MonoBehaviour
                 Debug.LogWarning("[PlayerAttackManager] Failed to resolve aerial attack data.");
                 return;
             }
+
+            // Any aerial attack (AC_X1, AC_X2, plunge, etc.) breaks the grounded combo chain.
+            // Reset now so the next grounded heavy/light always starts from step 1.
+            tierComboManager?.ResetCombo(TierComboManager.ComboResetReason.Forced);
         }
 
         ExecuteAttack(attackData, attackId);
@@ -737,7 +773,16 @@ public class PlayerAttackManager : MonoBehaviour
         if (animationOverride != null)
             animationOverride(animationController);
         else if (playDefaultAnimation)
-            animationController?.PlayAttack(attackId);
+        {
+            // Route to the typed playback method so each attack category draws from its own
+            // blend-override pool (single-target gets the longer plunge-exit blend, AoE gets
+            // the shorter one). Aerial / launcher / guard attacks have no blend pool primed so
+            // they always use a plain 0.04s crossfade via PlayAoeAttack (no override will fire).
+            if (attackData != null && (attackData.attackType == AttackType.LightSingle || attackData.attackType == AttackType.HeavySingle))
+                animationController?.PlaySingleTargetAttack(attackId);
+            else
+                animationController?.PlayAoeAttack(attackId);
+        }
 
         OnAttack?.Invoke(attackData);
 
@@ -1431,6 +1476,17 @@ public class PlayerAttackManager : MonoBehaviour
         // as soon as HandleAnimationCancelWindow fires after the slam plays.
         currentAttackEarliestEndTime = Time.time;
         StopDeferredCancelRoutine();
+        // The early-trim routine was scheduled against the full plunge clip length at launch.
+        // Now that we've landed early, collapsing EarliestEndTime makes it redundant — and
+        // if left running it fires CompleteCancelWindow while plungeRecoveryRoutine is still
+        // active, which then fires a second CompleteCancelWindow against the next attack (AY1).
+        StopEarlyTrimCompletionRoutine();
+
+        // Discard any input buffered during the plunge.
+        // the full clip length at launch-time (before the animator was frozen), so it would
+        // survive far longer than intended and fire with stale combo state, causing AoE steps
+        // to skip or the combo to restart unexpectedly after landing.
+        ClearBufferedAttack();
     }
 
     private IEnumerator PlungeRecoveryRoutine(float delay)
@@ -1447,6 +1503,13 @@ public class PlayerAttackManager : MonoBehaviour
 
         StopEarlyTrimCompletionRoutine();
         StopDeferredCancelRoutine();
+        // Ensure a still-running plungeRecoveryRoutine cannot fire a second
+        // CompleteCancelWindow against the next attack that starts after this one clears.
+        if (plungeRecoveryRoutine != null)
+        {
+            StopCoroutine(plungeRecoveryRoutine);
+            plungeRecoveryRoutine = null;
+        }
         InputReader.inputBusy = false;
         playerMovement?.SuppressLocomotionAnimations(false);
 
@@ -1469,6 +1532,15 @@ public class PlayerAttackManager : MonoBehaviour
                 // Separate dash override — locomotion won't consume it, so it survives until
                 // the dash input lock clears and PlayDash actually fires.
                 animationController?.SetNextDashBlendOverride(plungeToLocomotionBlendTime);
+                // Separate attack override — shorter than the locomotion blend so a buffered
+                // AoE attack (e.g. AY1) doesn't inherit the long locomotion crossfade time,
+                // which would cause its CancelWindowStart event to fire while most of the
+                // animation is still blending in and make it appear to cut off prematurely.
+                animationController?.SetNextAoeAttackBlendOverride(plungeToAttackBlendTime);
+                // Single-target attacks can use a longer blend (matching the locomotion value)
+                // because their animations are shorter and the cancel window doesn't conflict.
+                animationController?.SetNextSingleTargetBlendOverride(plungeToSingleTargetBlendTime);
+                plungeAoeUnlockReadyTime = plungeAoeUnlockDelay > 0f ? Time.time + plungeAoeUnlockDelay : -1f;
                 PlayCombatIdle(plungeIdleBlendTime);
             }
         }
@@ -1594,6 +1666,7 @@ public class PlayerAttackManager : MonoBehaviour
         currentAttackSpeedMultiplier = 1f;
         currentAttackEarliestEndTime = -1f;
         currentAttackLockFailsafeTime = -1f;
+        plungeAoeUnlockReadyTime = -1f;
         animationController?.ResetAnimatorSpeed();
         InputReader.inputBusy = false;
         playerMovement?.SuppressLocomotionAnimations(false);

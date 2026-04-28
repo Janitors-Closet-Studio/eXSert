@@ -141,6 +141,17 @@ public class PlayerAnimationController : MonoBehaviour
     // before the dash input unlocks on the frame after CompleteCancelWindow fires.
     private float nextDashBlendOverride = -1f;
 
+    // Separate one-shot override consumed only by AoE (heavy grounded) attack playback.
+    // Short by design so a buffered AY1 after a plunge doesn't inherit the long locomotion blend
+    // time, which would cause its CancelWindowStart event to fire while the animation is still
+    // mostly blended out, making it look cut off.
+    private float nextAoeAttackBlendOverride = -1f;
+
+    // Separate one-shot override consumed only by single-target attack playback.
+    // Can be set longer (matching the locomotion blend) because ST animations are shorter and
+    // their cancel windows don't fire as early relative to the crossfade duration.
+    private float nextSingleTargetBlendOverride = -1f;
+
     /// <summary>
     /// True while the Plunge animation is frozen mid-air waiting for the player to land.
     /// External systems (e.g. EnsureAnimatorRuntimeHealthy) must respect this and not reset animator speed.
@@ -266,6 +277,26 @@ public class PlayerAnimationController : MonoBehaviour
         nextDashBlendOverride = Mathf.Max(0f, duration);
     }
 
+    /// <summary>
+    /// Primes a one-shot blend duration consumed exclusively by the next AoE (heavy grounded)
+    /// attack playback call. Kept short so a buffered AY1 after a plunge doesn't inherit the
+    /// long locomotion blend time and appear to cut off at its cancel window.
+    /// </summary>
+    public void SetNextAoeAttackBlendOverride(float duration)
+    {
+        nextAoeAttackBlendOverride = Mathf.Max(0f, duration);
+    }
+
+    /// <summary>
+    /// Primes a one-shot blend duration consumed exclusively by the next single-target attack
+    /// playback call. Can be set to a longer value (e.g. matching the locomotion blend) for a
+    /// smooth transition out of plunge into single-target attacks.
+    /// </summary>
+    public void SetNextSingleTargetBlendOverride(float duration)
+    {
+        nextSingleTargetBlendOverride = Mathf.Max(0f, duration);
+    }
+
     public void PlayIdle() => CrossFade(PlayerAnim.SingleTarget.Breathing);
 
     public void PlaySingleTargetBreathing(float transition = -1f) => CrossFade(PlayerAnim.SingleTarget.Breathing, transition);
@@ -380,16 +411,26 @@ public class PlayerAnimationController : MonoBehaviour
     public bool IsPlayingDeath(out float normalizedTime) => IsPlaying(PlayerAnim.Reactions.Death, out normalizedTime);
 
     /// <summary>
-    /// Generic attack playback. Pass the actual animator state name (e.g. "SX1", "AY3", "Launcher").
+    /// Plays a single-target attack animation, consuming the single-target blend override if
+    /// primed (e.g. the longer plunge-exit blend), otherwise falling back to 0.04s.
     /// </summary>
-    public void PlayAttack(string attackStateName)
+    public void PlaySingleTargetAttack(string attackStateName)
     {
-        CrossFade(attackStateName, Mathf.Max(0.04f, ConsumeLocomotionBlendOverride()), true);
+        CrossFade(attackStateName, Mathf.Max(0.04f, ConsumeSingleTargetBlendOverride()), true);
     }
 
-    public void PlaySingleTargetLight(int comboIndex) => CrossFade(GetSingleTargetLight(comboIndex), Mathf.Max(0.04f, ConsumeLocomotionBlendOverride()), true);
+    /// <summary>
+    /// Plays an AoE (heavy grounded) attack animation, consuming the AoE blend override if
+    /// primed (e.g. the shorter plunge-exit blend), otherwise falling back to 0.04s.
+    /// </summary>
+    public void PlayAoeAttack(string attackStateName)
+    {
+        CrossFade(attackStateName, Mathf.Max(0.04f, ConsumeAoeAttackBlendOverride()), true);
+    }
 
-    public void PlaySingleTargetHeavy(int comboIndex) => CrossFade(GetSingleTargetHeavy(comboIndex), Mathf.Max(0.04f, ConsumeLocomotionBlendOverride()), true);
+    public void PlaySingleTargetLight(int comboIndex) => CrossFade(GetSingleTargetLight(comboIndex), Mathf.Max(0.04f, ConsumeSingleTargetBlendOverride()), true);
+
+    public void PlaySingleTargetHeavy(int comboIndex) => CrossFade(GetSingleTargetHeavy(comboIndex), Mathf.Max(0.04f, ConsumeSingleTargetBlendOverride()), true);
 
     // AOE light/heavy helpers disabled with stance removal (kept for reference).
     // public void PlayAoeLight(int comboIndex) => CrossFade(GetAoeLight(comboIndex), 0.04f, true);
@@ -455,6 +496,26 @@ public class PlayerAnimationController : MonoBehaviour
 
         float value = nextDashBlendOverride;
         nextDashBlendOverride = -1f;
+        return value;
+    }
+
+    private float ConsumeSingleTargetBlendOverride()
+    {
+        if (nextSingleTargetBlendOverride < 0f)
+            return -1f;
+
+        float value = nextSingleTargetBlendOverride;
+        nextSingleTargetBlendOverride = -1f;
+        return value;
+    }
+
+    private float ConsumeAoeAttackBlendOverride()
+    {
+        if (nextAoeAttackBlendOverride < 0f)
+            return -1f;
+
+        float value = nextAoeAttackBlendOverride;
+        nextAoeAttackBlendOverride = -1f;
         return value;
     }
 
