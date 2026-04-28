@@ -14,7 +14,7 @@ public class MenuListManager : MonoBehaviour
     [SerializeField] internal List<GameObject> menusToBlock;
     [SerializeField] internal List<GameObject> settingPageMenus;
 
-    [SerializeField] private GameObject firstMenuToOpen;
+    [SerializeField] internal GameObject firstMenuToOpen;
     [SerializeField] private GameObject canvas;
 
     [SerializeField] private List<GameObject> additionalNonMenusToClear = new List<GameObject>();

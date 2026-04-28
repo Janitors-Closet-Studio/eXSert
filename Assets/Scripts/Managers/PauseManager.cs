@@ -229,6 +229,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (!pauseOverlay.activeInHierarchy)
             StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, true));
 
+        pauseMenuHolder.SetActive(true);
+
         if (SoundManager.Instance != null)
         {
             if (SoundManager.Instance.sfxSource != null)
@@ -258,6 +260,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if (HasBlockingSubmenuActive())
         {
+            return;
+        }
+
+        if (currentActiveMenu == ActiveMenu.PauseMenu || currentActiveMenu == ActiveMenu.NavigationMenu)
+        {
+            ResumeGame();
             return;
         }
 
