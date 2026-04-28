@@ -18,6 +18,8 @@ public class ObjectiveData
     public InteractionManager interactionToActivate;
     [Tooltip("Optional source that shows this objective when it becomes active. Supports InteractionManager, ProgressionZone/Encounter, and Wave.")]
     public MonoBehaviour triggerSource;
+    [Tooltip("When the trigger source is a Wave, show this objective after the enemy wave completes instead of when the wave starts.")]
+    public bool triggerOnWaveCompletion;
     public string objectiveID;
     [TextArea] public string objectiveText;
     public ObjectiveEntryType objectiveType = ObjectiveEntryType.Main;
@@ -135,6 +137,8 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                 case Wave wave:
                     wave.OnWaveStarted -= HandleWaveStarted;
                     wave.OnWaveStarted += HandleWaveStarted;
+                    wave.OnWaveComplete -= HandleWaveCompleted;
+                    wave.OnWaveComplete += HandleWaveCompleted;
                     break;
             }
         }
@@ -161,6 +165,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 
                 case Wave wave:
                     wave.OnWaveStarted -= HandleWaveStarted;
+                    wave.OnWaveComplete -= HandleWaveCompleted;
                     break;
             }
         }
@@ -199,12 +204,42 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 
     private void HandleWaveStarted(Wave wave)
     {
-        ShowObjectivesForTrigger(wave);
+        ShowObjectivesForWave(wave, triggerOnCompletion: false);
+    }
+
+    private void HandleWaveCompleted(Wave wave)
+    {
+        ShowObjectivesForWave(wave, triggerOnCompletion: true);
     }
 
     private void HandleCheckpointTriggered(CheckpointBehavior checkpoint)
     {
         ShowObjectivesForTrigger(checkpoint);
+    }
+
+    private void ShowObjectivesForWave(Wave wave, bool triggerOnCompletion)
+    {
+        if (wave == null)
+            return;
+
+        foreach (ObjectiveData objective in objectives)
+        {
+            if (objective == null || GetObjectiveTriggerSource(objective) != wave)
+                continue;
+
+            if (objective.triggerOnWaveCompletion != triggerOnCompletion)
+                continue;
+
+            string effectiveObjectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, wave);
+            if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
+            {
+                Debug.LogWarning($"[MasterObjectiveClass] Objective triggered by {wave.name} has no valid objective ID.");
+                continue;
+            }
+
+            objective.objectiveID = effectiveObjectiveID;
+            ShowObjective(effectiveObjectiveID);
+        }
     }
 
     private void ShowObjectivesForTrigger(MonoBehaviour triggerSource)
@@ -453,6 +488,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         {
             interactionToActivate = interaction,
             triggerSource = triggerSource,
+            triggerOnWaveCompletion = existingObjective?.triggerOnWaveCompletion ?? false,
             objectiveID = effectiveObjectiveID,
             objectiveText = objectiveText,
             objectiveType = objectiveType,
