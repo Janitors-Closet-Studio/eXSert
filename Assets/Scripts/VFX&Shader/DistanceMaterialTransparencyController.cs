@@ -56,6 +56,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
     [Header("Distance Thresholds")]
     [SerializeField, Min(0f)] private float immediateHideDistance = 1.5f;
     [SerializeField, Min(0f)] private float fadeStartDistance = 3f;
+    [SerializeField, Range(0f, 1f)] private float transparentModeFadeThreshold = 0.12f;
 
     private readonly List<ToonMaterialState> toonMaterials = new();
     private readonly List<LitMaterialState> litMaterials = new();
@@ -251,9 +252,20 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
         return 1f - Mathf.InverseLerp(immediateHideDistance, fadeStartDistance, distance);
     }
 
+    private float GetEffectiveFadeProgress(float fadeProgress)
+    {
+        if (fadeProgress <= transparentModeFadeThreshold)
+        {
+            return 0f;
+        }
+
+        return Mathf.InverseLerp(transparentModeFadeThreshold, 1f, fadeProgress);
+    }
+
     private void ApplyToonFade(float fadeProgress)
     {
-        float transparencyValue = Mathf.Lerp(restoredToonTransparency, hiddenToonTransparency, fadeProgress);
+        float effectiveFadeProgress = GetEffectiveFadeProgress(fadeProgress);
+        float transparencyValue = Mathf.Lerp(restoredToonTransparency, hiddenToonTransparency, effectiveFadeProgress);
 
         foreach (ToonMaterialState state in toonMaterials)
         {
@@ -267,7 +279,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
                 state.Material.SetFloat(ToonTransparencyProperty, transparencyValue);
             }
 
-            if (fadeProgress > 0f)
+            if (effectiveFadeProgress > 0f)
             {
                 SetToonTransparent(state.Material);
                 continue;
@@ -279,6 +291,8 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
 
     private void ApplyLitFade(float fadeProgress)
     {
+        float effectiveFadeProgress = GetEffectiveFadeProgress(fadeProgress);
+
         foreach (LitMaterialState state in litMaterials)
         {
             if (state.Material == null)
@@ -286,7 +300,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
                 continue;
             }
 
-            float alpha = Mathf.Lerp(restoredLitAlpha, hiddenLitAlpha, fadeProgress);
+            float alpha = Mathf.Lerp(restoredLitAlpha, hiddenLitAlpha, effectiveFadeProgress);
             Color color = state.OriginalBaseColor;
             color.a = alpha;
 
@@ -295,7 +309,7 @@ public class DistanceMaterialTransparencyController : MonoBehaviour
                 state.Material.SetColor(LitBaseColorProperty, color);
             }
 
-            if (fadeProgress > 0f)
+            if (effectiveFadeProgress > 0f)
             {
                 SetLitTransparent(state.Material);
                 continue;
