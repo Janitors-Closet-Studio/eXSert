@@ -10,6 +10,7 @@ namespace Progression
     [DefaultExecutionOrder(10)] // Ensure this executes after the ProgressionManager, which may rely on it to register itself in Awake
     public abstract class ProgressionZone : MonoBehaviour
     {
+        public event Action<ProgressionZone> ZoneEntered;
         public event Action<ProgressionZone, bool> ZoneEnabledStateChanged;
 
         #region Inspector Setup
@@ -95,7 +96,7 @@ namespace Progression
             ZoneEnabledStateChanged?.Invoke(this, true);
 
             // If the player is already in the zone when it gets enabled, we need to manually trigger the enter logic since OnTriggerEnter won't be called until they exit and re-enter.
-            if (zoneActive) PlayerEnteredZone();
+            if (zoneActive) HandlePlayerEnteredZone();
         }
 
         public void DisableZone()
@@ -123,7 +124,7 @@ namespace Progression
             zoneActive = true;
 
             if (!zoneEnabled) return;
-            PlayerEnteredZone();
+            HandlePlayerEnteredZone();
         }
         protected void OnTriggerExit(Collider other)
         {
@@ -136,6 +137,12 @@ namespace Progression
 
         protected abstract void PlayerEnteredZone();
         protected abstract void PlayerExitedZone();
+
+        private void HandlePlayerEnteredZone()
+        {
+            PlayerEnteredZone();
+            ZoneEntered?.Invoke(this);
+        }
         #endregion
 
         #region Debug Scripts

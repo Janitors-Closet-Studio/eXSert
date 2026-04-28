@@ -1327,6 +1327,18 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         source.PlayOneShot(clip);
     }
 
+    private void PlayDeathSFX()
+    {
+        if (deathSFX == null)
+            return;
+
+        AudioSource source = ResolveHitSfxSource();
+        if (source == null)
+            return;
+
+        source.PlayOneShot(deathSFX);
+    }
+
     private AudioSource ResolveHitSfxSource()
     {
         SoundManager soundManager = SoundManager.Instance;
@@ -1534,7 +1546,7 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
                 // Disable colliders immediately to prevent lock-on targeting during death
                 DisableCollidersForDeath();
                 PlaySFXOnHit();
-                SoundManager.Instance.sfxSource.PlayOneShot(deathSFX);
+                PlayDeathSFX();
                 
                 // NOTE: OnDeath event is now fired AFTER death animation completes
                 // See DeathBehavior.OnDeathSequenceComplete() or DeathFallbackRoutine()

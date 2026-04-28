@@ -35,6 +35,7 @@ public class PuzzleInteraction : UnlockableInteraction
 
     public event Action ButtonPressed;
     public event Action<PuzzleInteraction> ButtonPressedWithSender;
+    public event Action<PuzzleInteraction> InteractionCompleted;
 
     public int ConsoleIndex => consoleIndex;
 
@@ -88,6 +89,12 @@ public class PuzzleInteraction : UnlockableInteraction
     {
         LogVerbose("TriggerFromInspector pressed.");
         Interact();
+    }
+
+    public void NotifyInteractionCompleted()
+    {
+        LogVerbose("NotifyInteractionCompleted invoked.");
+        InteractionCompleted?.Invoke(this);
     }
 
     private void FindPlayerReference()

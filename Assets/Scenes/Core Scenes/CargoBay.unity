@@ -1279,6 +1279,59 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8108614669738800002, guid: bcd1c6fd9f380ac44a16dbd945268421, type: 3}
   m_PrefabInstance: {fileID: 33343886}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &33532712
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 33532713}
+  - component: {fileID: 33532714}
+  m_Layer: 0
+  m_Name: ObjectiveTrigger3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &33532713
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 33532712}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.13, y: 4.03, z: 79.639}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 604273671}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &33532714
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 33532712}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.33, y: 9.5, z: 4.26}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &38372186
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7135,7 +7188,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Fight the enemies and advanced through the ship!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 1.5
 --- !u!1001 &248032104
 PrefabInstance:
@@ -8977,7 +9030,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Fight the enemies and advanced through the ship!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &301098312
 PrefabInstance:
@@ -13817,7 +13870,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Get to the second crane!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &446693049
 PrefabInstance:
@@ -18540,7 +18593,10 @@ Transform:
   m_LocalPosition: {x: 14.893351, y: -0.7790874, z: -157.50443}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1507246518}
+  - {fileID: 2109478562}
+  - {fileID: 33532713}
   m_Father: {fileID: 387321457}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &604273672
@@ -18559,6 +18615,8 @@ MonoBehaviour:
   objectives:
   - interactionToActivate: {fileID: 0}
     triggerSource: {fileID: 209182630}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
     triggerOnWaveCompletion: 0
     objectiveID: 1
     objectiveText: "\"Cleanser's forces are already waiting. \nTime to scrap 'em
@@ -18569,6 +18627,8 @@ MonoBehaviour:
     priority: 0
   - interactionToActivate: {fileID: 0}
     triggerSource: {fileID: 1366759822}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
     triggerOnWaveCompletion: 0
     objectiveID: 2
     objectiveText: "\"They're trying to stall me. \nI'm not going to let them.\""
@@ -18578,10 +18638,73 @@ MonoBehaviour:
     priority: 0
   - interactionToActivate: {fileID: 0}
     triggerSource: {fileID: 1366759822}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
     triggerOnWaveCompletion: 1
     objectiveID: 3
     objectiveText: "\"They locked down the route. \nI need to get this container
       out of the way.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 5960073906962354268}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 1
+    triggerOnWaveCompletion: 0
+    objectiveID: 4
+    objectiveText: '"Path is Clear.
+
+      Let''s keep on moving."'
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 1507246519}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 5
+    objectiveText: "\"Another lockdown. Same as before. \nWipe them out, keep moving.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 2109478563}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 6
+    objectiveText: '"Seems like they''re getting desperate.
+
+      Let''s push through."'
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 244521764}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 1
+    objectiveID: 7
+    objectiveText: "\"Area secured. \nTime to get that door open.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 33532714}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 8
+    objectiveText: '"Catch my breath. Check my gear.
+
+      Keep moving."'
     objectiveType: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
@@ -44002,6 +44125,59 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6193545174717040101, guid: 637211385f0149c48937ef9d99dc8f2d, type: 3}
   m_PrefabInstance: {fileID: 1506672311}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1507246517
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1507246518}
+  - component: {fileID: 1507246519}
+  m_Layer: 0
+  m_Name: ObjectiveTrigger1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1507246518
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1507246517}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 31.15, y: 4.03, z: 13.77}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 604273671}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1507246519
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1507246517}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.33, y: 9.5, z: 4.26}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1513478635
 GameObject:
   m_ObjectHideFlags: 0
@@ -50115,6 +50291,10 @@ PrefabInstance:
     - target: {fileID: 8298264831139650794, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8631346809535284705, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
+      propertyPath: enableZoneOnComplete
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8631346809535284705, guid: 10dbd02a78bec9a478fc9e850ba47166, type: 3}
       propertyPath: 'overrideInteractPoints.Array.data[0]'
@@ -62877,6 +63057,59 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2751842368243728327, guid: c75b0e475125e974aa6fb30353a6ed20, type: 3}
   m_PrefabInstance: {fileID: 2105007390}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2109478561
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2109478562}
+  - component: {fileID: 2109478563}
+  m_Layer: 0
+  m_Name: ObjectiveTrigger2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2109478562
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2109478561}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.13, y: 4.03, z: 41.27}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 604273671}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &2109478563
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2109478561}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.33, y: 9.5, z: 4.26}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!4 &2116371298 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8479167908719359356, guid: b94f31ff538cf914ba103756bc176d68, type: 3}
