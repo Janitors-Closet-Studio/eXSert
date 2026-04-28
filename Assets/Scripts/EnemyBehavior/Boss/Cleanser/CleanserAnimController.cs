@@ -149,6 +149,15 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Animator layer index to drive (0 = Base Layer).")]
         [SerializeField] private int layerIndex = 0;
 
+        [Tooltip("Name of the additive Animator layer used for hit-reaction overlays. Must match the layer name in the Animator Controller exactly. Leave blank to fall back to the base layer.")]
+        [SerializeField] private string hitReactLayerName = "HitReact";
+
+        [Tooltip("Trigger parameter name used to fire hit-reaction animations on the additive layer.")]
+        [SerializeField] private string hitReactTriggerV1 = "Hit1";
+
+        [Tooltip("Second hit-reaction trigger variant (randomly chosen with Hit1).")]
+        [SerializeField] private string hitReactTriggerV2 = "Hit2";
+
         [Header("Crossfade Settings")]
         [Tooltip("Default transition time between animation states.")]
         [SerializeField, Range(0f, 0.3f)] private float defaultTransition = 0.15f;
@@ -169,6 +178,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private Animator animator;
         private string currentState;
+        private int hitReactLayerIndex = -1;
 
         private float lastWhirlwindDiagnosticLogTime = -999f;
 
@@ -189,6 +199,13 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 cleanserBrain = GetComponent<CleanserBrain>()
                     ?? GetComponentInParent<CleanserBrain>();
+            }
+
+            if (animator != null && !string.IsNullOrEmpty(hitReactLayerName))
+            {
+                hitReactLayerIndex = animator.GetLayerIndex(hitReactLayerName);
+                if (hitReactLayerIndex >= 0)
+                    animator.SetLayerWeight(hitReactLayerIndex, 1f);
             }
         }
 
@@ -224,8 +241,27 @@ namespace EnemyBehavior.Boss.Cleanser
     #region General State Animations
 
         public void PlayGrabWeapon() => CrossFade(CleanserAnim.GeneralStates.GrabWeapon, attackTransition, true);
-    public void PlayHit1() => CrossFade(CleanserAnim.GeneralStates.Hit1, 0.02f, true);
-    public void PlayHit2() => CrossFade(CleanserAnim.GeneralStates.Hit2, 0.02f, true);
+    public void PlayHit1() => TriggerHitReact(hitReactTriggerV1, CleanserAnim.GeneralStates.Hit1);
+    public void PlayHit2() => TriggerHitReact(hitReactTriggerV2, CleanserAnim.GeneralStates.Hit2);
+
+    /// <summary>
+    /// Fires a hit-reaction on the additive HitReact layer via a trigger, so it overlays
+    /// the current base-layer animation without interrupting it. Falls back to a CrossFade
+    /// on the base layer if no additive layer has been configured.
+    /// </summary>
+    private void TriggerHitReact(string triggerName, string fallbackStateName)
+    {
+        if (animator == null) return;
+
+        if (hitReactLayerIndex >= 0 && !string.IsNullOrEmpty(triggerName))
+        {
+            animator.SetTrigger(triggerName);
+        }
+        else
+        {
+            CrossFade(fallbackStateName, 0.02f, true);
+        }
+    }
         public void PlayDeath() => CrossFade(CleanserAnim.GeneralStates.Death, 0.02f, true);
 
         // TODO: Uncomment when animation exists in the current Animator.

@@ -921,6 +921,125 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
+        /// <summary>
+        /// Drops all stockpiled (hovering) weapons under gravity, then sinks them through the
+        /// floor and returns them to the pool. Used on Cleanser death so hovering spares fall
+        /// naturally before disappearing. Lodged weapons are also sunk immediately.
+        /// </summary>
+        public void DropStockpiledWeaponsToGround()
+        {
+            if (lodgedWeapons.Count > 0)
+            {
+                var lodgedSnapshot = new List<SpareWeapon>(lodgedWeapons);
+                lodgedWeapons.Clear();
+                for (int i = 0; i < lodgedSnapshot.Count; i++)
+                {
+                    var weapon = lodgedSnapshot[i];
+                    if (weapon == null || weapon.WeaponObject == null)
+                        continue;
+                    StartCoroutine(SinkAndReturnWeaponRoutine(weapon));
+                }
+            }
+
+            if (stockpiledWeapons.Count > 0)
+            {
+                var stockpileSnapshot = new List<SpareWeapon>(stockpiledWeapons);
+                stockpiledWeapons.Clear();
+                for (int i = 0; i < stockpileSnapshot.Count; i++)
+                {
+                    var weapon = stockpileSnapshot[i];
+                    if (weapon == null || weapon.WeaponObject == null)
+                        continue;
+                    weapon.IsHeld = false;
+                    StartCoroutine(GravityFallAndSinkWeaponRoutine(weapon));
+                }
+                UpdateStockpileLayoutImmediate();
+            }
+        }
+
+        private IEnumerator GravityFallAndSinkWeaponRoutine(SpareWeapon weapon)
+        {
+            if (weapon == null || weapon.WeaponObject == null)
+                yield break;
+
+            GameObject obj = weapon.WeaponObject;
+            obj.transform.SetParent(null);
+            SetWeaponControlledVfxActive(weapon, false);
+
+            // Disable all colliders so the falling weapon doesn't interact with gameplay.
+            Collider[] colliders = obj.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = false;
+            }
+
+            // Pin rigidbodies — we drive position manually so physics doesn't fight us.
+            Rigidbody[] bodies = obj.GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i] == null) continue;
+                bodies[i].isKinematic = true;
+                bodies[i].linearVelocity = Vector3.zero;
+                bodies[i].angularVelocity = Vector3.zero;
+            }
+
+            // Manual gravity fall: accumulate vertical velocity each frame and move the object.
+            // This avoids any LateUpdate / FixedUpdate race conditions that would counteract physics.
+            float yVelocity = 0f;
+            float fallTimeout = 4f;
+            float elapsed = 0f;
+            float gravity = Mathf.Abs(Physics.gravity.y);
+
+            // Add a small random horizontal tumble rotation for visual flair.
+            Vector3 tumbleAxis = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)).normalized;
+            float tumbleSpeed = Random.Range(120f, 240f);
+
+            while (elapsed < fallTimeout && obj != null)
+            {
+                elapsed += Time.deltaTime;
+                yVelocity -= gravity * Time.deltaTime;
+                obj.transform.position += new Vector3(0f, yVelocity * Time.deltaTime, 0f);
+                obj.transform.Rotate(tumbleAxis, tumbleSpeed * Time.deltaTime, Space.World);
+
+                // Raycast downward to detect when we've hit (or passed) the ground.
+                float rayOriginOffset = 0.5f;
+                if (Physics.Raycast(obj.transform.position + Vector3.up * rayOriginOffset, Vector3.down,
+                    out RaycastHit groundHit, rayOriginOffset + 0.05f))
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            if (obj == null)
+                yield break;
+
+            // Sink through the floor exactly like the cancel behavior.
+            Vector3 startPos = obj.transform.position;
+            float sinkDistance = Mathf.Max(0.1f, sinkDespawnDistance);
+            float sinkSpeed = Mathf.Max(0.05f, sinkDespawnSpeed);
+
+            while (obj != null && Vector3.Distance(startPos, obj.transform.position) < sinkDistance)
+            {
+                obj.transform.position += Vector3.down * (sinkSpeed * Time.deltaTime);
+                yield return null;
+            }
+
+            if (obj == null)
+                yield break;
+
+            // Re-enable colliders before pooling so the next reuse starts clean.
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = true;
+            }
+
+            ReturnWeaponToPool(weapon);
+        }
+
         private IEnumerator SinkAndReturnWeaponRoutine(SpareWeapon weapon)
         {
             if (weapon == null || weapon.WeaponObject == null)
@@ -977,6 +1096,21 @@ namespace EnemyBehavior.Boss.Cleanser
 
             var vfxController = weapon.WeaponObject.GetComponentInChildren<CleanserSpareWeaponVfxController>(true);
             vfxController?.SetControlledState(isActive);
+        }
+
+        /// <summary>
+        /// Hard failsafe: immediately disables every tracked spare weapon GameObject.
+        /// Used as a fallback after Cleanser death to guarantee no weapon objects remain visible
+        /// if the coroutine-based cleanup has not finished yet.
+        /// </summary>
+        public void ForceDisableAllSpareWeapons()
+        {
+            for (int i = 0; i < spareWeaponPool.Count; i++)
+            {
+                var weapon = spareWeaponPool[i];
+                if (weapon != null && weapon.WeaponObject != null && weapon.WeaponObject.activeSelf)
+                    weapon.WeaponObject.SetActive(false);
+            }
         }
 
         /// <summary>
