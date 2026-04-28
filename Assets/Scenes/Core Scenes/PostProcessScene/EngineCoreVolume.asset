@@ -15,7 +15,7 @@ MonoBehaviour:
   active: 1
   mode:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1
   neutralHDRRangeReductionMode:
     m_OverrideState: 0
     m_Value: 2
@@ -55,10 +55,10 @@ MonoBehaviour:
   active: 1
   postExposure:
     m_OverrideState: 1
-    m_Value: 3.09
+    m_Value: 2.65
   contrast:
     m_OverrideState: 1
-    m_Value: 7
+    m_Value: 12
   colorFilter:
     m_OverrideState: 1
     m_Value: {r: 0.8490566, g: 0.7492825, b: 0.6448024, a: 1}
@@ -83,25 +83,25 @@ MonoBehaviour:
   active: 1
   shadows:
     m_OverrideState: 1
-    m_Value: {x: 0.92122245, y: 0.8026937, z: 1, w: 0.00000006273171}
+    m_Value: {x: 0.8237907, y: 0.6129435, z: 1, w: -0.0354819}
   midtones:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 0.8831611, z: 0.7774557, w: -0.018715458}
+    m_Value: {x: 1, y: 0.7384471, z: 0.97750646, w: -0.018715458}
   highlights:
     m_OverrideState: 1
-    m_Value: {x: 0.7521321, y: 1, z: 0.77315336, w: 0.06767774}
+    m_Value: {x: 0.7503544, y: 0.6064946, z: 1, w: 0.06767774}
   shadowsStart:
     m_OverrideState: 1
-    m_Value: 0.15
+    m_Value: 0.25
   shadowsEnd:
     m_OverrideState: 1
-    m_Value: 0.48
+    m_Value: 0.51
   highlightsStart:
     m_OverrideState: 1
-    m_Value: 0.76
+    m_Value: 0.15
   highlightsEnd:
     m_OverrideState: 1
-    m_Value: 0.91
+    m_Value: 2.34
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -119,6 +119,7 @@ MonoBehaviour:
   - {fileID: -1439048688005074480}
   - {fileID: -8312641655983880907}
   - {fileID: 240310275020707352}
+  - {fileID: 5095648638792195916}
 --- !u!114 &240310275020707352
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -137,10 +138,26 @@ MonoBehaviour:
     m_Value: 2
   intensity:
     m_OverrideState: 1
-    m_Value: 0.4
+    m_Value: 0.39
   response:
     m_OverrideState: 0
     m_Value: 0.8
   texture:
     m_OverrideState: 0
     m_Value: {fileID: 0}
+--- !u!114 &5095648638792195916
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81180773991d8724ab7f2d216912b564, type: 3}
+  m_Name: ChromaticAberration
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.ChromaticAberration
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.123
