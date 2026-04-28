@@ -126,6 +126,20 @@ public class MenuListManager : MonoBehaviour
             hiddenMenus.Add(hiddenMenu);
     }
 
+    public void RemoveMenuFromList(GameObject menuToRemove)
+    {
+        if (menuToRemove == null || menusToManage == null)
+            return;
+
+        int menuIndex = menusToManage.IndexOf(menuToRemove);
+        if (menuIndex < 0)
+            return;
+
+        menusToManage.RemoveAt(menuIndex);
+        RestoreTemporarilyHiddenMenusFor(menuToRemove);
+        UpdateFooterForCurrentTopMenu();
+    }
+
     private void RestoreTemporarilyHiddenMenusFor(GameObject ownerMenu)
     {
         if (ownerMenu == null)

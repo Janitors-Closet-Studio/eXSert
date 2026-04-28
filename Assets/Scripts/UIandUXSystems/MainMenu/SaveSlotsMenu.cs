@@ -7,11 +7,13 @@ Handles the save slot menu and the actions of the buttons clicked
 
 */
 
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
 public class SaveSlotsMenu : MonoBehaviour
 {
@@ -25,6 +27,8 @@ public class SaveSlotsMenu : MonoBehaviour
     [SerializeField] private Button loadButton;
     internal bool isInLoadMenu = false;
 
+    [SerializeField] private GameObject detailsPanel;
+
     [SerializeField] internal SaveSlots currentSaveSlotSelected = null;
 
     [SerializeField, Tooltip("The first level to be loaded when a player starts a new game")]
@@ -37,6 +41,7 @@ public class SaveSlotsMenu : MonoBehaviour
 
     private bool isLoadingGame = false;
     private bool hasStartedSceneTransition = false;
+    private Coroutine deferredSelectionCoroutine;
 
     private void Awake() => EnsureReferences();
     // Helper for debug
@@ -65,6 +70,14 @@ public class SaveSlotsMenu : MonoBehaviour
             if (playButton == null)
                 playButton = FindButtonByNameContains(buttons, "play");
         }
+
+        if (detailsPanel == null)
+        {
+            Transform detailsPanelTransform = transform.Find("DetailsPanel");
+            if (detailsPanelTransform != null)
+                detailsPanel = detailsPanelTransform.gameObject;
+        }
+
         EnsureTheCorrectSaveSlotText();
 
     }
@@ -466,8 +479,79 @@ public class SaveSlotsMenu : MonoBehaviour
 
         // Refresh displayed slots
         currentSaveSlotSelected = null;
-        ActivateMenu(hasAnyLoadableProfile ? isLoadingGame : false);
+        CollapseDetailsPanel();
+        ActivateMenu(isLoadingGame);
+        SelectFirstSaveSlotButton();
         TurnOffLoadButtonIfNoData();
+    }
+
+    public void CollapseDetailsPanel()
+    {
+        if (detailsPanel != null)
+            detailsPanel.SetActive(false);
+    }
+
+    public void SelectFirstSaveSlotButton()
+    {
+        if (saveSlots == null || saveSlots.Length == 0)
+            return;
+
+        Button firstInteractableButton = null;
+        Button firstButton = null;
+
+        foreach (SaveSlots saveSlot in saveSlots)
+        {
+            if (saveSlot == null)
+                continue;
+
+            Button slotButton = saveSlot.GetComponent<Button>();
+            if (slotButton == null || !slotButton.gameObject.activeInHierarchy)
+                continue;
+
+            if (firstButton == null)
+                firstButton = slotButton;
+
+            if (slotButton.IsInteractable())
+            {
+                firstInteractableButton = slotButton;
+                break;
+            }
+        }
+
+        Button buttonToSelect = firstButton != null && firstButton.IsInteractable()
+            ? firstButton
+            : firstInteractableButton;
+
+        if (buttonToSelect == null || EventSystem.current == null)
+            return;
+
+        EventSystem.current.SetSelectedGameObject(null);
+        EventSystem.current.SetSelectedGameObject(buttonToSelect.gameObject);
+    }
+
+    public void SelectFirstSaveSlotButtonNextFrame(int delayFrames = 1)
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        if (deferredSelectionCoroutine != null)
+            StopCoroutine(deferredSelectionCoroutine);
+
+        deferredSelectionCoroutine = StartCoroutine(SelectFirstSaveSlotButtonDeferred(delayFrames));
+    }
+
+    private IEnumerator SelectFirstSaveSlotButtonDeferred(int delayFrames)
+    {
+        MenuSelectionSuppression.SuppressForFrames(Mathf.Max(1, delayFrames));
+
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
+
+        for (int frame = 0; frame < Mathf.Max(1, delayFrames); frame++)
+            yield return null;
+
+        SelectFirstSaveSlotButton();
+        deferredSelectionCoroutine = null;
     }
 
     //When the back button is click it activates the main menu again

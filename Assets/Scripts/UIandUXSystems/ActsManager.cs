@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Timers;
 using UI.Loading;
+using UnityEngine.EventSystems;
 
 
 public class ActsManager : Singleton<ActsManager>
@@ -36,17 +37,15 @@ public class ActsManager : Singleton<ActsManager>
     {
         // Try to find PauseManager if not assigned
         if (pauseManager == null)
-        {
             pauseManager = PauseManager.Instance;
-        }
 
-        RefreshMapLocationState();
+        RefreshActsUiForCurrentProfile();
     }
 
     private void OnEnable()
     {
         SceneManager.sceneLoaded += HandleSceneLoaded;
-        RefreshMapLocationState();
+        RefreshActsUiForCurrentProfile();
     }
 
     private void OnDisable()
@@ -103,23 +102,36 @@ public class ActsManager : Singleton<ActsManager>
 
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        string sceneName = GetHighestLoadedTrackedSceneName();
-        Debug.Log($"[ActsManager] Scene loaded: {scene.name}. Highest tracked scene: {sceneName}");
+        Debug.Log($"[ActsManager] Scene loaded: {scene.name}. Refreshing acts UI for current profile.");
+        RefreshActsUiForCurrentProfile();
+    }
 
+    private void RefreshActsUiForCurrentProfile()
+    {
+        UpdateActButtonsForProfile(GetCurrentProfileId());
+
+        if (IsActsPanelOpen())
+            RestoreActPreviewFromCurrentSelection();
+        else
+            RefreshMapLocationState();
+    }
+
+    public void RefreshNavigationMapDisplay()
+    {
         RefreshMapLocationState();
     }
 
     private void RefreshMapLocationState()
     {
-        string currentSceneName = GetHighestLoadedTrackedSceneName();
+        string currentSceneName = GetAuthoritativeProgressSceneName(null);
         if (string.IsNullOrEmpty(currentSceneName))
             return;
 
-        ActivateAllImagesBefore();
+        ActivateAllImagesBefore(currentSceneName);
 
         foreach (var kvp in sceneNames)
         {
-            if (kvp.Value != currentSceneName)
+            if (!SceneNameMatchesAct(currentSceneName, kvp.Value))
                 continue;
 
             StartPulsingLocation(kvp.Key);
@@ -248,12 +260,41 @@ public class ActsManager : Singleton<ActsManager>
 
     public void ActivateAllImagesBefore()
     {
-        string currentSceneName = GetHighestLoadedTrackedSceneName();
+        string currentSceneName = GetAuthoritativeProgressSceneName(null);
+        ActivateAllImagesBefore(currentSceneName);
+    }
+
+    private void ActivateAllImagesBefore(string currentSceneName)
+    {
         if (!sceneNames.ContainsValue(currentSceneName))
         {
-            Debug.LogWarning($"[ActsManager] Current scene '{currentSceneName}' not found in sceneNames mapping. Cannot activate map location images.");
+            int fallbackIndex = -1;
+            foreach (var kvp in sceneNames)
+            {
+                if (!SceneNameMatchesAct(currentSceneName, kvp.Value))
+                    continue;
+
+                fallbackIndex = kvp.Key;
+                break;
+            }
+
+            if (fallbackIndex < 0)
+            {
+                Debug.LogWarning($"[ActsManager] Current scene '{currentSceneName}' not found in sceneNames mapping. Cannot activate map location images.");
+                return;
+            }
+
+            HideAllMapLocationImages();
+            for (int i = 0; i <= fallbackIndex && i < mapLocationImages.Count; i++)
+            {
+                if (mapLocationImages[i] != null)
+                    mapLocationImages[i].SetActive(true);
+            }
+
             return;
         }
+
+        HideAllMapLocationImages();
 
         int mapIndex = sceneNames.First(kvp => kvp.Value == currentSceneName).Key;
 
@@ -263,20 +304,218 @@ public class ActsManager : Singleton<ActsManager>
         }
 
         mapLocationImages[mapIndex].SetActive(true);
-        SyncActButtonsForScene(currentSceneName);
+    }
+
+    public void HideAllMapLocationImages()
+    {
+        StopPulsingLocation();
+
+        foreach (GameObject imageRoot in EnumerateAllPreviewRoots())
+        {
+            if (imageRoot == null)
+                continue;
+
+            imageRoot.SetActive(false);
+            ResetLocationVisual(imageRoot);
+        }
+    }
+
+    public void ShowActPreview(int actNumber)
+    {
+        if (!IsActsPanelOpen())
+            return;
+
+        HideAllMapLocationImages();
+
+        if (actsButton == null)
+            return;
+
+        HashSet<GameObject> previewRoots = GetPreviewRootsForAct(actNumber);
+
+        foreach (GameObject previewRoot in previewRoots)
+        {
+            previewRoot.SetActive(true);
+            ResetLocationVisual(previewRoot);
+        }
+    }
+
+    public void RestoreActPreviewFromCurrentSelection()
+    {
+        if (!IsActsPanelOpen())
+        {
+            RefreshMapLocationState();
+            return;
+        }
+
+        if (TryGetPreviewActButton(EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null, out ActButton selectedActButton))
+        {
+            ShowActPreview(selectedActButton.ActNumber);
+            return;
+        }
+
+        if (actsButton != null)
+        {
+            foreach (Button button in actsButton)
+            {
+                if (button == null || !button.IsInteractable() || !button.gameObject.activeInHierarchy)
+                    continue;
+
+                if (TryGetPreviewActButton(button.gameObject, out ActButton fallbackActButton))
+                {
+                    ShowActPreview(fallbackActButton.ActNumber);
+                    return;
+                }
+            }
+        }
+
+        HideAllMapLocationImages();
+    }
+
+    private static bool TryGetPreviewActButton(GameObject candidate, out ActButton actButton)
+    {
+        actButton = null;
+
+        if (candidate == null)
+            return false;
+
+        if (!candidate.TryGetComponent(out actButton))
+            return false;
+
+        Button button = candidate.GetComponent<Button>();
+        return button != null && button.IsInteractable();
+    }
+
+    private HashSet<GameObject> GetPreviewRootsForAct(int actNumber)
+    {
+        HashSet<GameObject> previewRoots = new HashSet<GameObject>();
+
+        if (actsButton == null)
+            return previewRoots;
+
+        for (int index = 0; index < actsButton.Length; index++)
+        {
+            if (index > actNumber)
+                break;
+
+            Button actEntryButton = actsButton[index];
+            if (actEntryButton == null || !actEntryButton.TryGetComponent(out ActButton actButton))
+                continue;
+
+            foreach (GameObject previewRoot in actButton.GetPreviewRoots())
+            {
+                if (previewRoot != null)
+                    previewRoots.Add(previewRoot);
+            }
+        }
+
+        return previewRoots;
+    }
+
+    private IEnumerable<GameObject> EnumerateAllPreviewRoots()
+    {
+        HashSet<GameObject> uniqueRoots = new HashSet<GameObject>();
+
+        if (mapLocationImages != null)
+        {
+            foreach (GameObject imageRoot in mapLocationImages)
+            {
+                if (imageRoot != null && uniqueRoots.Add(imageRoot))
+                    yield return imageRoot;
+            }
+        }
+
+        if (actsButton == null)
+            yield break;
+
+        foreach (Button actEntryButton in actsButton)
+        {
+            if (actEntryButton == null || !actEntryButton.TryGetComponent(out ActButton actButton))
+                continue;
+
+            foreach (GameObject previewRoot in actButton.GetPreviewRoots())
+            {
+                if (previewRoot != null && uniqueRoots.Add(previewRoot))
+                    yield return previewRoot;
+            }
+        }
     }
 
     private string GetCurrentProfileId()
     {
-        string profileId = "default";
-        if (DataPersistenceManager.Instance != null)
+        string profileId = DataPersistenceManager.GetSelectedProfileId();
+        return string.IsNullOrEmpty(profileId) ? "default" : profileId;
+    }
+
+    private void SyncActCompletionFromProfileData(string profileId)
+    {
+        if (string.IsNullOrEmpty(profileId))
+            profileId = "default";
+
+        profileActCompletionMap[profileId] = GetDefaultActCompletionMap();
+
+        Dictionary<string, GameData> profiles = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+        profiles.TryGetValue(profileId, out GameData profileData);
+
+        int highestUnlockedAct = ResolveHighestUnlockedAct(profileData);
+        if (highestUnlockedAct < 0)
+            return;
+
+        Dictionary<int, bool> completionMap = profileActCompletionMap[profileId];
+        for (int actIndex = 0; actIndex <= highestUnlockedAct; actIndex++)
         {
-            var getIdMethod = DataPersistenceManager.Instance.GetType().GetMethod("GetSelectedProfileId");
-            if (getIdMethod != null)
-                profileId = (string)getIdMethod.Invoke(DataPersistenceManager.Instance, null);
+            if (completionMap.ContainsKey(actIndex))
+                completionMap[actIndex] = true;
+        }
+    }
+
+    private int ResolveHighestUnlockedAct(GameData profileData)
+    {
+        string sceneName = GetAuthoritativeProgressSceneName(profileData);
+
+        if (string.IsNullOrWhiteSpace(sceneName))
+            return -1;
+
+        int highestUnlockedAct = -1;
+        foreach (var kvp in actSceneMap)
+        {
+            if (!SceneNameMatchesAct(sceneName, kvp.Value))
+                continue;
+
+            highestUnlockedAct = Mathf.Max(highestUnlockedAct, kvp.Key);
         }
 
-        return string.IsNullOrEmpty(profileId) ? "default" : profileId;
+        return highestUnlockedAct;
+    }
+
+    private string GetAuthoritativeProgressSceneName(GameData profileData)
+    {
+        Progression.Checkpoints.CheckpointBehavior activeCheckpoint = Progression.Checkpoints.CheckpointBehavior.currentCheckpoint;
+        if (activeCheckpoint != null && activeCheckpoint.CheckpointSceneAsset != null)
+            return activeCheckpoint.CheckpointSceneAsset.SceneName;
+
+        if (profileData != null)
+        {
+            if (!string.IsNullOrWhiteSpace(profileData.currentSceneName))
+                return profileData.currentSceneName;
+
+            if (!string.IsNullOrWhiteSpace(profileData.lastSavedScene))
+                return profileData.lastSavedScene;
+        }
+
+        return GetHighestLoadedTrackedSceneName();
+    }
+
+    private bool IsActsPanelOpen()
+    {
+        return actsHolder != null && actsHolder.activeInHierarchy;
+    }
+
+    private static bool SceneNameMatchesAct(string sceneName, string actSceneToken)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName) || string.IsNullOrWhiteSpace(actSceneToken))
+            return false;
+
+        return sceneName.IndexOf(actSceneToken, System.StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private string GetHighestLoadedTrackedSceneName()
@@ -358,18 +597,8 @@ public class ActsManager : Singleton<ActsManager>
     public string GetFarthestUnlockedActName(string profileId)
     {
         if (string.IsNullOrEmpty(profileId)) profileId = "default";
-        if (!profileActCompletionMap.ContainsKey(profileId))
-            profileActCompletionMap[profileId] = GetDefaultActCompletionMap();
-
-        var map = profileActCompletionMap[profileId];
-        for (int i = actsButton.Length - 1; i >= 0; i--)
-        {
-            if (map.TryGetValue(i, out bool isCompleted) && isCompleted)
-            {
-                return actDisplayNameMap.ContainsKey(i) ? actDisplayNameMap[i] : $"Act {i}";
-            }
-        }
-        return null; // No acts completed
+        int highestUnlockedAct = Mathf.Max(0, GetHighestUnlockedActForProfile(profileId));
+        return actDisplayNameMap.ContainsKey(highestUnlockedAct) ? actDisplayNameMap[highestUnlockedAct] : $"Act {highestUnlockedAct}";
     }
 
     // Mark an act as completed for a profile
@@ -398,26 +627,91 @@ public class ActsManager : Singleton<ActsManager>
     public void UpdateActButtonsForProfile(string profileId)
     {
         if (string.IsNullOrEmpty(profileId)) profileId = "default";
+        SyncActCompletionFromProfileData(profileId);
         if (!profileActCompletionMap.ContainsKey(profileId))
             profileActCompletionMap[profileId] = GetDefaultActCompletionMap();
 
-        var map = profileActCompletionMap[profileId];
+        int highestUnlockedAct = Mathf.Max(0, GetHighestUnlockedActForProfile(profileId));
         for (int i = 0; i < actsButton.Length; i++)
         {
-            if (map.TryGetValue(i, out bool isCompleted))
-            {
-                actsButton[i].interactable = isCompleted;
-                Debug.Log($"[ActsManager] Button {i} ('{(actSceneMap.ContainsKey(i) ? actSceneMap[i] : "?")}') interactable set to {isCompleted} for profile '{profileId}'");
-            }
-            else
-            {
-                actsButton[i].interactable = false;
-                Debug.Log($"[ActsManager] Button {i} ('{(actSceneMap.ContainsKey(i) ? actSceneMap[i] : "?")}') interactable set to false (no completion map entry) for profile '{profileId}'");
-            }
+            bool isCompleted = i <= highestUnlockedAct;
+            actsButton[i].interactable = isCompleted;
+            Debug.Log($"[ActsManager] Button {i} ('{(actSceneMap.ContainsKey(i) ? actSceneMap[i] : "?")}') interactable set to {isCompleted} for profile '{profileId}' using highest unlocked act {highestUnlockedAct}");
 
             if (actsButton[i] != null && actsButton[i].TryGetComponent(out ActButton actButton))
                 actButton.RefreshVisualState();
         }
+
+        RefreshActButtonNavigation();
+
+        RestoreActPreviewFromCurrentSelection();
+    }
+
+    private void RefreshActButtonNavigation()
+    {
+        if (actsButton == null || actsButton.Length == 0)
+            return;
+
+        List<Button> enabledButtons = new List<Button>();
+        for (int i = 0; i < actsButton.Length; i++)
+        {
+            Button button = actsButton[i];
+            if (button == null)
+                continue;
+
+            Navigation navigation = button.navigation;
+            if (!button.IsInteractable())
+            {
+                navigation.mode = Navigation.Mode.None;
+                navigation.selectOnUp = null;
+                navigation.selectOnDown = null;
+                button.navigation = navigation;
+                continue;
+            }
+
+            enabledButtons.Add(button);
+        }
+
+        for (int i = 0; i < enabledButtons.Count; i++)
+        {
+            Button button = enabledButtons[i];
+            Navigation navigation = button.navigation;
+            navigation.mode = Navigation.Mode.Explicit;
+            navigation.selectOnUp = i > 0 ? enabledButtons[i - 1] : null;
+            navigation.selectOnDown = i < enabledButtons.Count - 1 ? enabledButtons[i + 1] : null;
+            button.navigation = navigation;
+        }
+
+        if (EventSystem.current == null)
+            return;
+
+        GameObject currentSelected = EventSystem.current.currentSelectedGameObject;
+        if (currentSelected == null)
+            return;
+
+        Button selectedButton = currentSelected.GetComponent<Button>();
+        if (selectedButton != null && selectedButton.IsInteractable())
+            return;
+
+        if (enabledButtons.Count == 0)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+            return;
+        }
+
+        EventSystem.current.SetSelectedGameObject(null);
+        EventSystem.current.SetSelectedGameObject(enabledButtons[0].gameObject);
+    }
+
+    private int GetHighestUnlockedActForProfile(string profileId)
+    {
+        if (string.IsNullOrEmpty(profileId))
+            profileId = "default";
+
+        Dictionary<string, GameData> profiles = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+        profiles.TryGetValue(profileId, out GameData profileData);
+
+        return ResolveHighestUnlockedAct(profileData);
     }
 
 

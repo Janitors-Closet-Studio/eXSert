@@ -100,8 +100,15 @@ public class MainMenuWarning : MonoBehaviour
         if (!IsWarningVisible())
             return;
 
+        bool wasDeleteSave = pendingAction == WarningAction.DeleteSave;
         ExecutePendingAction();
         HideWarning();
+
+        if (!wasDeleteSave)
+            return;
+
+        saveSlotsMenu?.CollapseDetailsPanel();
+        saveSlotsMenu?.SelectFirstSaveSlotButtonNextFrame();
     }
 
     public void OnOverwriteSaveButtonPressed()
@@ -159,6 +166,17 @@ public class MainMenuWarning : MonoBehaviour
         ConfigureWarningDisplay(overwriteSaveWarningText, true);
         ShowWarning();
         warningContainer.transform.SetAsLastSibling();
+    }
+
+    public void ShowPrimarySaveSlotAction()
+    {
+        if (saveSlotsMenu != null && saveSlotsMenu.isInLoadMenu)
+        {
+            saveSlotsMenu.OnSaveSlotClicked();
+            return;
+        }
+
+        ShowOverwriteSaveWarning();
     }
     public void ShowQuitWarning()
     {
@@ -306,6 +324,9 @@ public class MainMenuWarning : MonoBehaviour
 
     public void HideWarning()
     {
+        if (menuListManager != null)
+            menuListManager.RemoveMenuFromList(warningContainer);
+
         if (warningContainer != null)
         {
             if (warningCanvasGroup == null)

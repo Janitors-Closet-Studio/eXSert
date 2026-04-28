@@ -1,9 +1,8 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 /*
     Written by Brandon Wahl
@@ -15,8 +14,21 @@ using System.Collections.Generic;
 public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
 {
     [SerializeField] private int actNumber = 0; //0-4 
+    public int ActNumber => actNumber;
 
     [SerializeField] private GameObject[] mapLocationImage = null;
+
+    public IEnumerable<GameObject> GetPreviewRoots()
+    {
+        if (mapLocationImage == null)
+            yield break;
+
+        for (int i = 0; i < mapLocationImage.Length; i++)
+        {
+            if (mapLocationImage[i] != null)
+                yield return mapLocationImage[i];
+        }
+    }
 
     [SerializeField] private string sceneName;
 
@@ -63,111 +75,69 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
         hoverMapImageColor.a = 1f;
         selectedMapImageColor.a = 1f;
-
-        if (actNumber == 0)
-        {
-            for (int i = 0; i < mapLocationImage.Length; i++)
-            {
-                if (mapLocationImage[i] != null)
-                {
-                    mapLocationImage[i].SetActive(true);
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < mapLocationImage.Length; i++)
-            {
-                if (mapLocationImage[i] != null)
-                {
-                    mapLocationImage[i].SetActive(false);
-                }
-            }
-        }
     }
 
     private void OnEnable()
     {
         ApplyActsManagerColorsIfAvailable();
-        SceneManager.sceneLoaded += OnSceneLoaded;
         RefreshVisualState();
     }
 
     private void OnDisable()
     {
         StopActiveColorRoutine();
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (string.Equals(scene.name, this.sceneName, System.StringComparison.Ordinal))
-        {
-            SetAllMapLocationImagesActive(true);
-        }
     }
 
     public void RefreshVisualState()
     {
-        RefreshMapLocationImagesForLoadedScenes();
+        if (!CanShowPreview())
+        {
+            isHovered = false;
+            isSelected = false;
+        }
+
         UpdateMapLocationImageColor();
-    }
 
-    private void RefreshMapLocationImagesForLoadedScenes()
-    {
-        bool matchingSceneLoaded = false;
-
-        for (int i = 0; i < SceneManager.sceneCount; i++)
-        {
-            Scene loadedScene = SceneManager.GetSceneAt(i);
-            if (!loadedScene.IsValid() || !loadedScene.isLoaded)
-                continue;
-
-            if (!string.Equals(loadedScene.name, sceneName, System.StringComparison.Ordinal))
-                continue;
-
-            matchingSceneLoaded = true;
-            break;
-        }
-
-        bool shouldBeActive = matchingSceneLoaded || actNumber == 0;
-        SetAllMapLocationImagesActive(shouldBeActive);
-    }
-
-    private void SetAllMapLocationImagesActive(bool isActive)
-    {
-        if (mapLocationImage == null)
-            return;
-
-        for (int i = 0; i < mapLocationImage.Length; i++)
-        {
-            if (mapLocationImage[i] != null)
-                mapLocationImage[i].SetActive(isActive);
-        }
+        if (CanShowPreview() && (isHovered || isSelected))
+            actsManager?.ShowActPreview(actNumber);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (!CanShowPreview())
+            return;
+
         isHovered = true;
         UpdateMapLocationImageColor();
+        actsManager?.ShowActPreview(actNumber);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         isHovered = false;
         UpdateMapLocationImageColor();
+
+        if (!isSelected)
+            actsManager?.RestoreActPreviewFromCurrentSelection();
     }
 
     public void OnSelect(BaseEventData eventData)
     {
+        if (!CanShowPreview())
+            return;
+
         isSelected = true;
         UpdateMapLocationImageColor();
+        actsManager?.ShowActPreview(actNumber);
     }
 
     public void OnDeselect(BaseEventData eventData)
     {
         isSelected = false;
         UpdateMapLocationImageColor();
+
+        if (!isHovered)
+            actsManager?.RestoreActPreviewFromCurrentSelection();
     }
 
     private void UpdateMapLocationImageColor()
@@ -175,7 +145,7 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         if (highlightedMapLocationImageRenderer == null)
             return;
 
-        if (!thisButton.interactable)
+        if (!CanShowPreview())
         {
             StopActiveColorRoutine();
             highlightedMapLocationImageRenderer.color = defaultMapImageColor;
@@ -190,6 +160,11 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             FadeToHighlightedColor();
         else
             FadeToDefaultColor();
+    }
+
+    private bool CanShowPreview()
+    {
+        return thisButton != null && thisButton.IsInteractable() && isActiveAndEnabled;
     }
 
     private void FadeToDefaultColor()
