@@ -272,7 +272,7 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayDash(float transition = 0.08f)
     {
         StartHardLock(PlayerAnim.Locomotion.Dash);
-        CrossFade(PlayerAnim.Locomotion.Dash, transition, true);
+        CrossFade(PlayerAnim.Locomotion.Dash, Mathf.Max(transition, ConsumeLocomotionBlendOverride()), true);
     }
 
     public void PlayLocomotion(float moveAmount01)
@@ -371,12 +371,12 @@ public class PlayerAnimationController : MonoBehaviour
     /// </summary>
     public void PlayAttack(string attackStateName)
     {
-        CrossFade(attackStateName, 0.04f, true);
+        CrossFade(attackStateName, Mathf.Max(0.04f, ConsumeLocomotionBlendOverride()), true);
     }
 
-    public void PlaySingleTargetLight(int comboIndex) => CrossFade(GetSingleTargetLight(comboIndex), 0.04f, true);
+    public void PlaySingleTargetLight(int comboIndex) => CrossFade(GetSingleTargetLight(comboIndex), Mathf.Max(0.04f, ConsumeLocomotionBlendOverride()), true);
 
-    public void PlaySingleTargetHeavy(int comboIndex) => CrossFade(GetSingleTargetHeavy(comboIndex), 0.04f, true);
+    public void PlaySingleTargetHeavy(int comboIndex) => CrossFade(GetSingleTargetHeavy(comboIndex), Mathf.Max(0.04f, ConsumeLocomotionBlendOverride()), true);
 
     // AOE light/heavy helpers disabled with stance removal (kept for reference).
     // public void PlayAoeLight(int comboIndex) => CrossFade(GetAoeLight(comboIndex), 0.04f, true);
