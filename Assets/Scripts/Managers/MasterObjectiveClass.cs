@@ -1,11 +1,36 @@
 using System.Collections.Generic;
+using Progression;
+using Progression.Encounters;
 using Singletons;
 using UnityEngine;
+
+[System.Serializable]
+public enum ObjectiveEntryType
+{
+    Main,
+    Sub
+}
+
+[System.Serializable]
+public class ObjectiveData
+{
+    public InteractionManager interactionToActivate;
+    [Tooltip("Optional source that shows this objective when it becomes active. Supports InteractionManager, ProgressionZone/Encounter, and Wave.")]
+    public MonoBehaviour triggerSource;
+    public string objectiveID;
+    [TextArea] public string objectiveText;
+    public ObjectiveEntryType objectiveType = ObjectiveEntryType.Main;
+    public bool disableInteraction;
+    public InteractionManager interactionToDisable;
+    public int priority = 0;
+}
 
 [System.Serializable]
 public class NoticeData
 {
     public InteractionManager interactionToActivate;
+    public bool disableInteraction;
+    public InteractionManager interactionToDisable;
     public string noticeID;
     public string noticeText;
     public string bottomText;
@@ -18,6 +43,10 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 {
     [SerializeField] private NoticeManager noticeManager;
 
+    [Header("Objectives")]
+    [SerializeField] public List<ObjectiveData> objectives = new List<ObjectiveData>();
+
+    [Header("Objective Notices")]
     [SerializeField] public List<NoticeData> objectiveNotices = new List<NoticeData>();
 
     protected override void Awake()
@@ -39,7 +68,153 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 
     private void Start()
     {
-        CorrectIDIfIsEntry();
+        CorrectIDsIfIsEntry();
+        SubscribeObjectiveTriggers();
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeObjectiveTriggers();
+    }
+
+    private MonoBehaviour GetObjectiveTriggerSource(ObjectiveData objective)
+    {
+        if (objective == null)
+            return null;
+
+        return objective.triggerSource != null
+            ? objective.triggerSource
+            : objective.interactionToActivate;
+    }
+
+    private static string BuildGeneratedObjectiveID(MonoBehaviour triggerSource)
+    {
+        if (triggerSource == null)
+            return string.Empty;
+
+        return NormalizeNoticeID($"{triggerSource.GetType().Name}_{triggerSource.gameObject.name}");
+    }
+
+    private static string ResolveObjectiveID(string objectiveID, InteractionManager interaction, MonoBehaviour triggerSource)
+    {
+        if (!string.IsNullOrWhiteSpace(objectiveID))
+            return NormalizeNoticeID(objectiveID);
+
+        if (interaction != null)
+            return NormalizeNoticeID(interaction.interactId);
+
+        if (triggerSource is InteractionManager triggerInteraction)
+            return NormalizeNoticeID(triggerInteraction.interactId);
+
+        return BuildGeneratedObjectiveID(triggerSource);
+    }
+
+    private void SubscribeObjectiveTriggers()
+    {
+        foreach (ObjectiveData objective in objectives)
+        {
+            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+            switch (triggerSource)
+            {
+                case InteractionManager interaction:
+                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    break;
+
+                case ProgressionZone zone:
+                    zone.ZoneEnabledStateChanged -= HandleZoneTriggerStateChanged;
+                    zone.ZoneEnabledStateChanged += HandleZoneTriggerStateChanged;
+                    break;
+
+                case Wave wave:
+                    wave.OnWaveStarted -= HandleWaveStarted;
+                    wave.OnWaveStarted += HandleWaveStarted;
+                    break;
+            }
+        }
+    }
+
+    private void UnsubscribeObjectiveTriggers()
+    {
+        foreach (ObjectiveData objective in objectives)
+        {
+            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+            switch (triggerSource)
+            {
+                case InteractionManager interaction:
+                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    break;
+
+                case ProgressionZone zone:
+                    zone.ZoneEnabledStateChanged -= HandleZoneTriggerStateChanged;
+                    break;
+
+                case Wave wave:
+                    wave.OnWaveStarted -= HandleWaveStarted;
+                    break;
+            }
+        }
+    }
+
+    private void HandleInteractionTriggerStateChanged(InteractionManager interaction, bool isEnabled)
+    {
+        if (isEnabled)
+            ShowObjectivesForTrigger(interaction);
+    }
+
+    private void HandleZoneTriggerStateChanged(ProgressionZone zone, bool isEnabled)
+    {
+        if (isEnabled)
+            ShowObjectivesForTrigger(zone);
+    }
+
+    private void HandleWaveStarted(Wave wave)
+    {
+        ShowObjectivesForTrigger(wave);
+    }
+
+    private void ShowObjectivesForTrigger(MonoBehaviour triggerSource)
+    {
+        if (triggerSource == null)
+            return;
+
+        foreach (ObjectiveData objective in objectives)
+        {
+            if (objective == null || GetObjectiveTriggerSource(objective) != triggerSource)
+                continue;
+
+            string effectiveObjectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, triggerSource);
+            if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
+            {
+                Debug.LogWarning($"[MasterObjectiveClass] Objective triggered by {triggerSource.name} has no valid objective ID.");
+                continue;
+            }
+
+            objective.objectiveID = effectiveObjectiveID;
+            ShowObjective(effectiveObjectiveID);
+        }
+    }
+
+    private ObjectiveData FindIdInObjectives(string idToFind)
+    {
+        string normalizedTargetID = NormalizeNoticeID(idToFind);
+        if (string.IsNullOrEmpty(normalizedTargetID))
+            return null;
+
+        foreach (ObjectiveData objective in objectives)
+        {
+            if (objective == null)
+                continue;
+
+            if (NormalizeNoticeID(objective.objectiveID) == normalizedTargetID)
+            {
+                Debug.Log($"Found objective with ID {normalizedTargetID}: {objective.objectiveText}");
+                return objective;
+            }
+        }
+
+        Debug.LogWarning($"Objective with ID {normalizedTargetID} not found in objectives.");
+        return null;
     }
 
     private NoticeData FindIdInNotices(string idToFind)
@@ -68,6 +243,25 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         return id.Trim().ToLowerInvariant();
     }
 
+    private void RemoveDuplicateObjectivesById(string normalizedObjectiveID, ObjectiveData keepObjective)
+    {
+        if (string.IsNullOrEmpty(normalizedObjectiveID) || keepObjective == null)
+            return;
+
+        for (int i = objectives.Count - 1; i >= 0; i--)
+        {
+            ObjectiveData candidate = objectives[i];
+            if (candidate == null || candidate == keepObjective)
+                continue;
+
+            if (NormalizeNoticeID(candidate.objectiveID) == normalizedObjectiveID)
+            {
+                Debug.LogWarning($"[MasterObjectiveClass] Removing duplicate objective entry with ID {normalizedObjectiveID}.");
+                objectives.RemoveAt(i);
+            }
+        }
+    }
+
     private void RemoveDuplicateNoticesById(string normalizedNoticeID, NoticeData keepNotice)
     {
         if (string.IsNullOrEmpty(normalizedNoticeID) || keepNotice == null)
@@ -87,16 +281,231 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         }
     }
 
-    private void CorrectIDIfIsEntry()
+    private void CorrectIDsIfIsEntry()
     {
+        foreach (ObjectiveData objective in objectives)
+        {
+            MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
+
+            if (objective?.interactionToActivate is NavigationEntryInteraction)
+            {
+                objective.objectiveID = NormalizeNoticeID(objective.interactionToActivate.interactId);
+                Debug.Log($"Corrected objective ID for entry interaction {objective.interactionToActivate.interactId}");
+            }
+            else if (objective != null && string.IsNullOrWhiteSpace(objective.objectiveID))
+            {
+                objective.objectiveID = ResolveObjectiveID(objective.objectiveID, objective.interactionToActivate, triggerSource);
+            }
+        }
+
         foreach (NoticeData notice in objectiveNotices)
         {
-            if (notice.interactionToActivate is NavigationEntryInteraction)
+            if (notice?.interactionToActivate is NavigationEntryInteraction)
             {
                 notice.noticeID = NormalizeNoticeID(notice.interactionToActivate.interactId);
                 Debug.Log($"Corrected notice ID for entry interaction {notice.interactionToActivate.interactId}");
             }
         }
+    }
+
+    private void ApplyInteractionState(InteractionManager interaction, bool isEnabled)
+    {
+        if (interaction == null)
+            return;
+
+        interaction.SetInteractionEnabled(isEnabled);
+    }
+
+    private void ApplyObjectiveEffects(ObjectiveData objective)
+    {
+        if (objective == null)
+            return;
+
+        ApplyInteractionState(objective.interactionToActivate, true);
+
+        if (objective.disableInteraction)
+            ApplyInteractionState(objective.interactionToDisable, false);
+    }
+
+    private void ApplyNoticeEffects(NoticeData notice)
+    {
+        if (notice == null)
+            return;
+
+        ApplyInteractionState(notice.interactionToActivate, true);
+
+        if (notice.disableInteraction)
+            ApplyInteractionState(notice.interactionToDisable, false);
+    }
+
+    private static void ShowObjectiveData(ObjectiveData objectiveToShow)
+    {
+        if (objectiveToShow == null || string.IsNullOrWhiteSpace(objectiveToShow.objectiveText))
+            return;
+
+        switch (objectiveToShow.objectiveType)
+        {
+            case ObjectiveEntryType.Sub:
+                ObjectiveManager.RemoveSubObjective(objectiveToShow.objectiveID);
+                ObjectiveManager.AddSubObjective(objectiveToShow.objectiveID, objectiveToShow.objectiveText);
+                break;
+
+            case ObjectiveEntryType.Main:
+            default:
+                ObjectiveManager.SetMainObjective(objectiveToShow.objectiveText);
+                break;
+        }
+    }
+
+    public void ShowObjective(string objectiveID)
+    {
+        ObjectiveData objectiveToShow = FindIdInObjectives(objectiveID);
+        if (objectiveToShow == null)
+            return;
+
+        ApplyObjectiveEffects(objectiveToShow);
+        ShowObjectiveData(objectiveToShow);
+    }
+
+    public void CreateAndShowObjective(
+        InteractionManager interaction,
+        string objectiveID,
+        string objectiveText,
+        ObjectiveEntryType objectiveType = ObjectiveEntryType.Main,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        CreateAndShowObjective(interaction, interaction, objectiveID, objectiveText, objectiveType, priority, disableInteraction, interactionToDisable);
+    }
+
+    public void CreateAndShowObjective(
+        InteractionManager interaction,
+        MonoBehaviour triggerSource,
+        string objectiveID,
+        string objectiveText,
+        ObjectiveEntryType objectiveType = ObjectiveEntryType.Main,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        string effectiveObjectiveID = ResolveObjectiveID(objectiveID, interaction, triggerSource);
+
+        if (string.IsNullOrWhiteSpace(effectiveObjectiveID))
+        {
+            Debug.LogWarning("[MasterObjectiveClass] CreateAndShowObjective called without a valid objectiveID, interaction.interactId, or trigger source.");
+            return;
+        }
+
+        ObjectiveData existingObjective = FindIdInObjectives(effectiveObjectiveID);
+        if (existingObjective != null)
+        {
+            Debug.Log($"Objective with ID {effectiveObjectiveID} already exists, updating and showing.");
+            existingObjective.interactionToActivate = interaction;
+            existingObjective.triggerSource = triggerSource;
+            existingObjective.objectiveID = effectiveObjectiveID;
+            existingObjective.objectiveText = objectiveText;
+            existingObjective.objectiveType = objectiveType;
+            existingObjective.priority = priority;
+            existingObjective.disableInteraction = disableInteraction;
+            existingObjective.interactionToDisable = interactionToDisable;
+            RemoveDuplicateObjectivesById(effectiveObjectiveID, existingObjective);
+            ApplyObjectiveEffects(existingObjective);
+            ShowObjectiveData(existingObjective);
+            return;
+        }
+
+        ObjectiveData newObjective = new ObjectiveData
+        {
+            interactionToActivate = interaction,
+            triggerSource = triggerSource,
+            objectiveID = effectiveObjectiveID,
+            objectiveText = objectiveText,
+            objectiveType = objectiveType,
+            priority = priority,
+            disableInteraction = disableInteraction,
+            interactionToDisable = interactionToDisable
+        };
+
+        objectives.Add(newObjective);
+        RemoveDuplicateObjectivesById(effectiveObjectiveID, newObjective);
+        Debug.Log($"Created and added objective with ID {newObjective.objectiveID} (interaction: {interaction?.interactId ?? "null"}, type: {newObjective.objectiveType})");
+
+        ApplyObjectiveEffects(newObjective);
+        ShowObjectiveData(newObjective);
+    }
+
+    public void CreateAndShowMainObjective(
+        InteractionManager interaction,
+        string objectiveID,
+        string objectiveText,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        CreateAndShowObjective(interaction, objectiveID, objectiveText, ObjectiveEntryType.Main, priority, disableInteraction, interactionToDisable);
+    }
+
+    public void CreateAndShowMainObjective(
+        InteractionManager interaction,
+        MonoBehaviour triggerSource,
+        string objectiveID,
+        string objectiveText,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        CreateAndShowObjective(interaction, triggerSource, objectiveID, objectiveText, ObjectiveEntryType.Main, priority, disableInteraction, interactionToDisable);
+    }
+
+    public void CreateAndShowSubObjective(
+        InteractionManager interaction,
+        string objectiveID,
+        string objectiveText,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        CreateAndShowObjective(interaction, objectiveID, objectiveText, ObjectiveEntryType.Sub, priority, disableInteraction, interactionToDisable);
+    }
+
+    public void CreateAndShowSubObjective(
+        InteractionManager interaction,
+        MonoBehaviour triggerSource,
+        string objectiveID,
+        string objectiveText,
+        int priority = 0,
+        bool disableInteraction = false,
+        InteractionManager interactionToDisable = null)
+    {
+        CreateAndShowObjective(interaction, triggerSource, objectiveID, objectiveText, ObjectiveEntryType.Sub, priority, disableInteraction, interactionToDisable);
+    }
+
+    public void CompleteObjective(string objectiveID)
+    {
+        ObjectiveData objective = FindIdInObjectives(objectiveID);
+        if (objective == null)
+            return;
+
+        if (objective.objectiveType == ObjectiveEntryType.Sub)
+        {
+            ObjectiveManager.CompleteSubObjective(objective.objectiveID);
+            return;
+        }
+
+        ObjectiveManager.ClearMainObjective();
+    }
+
+    public void RemoveObjective(string objectiveID)
+    {
+        ObjectiveData objective = FindIdInObjectives(objectiveID);
+        if (objective == null)
+            return;
+
+        if (objective.objectiveType == ObjectiveEntryType.Sub)
+            ObjectiveManager.RemoveSubObjective(objective.objectiveID);
+        else
+            ObjectiveManager.ClearMainObjective();
     }
 
     public void ShowNotice(string noticeID)
@@ -112,6 +521,10 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         }
 
         NoticeData noticeToShow = FindIdInNotices(noticeID);
+        if (noticeToShow == null)
+            return;
+
+        ApplyNoticeEffects(noticeToShow);
 
         noticeManager.ShowNotice(noticeToShow.noticeText, noticeToShow.bottomText, noticeToShow.fadeDuration, noticeToShow.displayDuration, noticeToShow.priority);
     }
@@ -145,7 +558,6 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         if (existingNotice != null)
         {
             Debug.Log($"Notice with ID {effectiveNoticeID} already exists, updating and showing.");
-            // Update the existing notice
             existingNotice.interactionToActivate = interaction;
             existingNotice.noticeID = effectiveNoticeID;
             existingNotice.noticeText = noticeText;
@@ -154,10 +566,10 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             existingNotice.displayDuration = displayDuration;
             existingNotice.priority = priority;
             RemoveDuplicateNoticesById(effectiveNoticeID, existingNotice);
+            ApplyNoticeEffects(existingNotice);
         }
         else
         {
-            // Create new notice
             NoticeData newNotice = new NoticeData
             {
                 noticeID = effectiveNoticeID,
@@ -171,9 +583,9 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             objectiveNotices.Add(newNotice);
             RemoveDuplicateNoticesById(effectiveNoticeID, newNotice);
             Debug.Log($"Created and added notice with ID {newNotice.noticeID} (interaction: {interaction?.interactId ?? "null"})");
+            ApplyNoticeEffects(newNotice);
         }
 
-        // Show the notice
         noticeManager.ShowNotice(noticeText, bottomText, fadeDuration, displayDuration, priority);
     }
 

@@ -28,6 +28,7 @@ namespace Progression.Encounters
         private bool debugMessagesEnabled = false;
 
         public event Action<Wave> OnWaveComplete;
+        public event Action<Wave> OnWaveStarted;
         public event Action<Vector3> UpdateLastEnemyPosition;
         public event Action<BaseEnemyCore> OnEnemySpawned;
 
@@ -84,6 +85,8 @@ namespace Progression.Encounters
         {
             if (debugMessagesEnabled)
                 Debug.Log($"[{name} of combat encounter {transform.parent.name}] Spawning wave.");
+
+            OnWaveStarted?.Invoke(this);
 
             // tells each spawn marker to spawn its enemy and then initilialize it for tracking and setup
             foreach (EnemySpawnMarker marker in spawnMarkers) InitializeEnemy(marker.SpawnEnemy());
