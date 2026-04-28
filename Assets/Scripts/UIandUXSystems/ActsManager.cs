@@ -414,6 +414,9 @@ public class ActsManager : Singleton<ActsManager>
                 actsButton[i].interactable = false;
                 Debug.Log($"[ActsManager] Button {i} ('{(actSceneMap.ContainsKey(i) ? actSceneMap[i] : "?")}') interactable set to false (no completion map entry) for profile '{profileId}'");
             }
+
+            if (actsButton[i] != null && actsButton[i].TryGetComponent(out ActButton actButton))
+                actButton.RefreshVisualState();
         }
     }
 

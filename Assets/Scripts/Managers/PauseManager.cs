@@ -7,6 +7,7 @@ using Managers.TimeLord;
 using Unity.VisualScripting;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UI.Loading;
 
 
 public class PauseManager : Singletons.Singleton<PauseManager>
@@ -150,6 +151,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         MainMenu.isInMainMenu = scene.name == "MainMenu";
+        MufffleMusicForMenu(false);
         TryResolveHudRoot();
         HideAllMenus();
         if (!MainMenu.isInMainMenu)
@@ -206,6 +208,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if(Hint.isHintActive)
         {
+            return;
+        }
+        
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently loading");
             return;
         }
 
@@ -276,6 +284,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently loading");
+            return;
+        }
+
         if (settingsMenuOpen)
         {
             CloseSettingsMenu();
@@ -317,6 +331,11 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently loading");
+            return;
+        }
 
         if (isUnpausing)
         {
@@ -402,6 +421,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (IsPauseBlockedByPuzzleMode())
             return;
 
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] OnSwapMenu ignored - currently loading");
+            return;
+        }
+
         if (ConfirmationDialog.AnyOpen)
         {
             Debug.Log("[PauseManager] OnSwapMenu ignored - confirmation dialog open");
@@ -433,6 +458,11 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] ShowPauseMenu ignored - currently loading");
+            return;
+        }
 
         // Request pause through the coordinator (centralized time scale authority).
         PauseCoordinator.RequestPause(GameplayInputBlockOwnerId);
@@ -469,6 +499,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void ShowNavigationMenu()
     {
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] ShowNavigationMenu ignored - currently loading");
+            return;
+        }
+
         // Request pause through the coordinator (centralized time scale authority).
         PauseCoordinator.RequestPause(GameplayInputBlockOwnerId);
 
@@ -500,6 +536,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         currentActiveMenu = ActiveMenu.PauseMenu;
 
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently loading");
+            return;
+        }
+
         if (menuListManager != null && pauseMenuHolder != null)
             menuListManager.AddToMenuList(pauseMenuHolder);
 
@@ -516,6 +558,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     private void SwapToNavigationMenu()
     {
+        if (LoadingScreenController.IsLoading)
+        {
+            Debug.Log("[PauseManager] OnNavigationMenu ignored - currently loading");
+            return;
+        }    
+        
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
         if (menuListManager != null && navigationMenuHolder != null)
@@ -616,6 +664,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void HideMenusForSceneTransition()
     {
         ForceCloseAllWarningUi();
+
+        // Ensure menu muffling does not leak into gameplay after scene transition.
+        MufffleMusicForMenu(false);
 
         // Release this menu's pause ownership so restart transitions do not leave the game paused.
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
@@ -823,6 +874,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         var musicSource = SoundManager.Instance.levelMusicSource;
 
+        if (cachedPauseLowPassFilter != null && cachedPauseLowPassFilter.gameObject != musicSource.gameObject)
+            cachedPauseLowPassFilter = null;
+
         AudioLowPassFilter lowPassFilter = cachedPauseLowPassFilter;
         if (lowPassFilter == null)
         {
@@ -861,7 +915,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             Debug.Log("Restoring music after menu");
 
             lowPassFilter.cutoffFrequency = cachedLowPassCutoffBeforePause ?? defaultCutoff;
-            lowPassFilter.enabled = cachedLowPassEnabledBeforePause ?? true;
+            lowPassFilter.enabled = cachedLowPassEnabledBeforePause ?? false;
 
             musicIsMuffled = false;
             cachedLowPassCutoffBeforePause = null;
