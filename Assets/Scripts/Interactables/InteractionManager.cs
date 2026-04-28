@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using System;
 using UnityEngine.SceneManagement;
 using Utilities.Combat;
 
@@ -54,6 +55,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     private bool _interactionBusyOwned;
 
     internal MasterObjectiveClass masterObjective;
+    public event Action<InteractionManager, bool> InteractionEnabledStateChanged;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
     {
@@ -253,6 +255,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             if (interactionUI != null && interactionUI.currentInteractable == this)
                 interactionUI.HideInteractPrompt();
         }
+
+        InteractionEnabledStateChanged?.Invoke(this, isEnabled);
     }
 
     private void OnInteract(InputAction.CallbackContext context)
