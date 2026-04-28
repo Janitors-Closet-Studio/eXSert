@@ -204,17 +204,25 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     private void ParentFooterToPauseMenu(bool parentToPause)
     {
-        if (footerPanel == null || pauseMenu == null)
+        if (footerPanel == null)
             return;
+
+        if (originalFooterParent == null && footerPanel.transform.parent != null)
+            originalFooterParent = footerPanel.transform.parent.gameObject;
 
         if (parentToPause) 
         {
+            if (pauseMenu == null)
+                return;
+
             footerPanel.transform.SetParent(pauseMenu.transform, worldPositionStays: false);
             footerPanel.transform.SetSiblingIndex(1); // Above pause ui but below warning canvas
         }
         else 
         {
-            footerPanel.transform.SetParent(originalFooterParent.transform, worldPositionStays: false);
+            if (originalFooterParent != null)
+                footerPanel.transform.SetParent(originalFooterParent.transform, worldPositionStays: false);
+
             footerPanel.transform.SetAsLastSibling(); // Ensure footer is on top of other UI elements in the warning canvas
         }
     }

@@ -20,34 +20,51 @@ public class SelectFirstButtonInEntryList : MonoBehaviour
 
     private System.Collections.IEnumerator SelectFirstButtonNextFrame()
     {
-        yield return null; // Wait one frame
+        // Wait a couple of frames so dynamic entries/layout groups finish rebuilding.
+        yield return null;
+        yield return null;
 
         if (MenuSelectionSuppression.IsSuppressed)
             yield break;
 
-        // Find the first active button in the content
-        buttonToSelect = contentRectTransform.GetComponentInChildren<Button>(true);
+        ScrollRect scrollRect = scrollRectTransform != null ? scrollRectTransform.GetComponent<ScrollRect>() : null;
+        if (scrollRect != null)
+        {
+            // Always start from the top of the stack when the menu opens.
+            scrollRect.verticalNormalizedPosition = 1f;
+        }
+
+        if (contentRectTransform != null)
+            contentRectTransform.anchoredPosition = new Vector2(contentRectTransform.anchoredPosition.x, 0f);
+
+        // Find the first active button in content sibling order.
+        buttonToSelect = FindFirstActiveButtonInContent();
         if (buttonToSelect != null)
         {
             EventSystem.current.SetSelectedGameObject(buttonToSelect.gameObject);
-            ScrollToButton(buttonToSelect);
         }
     }
 
-    private void ScrollToButton(Button button)
+    private Button FindFirstActiveButtonInContent()
     {
-        // Get the position of the button relative to the content
-        Vector3 buttonLocalPos = button.transform.localPosition;
-        float contentHeight = contentRectTransform.rect.height;
-        float viewportHeight = scrollRectTransform.rect.height;
+        if (contentRectTransform == null)
+            return null;
 
-        // Calculate the normalized scroll position (0 at bottom, 1 at top)
-        float normalizedPos = 1 - ((buttonLocalPos.y + (button.GetComponent<RectTransform>().rect.height / 2)) / (contentHeight - viewportHeight));
+        for (int i = 0; i < contentRectTransform.childCount; i++)
+        {
+            Transform child = contentRectTransform.GetChild(i);
+            if (child == null || !child.gameObject.activeInHierarchy)
+                continue;
 
-        // Clamp between 0 and 1
-        normalizedPos = Mathf.Clamp01(normalizedPos);
+            Button directButton = child.GetComponent<Button>();
+            if (directButton != null && directButton.interactable)
+                return directButton;
 
-        // Set the scroll position
-        scrollRectTransform.GetComponent<ScrollRect>().verticalNormalizedPosition = normalizedPos;
+            Button nestedButton = child.GetComponentInChildren<Button>(true);
+            if (nestedButton != null && nestedButton.gameObject.activeInHierarchy && nestedButton.interactable)
+                return nestedButton;
+        }
+
+        return null;
     }
 }
