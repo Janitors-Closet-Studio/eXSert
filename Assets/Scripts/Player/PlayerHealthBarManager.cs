@@ -673,7 +673,28 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         playerMovement?.EnterDeathState();
         AcquireDeathInputLock();
-        if(playDeathAnimation) animationController?.PlayDeath();
+
+        // If the player died mid-air, wait until they land before playing the death animation.
+        if (playDeathAnimation && playerMovement != null && playerMovement.IsFallingDead)
+        {
+            animationController?.PlayFalling();
+
+            bool landed = false;
+            void OnLanded() => landed = true;
+            playerMovement.OnDeathLanded += OnLanded;
+
+            const float fallTimeout = 10f;
+            float elapsed = 0f;
+            while (!landed && elapsed < fallTimeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            playerMovement.OnDeathLanded -= OnLanded;
+        }
+
+        if (playDeathAnimation) animationController?.PlayDeath();
 
         yield return WaitForDeathFadeTiming(playDeathAnimation);
 
@@ -814,7 +835,26 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (!Application.isPlaying)
             return;
 
-        LoseHP(maxHealth * 2f, 0.5f, 0.5f, 0.5f);
+        DebugForceKill();
+    }
+
+    private void DebugForceKill()
+    {
+        if (isDead)
+            return;
+
+        isDead = true;
+        invulnerable = false;
+        currentHealth = 0f;
+        NotifyHealthChanged();
+
+        CancelFlinchRoutine();
+        attackManager?.ForceCancelCurrentAttack();
+
+        OnPlayerDied?.Invoke();
+
+        if (deathSequenceRoutine != null) StopCoroutine(deathSequenceRoutine);
+        deathSequenceRoutine = StartCoroutine(DeathSequenceRoutine(true));
     }
 #endif
 }

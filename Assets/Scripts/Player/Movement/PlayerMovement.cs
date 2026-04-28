@@ -984,6 +984,12 @@ public class PlayerMovement : MonoBehaviour
         if (Mathf.Approximately(Time.timeScale, 0f))
             return;
 
+        if (isFallingDead)
+        {
+            UpdateFallingDead();
+            return;
+        }
+
         DebugStateTransitions();
 
         if (InputReader.LightAttackTriggered)
@@ -1057,6 +1063,12 @@ public class PlayerMovement : MonoBehaviour
         }
 
         landingAnimationLockTimer = Mathf.Max(0f, landingAnimationLockTimer - Time.deltaTime);
+
+        if (isFallingDead)
+        {
+            ApplyMovement();
+            return;
+        }
 
         Move();
 
@@ -2358,6 +2370,10 @@ public class PlayerMovement : MonoBehaviour
         externalStunOwnsInput = false;
     }
 
+    // True while the player has died mid-air and is falling to the ground before death anim plays.
+    private bool isFallingDead;
+    public bool IsFallingDead => isFallingDead;
+
     public void EnterDeathState()
     {
         ForceStopDashImmediate(relinquishInputLock: true);
@@ -2370,9 +2386,20 @@ public class PlayerMovement : MonoBehaviour
 
         ReleaseExternalStunInputLock();
 
-        currentMovement = Vector3.zero;
+        currentMovement.x = 0f;
+        currentMovement.z = 0f;
         dashVelocity = Vector3.zero;
         isDashing = false;
+
+        if (!IsGroundedNow())
+        {
+            // Keep the component enabled so gravity continues to apply until grounded.
+            isFallingDead = true;
+            return;
+        }
+
+        isFallingDead = false;
+        currentMovement.y = 0f;
 
         if (enabled)
         {
@@ -2385,8 +2412,37 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    // Called each frame while isFallingDead to check for landing and finalize death state.
+    private void UpdateFallingDead()
+    {
+        currentMovement.x = 0f;
+        currentMovement.z = 0f;
+
+        if (IsGroundedNow())
+        {
+            isFallingDead = false;
+            currentMovement.y = 0f;
+
+            if (enabled)
+            {
+                disabledByDeath = true;
+                enabled = false;
+            }
+            else
+            {
+                disabledByDeath = false;
+            }
+
+            OnDeathLanded?.Invoke();
+        }
+    }
+
+    public event Action OnDeathLanded;
+
     public void ExitDeathState()
     {
+        isFallingDead = false;
+
         if (!disabledByDeath)
             return;
 
@@ -4476,4 +4532,41 @@ public class PlayerMovement : MonoBehaviour
     public CharacterController GetCharacterController() => characterController;
 
     #endregion
+
+#if UNITY_EDITOR
+    #region Debug Tools
+
+    [ContextMenu("Debug: Kill Player (1s Delay)")]
+    private void ContextMenuDebugKillPlayerDelayed()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("[PlayerMovement] Debug: Kill Player requires Play Mode!");
+            return;
+        }
+
+        StartCoroutine(DebugKillPlayerAfterDelay(1f));
+    }
+
+    private IEnumerator DebugKillPlayerAfterDelay(float delay)
+    {
+        Debug.Log($"[PlayerMovement] Debug: Killing player in {delay}s...");
+        yield return new WaitForSeconds(delay);
+
+        var health = GetComponent<PlayerHealthBarManager>()
+            ?? GetComponentInParent<PlayerHealthBarManager>()
+            ?? GetComponentInChildren<PlayerHealthBarManager>();
+
+        if (health == null)
+        {
+            Debug.LogError("[PlayerMovement] Debug: Could not find PlayerHealthBarManager to kill player!");
+            yield break;
+        }
+
+        Debug.Log("[PlayerMovement] Debug: Triggering player death now.");
+        health.DebugKillPlayer();
+    }
+
+    #endregion
+#endif
 }

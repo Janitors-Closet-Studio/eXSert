@@ -111,6 +111,7 @@ public class PlayerAnimationController : MonoBehaviour
     [Header("Crossfade Settings")]
     [SerializeField, Range(0f, 0.3f)] private float defaultTransition = 0.16f;
     [SerializeField, Range(0f, 0.6f)] private float fallingTransition = 0.2f;
+    [SerializeField, Range(0f, 0.6f)] private float deathTransition = 0.2f;
 
     [Header("Animation Events")]
     [Tooltip("Attack manager that receives hitbox/cancel callbacks.")]
@@ -406,7 +407,7 @@ public class PlayerAnimationController : MonoBehaviour
         currentState = PlayerAnim.Reactions.Knockback;
     }
 
-    public void PlayDeath() => CrossFade(PlayerAnim.Reactions.Death, 0.02f, true);
+    public void PlayDeath() => CrossFade(PlayerAnim.Reactions.Death, deathTransition, true);
 
     public bool IsPlayingDeath(out float normalizedTime) => IsPlaying(PlayerAnim.Reactions.Death, out normalizedTime);
 
