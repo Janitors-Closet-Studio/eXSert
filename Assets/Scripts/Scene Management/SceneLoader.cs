@@ -476,6 +476,10 @@ public static class SceneLoader
 
         MainMenu.isInMainMenu = false;
 
+        // Clear any stale input locks that may have survived the loading screen or a prior death sequence.
+        // This is the safest moment to do it: all scenes are loaded, the player hasn't been spawned yet.
+        InputReader.ForceResetInputLocks("LoadIntoGameCoroutine");
+
         Player.SpawnPlayerAtCheckpoint();
 
         if (newGame)

@@ -158,6 +158,47 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
+        private void OnEnable()
+        {
+            Player.RespawnPlayer += OnRespawnTriggered;
+        }
+
+        private void OnDisable()
+        {
+            Player.RespawnPlayer -= OnRespawnTriggered;
+        }
+
+        /// <summary>
+        /// Fires for both player death and manual "Restart from Checkpoint" menu button.
+        /// Immediately disables all platform objects so they cannot persist into the reloaded scene.
+        /// </summary>
+        private void OnRespawnTriggered()
+        {
+            ForceHideAllPlatforms();
+        }
+
+        /// <summary>
+        /// Immediately SetActive(false) on every platform object and resets state.
+        /// Safe to call from any context — no coroutines, no dependencies.
+        /// </summary>
+        public void ForceHideAllPlatforms()
+        {
+            StopAllCoroutines();
+            orbitCoroutine = null;
+            riseCoroutine = null;
+            platformsActive = false;
+            UnmountPlayer();
+
+            foreach (var platform in Platforms)
+            {
+                if (platform?.PlatformObject == null)
+                    continue;
+
+                platform.PlatformObject.SetActive(false);
+                platform.IsRisen = false;
+            }
+        }
+
         private void ConfigurePlatformBob(FloatingPlatform platform)
         {
             if (platform == null)

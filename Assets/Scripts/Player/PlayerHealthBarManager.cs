@@ -182,13 +182,16 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private void OnEnable() 
     {
         Player.ClearCachedPlayerObject();
-        Player.SetActive(true);
+        Player.SetActive(true); 
         Player.RespawnPlayer += HandleRespawnRequested;
         PlayerAttackManager.OnAttack += HandlePlayerAttackPerformed;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
         dashInvincibilityActive = false;
         dashInvincibilityFailsafeUntilUnscaledTime = 0f;
+
+        // Allow LoadData to run again if the component was cycled (e.g., player scene reloaded).
+        hasLoadedPersistentHealth = false;
 
         RefreshRegistration();
     }
@@ -430,6 +433,17 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         currentHealth = Mathf.Clamp(data.health, 0f, maxHealth);
         isDead = currentHealth <= 0f;
         hasLoadedPersistentHealth = true;
+
+        // Always ensure the attack manager is re-enabled when loading a save, regardless of
+        // health value. DeathSequenceRoutine disables it and only ResetDeathSequenceState re-enables
+        // it; if the player quit mid-death sequence the component may still be disabled.
+        if (attackManagerDisabledByDeath && attackManager != null && !attackManager.enabled)
+        {
+            attackManager.enabled = true;
+            attackManagerDisabledByDeath = false;
+            Debug.Log("[PlayerHealthBarManager] LoadData: re-enabled attackManager that was disabled by a prior death sequence.");
+        }
+
         if (!isDead)
         {
             ResetDeathSequenceState();
@@ -673,7 +687,28 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         playerMovement?.EnterDeathState();
         AcquireDeathInputLock();
-        if(playDeathAnimation) animationController?.PlayDeath();
+
+        // If the player died mid-air, wait until they land before playing the death animation.
+        if (playDeathAnimation && playerMovement != null && playerMovement.IsFallingDead)
+        {
+            animationController?.PlayFalling();
+
+            bool landed = false;
+            void OnLanded() => landed = true;
+            playerMovement.OnDeathLanded += OnLanded;
+
+            const float fallTimeout = 10f;
+            float elapsed = 0f;
+            while (!landed && elapsed < fallTimeout)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            playerMovement.OnDeathLanded -= OnLanded;
+        }
+
+        if (playDeathAnimation) animationController?.PlayDeath();
 
         yield return WaitForDeathFadeTiming(playDeathAnimation);
 
@@ -814,7 +849,26 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (!Application.isPlaying)
             return;
 
-        LoseHP(maxHealth * 2f, 0.5f, 0.5f, 0.5f);
+        DebugForceKill();
+    }
+
+    private void DebugForceKill()
+    {
+        if (isDead)
+            return;
+
+        isDead = true;
+        invulnerable = false;
+        currentHealth = 0f;
+        NotifyHealthChanged();
+
+        CancelFlinchRoutine();
+        attackManager?.ForceCancelCurrentAttack();
+
+        OnPlayerDied?.Invoke();
+
+        if (deathSequenceRoutine != null) StopCoroutine(deathSequenceRoutine);
+        deathSequenceRoutine = StartCoroutine(DeathSequenceRoutine(true));
     }
 #endif
 }

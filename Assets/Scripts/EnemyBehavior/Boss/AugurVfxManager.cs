@@ -688,10 +688,10 @@ namespace EnemyBehavior.Boss
 
         private bool ShouldFlashAlarmWhistle()
         {
-            if (deathTriggered || bossController == null || !bossController.IsAlarmAlive || bossController.alarm == null)
+            if (deathTriggered || bossController == null)
                 return false;
 
-            return bossController.alarm.activeInHierarchy;
+            return bossController.IsAlarmActive;
         }
 
         private void CacheAlarmFlashOriginalEmission()
@@ -767,6 +767,10 @@ namespace EnemyBehavior.Boss
         {
             if (alarmLightsTransform == null)
                 return;
+
+            // Show/hide the lights GameObject to match active state
+            if (alarmLightsTransform.gameObject.activeSelf != shouldRotate)
+                alarmLightsTransform.gameObject.SetActive(shouldRotate);
 
             if (!shouldRotate)
             {

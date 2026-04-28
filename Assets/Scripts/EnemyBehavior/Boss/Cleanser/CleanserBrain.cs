@@ -273,6 +273,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("If enabled, player combo is reset when Cleanser melee stagger is applied.")]
         [SerializeField] private bool resetPlayerComboOnMeleeStagger = true;
 
+        [Header("Hit Reaction Stacking")]
+        [Tooltip("Number of hits required within the decay window before Cleanser plays a hit-reaction animation.")]
+        [SerializeField, Min(1)] private int hitReactStackThreshold = 3;
+        [Tooltip("Time window (seconds) in which hit stacks accumulate before they reset. Each new hit resets the timer.")]
+        [SerializeField, Min(0.1f)] private float hitReactStackDecayTime = 2f;
+
         [Header("SpinDash Player Knockback")]
         [Tooltip("If true, successful SpinDash hits apply a brief external knockback to the player.")]
         [SerializeField] private bool applySpinDashKnockback = true;
@@ -448,6 +454,9 @@ namespace EnemyBehavior.Boss.Cleanser
         private float spinDashTriggerDamage;
         private bool spinDashParried;
         private int spinDashParryCount;
+        private int hitReactStackCount;
+        private float hitReactStackLastHitTime;
+        private GameObject activeSpinDashVfxInstance;
         private bool whirlwindDamagePhaseActive;
         private bool whirlwindDamageArmed;
         private Collider whirlwindDamageCollider;
@@ -470,6 +479,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private float defaultAnimatorSpeed = 1f;
         private bool isExecutingGapCloseDash;
         private bool isExecutingRetreatJump;
+        private int consecutiveRetreatJumps;
+        private float lastRetreatJumpEndTime = -999f;
         private float currentComboMovementSpeedMultiplier = 1f;
         private bool hasPostRecoveryTargetDistance;
         private float currentPostRecoveryTargetDistance;
@@ -675,13 +686,24 @@ namespace EnemyBehavior.Boss.Cleanser
                 aggressionSystem.OnPlayerHitsBoss();
             }
 
-            // Play a random hit reaction animation (50/50 between Hit1 and Hit2)
+            // Hit-reaction stacking: only play the hit animation after accumulating enough hits
+            // within the decay window, preventing constant animation interrupts on every hit.
             if (!isDefeated && !isExecutingUltimate && animController != null)
             {
-                if (Random.value < 0.5f)
-                    animController.PlayHit1();
-                else
-                    animController.PlayHit2();
+                if (Time.time - hitReactStackLastHitTime > hitReactStackDecayTime)
+                    hitReactStackCount = 0;
+
+                hitReactStackCount++;
+                hitReactStackLastHitTime = Time.time;
+
+                if (hitReactStackCount >= hitReactStackThreshold)
+                {
+                    hitReactStackCount = 0;
+                    if (Random.value < 0.5f)
+                        animController.PlayHit1();
+                    else
+                        animController.PlayHit2();
+                }
             }
 
             if (currentHealth <= Mathf.Max(0f, healthZeroEpsilon))
@@ -732,6 +754,12 @@ namespace EnemyBehavior.Boss.Cleanser
             SetAllMeleeHitboxesEnabled(false);
             EndSpinDashHitboxPhase();
             EndWhirlwindDamagePhase();
+
+            if (activeSpinDashVfxInstance != null)
+            {
+                Destroy(activeSpinDashVfxInstance);
+                activeSpinDashVfxInstance = null;
+            }
 
             // Safety: re-enable NavMeshAgent if any movement attack left it disabled mid-execution.
             if (agent != null && !agent.enabled)
@@ -1210,6 +1238,8 @@ namespace EnemyBehavior.Boss.Cleanser
             PauseCoordinator.OnPaused += OnGamePaused;
             PauseCoordinator.OnResumed += OnGameResumed;
             SceneManager.sceneLoaded += OnSceneLoaded;
+            PlayerHealthBarManager.OnPlayerDied += OnPlayerDied;
+            Player.RespawnPlayer += OnPlayerRespawnTriggered;
 
             BeginRetryingPlayerReferenceIfNeeded();
 
@@ -1244,6 +1274,8 @@ namespace EnemyBehavior.Boss.Cleanser
             PauseCoordinator.OnPaused -= OnGamePaused;
             PauseCoordinator.OnResumed -= OnGameResumed;
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            PlayerHealthBarManager.OnPlayerDied -= OnPlayerDied;
+            Player.RespawnPlayer -= OnPlayerRespawnTriggered;
 
             if (playerRefRetryCoroutine != null)
             {
@@ -1323,6 +1355,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            // On any scene reload (checkpoint restart), reset platforms so they don't persist
+            // if the ultimate was active when the level was reloaded.
+            ResetPlatformsWithFailsafe();
+
             if (player != null)
                 return;
 
@@ -2401,12 +2437,30 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <summary>
         /// Retreats away from the player using a jump arc when useRetreatJump is enabled.
         /// Falls back to MoveAwayFromPlayer if jump is disabled or no valid NavMesh landing point is found.
+        /// On repeated consecutive jumps the distance doubles on the 2nd attempt, and on the 3rd+
+        /// the jump is skipped entirely so the boss is forced into its next behaviour.
         /// </summary>
         private IEnumerator JumpAwayFromPlayer(float duration)
         {
             if (!useRetreatJump || player == null || agent == null)
             {
                 yield return MoveAwayFromPlayer(duration);
+                yield break;
+            }
+
+            // Reset the consecutive counter if enough time has passed since the last jump
+            // (i.e. the player broke the chase loop and the boss did something else).
+            const float consecutiveResetWindow = 3f;
+            if (Time.time - lastRetreatJumpEndTime > consecutiveResetWindow)
+                consecutiveRetreatJumps = 0;
+
+            consecutiveRetreatJumps++;
+
+            // 3rd+ consecutive jump — skip entirely and force next behaviour.
+            if (consecutiveRetreatJumps >= 3)
+            {
+                consecutiveRetreatJumps = 0;
+                lastRetreatJumpEndTime = Time.time;
                 yield break;
             }
 
@@ -2421,6 +2475,10 @@ namespace EnemyBehavior.Boss.Cleanser
                 ? cfg.OverrideJumpDistance
                 : Mathf.Max(2f, aggressionSystem?.GetCurrentMovementConfig()?.PreferredDistance ?? 6f);
 
+            // 2nd consecutive jump — double the distance.
+            if (consecutiveRetreatJumps == 2)
+                jumpDist *= 2f;
+
             Vector3 desiredLanding = transform.position + awayDir * jumpDist;
             desiredLanding.y = transform.position.y;
 
@@ -2429,6 +2487,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 || Mathf.Abs(hit.position.y - transform.position.y) > 1f)
             {
                 // Can't jump there — fall back to walking away
+                lastRetreatJumpEndTime = Time.time;
                 yield return MoveAwayFromPlayer(duration);
                 yield break;
             }
@@ -2443,11 +2502,13 @@ namespace EnemyBehavior.Boss.Cleanser
                 new Vector3(landingPos.x, 0f, landingPos.z));
             if (flatDist < minJump)
             {
+                lastRetreatJumpEndTime = Time.time;
                 yield return MoveAwayFromPlayer(duration);
                 yield break;
             }
 
             yield return ExecuteRetreatJump(landingPos);
+            lastRetreatJumpEndTime = Time.time;
         }
 
         private bool ShouldUseComboGapCloseDash(float distanceToPlayer)
@@ -3128,10 +3189,10 @@ namespace EnemyBehavior.Boss.Cleanser
             TriggerAnimation(SpinDashSettings.HoldPoseTrigger);
             PlaySFX(SpinDashSettings.HoldSFX);
 
-            GameObject spinVfxInstance = null;
+            activeSpinDashVfxInstance = null;
             if (SpinDashSettings.SpinVFX != null)
             {
-                spinVfxInstance = Instantiate(SpinDashSettings.SpinVFX, transform.position, transform.rotation, transform);
+                activeSpinDashVfxInstance = Instantiate(SpinDashSettings.SpinVFX, transform.position, transform.rotation, transform);
             }
 
             var dashPoints = dualWieldSystem != null ? dualWieldSystem.GetLodgedWeaponPositions() : new List<Vector3>();
@@ -3363,9 +3424,10 @@ namespace EnemyBehavior.Boss.Cleanser
                 }
             }
 
-            if (spinVfxInstance != null)
+            if (activeSpinDashVfxInstance != null)
             {
-                Destroy(spinVfxInstance);
+                Destroy(activeSpinDashVfxInstance);
+                activeSpinDashVfxInstance = null;
             }
 
             // Skip the wind-down animation when interrupted so the ultimate can begin immediately.
@@ -5268,6 +5330,51 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (isDefeated) return;
             PlayVoiceLine(playerDeathVoiceLine);
+            ResetPlatformsWithFailsafe();
+        }
+
+        /// <summary>
+        /// Subscribed to Player.RespawnPlayer — fires for BOTH player death respawn AND
+        /// manual "Restart from Checkpoint" from the pause menu. Ensures platforms are
+        /// always cleaned up before the scene reloads.
+        /// </summary>
+        private void OnPlayerRespawnTriggered()
+        {
+            ResetPlatformsWithFailsafe();
+        }
+
+        /// <summary>
+        /// Resets all floating platforms to their rest state and applies a hard failsafe that
+        /// directly disables each platform GameObject in case the animated reset has not finished.
+        /// </summary>
+        private void ResetPlatformsWithFailsafe()
+        {
+            if (platformController == null)
+                return;
+
+            bool werePlatformsActive = platformController.ArePlatformsActive;
+            platformController.ResetPlatforms();
+            platformController.ForceUnmountPlayer();
+
+            // Hard failsafe: only needed if platforms were actually raised — directly disable
+            // every platform object so they cannot remain visible if the reset was blocked.
+            if (werePlatformsActive)
+                StartCoroutine(PlatformFailsafeAfterDelay(0.1f));
+        }
+
+        private IEnumerator PlatformFailsafeAfterDelay(float delay)
+        {
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+
+            if (platformController == null)
+                yield break;
+
+            foreach (var platform in platformController.Platforms)
+            {
+                if (platform?.PlatformObject != null && platform.PlatformObject.activeSelf)
+                    platform.PlatformObject.SetActive(false);
+            }
         }
 
         #endregion
@@ -5623,7 +5730,10 @@ namespace EnemyBehavior.Boss.Cleanser
                     // Parry is an immediate attack interrupt, so clear attack-loop VFX that would
                     // otherwise rely on later animation events. Keep AfterImageTrail alive so the
                     // fast-circling AnimeDash pattern can resolve its own cleanup at pattern end.
-                    cleanserVfxManager?.StopAttackLoopingVfx();
+                    // Do NOT stop looping VFX during a spin dash — the spin VFX must persist
+                    // until the entire move finishes or is canceled, not just on a single parry.
+                    if (!spinDashHitboxPhaseActive)
+                        cleanserVfxManager?.StopAttackLoopingVfx();
 
                     // If the parry happened during a spin-dash, signal the dash coroutine to bail out
                     // after this hit so the remaining sequential dashes are canceled (mirrors the
@@ -6379,49 +6489,119 @@ namespace EnemyBehavior.Boss.Cleanser
                 nameof(CleanserBrain),
                 $"[Cleanser] OnDefeated() called. currentHealth={currentHealth:F2}, isExecutingUltimate={isExecutingUltimate}, isExecutingAttack={isExecutingAttack}, hasUsedUltimate={hasUsedUltimate}");
 #endif
-            
+
             isDefeated = true;
             isInUltimatePreSweepPhase = false;
-            
+
             if (mainLoopCoroutine != null)
             {
                 StopCoroutine(mainLoopCoroutine);
                 mainLoopCoroutine = null;
             }
-            
+
             if (currentAttackCoroutine != null)
             {
                 StopCoroutine(currentAttackCoroutine);
                 currentAttackCoroutine = null;
             }
 
+            HideAttackIndicator();
             HideDashTelegraph();
             ResetComboMovementState(cancelActiveCombo: true);
-            
+            EndSpinDashHitboxPhase();
+            EndWhirlwindDamagePhase();
+            ResetAnimationSpeed();
+
+            // Clean up any lingering spin dash VFX.
+            if (activeSpinDashVfxInstance != null)
+            {
+                Destroy(activeSpinDashVfxInstance);
+                activeSpinDashVfxInstance = null;
+            }
+
+            // Drop hovering/stockpiled spare weapons under gravity (they will fall and sink).
+            // Lodged weapons from SpareToss also sink immediately.
+            // Failsafe: directly disable any weapon objects that are still active.
+            if (dualWieldSystem != null)
+            {
+                dualWieldSystem.DropStockpiledWeaponsToGround();
+
+                // Hard failsafe: ensure no weapon objects remain visible if the coroutines fail.
+                StartCoroutine(FailsafeDisableSpareWeaponsAfterDelay(3f));
+            }
+
+            aggressionSystem?.SetAggressionProcessingPaused(false);
+            UnregisterFromAttackQueue();
+
+            // Platform cleanup — use the immediate reset so they disappear even if the boss dies
+            // mid-ultimate. ForceUnmountPlayer ensures the player is not left parented to a platform.
             if (platformController != null)
             {
-                platformController.LowerPlatforms();
+                platformController.ResetPlatforms();
                 platformController.ForceUnmountPlayer();
             }
 
             TryReturnPlayerToPlayerScene();
-            
-            if (dualWieldSystem != null)
+
+            // Dispatch the death sequence: if the Cleanser is airborne (mid-ultimate hover or
+            // mid-jump), wait for him to land before playing the death animation.
+            bool isAirborne = isInUltimateHoverPhase || isExecutingUltimate;
+            StartCoroutine(ExecuteDeathSequence(isAirborne));
+        }
+
+        [Tooltip("Maximum time to wait for the Cleanser to land before forcing the death animation (used if he dies while airborne).")]
+        [SerializeField, Min(0f)] private float deathAirborneWaitTimeout = 3f;
+
+        [Tooltip("Y-velocity threshold used to detect that the Cleanser has landed after dying mid-air (applied during gravity fall).")]
+        [SerializeField, Min(0f)] private float deathLandingYThreshold = 0.05f;
+
+        private IEnumerator ExecuteDeathSequence(bool isAirborne)
+        {
+            if (isAirborne)
             {
-                dualWieldSystem.DropCurrentWeapon();
+                // Kill any hover position lock by clearing the flag, then let gravity bring him down.
+                isInUltimateHoverPhase = false;
+                isExecutingUltimate = false;
+
+                // Re-enable agent so NavMesh can provide a valid ground position, or fall via transform.
+                if (agent != null && !agent.enabled)
+                {
+                    agent.enabled = true;
+                    agent.Warp(transform.position);
+                }
+
+                // Wait until the boss Y-position stops dropping (i.e. has landed) or timeout.
+                float elapsed = 0f;
+                float prevY = transform.position.y;
+                float landingTimeout = Mathf.Max(0f, deathAirborneWaitTimeout);
+                cleanserVfxManager?.EndAirborneVfx();
+
+                while (elapsed < landingTimeout)
+                {
+                    elapsed += Time.deltaTime;
+                    float deltaY = prevY - transform.position.y;
+                    prevY = transform.position.y;
+
+                    // Once the boss has effectively stopped descending, consider him landed.
+                    if (elapsed > 0.3f && deltaY < deathLandingYThreshold * Time.deltaTime)
+                        break;
+
+                    yield return null;
+                }
             }
-            
-            TriggerAnimation(triggerDeath);
+
+            // Play death animation — force-restart so it overrides whatever was playing.
+            if (animController != null)
+                animController.PlayDeath();
+            else
+                TriggerAnimation(triggerDeath);
+
             cleanserVfxManager?.PlayDeathVfx();
             PlayVoiceLine(deathVoiceLine);
-            LogCriticalDiagnostic($"Death trigger sent. triggerDeath='{triggerDeath}', animatorPresent={animator != null}, animControllerPresent={animController != null}", true);
+            LogCriticalDiagnostic($"Death animation played. animControllerPresent={animController != null}", true);
 #if UNITY_EDITOR
-            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death trigger sent. triggerDeath='{triggerDeath}'");
+            EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death animation dispatched. triggerDeath='{triggerDeath}'");
 #endif
-            ResetAnimationSpeed();
-            EndWhirlwindDamagePhase();
-            aggressionSystem?.SetAggressionProcessingPaused(false);
-            UnregisterFromAttackQueue();
 
             if (playEndingFlowOnDefeat)
             {
@@ -6430,10 +6610,17 @@ namespace EnemyBehavior.Boss.Cleanser
 
                 endingFlowCoroutine = StartCoroutine(RunEndingFlowAfterDeathAnimation());
             }
-            
+
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), "[Cleanser] Defeated!");
 #endif
+        }
+
+        private IEnumerator FailsafeDisableSpareWeaponsAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (dualWieldSystem != null)
+                dualWieldSystem.ForceDisableAllSpareWeapons();
         }
 
         private IEnumerator RunEndingFlowAfterDeathAnimation()

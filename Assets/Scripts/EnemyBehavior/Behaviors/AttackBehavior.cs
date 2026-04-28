@@ -106,6 +106,12 @@ namespace Behaviors
 
         private IEnumerator MonitorAttackRangeLoop()
         {
+            // Grace period on entry: give the enemy time to orient and begin attacking
+            // before checking range. Without this, the enemy can oscillate between
+            // Attack and Chase when the player is stationary (e.g., guarding) because
+            // the range check fires before the directional attack box lands a hit.
+            yield return WaitForSecondsCache.Get(0.5f);
+
             while (enemy.enemyAI.State.Equals(attackStateValue) && playerTarget != null)
             {
                 float attackRange = (Mathf.Max(enemy.attackBoxSize.x, enemy.attackBoxSize.z) * 0.5f) + enemy.attackBoxDistance;

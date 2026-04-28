@@ -111,6 +111,7 @@ public class PlayerAnimationController : MonoBehaviour
     [Header("Crossfade Settings")]
     [SerializeField, Range(0f, 0.3f)] private float defaultTransition = 0.16f;
     [SerializeField, Range(0f, 0.6f)] private float fallingTransition = 0.2f;
+    [SerializeField, Range(0f, 0.6f)] private float deathTransition = 0.2f;
 
     [Header("Animation Events")]
     [Tooltip("Attack manager that receives hitbox/cancel callbacks.")]
@@ -132,6 +133,25 @@ public class PlayerAnimationController : MonoBehaviour
 
     // Set by the PlungeWaitForLanding animation event; cleared when the player lands.
     private bool waitingForPlungeLand;
+
+    // One-shot transition override consumed by the next locomotion CrossFade (Walk/Jog/Sprint).
+    // Set before ForceLocomotionRefresh() on plunge exit so the blend feels smooth.
+    private float nextLocomotionBlendOverride = -1f;
+
+    // Separate one-shot override consumed only by PlayDash, so locomotion can't eat it
+    // before the dash input unlocks on the frame after CompleteCancelWindow fires.
+    private float nextDashBlendOverride = -1f;
+
+    // Separate one-shot override consumed only by AoE (heavy grounded) attack playback.
+    // Short by design so a buffered AY1 after a plunge doesn't inherit the long locomotion blend
+    // time, which would cause its CancelWindowStart event to fire while the animation is still
+    // mostly blended out, making it look cut off.
+    private float nextAoeAttackBlendOverride = -1f;
+
+    // Separate one-shot override consumed only by single-target attack playback.
+    // Can be set longer (matching the locomotion blend) because ST animations are shorter and
+    // their cancel windows don't fire as early relative to the crossfade duration.
+    private float nextSingleTargetBlendOverride = -1f;
 
     /// <summary>
     /// True while the Plunge animation is frozen mid-air waiting for the player to land.
@@ -239,6 +259,45 @@ public class PlayerAnimationController : MonoBehaviour
         animator.speed = 0f;
     }
 
+    /// <summary>
+    /// Primes a one-shot blend duration that will be consumed by the next Walk/Jog/Sprint
+    /// CrossFade, overriding the default transition. Use before ForceLocomotionRefresh() on
+    /// plunge exit so movement snaps in smoothly regardless of which locomotion state fires.
+    /// </summary>
+    public void SetNextLocomotionBlendOverride(float duration)
+    {
+        nextLocomotionBlendOverride = Mathf.Max(0f, duration);
+    }
+
+    /// <summary>
+    /// Primes a one-shot blend duration consumed exclusively by the next <see cref="PlayDash"/>
+    /// call. Kept separate from the locomotion override so locomotion can't consume it first.
+    /// </summary>
+    public void SetNextDashBlendOverride(float duration)
+    {
+        nextDashBlendOverride = Mathf.Max(0f, duration);
+    }
+
+    /// <summary>
+    /// Primes a one-shot blend duration consumed exclusively by the next AoE (heavy grounded)
+    /// attack playback call. Kept short so a buffered AY1 after a plunge doesn't inherit the
+    /// long locomotion blend time and appear to cut off at its cancel window.
+    /// </summary>
+    public void SetNextAoeAttackBlendOverride(float duration)
+    {
+        nextAoeAttackBlendOverride = Mathf.Max(0f, duration);
+    }
+
+    /// <summary>
+    /// Primes a one-shot blend duration consumed exclusively by the next single-target attack
+    /// playback call. Can be set to a longer value (e.g. matching the locomotion blend) for a
+    /// smooth transition out of plunge into single-target attacks.
+    /// </summary>
+    public void SetNextSingleTargetBlendOverride(float duration)
+    {
+        nextSingleTargetBlendOverride = Mathf.Max(0f, duration);
+    }
+
     public void PlayIdle() => CrossFade(PlayerAnim.SingleTarget.Breathing);
 
     public void PlaySingleTargetBreathing(float transition = -1f) => CrossFade(PlayerAnim.SingleTarget.Breathing, transition);
@@ -249,16 +308,16 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayAoeIdleWorld(float transition = -1f) => CrossFade(PlayerAnim.AreaOfEffect.IdleWorld, transition);
     public void PlayAoeIdleCombat(float transition = -1f) => CrossFade(PlayerAnim.AreaOfEffect.IdleCombat, transition);
 
-    public void PlayWalk(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Walk, -1f, forceRestart);
+    public void PlayWalk(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Walk, ConsumeLocomotionBlendOverride(), forceRestart);
     public void PlayWalkBack(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkBack, -1f, forceRestart);
     public void PlayWalkStrafeLeft(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkStrafeLeft, -1f, forceRestart);
     public void PlayWalkStrafeRight(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkStrafeRight, -1f, forceRestart);
-    public void PlayJog(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Jog, -1f, forceRestart);
-    public void PlaySprint(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Sprint, -1f, forceRestart);
+    public void PlayJog(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Jog, ConsumeLocomotionBlendOverride(), forceRestart);
+    public void PlaySprint(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Sprint, ConsumeLocomotionBlendOverride(), forceRestart);
     public void PlayDash(float transition = 0.08f)
     {
         StartHardLock(PlayerAnim.Locomotion.Dash);
-        CrossFade(PlayerAnim.Locomotion.Dash, transition, true);
+        CrossFade(PlayerAnim.Locomotion.Dash, Mathf.Max(transition, ConsumeDashBlendOverride()), true);
     }
 
     public void PlayLocomotion(float moveAmount01)
@@ -348,21 +407,31 @@ public class PlayerAnimationController : MonoBehaviour
         currentState = PlayerAnim.Reactions.Knockback;
     }
 
-    public void PlayDeath() => CrossFade(PlayerAnim.Reactions.Death, 0.02f, true);
+    public void PlayDeath() => CrossFade(PlayerAnim.Reactions.Death, deathTransition, true);
 
     public bool IsPlayingDeath(out float normalizedTime) => IsPlaying(PlayerAnim.Reactions.Death, out normalizedTime);
 
     /// <summary>
-    /// Generic attack playback. Pass the actual animator state name (e.g. "SX1", "AY3", "Launcher").
+    /// Plays a single-target attack animation, consuming the single-target blend override if
+    /// primed (e.g. the longer plunge-exit blend), otherwise falling back to 0.04s.
     /// </summary>
-    public void PlayAttack(string attackStateName)
+    public void PlaySingleTargetAttack(string attackStateName)
     {
-        CrossFade(attackStateName, 0.04f, true);
+        CrossFade(attackStateName, Mathf.Max(0.04f, ConsumeSingleTargetBlendOverride()), true);
     }
 
-    public void PlaySingleTargetLight(int comboIndex) => CrossFade(GetSingleTargetLight(comboIndex), 0.04f, true);
+    /// <summary>
+    /// Plays an AoE (heavy grounded) attack animation, consuming the AoE blend override if
+    /// primed (e.g. the shorter plunge-exit blend), otherwise falling back to 0.04s.
+    /// </summary>
+    public void PlayAoeAttack(string attackStateName)
+    {
+        CrossFade(attackStateName, Mathf.Max(0.04f, ConsumeAoeAttackBlendOverride()), true);
+    }
 
-    public void PlaySingleTargetHeavy(int comboIndex) => CrossFade(GetSingleTargetHeavy(comboIndex), 0.04f, true);
+    public void PlaySingleTargetLight(int comboIndex) => CrossFade(GetSingleTargetLight(comboIndex), Mathf.Max(0.04f, ConsumeSingleTargetBlendOverride()), true);
+
+    public void PlaySingleTargetHeavy(int comboIndex) => CrossFade(GetSingleTargetHeavy(comboIndex), Mathf.Max(0.04f, ConsumeSingleTargetBlendOverride()), true);
 
     // AOE light/heavy helpers disabled with stance removal (kept for reference).
     // public void PlayAoeLight(int comboIndex) => CrossFade(GetAoeLight(comboIndex), 0.04f, true);
@@ -409,6 +478,46 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayCustom(string stateName, float transition = -1f, bool restart = false)
     {
         CrossFade(stateName, transition, restart);
+    }
+
+    private float ConsumeLocomotionBlendOverride()
+    {
+        if (nextLocomotionBlendOverride < 0f)
+            return -1f;
+
+        float value = nextLocomotionBlendOverride;
+        nextLocomotionBlendOverride = -1f;
+        return value;
+    }
+
+    private float ConsumeDashBlendOverride()
+    {
+        if (nextDashBlendOverride < 0f)
+            return -1f;
+
+        float value = nextDashBlendOverride;
+        nextDashBlendOverride = -1f;
+        return value;
+    }
+
+    private float ConsumeSingleTargetBlendOverride()
+    {
+        if (nextSingleTargetBlendOverride < 0f)
+            return -1f;
+
+        float value = nextSingleTargetBlendOverride;
+        nextSingleTargetBlendOverride = -1f;
+        return value;
+    }
+
+    private float ConsumeAoeAttackBlendOverride()
+    {
+        if (nextAoeAttackBlendOverride < 0f)
+            return -1f;
+
+        float value = nextAoeAttackBlendOverride;
+        nextAoeAttackBlendOverride = -1f;
+        return value;
     }
 
     private void CrossFade(string stateName, float transition = -1f, bool forceRestart = false)

@@ -629,8 +629,9 @@ public class BossRoombaController : MonoBehaviour
     public void DeactivateAlarm()
     {
         alarmActivated = false;
-        if (alarm != null && !alarmDestroyed) alarm.SetActive(false);
-        
+        // NOTE: Do NOT hide the alarm here — deactivated means stop spawning only.
+        // The alarm remains visible until the player destroys it (DestroyAlarm handles the visual removal).
+
         EnemyBehaviorDebugLogBools.Log(nameof(BossRoombaController), "Alarm DEACTIVATED - Stopping spawn management");
         
         // Stop delayed activation if pending
@@ -651,13 +652,24 @@ public class BossRoombaController : MonoBehaviour
     /// Returns true if the alarm is still functional (not destroyed).
     /// </summary>
     public bool IsAlarmAlive => !alarmDestroyed;
+
+    /// <summary>
+    /// Returns true if the alarm is currently active (summoning enemies).
+    /// False when deactivated (between vacuum phases) or destroyed.
+    /// </summary>
+    public bool IsAlarmActive => alarmActivated && !alarmDestroyed;
     
     /// <summary>
     /// Apply damage to the alarm. Called by the damage system when player attacks the alarm.
+    /// Only accepts damage while the alarm is active (visible). Prevents cage-match charges from
+    /// inadvertently destroying the alarm when the player's hitbox clips it as the boss flies past.
     /// </summary>
     public void DamageAlarm(float damage)
     {
         if (alarmDestroyed) return;
+        // Guard: only allow damage when alarm is actually active and visible to the player.
+        // During vacuum/cage-match the alarm is deactivated; any hitbox contact should be ignored.
+        if (!alarmActivated) return;
         
         float actualDamage = damage * AlarmDamageMultiplier;
         alarmCurrentHealth -= actualDamage;

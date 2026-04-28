@@ -67,6 +67,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("How far spare weapons sink before being returned to the pool.")]
         [SerializeField, Min(0.1f)] private float sinkDespawnDistance = 2.25f;
 
+        [Header("Death Weapon Drop")]
+        [Tooltip("Layer mask used for ground detection when weapons fall on Cleanser death. Should include the ground/floor layer only.")]
+        [SerializeField] private LayerMask deathDropGroundLayers = ~0;
+        [Tooltip("Timeout (seconds) before a falling weapon gives up waiting for a ground hit and starts sinking anyway.")]
+        [SerializeField, Min(0.5f)] private float deathDropFallTimeout = 5f;
+
         [Header("Stockpile Hover")]
         [Tooltip("Local anchor around the Cleanser where stockpiled weapons hover.")]
         public Vector3 HoverAnchorLocal = new Vector3(0.8f, 1.8f, -0.2f);
@@ -921,6 +927,130 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
+        /// <summary>
+        /// Drops all stockpiled (hovering) weapons under gravity, then sinks them through the
+        /// floor and returns them to the pool. Used on Cleanser death so hovering spares fall
+        /// naturally before disappearing. Lodged weapons are also sunk immediately.
+        /// </summary>
+        public void DropStockpiledWeaponsToGround()
+        {
+            // Stop ALL coroutines first — this kills any in-progress pickup animations or
+            // other routines that are also driving weapon positions, which would otherwise
+            // fight against the gravity fall coroutines and cause aimless drifting.
+            StopAllCoroutines();
+
+            // Collect every active weapon from the entire pool, regardless of which tracking
+            // list it currently lives in (stockpiled, lodged, mid-pickup, etc.)
+            var toFall = new List<SpareWeapon>();
+            var toSink = new List<SpareWeapon>();
+
+            for (int i = 0; i < spareWeaponPool.Count; i++)
+            {
+                var weapon = spareWeaponPool[i];
+                if (weapon == null || weapon.WeaponObject == null || !weapon.WeaponObject.activeSelf)
+                    continue;
+
+                // Lodged weapons just sink — they're already on the ground.
+                if (lodgedWeapons.Contains(weapon))
+                    toSink.Add(weapon);
+                else
+                    toFall.Add(weapon);
+            }
+
+            // Clear all tracking state so LateUpdate stops fighting us.
+            stockpiledWeapons.Clear();
+            lodgedWeapons.Clear();
+            pendingStockpileReservations = 0;
+            activePickupAnimations = 0;
+
+            foreach (var weapon in toSink)
+                StartCoroutine(SinkAndReturnWeaponRoutine(weapon));
+
+            foreach (var weapon in toFall)
+                StartCoroutine(GravityFallAndSinkWeaponRoutine(weapon));
+        }
+
+        private IEnumerator GravityFallAndSinkWeaponRoutine(SpareWeapon weapon)
+        {
+            if (weapon == null || weapon.WeaponObject == null)
+                yield break;
+
+            GameObject obj = weapon.WeaponObject;
+            obj.transform.SetParent(null);
+            weapon.IsHeld = false;
+            SetWeaponControlledVfxActive(weapon, false);
+
+            // Disable all colliders so the falling weapon doesn't interact with gameplay.
+            Collider[] colliders = obj.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = false;
+            }
+
+            // Pin rigidbodies — we drive position manually so physics doesn't fight us.
+            Rigidbody[] bodies = obj.GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i] == null) continue;
+                bodies[i].isKinematic = true;
+                bodies[i].linearVelocity = Vector3.zero;
+                bodies[i].angularVelocity = Vector3.zero;
+            }
+
+            // Cast a long ray straight down from a point well above the weapon to find the
+            // actual ground Y so we know exactly where to stop the fall.
+            float targetGroundY = obj.transform.position.y - 20f; // fallback if nothing hit
+            Vector3 rayOrigin = obj.transform.position + Vector3.up * 2f;
+            if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit groundHit, 50f, deathDropGroundLayers, QueryTriggerInteraction.Ignore))
+                targetGroundY = groundHit.point.y;
+
+            // Manual gravity fall: accumulate vertical velocity and move the object each frame.
+            float yVelocity = 0f;
+            float elapsed = 0f;
+            float gravity = Mathf.Abs(Physics.gravity.y);
+            float timeout = Mathf.Max(0.5f, deathDropFallTimeout);
+
+            // Random tumble rotation for visual flair.
+            Vector3 tumbleAxis = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)).normalized;
+            float tumbleSpeed = Random.Range(120f, 240f);
+
+            while (elapsed < timeout && obj != null && obj.transform.position.y > targetGroundY)
+            {
+                elapsed += Time.deltaTime;
+                yVelocity -= gravity * Time.deltaTime;
+                obj.transform.position += new Vector3(0f, yVelocity * Time.deltaTime, 0f);
+                obj.transform.Rotate(tumbleAxis, tumbleSpeed * Time.deltaTime, Space.World);
+                yield return null;
+            }
+
+            if (obj == null)
+                yield break;
+
+            // Sink through the floor exactly like the cancel behavior.
+            Vector3 startPos = obj.transform.position;
+            float sinkDistance = Mathf.Max(0.1f, sinkDespawnDistance);
+            float sinkSpeed = Mathf.Max(0.05f, sinkDespawnSpeed);
+
+            while (obj != null && Vector3.Distance(startPos, obj.transform.position) < sinkDistance)
+            {
+                obj.transform.position += Vector3.down * (sinkSpeed * Time.deltaTime);
+                yield return null;
+            }
+
+            if (obj == null)
+                yield break;
+
+            // Re-enable colliders before pooling so the next reuse starts clean.
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null)
+                    colliders[i].enabled = true;
+            }
+
+            ReturnWeaponToPool(weapon);
+        }
+
         private IEnumerator SinkAndReturnWeaponRoutine(SpareWeapon weapon)
         {
             if (weapon == null || weapon.WeaponObject == null)
@@ -977,6 +1107,21 @@ namespace EnemyBehavior.Boss.Cleanser
 
             var vfxController = weapon.WeaponObject.GetComponentInChildren<CleanserSpareWeaponVfxController>(true);
             vfxController?.SetControlledState(isActive);
+        }
+
+        /// <summary>
+        /// Hard failsafe: immediately disables every tracked spare weapon GameObject.
+        /// Used as a fallback after Cleanser death to guarantee no weapon objects remain visible
+        /// if the coroutine-based cleanup has not finished yet.
+        /// </summary>
+        public void ForceDisableAllSpareWeapons()
+        {
+            for (int i = 0; i < spareWeaponPool.Count; i++)
+            {
+                var weapon = spareWeaponPool[i];
+                if (weapon != null && weapon.WeaponObject != null && weapon.WeaponObject.activeSelf)
+                    weapon.WeaponObject.SetActive(false);
+            }
         }
 
         /// <summary>
