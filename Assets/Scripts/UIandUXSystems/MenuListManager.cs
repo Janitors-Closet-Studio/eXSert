@@ -17,6 +17,7 @@ public class MenuListManager : MonoBehaviour
     [SerializeField] private GameObject firstMenuToOpen;
     [SerializeField] private GameObject canvas;
 
+    [SerializeField] private List<GameObject> additionalNonMenusToClear = new List<GameObject>(); 
 
     // Tracks the last selected element before opening each menu (acts as a stack)
     public List<Selectable> selectionHistory = new List<Selectable>();
@@ -157,9 +158,6 @@ public class MenuListManager : MonoBehaviour
         PushCurrentSelectionToHistory();
 
         EnsureHierarchyIsActive(menuToAdd);
-        RemoveOtherOpenSettingPageMenu(menuToAdd);
-        ClearOpenSubmenusOnSettingsSwitch(menuToAdd);
-        PruneStaleSettingsSubmenus(menuToAdd);
         ReplaceTopMenuIfSwitchingSiblingSubmenu(menuToAdd);
 
         if (menusToManage.Contains(menuToAdd))
@@ -222,39 +220,6 @@ public class MenuListManager : MonoBehaviour
             return;
 
         CloseAndRemoveMenuAt(0);
-    }
-
-    private void PruneStaleSettingsSubmenus(GameObject menuToAdd)
-    {
-        if (menusToManage == null || menusToManage.Count == 0 || menuToAdd == null)
-            return;
-
-        GameObject settingsRoot = GetOwningSettingsRoot(menuToAdd);
-        if (settingsRoot == null || menuToAdd == settingsRoot)
-            return;
-
-        for (int i = menusToManage.Count - 1; i >= 0; i--)
-        {
-            GameObject openMenu = menusToManage[i];
-            if (openMenu == null)
-            {
-                menusToManage.RemoveAt(i);
-                continue;
-            }
-
-            if (openMenu == menuToAdd || openMenu == settingsRoot || IsProtectedMenu(openMenu))
-                continue;
-
-            bool openUnderSameRoot = openMenu.transform.IsChildOf(settingsRoot.transform);
-            if (!openUnderSameRoot)
-                continue;
-
-            bool isAncestorOfTarget = menuToAdd.transform.IsChildOf(openMenu.transform);
-            if (isAncestorOfTarget)
-                continue;
-
-            CloseAndRemoveMenuAt(i);
-        }
     }
 
     // Returns true if both menus share the same root settings page in the hierarchy, 
@@ -325,48 +290,6 @@ public class MenuListManager : MonoBehaviour
         }
     }
 
-
-    // Checks if the menu being added is a settings page, and if so, 
-    // fades out any other open settings pages and removes them from the menu list.
-    private void RemoveOtherOpenSettingPageMenu(GameObject menuToAdd)
-    {
-        if (menuToAdd == null || settingPageMenus == null || !settingPageMenus.Contains(menuToAdd))
-            return;
-
-        CloseManagedMenusWhere(openMenu =>
-            openMenu != null &&
-            openMenu != menuToAdd &&
-            settingPageMenus.Contains(openMenu));
-    }
-
-    // Opening a new top-level settings page should clear any stacked submenu panels so
-    // returning later starts from a clean page (no previously open submenu overlays).
-    private void ClearOpenSubmenusOnSettingsSwitch(GameObject menuToAdd)
-    {
-        if (menuToAdd == null || settingPageMenus == null || !settingPageMenus.Contains(menuToAdd))
-            return;
-
-        CloseManagedMenusWhere(openMenu =>
-            openMenu != null &&
-            !settingPageMenus.Contains(openMenu) &&
-            IsDescendantOfAnySettingsPage(openMenu));
-    }
-
-    private void CloseManagedMenusWhere(System.Predicate<GameObject> shouldClose)
-    {
-        if (menusToManage == null || menusToManage.Count == 0 || shouldClose == null)
-            return;
-
-        for (int i = menusToManage.Count - 1; i >= 0; i--)
-        {
-            GameObject openMenu = menusToManage[i];
-            if (!shouldClose(openMenu))
-                continue;
-
-            CloseAndRemoveMenuAt(i);
-        }
-    }
-
     // Returns true if the menu is a descendant of any of the top-level settings pages, 
     // indicating it is a submenu that should be closed when switching between settings sections.
     private bool IsDescendantOfAnySettingsPage(GameObject menu)
@@ -393,7 +316,7 @@ public class MenuListManager : MonoBehaviour
             return;
         StartCoroutine(BackGuardCooldown());
 
-        if (menusToManage.Count <= 2)
+        if (!CanGoBackOneLevel())
             return;
 
         GameObject currentTop = menusToManage[0];
@@ -422,6 +345,19 @@ public class MenuListManager : MonoBehaviour
         // Fade out only the outgoing menu.
         CloseMenu(currentTop);
 
+    }
+
+    // Returns true when the current top menu can be popped to reveal a previous one.
+    public bool CanGoBackOneLevel()
+    {
+        if (menusToManage == null || menusToManage.Count < 2)
+            return false;
+
+        GameObject currentTop = menusToManage[0];
+        if (currentTop == null)
+            return false;
+
+        return !IsProtectedMenu(currentTop);
     }
 
     // Cooldown so back cant be spammed
@@ -710,6 +646,16 @@ public class MenuListManager : MonoBehaviour
 
             if (menu == null || !IsProtectedMenu(menu))
                 menusToManage.RemoveAt(i);
+        }
+
+        if (additionalNonMenusToClear != null)
+        {
+            for (int i = additionalNonMenusToClear.Count - 1; i >= 0; i--)
+            {
+                GameObject obj = additionalNonMenusToClear[i];
+                if (obj != null)
+                    obj.SetActive(false);
+            }
         }
 
         selectionHistory.Clear();

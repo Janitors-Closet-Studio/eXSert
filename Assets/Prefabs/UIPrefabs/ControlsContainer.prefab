@@ -134,9 +134,9 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 3457267353085446921}
-    m_SelectOnDown: {fileID: 3451035650890530627}
-    m_SelectOnLeft: {fileID: 3016894671013147867}
+    m_SelectOnUp: {fileID: 3451035650890530627}
+    m_SelectOnDown: {fileID: 8584048389605827341}
+    m_SelectOnLeft: {fileID: 9161199627473722844}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
@@ -1085,7 +1085,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1701166198346674915
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2729,9 +2729,9 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 4465197131274419760}
-    m_SelectOnDown: {fileID: 2165404947512018265}
-    m_SelectOnLeft: {fileID: 560182422279976753}
+    m_SelectOnUp: {fileID: 3872259995451170268}
+    m_SelectOnDown: {fileID: 4465197131274419760}
+    m_SelectOnLeft: {fileID: 8806028819663570885}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
@@ -7140,7 +7140,7 @@ MonoBehaviour:
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 2475490629938746872}
+    m_SelectOnLeft: {fileID: 1688040070220211636}
     m_SelectOnRight: {fileID: 2165404947512018265}
   m_Transition: 1
   m_Colors:
@@ -8826,8 +8826,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 3016894671013147867}
+    m_SelectOnUp: {fileID: 3724747673897401643}
+    m_SelectOnDown: {fileID: 175970900695904131}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 3457267353085446921}
   m_Transition: 1
@@ -9107,9 +9107,9 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 3872259995451170268}
-    m_SelectOnDown: {fileID: 5264371716512054442}
-    m_SelectOnLeft: {fileID: 1688040070220211636}
+    m_SelectOnUp: {fileID: 5264371716512054442}
+    m_SelectOnDown: {fileID: 2165404947512018265}
+    m_SelectOnLeft: {fileID: 2475490629938746872}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
@@ -10906,10 +10906,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 560182422279976753}
+    m_SelectOnUp: {fileID: 4380324330330665998}
     m_SelectOnDown: {fileID: 2475490629938746872}
     m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 2165404947512018265}
+    m_SelectOnRight: {fileID: 5264371716512054442}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
@@ -11673,9 +11673,9 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 5264371716512054442}
+    m_SelectOnUp: {fileID: 4465197131274419760}
     m_SelectOnDown: {fileID: 9113406506680010841}
-    m_SelectOnLeft: {fileID: 8806028819663570885}
+    m_SelectOnLeft: {fileID: 1688040070220211636}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
@@ -12754,8 +12754,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 3275596381816004678}
+    m_SelectOnUp: {fileID: 8116093254844023714}
+    m_SelectOnDown: {fileID: 3451035650890530627}
     m_SelectOnLeft: {fileID: 4740441613008736085}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -12876,6 +12876,7 @@ GameObject:
   - component: {fileID: 3166406103896900355}
   - component: {fileID: 1788327913962744997}
   - component: {fileID: 7230164502701837468}
+  - component: {fileID: 2046257721456725914}
   m_Layer: 5
   m_Name: ControllerControlsButton
   m_TagString: Untagged
@@ -13044,6 +13045,21 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.87058824}
   m_EffectDistance: {x: 6, y: -6}
   m_UseGraphicAlpha: 1
+--- !u!114 &2046257721456725914
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3143287637975865861}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0842ed2a6e751040ab8880b61e10674, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.InputSystem.RebindingUI::ResetDeviceBindings
+  _inputActions: {fileID: -944628639613478452, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _resetBindingsActionReference: {fileID: 0}
+  targetControlSchemeObject: {fileID: 7539838643119031839}
 --- !u!1 &3147933862427393485
 GameObject:
   m_ObjectHideFlags: 0
@@ -13141,10 +13157,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 3724747673897401643}
-    m_SelectOnDown: {fileID: 0}
+    m_SelectOnUp: {fileID: 4740441613008736085}
+    m_SelectOnDown: {fileID: 9161199627473722844}
     m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 8584048389605827341}
+    m_SelectOnRight: {fileID: 3451035650890530627}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
@@ -14584,6 +14600,7 @@ GameObject:
   - component: {fileID: 1072264030274032511}
   - component: {fileID: 7071888637703242443}
   - component: {fileID: 6384953910824594375}
+  - component: {fileID: 9124143413502468840}
   m_Layer: 5
   m_Name: KeyboardControlsButton
   m_TagString: Untagged
@@ -14752,6 +14769,21 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.87058824}
   m_EffectDistance: {x: 6, y: -6}
   m_UseGraphicAlpha: 1
+--- !u!114 &9124143413502468840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3470439614744569709}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0842ed2a6e751040ab8880b61e10674, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.InputSystem.RebindingUI::ResetDeviceBindings
+  _inputActions: {fileID: -944628639613478452, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _resetBindingsActionReference: {fileID: -5281237626152650808, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  targetControlSchemeObject: {fileID: 3850597106895046215}
 --- !u!1 &3513219165477528176
 GameObject:
   m_ObjectHideFlags: 0
@@ -15786,14 +15818,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2342058642624373465}
-  - component: {fileID: 687601218683610274}
   m_Layer: 5
   m_Name: KeyboardControls
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2342058642624373465
 RectTransform:
   m_ObjectHideFlags: 0
@@ -15816,22 +15847,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &687601218683610274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3850597106895046215}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0842ed2a6e751040ab8880b61e10674, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem.RebindingUI::ResetDeviceBindings
-  _inputActions: {fileID: -944628639613478452, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
-  _resetBindingsActionReference: {fileID: -5281237626152650808, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
-  _keyboardAndMousePanel: {fileID: 3470439614744569709}
-  _gamepadPanel: {fileID: 3143287637975865861}
 --- !u!1 &3866752249002185761
 GameObject:
   m_ObjectHideFlags: 0
@@ -16156,9 +16171,9 @@ MonoBehaviour:
     m_Mode: 4
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 1688040070220211636}
-    m_SelectOnDown: {fileID: 8806028819663570885}
+    m_SelectOnDown: {fileID: 4380324330330665998}
     m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 5264371716512054442}
+    m_SelectOnRight: {fileID: 5275289690973115587}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
@@ -19407,10 +19422,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 4380324330330665998}
-    m_SelectOnDown: {fileID: 560182422279976753}
+    m_SelectOnUp: {fileID: 560182422279976753}
+    m_SelectOnDown: {fileID: 8806028819663570885}
     m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 4465197131274419760}
+    m_SelectOnRight: {fileID: 3872259995451170268}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
@@ -19664,8 +19679,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 560182422279976753}
-    m_SelectOnDown: {fileID: 4380324330330665998}
+    m_SelectOnUp: {fileID: 8806028819663570885}
+    m_SelectOnDown: {fileID: 1688040070220211636}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 5275289690973115587}
   m_Transition: 1
@@ -23283,9 +23298,9 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 3275596381816004678}
-    m_SelectOnDown: {fileID: 8584048389605827341}
-    m_SelectOnLeft: {fileID: 3724747673897401643}
+    m_SelectOnUp: {fileID: 3457267353085446921}
+    m_SelectOnDown: {fileID: 3275596381816004678}
+    m_SelectOnLeft: {fileID: 175970900695904131}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
@@ -23490,7 +23505,7 @@ MonoBehaviour:
     m_Mode: 4
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 9113406506680010841}
-    m_SelectOnDown: {fileID: 4465197131274419760}
+    m_SelectOnDown: {fileID: 5264371716512054442}
     m_SelectOnLeft: {fileID: 4380324330330665998}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -24561,9 +24576,9 @@ MonoBehaviour:
     m_Mode: 4
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 3016894671013147867}
-    m_SelectOnDown: {fileID: 175970900695904131}
+    m_SelectOnDown: {fileID: 4740441613008736085}
     m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 3451035650890530627}
+    m_SelectOnRight: {fileID: 5832230514198817175}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
@@ -25856,7 +25871,7 @@ MonoBehaviour:
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 8584048389605827341}
     m_SelectOnDown: {fileID: 3457267353085446921}
-    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnLeft: {fileID: 5832230514198817175}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
@@ -28328,8 +28343,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 4740441613008736085}
-    m_SelectOnDown: {fileID: 3724747673897401643}
+    m_SelectOnUp: {fileID: 175970900695904131}
+    m_SelectOnDown: {fileID: 3016894671013147867}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 3275596381816004678}
   m_Transition: 1
@@ -29314,10 +29329,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 4740441613008736085}
+    m_SelectOnUp: {fileID: 9161199627473722844}
     m_SelectOnDown: {fileID: 3724747673897401643}
     m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 3275596381816004678}
+    m_SelectOnRight: {fileID: 5832230514198817175}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.9215687, g: 0.90196085, b: 0.84705883, a: 1}
@@ -31834,7 +31849,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1018649947573245311}
-  - component: {fileID: 888881218061627433}
   m_Layer: 5
   m_Name: ControllerControls
   m_TagString: Untagged
@@ -31864,22 +31878,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &888881218061627433
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7539838643119031839}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0842ed2a6e751040ab8880b61e10674, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem.RebindingUI::ResetDeviceBindings
-  _inputActions: {fileID: -944628639613478452, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
-  _resetBindingsActionReference: {fileID: 0}
-  _keyboardAndMousePanel: {fileID: 0}
-  _gamepadPanel: {fileID: 0}
 --- !u!1 &7567580489378682288
 GameObject:
   m_ObjectHideFlags: 0
@@ -35797,8 +35795,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 4380324330330665998}
-    m_SelectOnDown: {fileID: 560182422279976753}
+    m_SelectOnUp: {fileID: 2475490629938746872}
+    m_SelectOnDown: {fileID: 2165404947512018265}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 4465197131274419760}
   m_Transition: 1
@@ -36199,10 +36197,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 175970900695904131}
-    m_SelectOnDown: {fileID: 4740441613008736085}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 3016894671013147867}
+    m_SelectOnRight: {fileID: 8584048389605827341}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
@@ -36761,9 +36759,9 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 3451035650890530627}
-    m_SelectOnDown: {fileID: 0}
-    m_SelectOnLeft: {fileID: 175970900695904131}
+    m_SelectOnUp: {fileID: 3275596381816004678}
+    m_SelectOnDown: {fileID: 8116093254844023714}
+    m_SelectOnLeft: {fileID: 5832230514198817175}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:

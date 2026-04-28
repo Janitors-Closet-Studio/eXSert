@@ -290,7 +290,7 @@ public class InputReader : Singleton<InputReader>
 
         // Read move/look only when action exists and is enabled. Use optimized deadzone check.
         if (!IsGameplayInputBlocked && moveAction != null && moveAction.enabled)
-            MoveInput = ApplyDeadzone(moveAction.ReadValue<Vector2>(), leftStickDeadzoneValue);
+            MoveInput = ApplyDeadzone(ReadGameplayMoveValue(), leftStickDeadzoneValue);
         else if (!IsGameplayInputBlocked)
             MoveInput = Vector2.zero;
 
@@ -705,6 +705,33 @@ public class InputReader : Singleton<InputReader>
         return !IsGameplayInputBlocked
             && action != null
             && action.IsPressed();
+    }
+
+    private Vector2 ReadGameplayMoveValue()
+    {
+        // On controller gameplay, movement should come from the left stick only.
+        if (IsUsingGamepadControlScheme())
+        {
+            Gamepad gamepad = Gamepad.current;
+            if (gamepad != null)
+                return gamepad.leftStick.ReadValue();
+
+            return Vector2.zero;
+        }
+
+        return moveAction.ReadValue<Vector2>();
+    }
+
+    private bool IsUsingGamepadControlScheme()
+    {
+        if (PlayerInput == null)
+            return false;
+
+        string scheme = PlayerInput.currentControlScheme;
+        if (string.IsNullOrEmpty(scheme))
+            return false;
+
+        return scheme.IndexOf("gamepad", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static Vector2 ApplyDeadzone(Vector2 value, float deadzone)

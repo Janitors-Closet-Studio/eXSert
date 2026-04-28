@@ -14,8 +14,6 @@ public abstract class CollectableInteraction : InteractionManager
     {
         base.Awake();
 
-       if (!doNotLoadFromSave)
-            IfInInventoryDeactivate();  
     }
 
     private void IfInInventoryDeactivate()

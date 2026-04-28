@@ -71,7 +71,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
     // Music muffling state
     private bool musicIsMuffled = false;
-    private float? originalMusicVolume = null;
+    private AudioLowPassFilter cachedPauseLowPassFilter;
+    private bool? cachedLowPassEnabledBeforePause;
+    private float? cachedLowPassCutoffBeforePause;
     private bool blurEnabled;
     private bool blurProfileWarningLogged;
     private bool blurOverrideWarningLogged;
@@ -150,6 +152,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         MainMenu.isInMainMenu = scene.name == "MainMenu";
         TryResolveHudRoot();
         HideAllMenus();
+        if (!MainMenu.isInMainMenu)
+            SetHUDVisible(true);
         SetBlurEnabled(false);
     }
 
@@ -272,36 +276,17 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
-        PrunePauseMenusFromStack();
-
         if (settingsMenuOpen)
         {
             CloseSettingsMenu();
             return;
         }
 
-        int managedMenuCount = GetManagedMenuCount();
+        bool canGoBackOneLevel = menuListManager != null && menuListManager.CanGoBackOneLevel();
 
-        // If we have more than 2 menus (canvas + first menu), just go back one level
-        if (managedMenuCount > 2)
+        if (canGoBackOneLevel)
         {
             GoBackOnce();
-
-            PrunePauseMenusFromStack();
-            managedMenuCount = GetManagedMenuCount();
-
-            if (currentActiveMenu == ActiveMenu.NavigationMenu && managedMenuCount <= 2 && !HasBlockingSubmenuActive())
-            {
-                SwapToPauseMenu();
-                return;
-            }
-
-            if (currentActiveMenu == ActiveMenu.PauseMenu && managedMenuCount <= 2 && !HasBlockingSubmenuActive())
-            {
-                ResumeGame();
-                return;
-            }
-
             return;
         }
         
@@ -368,7 +353,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         RefreshNaviEntryIndicator();
 
         // Only skip one extra layer if the newly revealed top menu is still blocked.
-        if (menuListManager.menusToManage.Count > 0
+        if (menuListManager.menusToManage.Count > 2
             && menuListManager.menusToBlock.Contains(menuListManager.menusToManage[0]))
         {
             menuListManager.GoBackToPreviousMenu();
@@ -456,8 +441,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.PauseMenu;
 
-        PrunePauseMenusFromStack();
-
         if (menuListManager != null && pauseMenuHolder != null)
             menuListManager.AddToMenuList(pauseMenuHolder);
 
@@ -492,8 +475,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.RequestGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
-        PrunePauseMenusFromStack();
-
         if (menuListManager != null && navigationMenuHolder != null)
             menuListManager.AddToMenuList(navigationMenuHolder);
 
@@ -519,8 +500,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         currentActiveMenu = ActiveMenu.PauseMenu;
 
-        PrunePauseMenusFromStack();
-
         if (menuListManager != null && pauseMenuHolder != null)
             menuListManager.AddToMenuList(pauseMenuHolder);
 
@@ -539,8 +518,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         currentActiveMenu = ActiveMenu.NavigationMenu;
 
-        PrunePauseMenusFromStack();
-
         if (menuListManager != null && navigationMenuHolder != null)
             menuListManager.AddToMenuList(navigationMenuHolder);
 
@@ -555,8 +532,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void ResumeGame()
     {
         ForceCloseAllWarningUi();
-
-        PrunePauseMenusFromStack();
 
         // Switch back to Gameplay input
         if (InputReader.PlayerInput != null)
@@ -642,8 +617,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         ForceCloseAllWarningUi();
 
-        PrunePauseMenusFromStack();
-
         // Release this menu's pause ownership so restart transitions do not leave the game paused.
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
 
@@ -653,6 +626,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
+        SetHUDVisible(true);
         SetBlurEnabled(false);
 
         if (pauseOverlay != null && pauseOverlay.activeInHierarchy)
@@ -750,33 +724,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         SetHUDVisible(visible);
     }
 
-    private int GetManagedMenuCount()
-    {
-        if (menuListManager == null || menuListManager.menusToManage == null)
-            return 0;
-
-        return menuListManager.menusToManage.Count;
-    }
-
-    private void PrunePauseMenusFromStack()
-    {
-        if (menuListManager == null || menuListManager.menusToManage == null)
-            return;
-
-        for (int i = menuListManager.menusToManage.Count - 1; i >= 0; i--)
-        {
-            GameObject menu = menuListManager.menusToManage[i];
-            if (menu == null)
-            {
-                menuListManager.menusToManage.RemoveAt(i);
-                continue;
-            }
-
-            if (menu == pauseMenuHolder || menu == navigationMenuHolder || menu == settingsMenuContainer)
-                menuListManager.menusToManage.RemoveAt(i);
-        }
-    }
-
     private void ForceCloseAllWarningUi()
     {
         WarningButtonFunctionality[] warningDialogs = FindObjectsByType<WarningButtonFunctionality>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -811,11 +758,62 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         var candidate = GameObject.Find(playerHUDRootNameHint);
         if (candidate == null)
+            candidate = FindInactiveHudRootByName(playerHUDRootNameHint);
+
+        if (candidate == null)
             return false;
 
         playerHUDRoot = candidate;
         CacheHudRootName();
         return true;
+    }
+
+    public void TurnOffFooterAndOverlay()
+    {
+        if (footerManager != null)
+            footerManager.UpdateFooterForMenu(null);
+
+        if (pauseOverlay != null && pauseOverlay.activeInHierarchy)
+        {
+            if (fadeMenus != null)
+                StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, false));
+            else
+                pauseOverlay.SetActive(false);
+        }
+    }
+
+    private static GameObject FindInactiveHudRootByName(string targetName)
+    {
+        if (string.IsNullOrEmpty(targetName))
+            return null;
+
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            Scene scene = SceneManager.GetSceneAt(i);
+            if (!scene.IsValid() || !scene.isLoaded)
+                continue;
+
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                GameObject root = roots[rootIndex];
+                if (root == null)
+                    continue;
+
+                if (root.name == targetName)
+                    return root;
+
+                Transform[] descendants = root.GetComponentsInChildren<Transform>(true);
+                for (int descendantIndex = 0; descendantIndex < descendants.Length; descendantIndex++)
+                {
+                    Transform descendant = descendants[descendantIndex];
+                    if (descendant != null && descendant.name == targetName)
+                        return descendant.gameObject;
+                }
+            }
+        }
+
+        return null;
     }
 
     private void MufffleMusicForMenu(bool shouldMuffle)
@@ -824,7 +822,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
 
         var musicSource = SoundManager.Instance.levelMusicSource;
-        var lowPassFilter = musicSource.GetComponent<AudioLowPassFilter>();
+
+        AudioLowPassFilter lowPassFilter = cachedPauseLowPassFilter;
+        if (lowPassFilter == null)
+        {
+            lowPassFilter = musicSource.GetComponent<AudioLowPassFilter>();
+            if (lowPassFilter == null)
+                lowPassFilter = musicSource.gameObject.AddComponent<AudioLowPassFilter>();
+
+            cachedPauseLowPassFilter = lowPassFilter;
+        }
 
         const float defaultCutoff = 22000f;
         if (shouldMuffle)
@@ -835,13 +842,13 @@ public class PauseManager : Singletons.Singleton<PauseManager>
                 return;
             }
             Debug.Log("Muffling music for menu");
-            if (originalMusicVolume == null)
-                originalMusicVolume = musicSource.volume;
-            musicSource.volume = musicSource.volume * 0.5f;
-            if (lowPassFilter != null)
-                lowPassFilter.cutoffFrequency = 500f;
-            else
-                Debug.LogWarning("No AudioLowPassFilter found on level music source. Music will be muffled by volume reduction only.");
+
+            cachedLowPassEnabledBeforePause = lowPassFilter.enabled;
+            cachedLowPassCutoffBeforePause = lowPassFilter.cutoffFrequency;
+
+            lowPassFilter.enabled = true;
+            lowPassFilter.cutoffFrequency = 500f;
+
             musicIsMuffled = true;
         }
         else
@@ -852,14 +859,13 @@ public class PauseManager : Singletons.Singleton<PauseManager>
                 return;
             }
             Debug.Log("Restoring music after menu");
-            if (originalMusicVolume != null)
-                musicSource.volume = originalMusicVolume.Value;
-            else
-                musicSource.volume = 1f; // fallback
-            if (lowPassFilter != null)
-                lowPassFilter.cutoffFrequency = defaultCutoff;
+
+            lowPassFilter.cutoffFrequency = cachedLowPassCutoffBeforePause ?? defaultCutoff;
+            lowPassFilter.enabled = cachedLowPassEnabledBeforePause ?? true;
+
             musicIsMuffled = false;
-            originalMusicVolume = null;
+            cachedLowPassCutoffBeforePause = null;
+            cachedLowPassEnabledBeforePause = null;
         }
     }
 
