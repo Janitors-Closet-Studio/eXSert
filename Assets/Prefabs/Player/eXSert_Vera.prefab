@@ -3788,7 +3788,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616815310529457648}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.07450936, y: -0.0015384068, z: 0.00011494534, w: -0.99721915}
+  m_LocalRotation: {x: -0.07450934, y: -0.001928752, z: 0.00014411089, w: -0.99721843}
   m_LocalPosition: {x: 0.020154344, y: 1.9423592, z: -3.4481235}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3828,7 +3828,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 89.99994
+  field of view: 60
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -8330,15 +8330,15 @@ MonoBehaviour:
   downhillGroundProbeDistance: 1
   downhillMaxFallSpeedForGroundedAnim: -6
   enableDownhillAnimationGroundingDebugLogs: 0
-  dashDistance: 3
-  airDashDistance: 6
+  dashDistance: 2
+  airDashDistance: 3
   dashDuration: 0.25
-  airDashDuration: 0.25
+  airDashDuration: 0.3
   dashAnimationTransition: 0.08
   airDashAnimationTransition: 0.08
-  maxDashCharges: 3
+  maxDashCharges: 2
   dashChainDelay: 0.15
-  dashCoolDown: 0.7
+  dashCoolDown: 1
   enableDashRecoveryDebugLogs: 0
   enableDashVelocityTraceLogs: 0
   dashVelocityTraceDuration: 1.6
