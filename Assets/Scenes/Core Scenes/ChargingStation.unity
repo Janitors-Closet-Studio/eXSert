@@ -13378,6 +13378,10 @@ PrefabInstance:
       propertyPath: _interactId
       value: loadC
       objectReference: {fileID: 0}
+    - target: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
+      propertyPath: displayName
+      value: Conservatory Master Bypass
+      objectReference: {fileID: 0}
     - target: {fileID: 7209843438162953288, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
       propertyPath: m_Name
       value: PuzzleKeyCard(Green) Variant
@@ -15295,7 +15299,7 @@ MonoBehaviour:
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5
   requiredItemID: loadC
-  requiredItemDisplayName: 
+  requiredItemDisplayName: Conservatory Master Bypass
   lockedInteractionPrompt: LOCKED
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
@@ -15305,6 +15309,7 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 872644021}
   onlyInteractableOnce: 0
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
   useCameraTransition: 0
   useSpecialTransition: 0
   transitionCinemachineCamera: {fileID: 0}
@@ -70497,7 +70502,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3084554808171264557, guid: 0c746557cf2dbbf42ac93f7e662f2ca5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.85
+      value: -1.32
       objectReference: {fileID: 0}
     - target: {fileID: 3084554808171264557, guid: 0c746557cf2dbbf42ac93f7e662f2ca5, type: 3}
       propertyPath: m_LocalRotation.w
