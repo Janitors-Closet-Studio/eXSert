@@ -2476,7 +2476,7 @@ GameObject:
   - component: {fileID: 4604596234439615569}
   - component: {fileID: 1730007505059123355}
   - component: {fileID: 4224951138060698123}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ConveyorFull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2623,13 +2623,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -2637,9 +2650,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 8243248150470764568}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &2379559291656722992
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2829,13 +2859,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: 
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -2843,9 +2886,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 8217928173437377851}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &2408282548237086483
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3677,7 +3737,7 @@ GameObject:
   - component: {fileID: 7935425041231837900}
   - component: {fileID: 8198944282222756694}
   - component: {fileID: 4248485737622826842}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: DoorFrame1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67000,6 +67060,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1123e87265119dc4b92e91a12125471d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ElevatorLift
+  lockedFloors: []
   enableGroundRecallFailsafe: 1
   groundRecallRadius: 6
   groundRecallMaxHeightOffset: 3
@@ -67008,10 +67069,14 @@ MonoBehaviour:
   elevatorCamera: {fileID: 0}
   elevatorUI:
   - {fileID: 0}
+  elevatorTriggerCollider: {fileID: 0}
   desiredLiftPosition:
   - {x: 93.35094, y: 1.22, z: 6.127776}
   - {x: 93.35094, y: 14.5, z: 6.127776}
   - {x: 93.35094, y: 23.27, z: 6.127776}
+  lockXMovement: 0
+  lockYMovement: 0
+  lockZMovement: 0
   liftSpeed: 5
   floorButtonUI:
   - {fileID: 0}
@@ -67022,6 +67087,12 @@ MonoBehaviour:
   firstFloorAction: {fileID: 0}
   secondFloorAction: {fileID: 0}
   thirdFloorAction: {fileID: 0}
+  elevatorSFX: {fileID: 0}
+  elevatorStopSFX: {fileID: 0}
+  rumbleDuration: 0.1
+  rumbleLowFrequency: 0.1
+  rumbleHighFrequency: 0.1
+  enemiesOnLift: []
 --- !u!1 &1689656643070499976
 GameObject:
   m_ObjectHideFlags: 0
@@ -67636,7 +67707,8 @@ GameObject:
   - component: {fileID: 7130682701384510441}
   - component: {fileID: 1695451791656762164}
   - component: {fileID: 3736268990537779046}
-  - component: {fileID: 6202171956586250347}
+  - component: {fileID: 4851316604760104674}
+  - component: {fileID: 7559721575293696564}
   m_Layer: 0
   m_Name: Cylinder
   m_TagString: Untagged
@@ -68277,8 +68349,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1797916231925357059}
   m_Mesh: {fileID: 0}
---- !u!64 &6202171956586250347
-MeshCollider:
+--- !u!136 &4851316604760104674
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -68295,10 +68367,27 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 2
+  m_Radius: 1.5000004
+  m_Height: 7.3531504
+  m_Direction: 1
+  m_Center: {x: -0.00014877322, y: 3.0299888, z: 0.00025105482}
+--- !u!208 &7559721575293696564
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1797916231925357059}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 0
+  m_Extents: {x: 1.5000001, y: 3.76, z: 1.5000001}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 3.0300002, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &1800679767454370675
 GameObject:
   m_ObjectHideFlags: 0
@@ -68456,7 +68545,8 @@ GameObject:
   - component: {fileID: 2910894649590179283}
   - component: {fileID: 2117431449553895794}
   - component: {fileID: 6541668192333454966}
-  - component: {fileID: 6249624303348421643}
+  - component: {fileID: 7031475197665654635}
+  - component: {fileID: 4892440556545541653}
   m_Layer: 3
   m_Name: ElevatorBase (1)
   m_TagString: Untagged
@@ -68776,8 +68866,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1821031616328756720}
   m_Mesh: {fileID: 0}
---- !u!64 &6249624303348421643
-MeshCollider:
+--- !u!65 &7031475197665654635
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -68794,10 +68884,25 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 3
+  m_Size: {x: 9.611483, y: 1, z: 20.628487}
+  m_Center: {x: 0.025233751, y: -3.3874104, z: 0.036475196}
+--- !u!208 &4892440556545541653
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1821031616328756720}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 4.806, y: 0.5, z: 10.314}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0.025, y: -3.387, z: 0.036000002}
+  m_TimeToStationary: 0.5
 --- !u!1 &1828763895394312241
 GameObject:
   m_ObjectHideFlags: 0
@@ -70343,7 +70448,8 @@ GameObject:
   - component: {fileID: 5947607090915847054}
   - component: {fileID: 1331401906272423036}
   - component: {fileID: 4945724018997757196}
-  - component: {fileID: 7229101637684960894}
+  - component: {fileID: 8072120795726062897}
+  - component: {fileID: 960491893076040075}
   m_Layer: 0
   m_Name: Cylinder (1)
   m_TagString: Untagged
@@ -70984,8 +71090,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2028426497100118183}
   m_Mesh: {fileID: 0}
---- !u!64 &7229101637684960894
-MeshCollider:
+--- !u!136 &8072120795726062897
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -71002,10 +71108,27 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 2
+  m_Radius: 1.5000004
+  m_Height: 7.357209
+  m_Direction: 1
+  m_Center: {x: 0, y: 3.0210586, z: 0.0000019073486}
+--- !u!208 &960491893076040075
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2028426497100118183}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 0
+  m_Extents: {x: 1.5000001, y: 3.76, z: 1.5000001}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 3.0210001, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &2038987760528110047
 GameObject:
   m_ObjectHideFlags: 0
@@ -84120,13 +84243,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: 
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -84134,9 +84270,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 7914515316718339124}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &4518803307870549532
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -86494,13 +86647,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -86508,9 +86674,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 5788901818889216304}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &231457769098072856
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -86611,13 +86794,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -86625,9 +86821,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 5823915847337044471}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &266476051173186527
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -122104,7 +122317,7 @@ GameObject:
   - component: {fileID: 6415526510381040329}
   - component: {fileID: 5107165764953733971}
   - component: {fileID: 999072417774278495}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: DoorFrame1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -122326,7 +122539,7 @@ GameObject:
   - component: {fileID: 634448685406493780}
   - component: {fileID: 3398798241164093598}
   - component: {fileID: 975811047119944206}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ConveyorFull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -124560,7 +124773,8 @@ GameObject:
   - component: {fileID: 4659250382959155170}
   - component: {fileID: 3880635861752727359}
   - component: {fileID: 1262232148101184365}
-  - component: {fileID: 8380978051296492640}
+  - component: {fileID: 6237494292904822077}
+  - component: {fileID: 1064065354284971835}
   m_Layer: 0
   m_Name: Cylinder
   m_TagString: Untagged
@@ -125201,8 +125415,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4228535778780128776}
   m_Mesh: {fileID: 0}
---- !u!64 &8380978051296492640
-MeshCollider:
+--- !u!136 &6237494292904822077
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -125219,10 +125433,27 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 2
+  m_Radius: 1.5000004
+  m_Height: 7.3531504
+  m_Direction: 1
+  m_Center: {x: -0.00014877322, y: 3.0299888, z: 0.00025486952}
+--- !u!208 &1064065354284971835
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4228535778780128776}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 0
+  m_Extents: {x: 1.5000001, y: 3.76, z: 1.5000001}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 3.0300002, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &4230357296555260351
 GameObject:
   m_ObjectHideFlags: 0
@@ -125363,7 +125594,8 @@ GameObject:
   - component: {fileID: 736390114292373976}
   - component: {fileID: 4557393258976607609}
   - component: {fileID: 8688869908293362301}
-  - component: {fileID: 8423593445063583744}
+  - component: {fileID: 7925142440703896036}
+  - component: {fileID: 9156899690357467874}
   m_Layer: 3
   m_Name: ElevatorBase (1)
   m_TagString: Untagged
@@ -125683,8 +125915,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4258196542540616187}
   m_Mesh: {fileID: 0}
---- !u!64 &8423593445063583744
-MeshCollider:
+--- !u!65 &7925142440703896036
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -125701,10 +125933,25 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 3
+  m_Size: {x: 9.611483, y: 1, z: 20.628485}
+  m_Center: {x: 0.02524138, y: -3.3874104, z: 0.036472775}
+--- !u!208 &9156899690357467874
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4258196542540616187}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 4.806, y: 0.5, z: 10.314}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0.025, y: -3.387, z: 0.036000002}
+  m_TimeToStationary: 0.5
 --- !u!1 &4268334379401290826
 GameObject:
   m_ObjectHideFlags: 0
@@ -125885,13 +126132,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
   _showHitbox: 0
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 0}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: room3elevator3
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -125909,6 +126169,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   consoleIndex: 0
+  verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1 &4295914247533778284
 GameObject:
   m_ObjectHideFlags: 0
@@ -140421,13 +140683,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -140435,9 +140710,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 5731881753225427007}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &2083968160378259991
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -142826,7 +143118,7 @@ GameObject:
   - component: {fileID: 9217172781349167658}
   - component: {fileID: 6344743421737408224}
   - component: {fileID: 8839788175847392368}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ConveyorFull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -143004,13 +143296,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -143018,9 +143323,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 3624698946231460471}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &7002400782817595487
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -143122,13 +143444,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: 
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -143136,9 +143471,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 3612890592067426132}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &7008606866391360892
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -143173,18 +143525,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
   _showHitbox: 0
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 0}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: 
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
       m_Calls: []
   consoleIndex: 0
+  verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1 &4865573725660476095
 GameObject:
   m_ObjectHideFlags: 0
@@ -143264,13 +143631,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -143278,9 +143658,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 3659596288729557680}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &7037293858803767448
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -143991,7 +144388,7 @@ GameObject:
   - component: {fileID: 3219745402997764102}
   - component: {fileID: 3694673564342389148}
   - component: {fileID: 8681595577641624976}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: DoorFrame1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -190397,7 +190794,7 @@ GameObject:
   - component: {fileID: 7964754618015152734}
   - component: {fileID: 5290754749201714836}
   - component: {fileID: 7767789536940366852}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ConveyorFull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -207287,6 +207684,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1123e87265119dc4b92e91a12125471d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ElevatorLift
+  lockedFloors: []
   enableGroundRecallFailsafe: 1
   groundRecallRadius: 6
   groundRecallMaxHeightOffset: 3
@@ -207295,10 +207693,14 @@ MonoBehaviour:
   elevatorCamera: {fileID: 0}
   elevatorUI:
   - {fileID: 0}
+  elevatorTriggerCollider: {fileID: 0}
   desiredLiftPosition:
   - {x: 0, y: 1.22, z: 0}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
+  lockXMovement: 0
+  lockYMovement: 0
+  lockZMovement: 0
   liftSpeed: 1
   floorButtonUI:
   - {fileID: 0}
@@ -207309,6 +207711,12 @@ MonoBehaviour:
   firstFloorAction: {fileID: 0}
   secondFloorAction: {fileID: 0}
   thirdFloorAction: {fileID: 0}
+  elevatorSFX: {fileID: 0}
+  elevatorStopSFX: {fileID: 0}
+  rumbleDuration: 0.1
+  rumbleLowFrequency: 0.1
+  rumbleHighFrequency: 0.1
+  enemiesOnLift: []
 --- !u!1 &6305842602351619783
 GameObject:
   m_ObjectHideFlags: 0
@@ -207843,7 +208251,8 @@ GameObject:
   - component: {fileID: 2500395534279824549}
   - component: {fileID: 6323337779588826232}
   - component: {fileID: 8331538945300822058}
-  - component: {fileID: 1609188963342728999}
+  - component: {fileID: 2974505155271266069}
+  - component: {fileID: 1686219518707074831}
   m_Layer: 0
   m_Name: Cylinder
   m_TagString: Untagged
@@ -208484,8 +208893,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6392029639352706383}
   m_Mesh: {fileID: 0}
---- !u!64 &1609188963342728999
-MeshCollider:
+--- !u!136 &2974505155271266069
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -208502,10 +208911,27 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 2
+  m_Radius: 1.5000004
+  m_Height: 7.3531504
+  m_Direction: 1
+  m_Center: {x: -0.00014877322, y: 3.0299888, z: 0.0002558232}
+--- !u!208 &1686219518707074831
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6392029639352706383}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 0
+  m_Extents: {x: 1.5000001, y: 3.76, z: 1.5000001}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 3.0300002, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &6393768880898765887
 GameObject:
   m_ObjectHideFlags: 0
@@ -208629,7 +209055,7 @@ GameObject:
   - component: {fileID: 3619017857427938790}
   - component: {fileID: 3301594805474092156}
   - component: {fileID: 7416507049502509168}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: DoorFrame1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -208741,7 +209167,8 @@ GameObject:
   - component: {fileID: 7504093314494978719}
   - component: {fileID: 6711725679128723006}
   - component: {fileID: 1913707484576670010}
-  - component: {fileID: 1656575274965805895}
+  - component: {fileID: 8468214149448523546}
+  - component: {fileID: 3399999728047799907}
   m_Layer: 3
   m_Name: ElevatorBase (1)
   m_TagString: Untagged
@@ -209061,8 +209488,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6414230629263921852}
   m_Mesh: {fileID: 0}
---- !u!64 &1656575274965805895
-MeshCollider:
+--- !u!65 &8468214149448523546
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -209079,10 +209506,25 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 3
+  m_Size: {x: 9.611483, y: 1, z: 20.628485}
+  m_Center: {x: 0.02524138, y: -3.3874104, z: 0.036471374}
+--- !u!208 &3399999728047799907
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6414230629263921852}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 4.806, y: 0.5, z: 10.314}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0.025, y: -3.387, z: 0.036000002}
+  m_TimeToStationary: 0.5
 --- !u!1 &6424214772567940989
 GameObject:
   m_ObjectHideFlags: 0
@@ -209341,13 +209783,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
   _showHitbox: 0
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 0}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: room2elevator2
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -209365,6 +209820,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   consoleIndex: 0
+  verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1 &6464546330393536367
 GameObject:
   m_ObjectHideFlags: 0
@@ -223442,7 +223899,8 @@ GameObject:
   - component: {fileID: 1354549386433074370}
   - component: {fileID: 5925717468815717168}
   - component: {fileID: 352630507387337280}
-  - component: {fileID: 2599874400054092082}
+  - component: {fileID: 6114757272568549879}
+  - component: {fileID: 4594641520878739060}
   m_Layer: 0
   m_Name: Cylinder (1)
   m_TagString: Untagged
@@ -224083,8 +224541,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6656352651562141675}
   m_Mesh: {fileID: 0}
---- !u!64 &2599874400054092082
-MeshCollider:
+--- !u!136 &6114757272568549879
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -224101,10 +224559,27 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 2
+  m_Radius: 1.5000004
+  m_Height: 7.357209
+  m_Direction: 1
+  m_Center: {x: -0.0000038146973, y: 3.0210586, z: 0}
+--- !u!208 &4594641520878739060
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656352651562141675}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 0
+  m_Extents: {x: 1.5000001, y: 3.76, z: 1.5000001}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 3.0210001, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &6681026409504703244
 GameObject:
   m_ObjectHideFlags: 0
@@ -224242,13 +224717,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -224256,9 +224744,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 3283255940007181176}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &9146940534488090960
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -225884,13 +226389,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: Cannot Be Opened
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -225898,9 +226416,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 1188437313239018335}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &4836355161829349751
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -226217,13 +226752,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: room1exit
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -226231,9 +226779,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 1194793956802156219}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &4896750695247553683
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -226298,7 +226863,7 @@ GameObject:
   - component: {fileID: 605231258811964614}
   - component: {fileID: 1697573338462053724}
   - component: {fileID: 6679923273443936592}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: DoorFrame1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -228332,7 +228897,7 @@ GameObject:
   - component: {fileID: 6113387106582363006}
   - component: {fileID: 8301236266349596596}
   - component: {fileID: 5878279858511486244}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ConveyorFull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -262428,7 +262993,7 @@ GameObject:
   - component: {fileID: 1803605272866161842}
   - component: {fileID: 499752336075455784}
   - component: {fileID: 5607646999520940324}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: DoorFrame1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -263593,6 +264158,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1123e87265119dc4b92e91a12125471d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ElevatorLift
+  lockedFloors: []
   enableGroundRecallFailsafe: 1
   groundRecallRadius: 6
   groundRecallMaxHeightOffset: 3
@@ -263601,10 +264167,14 @@ MonoBehaviour:
   elevatorCamera: {fileID: 0}
   elevatorUI:
   - {fileID: 0}
+  elevatorTriggerCollider: {fileID: 0}
   desiredLiftPosition:
   - {x: 93.35094, y: 1.22, z: 6.127776}
   - {x: 93.35094, y: 14.5, z: 6.127776}
   - {x: 93.35094, y: 23.27, z: 6.127776}
+  lockXMovement: 0
+  lockYMovement: 0
+  lockZMovement: 0
   liftSpeed: 5
   floorButtonUI:
   - {fileID: 0}
@@ -263615,6 +264185,12 @@ MonoBehaviour:
   firstFloorAction: {fileID: 0}
   secondFloorAction: {fileID: 0}
   thirdFloorAction: {fileID: 0}
+  elevatorSFX: {fileID: 0}
+  elevatorStopSFX: {fileID: 0}
+  rumbleDuration: 0.1
+  rumbleLowFrequency: 0.1
+  rumbleHighFrequency: 0.1
+  enemiesOnLift: []
 --- !u!65 &3375133100546282431
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -264213,7 +264789,7 @@ GameObject:
   - component: {fileID: 5350449931329083038}
   - component: {fileID: 7900556833213047380}
   - component: {fileID: 5693773207618744516}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ConveyorFull
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -267050,18 +267626,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PuzzleInteraction
   _showHitbox: 0
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 0}
   _interactionPrompt: Press to Interact
+  displayName: 
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: Press Pause to View
   _interactInputAction: {fileID: 0}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: room1elevator1
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
       m_Calls: []
   consoleIndex: 0
+  verboseDebug: 1
+  optionalStringMessage: 
 --- !u!1 &8929251618197642084
 GameObject:
   m_ObjectHideFlags: 0
@@ -267787,7 +268378,8 @@ GameObject:
   - component: {fileID: 3499840992980822217}
   - component: {fileID: 8097996661315309371}
   - component: {fileID: 2790391455277925963}
-  - component: {fileID: 452935394480282937}
+  - component: {fileID: 762241978606903110}
+  - component: {fileID: 8575817797853037363}
   m_Layer: 0
   m_Name: Cylinder (1)
   m_TagString: Untagged
@@ -268428,8 +269020,8 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9096603649752087520}
   m_Mesh: {fileID: 0}
---- !u!64 &452935394480282937
-MeshCollider:
+--- !u!136 &762241978606903110
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -268446,10 +269038,27 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 2
+  m_Radius: 1.5000004
+  m_Height: 7.357209
+  m_Direction: 1
+  m_Center: {x: -0.0000019073486, y: 3.0210586, z: 0}
+--- !u!208 &8575817797853037363
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9096603649752087520}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 0
+  m_Extents: {x: 1.5000001, y: 3.76, z: 1.5000001}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 3.0210001, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1 &9101840150131864216
 GameObject:
   m_ObjectHideFlags: 0
