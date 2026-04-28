@@ -200,6 +200,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        if (IsPaused && InputReader.PlayerInput != null)
+        {
+            InputActionMap currentActionMap = InputReader.PlayerInput.currentActionMap;
+            if (currentActionMap != null && string.Equals(currentActionMap.name, "UI", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.Log("[PauseManager] OnPause ignored - UI action map is active while paused, deferring Escape handling to UI/Back.");
+                return;
+            }
+        }
+
         if (IsPauseBlockedByPuzzleMode())
             return;
 
@@ -226,28 +236,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             return;
         }
-        if (!pauseOverlay.activeInHierarchy)
-            StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, true));
-
-        pauseMenuHolder.SetActive(true);
-
-        if (SoundManager.Instance != null)
-        {
-            if (SoundManager.Instance.sfxSource != null)
-                SoundManager.Instance.sfxSource.Pause();
-
-            if (SoundManager.Instance.puzzleSource != null)
-                SoundManager.Instance.puzzleSource.Pause();
-
-            if (SoundManager.Instance.ambienceSource != null)
-                SoundManager.Instance.ambienceSource.Pause();
-        }
-        else
-        {
-            Debug.LogWarning("[PauseManager] OnPause: SoundManager.Instance was null, skipping audio pause.");
-        }
-
-        RumbleManager.Instance.StopControllerRumble();
 
         RefreshNaviEntryIndicator();
 
@@ -258,7 +246,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
-        if (HasBlockingSubmenuActive())
+        if (TryHandlePauseAsUiBack())
         {
             return;
         }
@@ -298,12 +286,6 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
-        if (settingsMenuOpen)
-        {
-            CloseSettingsMenu();
-            return;
-        }   
-
         SyncActiveMenuToStackTop();
 
         if (menuListManager == null || menuListManager.menusToManage == null)
@@ -314,9 +296,34 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        if (settingsMenuOpen)
+        {
+            if (menuListManager.CanGoBackOneLevel())
+            {
+                GoBackOnce();
+            }
+            else
+            {
+                CloseSettingsMenu();
+            }
+
+            ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
+            return;
+        }
+
         if (menuListManager.menusToManage.Count > 0 && menuListManager.menusToManage[0] == menuListManager.firstMenuToOpen)
         {
             Debug.Log("[PauseManager] OnBack: At root menu, treating Back as unpause");
+            ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
+            ResumeGame();
+            return;
+        }
+
+        if (currentActiveMenu == ActiveMenu.NavigationMenu
+            && menuListManager.menusToManage.Count > 0
+            && menuListManager.menusToManage[0] == navigationMenuHolder)
+        {
+            ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
             ResumeGame();
             return;
         }
@@ -327,6 +334,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         // treat Back as an unpause when there is no valid stack back target.
         if (currentActiveMenu == ActiveMenu.None && IsPaused && !canGoBackOneLevel)
         {
+            ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
             ResumeGame();
             return;
         }
@@ -334,21 +342,86 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (canGoBackOneLevel)
         {
             GoBackOnce();
+            ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
             return;
         }
         
         if(currentActiveMenu == ActiveMenu.NavigationMenu)
         {
-            SwapToPauseMenu();
+            ResumeGame();
+            ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
             return;
         }
 
         // If we're in the pause menu with only one level, back/pause resumes the game
         if(currentActiveMenu == ActiveMenu.PauseMenu)
         {
+            ignorePauseUntilTime = Time.unscaledTime + inputDebounceSeconds;
             ResumeGame();
             return;
         }
+    }
+
+    private bool TryHandlePauseAsUiBack()
+    {
+        SyncActiveMenuToStackTop();
+
+        if (!IsPaused)
+            return false;
+
+        if (settingsMenuOpen)
+        {
+            if (menuListManager != null && menuListManager.menusToManage != null && menuListManager.CanGoBackOneLevel())
+            {
+                GoBackOnce();
+            }
+            else
+            {
+                CloseSettingsMenu();
+            }
+
+            ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
+            return true;
+        }
+
+        if (menuListManager == null || menuListManager.menusToManage == null)
+            return false;
+
+        if (menuListManager.CanGoBackOneLevel())
+        {
+            GoBackOnce();
+            ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
+            return true;
+        }
+
+        GameObject currentRoot = GetCurrentMenuRoot();
+        if (currentRoot == null)
+            return HasBlockingSubmenuActive();
+
+        if (menuListManager.menusToManage.Count == 0)
+            return false;
+
+        GameObject topMenu = menuListManager.menusToManage[0];
+        bool isAtCurrentRoot = topMenu == currentRoot;
+        if (!isAtCurrentRoot)
+        {
+            if (HasBlockingSubmenuActive())
+                ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
+
+            return HasBlockingSubmenuActive();
+        }
+
+        return false;
+    }
+
+    private GameObject GetCurrentMenuRoot()
+    {
+        return currentActiveMenu switch
+        {
+            ActiveMenu.PauseMenu => pauseMenuHolder,
+            ActiveMenu.NavigationMenu => navigationMenuHolder,
+            _ => null
+        };
     }
     private void OnNavigationMenu(InputAction.CallbackContext context)
     {
@@ -434,6 +507,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     public void CloseSettingsMenu()
     {
         settingsMenuOpen = false;
+        ForceCloseSettingsPages();
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
         currentActiveMenu = ActiveMenu.PauseMenu;
         Debug.Log("[PauseManager] Settings menu closed, returning to pause menu");
@@ -497,6 +571,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        EnterPausedUiShell();
+
         // Request pause through the coordinator (centralized time scale authority).
         PauseCoordinator.RequestPause(GameplayInputBlockOwnerId);
 
@@ -538,6 +614,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             return;
         }
 
+        EnterPausedUiShell();
+
         // Request pause through the coordinator (centralized time scale authority).
         PauseCoordinator.RequestPause(GameplayInputBlockOwnerId);
 
@@ -556,6 +634,10 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         Debug.Log("Navigation Menu Opened");
         RefreshNaviEntryIndicator();
+
+        ActsManager actsManager = FindAnyObjectByType<ActsManager>();
+        if (actsManager != null)
+            actsManager.RefreshNavigationMapDisplay();
         
         // Switch to UI input
         if (InputReader.PlayerInput != null)
@@ -563,6 +645,35 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             InputReader.PlayerInput.SwitchCurrentActionMap("UI");
             CursorManager.RefreshPolicy();
         }
+    }
+
+    private void EnterPausedUiShell()
+    {
+        if (pauseOverlay != null && !pauseOverlay.activeInHierarchy)
+        {
+            if (fadeMenus != null)
+                StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, true));
+            else
+                pauseOverlay.SetActive(true);
+        }
+
+        if (SoundManager.Instance != null)
+        {
+            if (SoundManager.Instance.sfxSource != null)
+                SoundManager.Instance.sfxSource.Pause();
+
+            if (SoundManager.Instance.puzzleSource != null)
+                SoundManager.Instance.puzzleSource.Pause();
+
+            if (SoundManager.Instance.ambienceSource != null)
+                SoundManager.Instance.ambienceSource.Pause();
+        }
+        else
+        {
+            Debug.LogWarning("[PauseManager] EnterPausedUiShell: SoundManager.Instance was null, skipping audio pause.");
+        }
+
+        RumbleManager.Instance.StopControllerRumble();
     }
 
     private void SwapToPauseMenu()
@@ -742,7 +853,63 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void HideAllMenus()
     {
         settingsMenuOpen = false;
+        ForceCloseSettingsPages();
         SetMenuStates(false, false, false);
+    }
+
+    private void ForceCloseSettingsPages()
+    {
+        if (menuListManager == null)
+            return;
+
+        if (menuListManager.menusToManage != null)
+        {
+            for (int i = menuListManager.menusToManage.Count - 1; i >= 0; i--)
+            {
+                GameObject openMenu = menuListManager.menusToManage[i];
+                if (!IsSettingsMenuOrChild(openMenu))
+                    continue;
+
+                menuListManager.menusToManage.RemoveAt(i);
+            }
+        }
+
+        if (menuListManager.settingPageMenus != null)
+        {
+            for (int i = 0; i < menuListManager.settingPageMenus.Count; i++)
+            {
+                GameObject settingsPage = menuListManager.settingPageMenus[i];
+                if (settingsPage != null)
+                    settingsPage.SetActive(false);
+            }
+        }
+
+        if (settingsMenuContainer != null)
+            settingsMenuContainer.SetActive(false);
+    }
+
+    private bool IsSettingsMenuOrChild(GameObject menu)
+    {
+        if (menu == null)
+            return false;
+
+        if (menu == settingsMenuContainer)
+            return true;
+
+        if (menuListManager == null || menuListManager.settingPageMenus == null)
+            return false;
+
+        for (int i = 0; i < menuListManager.settingPageMenus.Count; i++)
+        {
+            GameObject settingsPage = menuListManager.settingPageMenus[i];
+            if (settingsPage == null)
+                continue;
+
+            if (menu == settingsPage || menu.transform.IsChildOf(settingsPage.transform))
+                return true;
+        }
+
+        return false;
     }
 
     private void SetMenuStates(bool showPause, bool showNavigation, bool showSettings)

@@ -480,8 +480,6 @@ public static class SceneLoader
         // This is the safest moment to do it: all scenes are loaded, the player hasn't been spawned yet.
         InputReader.ForceResetInputLocks("LoadIntoGameCoroutine");
 
-        Player.SpawnPlayerAtCheckpoint();
-
         if (newGame)
             CutsceneManager.PlayCutscene(Cutscene.GetCutscene("Opening Cutscene"));
     }

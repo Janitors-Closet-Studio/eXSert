@@ -126,6 +126,20 @@ public class MenuListManager : MonoBehaviour
             hiddenMenus.Add(hiddenMenu);
     }
 
+    public void RemoveMenuFromList(GameObject menuToRemove)
+    {
+        if (menuToRemove == null || menusToManage == null)
+            return;
+
+        int menuIndex = menusToManage.IndexOf(menuToRemove);
+        if (menuIndex < 0)
+            return;
+
+        menusToManage.RemoveAt(menuIndex);
+        RestoreTemporarilyHiddenMenusFor(menuToRemove);
+        UpdateFooterForCurrentTopMenu();
+    }
+
     private void RestoreTemporarilyHiddenMenusFor(GameObject ownerMenu)
     {
         if (ownerMenu == null)
@@ -162,6 +176,7 @@ public class MenuListManager : MonoBehaviour
         PushCurrentSelectionToHistory();
 
         EnsureHierarchyIsActive(menuToAdd);
+    CloseMenusFromOtherSettingsSections(menuToAdd);
         ReplaceTopMenuIfSwitchingSiblingSubmenu(menuToAdd);
 
         if (menusToManage.Contains(menuToAdd))
@@ -191,6 +206,29 @@ public class MenuListManager : MonoBehaviour
         footerManager?.SetToLastSibling();
 
         DebugLogSettingsM.ConditionalLog(DebugLogCategory.UI, "Menu added to list. Current menus in list: " + menusToManage.Count);
+    }
+
+    private void CloseMenusFromOtherSettingsSections(GameObject menuToAdd)
+    {
+        if (menuToAdd == null || menusToManage == null || menusToManage.Count == 0)
+            return;
+
+        GameObject targetSettingsRoot = GetOwningSettingsRoot(menuToAdd);
+        if (targetSettingsRoot == null)
+            return;
+
+        for (int i = menusToManage.Count - 1; i >= 0; i--)
+        {
+            GameObject openMenu = menusToManage[i];
+            if (openMenu == null || openMenu == menuToAdd)
+                continue;
+
+            GameObject openSettingsRoot = GetOwningSettingsRoot(openMenu);
+            if (openSettingsRoot == null || openSettingsRoot == targetSettingsRoot)
+                continue;
+
+            CloseAndRemoveMenuAt(i);
+        }
     }
 
     // When switching between peer submenus in the same settings section,
