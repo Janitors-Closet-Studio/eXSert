@@ -190,11 +190,7 @@ namespace Progression.Checkpoints
 
             static IEnumerator ReloadCheckpointSceneAndMovePlayer()
             {
-                yield return SceneLoader.LoadCoroutine(
-                    currentCheckpoint.CheckpointSceneAsset,
-                    forceReload: true,
-                    loadScreen: false
-                );
+                yield return SceneLoader.ReloadCheckpointSceneStackCoroutine(currentCheckpoint.CheckpointSceneAsset);
               //  yield return SceneLoader.EnsurePlayerObjectAvailableCoroutine(
               //      characterStartInactive: false
                // );

@@ -154,6 +154,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         MufffleMusicForMenu(false);
         TryResolveHudRoot();
         HideAllMenus();
+        menuListManager?.ResetForGameplay();
         if (!MainMenu.isInMainMenu)
             SetHUDVisible(true);
         SetBlurEnabled(false);
@@ -272,6 +273,18 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void OnBack(InputAction.CallbackContext context)
     {
         if (Time.unscaledTime < ignoreBackUntilTime)
+            return;
+
+        InputActionMap currentActionMap = InputReader.PlayerInput != null
+            ? InputReader.PlayerInput.currentActionMap
+            : null;
+        bool isUiActionMapActive = currentActionMap != null
+            && string.Equals(currentActionMap.name, "UI", System.StringComparison.OrdinalIgnoreCase);
+
+        if (!IsPaused && !isUiActionMapActive)
+            return;
+
+        if (!IsPauseUiActive())
             return;
 
         if (MainMenu.isInMainMenu)
@@ -821,6 +834,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         InputReader.ReleaseGameplayInputBlock(GameplayInputBlockOwnerId);
         currentActiveMenu = ActiveMenu.None;
         HideAllMenus();
+        menuListManager?.ResetForGameplay();
         SetHUDVisible(true);
         SetBlurEnabled(false);
 
@@ -968,6 +982,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if (playerHUDRoot.activeSelf != visible)
             playerHUDRoot.SetActive(visible);
+    }
+
+    private bool IsPauseUiActive()
+    {
+        return IsPaused
+            || currentActiveMenu != ActiveMenu.None
+            || (pauseOverlay != null && pauseOverlay.activeInHierarchy)
+            || (pauseMenuHolder != null && pauseMenuHolder.activeInHierarchy)
+            || (navigationMenuHolder != null && navigationMenuHolder.activeInHierarchy)
+            || (settingsMenuContainer != null && settingsMenuContainer.activeInHierarchy);
     }
 
     public void SetGameplayHUDVisible(bool visible)

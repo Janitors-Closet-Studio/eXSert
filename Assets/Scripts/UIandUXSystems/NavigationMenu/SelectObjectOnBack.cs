@@ -7,6 +7,9 @@ public class SelectObjectOnBack : MonoBehaviour
 
     private void OnDisable()
     {
+        if (MenuSelectionSuppression.IsSuppressed)
+            return;
+
         if (EventSystem.current != null)
         {
             SelectOnBack();
@@ -16,6 +19,9 @@ public class SelectObjectOnBack : MonoBehaviour
 
     public void SelectOnBack()
     {
+        if (MenuSelectionSuppression.IsSuppressed)
+            return;
+
         if (objectToSelectOnBack != null && objectToSelectOnBack.activeInHierarchy)
         {
             if (EventSystem.current != null)

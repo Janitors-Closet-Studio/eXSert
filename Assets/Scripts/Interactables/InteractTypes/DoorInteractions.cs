@@ -92,6 +92,11 @@ public class DoorInteractions : UnlockableInteraction
         public bool WasActive;
     }
 
+    protected override bool ShouldDisableAfterSuccessfulInteraction()
+    {
+        return onlyInteractableOnce;
+    }
+
     private static readonly FieldInfo UniversalRendererIndexField = typeof(UniversalAdditionalCameraData)
         .GetField("m_RendererIndex", BindingFlags.Instance | BindingFlags.NonPublic);
     private static readonly FieldInfo UniversalDefaultRendererIndexField = typeof(UniversalRenderPipelineAsset)

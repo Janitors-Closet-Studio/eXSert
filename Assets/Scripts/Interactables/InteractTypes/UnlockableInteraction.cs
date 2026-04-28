@@ -52,6 +52,11 @@ public abstract class UnlockableInteraction : InteractionManager
     /// </summary>
     protected abstract void ExecuteInteraction();
 
+    protected virtual bool ShouldDisableAfterSuccessfulInteraction()
+    {
+        return interactOnce;
+    }
+
     protected virtual bool IsUnlockedWithoutRequiredItem()
     {
         return false;
@@ -156,7 +161,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
             SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
 
-        if (interactOnce)
+        if (ShouldDisableAfterSuccessfulInteraction())
             interactable = false;
 
         return true;

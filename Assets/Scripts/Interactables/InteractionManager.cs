@@ -261,6 +261,9 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     private void OnInteract(InputAction.CallbackContext context)
     {
+        if (!RefreshPlayerNearbyState())
+            return;
+
         var interactionUI = GetInteractionUIIfAvailable();
         bool isCurrentInteractable = interactionUI != null && interactionUI.currentInteractable == this;
 
@@ -276,6 +279,10 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
     public void OnInteractButtonPressed()
     {
         if (debugLogging) Debug.Log($"[InteractionManager] OnInteractButtonPressed called on {gameObject.name}");
+
+        if (!RefreshPlayerNearbyState())
+            return;
+
         // Prevent interaction if gameplay input is blocked (e.g., during pause)
         if (InputReader.IsGameplayInputBlocked)
         {
@@ -408,6 +415,8 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (!other.transform.root.CompareTag("Player"))
             return;
 
+        isPlayerNearby = true;
+
         InteractionUI interactionUI = GetInteractionUIIfAvailable();
         if (interactionUI == null)
             return;
@@ -431,6 +440,57 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
         SwapBasedOnInputMethod();
         interactionUI.currentInteractable = this;
+    }
+
+    private bool RefreshPlayerNearbyState()
+    {
+        bool actuallyNearby = IsPlayerActuallyInsideInteractionZone();
+        if (actuallyNearby)
+        {
+            isPlayerNearby = true;
+            return true;
+        }
+
+        if (isPlayerNearby && debugLogging)
+            Debug.Log($"[InteractionManager] Clearing stale nearby state for {gameObject.name}.");
+
+        isPlayerNearby = false;
+        ClearPromptIfOwned();
+        return false;
+    }
+
+    private bool IsPlayerActuallyInsideInteractionZone()
+    {
+        Collider interactionCollider = GetComponent<Collider>();
+        if (interactionCollider == null || !interactionCollider.enabled || !gameObject.activeInHierarchy)
+            return false;
+
+        if (!Player.TryGetPlayerObject(out GameObject playerObject) || playerObject == null)
+            return false;
+
+        CharacterController characterController = playerObject.GetComponent<CharacterController>()
+            ?? playerObject.GetComponentInChildren<CharacterController>(true)
+            ?? playerObject.GetComponentInParent<CharacterController>();
+
+        Bounds interactionBounds = interactionCollider.bounds;
+        if (characterController != null && characterController.enabled && interactionBounds.Intersects(characterController.bounds))
+            return true;
+
+        Collider[] playerColliders = playerObject.GetComponentsInChildren<Collider>(true);
+        if (playerColliders == null || playerColliders.Length == 0)
+            return false;
+
+        for (int index = 0; index < playerColliders.Length; index++)
+        {
+            Collider playerCollider = playerColliders[index];
+            if (playerCollider == null || !playerCollider.enabled || playerCollider.isTrigger)
+                continue;
+
+            if (interactionBounds.Intersects(playerCollider.bounds))
+                return true;
+        }
+
+        return false;
     }
 
     private void OnDrawGizmos()
