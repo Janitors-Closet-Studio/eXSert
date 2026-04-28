@@ -67,6 +67,12 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("How far spare weapons sink before being returned to the pool.")]
         [SerializeField, Min(0.1f)] private float sinkDespawnDistance = 2.25f;
 
+        [Header("Death Weapon Drop")]
+        [Tooltip("Layer mask used for ground detection when weapons fall on Cleanser death. Should include the ground/floor layer only.")]
+        [SerializeField] private LayerMask deathDropGroundLayers = ~0;
+        [Tooltip("Timeout (seconds) before a falling weapon gives up waiting for a ground hit and starts sinking anyway.")]
+        [SerializeField, Min(0.5f)] private float deathDropFallTimeout = 5f;
+
         [Header("Stockpile Hover")]
         [Tooltip("Local anchor around the Cleanser where stockpiled weapons hover.")]
         public Vector3 HoverAnchorLocal = new Vector3(0.8f, 1.8f, -0.2f);
@@ -928,33 +934,40 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void DropStockpiledWeaponsToGround()
         {
-            if (lodgedWeapons.Count > 0)
+            // Stop ALL coroutines first — this kills any in-progress pickup animations or
+            // other routines that are also driving weapon positions, which would otherwise
+            // fight against the gravity fall coroutines and cause aimless drifting.
+            StopAllCoroutines();
+
+            // Collect every active weapon from the entire pool, regardless of which tracking
+            // list it currently lives in (stockpiled, lodged, mid-pickup, etc.)
+            var toFall = new List<SpareWeapon>();
+            var toSink = new List<SpareWeapon>();
+
+            for (int i = 0; i < spareWeaponPool.Count; i++)
             {
-                var lodgedSnapshot = new List<SpareWeapon>(lodgedWeapons);
-                lodgedWeapons.Clear();
-                for (int i = 0; i < lodgedSnapshot.Count; i++)
-                {
-                    var weapon = lodgedSnapshot[i];
-                    if (weapon == null || weapon.WeaponObject == null)
-                        continue;
-                    StartCoroutine(SinkAndReturnWeaponRoutine(weapon));
-                }
+                var weapon = spareWeaponPool[i];
+                if (weapon == null || weapon.WeaponObject == null || !weapon.WeaponObject.activeSelf)
+                    continue;
+
+                // Lodged weapons just sink — they're already on the ground.
+                if (lodgedWeapons.Contains(weapon))
+                    toSink.Add(weapon);
+                else
+                    toFall.Add(weapon);
             }
 
-            if (stockpiledWeapons.Count > 0)
-            {
-                var stockpileSnapshot = new List<SpareWeapon>(stockpiledWeapons);
-                stockpiledWeapons.Clear();
-                for (int i = 0; i < stockpileSnapshot.Count; i++)
-                {
-                    var weapon = stockpileSnapshot[i];
-                    if (weapon == null || weapon.WeaponObject == null)
-                        continue;
-                    weapon.IsHeld = false;
-                    StartCoroutine(GravityFallAndSinkWeaponRoutine(weapon));
-                }
-                UpdateStockpileLayoutImmediate();
-            }
+            // Clear all tracking state so LateUpdate stops fighting us.
+            stockpiledWeapons.Clear();
+            lodgedWeapons.Clear();
+            pendingStockpileReservations = 0;
+            activePickupAnimations = 0;
+
+            foreach (var weapon in toSink)
+                StartCoroutine(SinkAndReturnWeaponRoutine(weapon));
+
+            foreach (var weapon in toFall)
+                StartCoroutine(GravityFallAndSinkWeaponRoutine(weapon));
         }
 
         private IEnumerator GravityFallAndSinkWeaponRoutine(SpareWeapon weapon)
@@ -964,6 +977,7 @@ namespace EnemyBehavior.Boss.Cleanser
 
             GameObject obj = weapon.WeaponObject;
             obj.transform.SetParent(null);
+            weapon.IsHeld = false;
             SetWeaponControlledVfxActive(weapon, false);
 
             // Disable all colliders so the falling weapon doesn't interact with gameplay.
@@ -984,32 +998,29 @@ namespace EnemyBehavior.Boss.Cleanser
                 bodies[i].angularVelocity = Vector3.zero;
             }
 
-            // Manual gravity fall: accumulate vertical velocity each frame and move the object.
-            // This avoids any LateUpdate / FixedUpdate race conditions that would counteract physics.
+            // Cast a long ray straight down from a point well above the weapon to find the
+            // actual ground Y so we know exactly where to stop the fall.
+            float targetGroundY = obj.transform.position.y - 20f; // fallback if nothing hit
+            Vector3 rayOrigin = obj.transform.position + Vector3.up * 2f;
+            if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit groundHit, 50f, deathDropGroundLayers, QueryTriggerInteraction.Ignore))
+                targetGroundY = groundHit.point.y;
+
+            // Manual gravity fall: accumulate vertical velocity and move the object each frame.
             float yVelocity = 0f;
-            float fallTimeout = 4f;
             float elapsed = 0f;
             float gravity = Mathf.Abs(Physics.gravity.y);
+            float timeout = Mathf.Max(0.5f, deathDropFallTimeout);
 
-            // Add a small random horizontal tumble rotation for visual flair.
+            // Random tumble rotation for visual flair.
             Vector3 tumbleAxis = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)).normalized;
             float tumbleSpeed = Random.Range(120f, 240f);
 
-            while (elapsed < fallTimeout && obj != null)
+            while (elapsed < timeout && obj != null && obj.transform.position.y > targetGroundY)
             {
                 elapsed += Time.deltaTime;
                 yVelocity -= gravity * Time.deltaTime;
                 obj.transform.position += new Vector3(0f, yVelocity * Time.deltaTime, 0f);
                 obj.transform.Rotate(tumbleAxis, tumbleSpeed * Time.deltaTime, Space.World);
-
-                // Raycast downward to detect when we've hit (or passed) the ground.
-                float rayOriginOffset = 0.5f;
-                if (Physics.Raycast(obj.transform.position + Vector3.up * rayOriginOffset, Vector3.down,
-                    out RaycastHit groundHit, rayOriginOffset + 0.05f))
-                {
-                    break;
-                }
-
                 yield return null;
             }
 
