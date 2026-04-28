@@ -66,6 +66,7 @@ public class KeybindIconSet : ScriptableObject
     [Header("Editor Helpers")]
     [SerializeField] private bool autoSyncIconLists = true;
     [SerializeField] private bool autoPopulateIconLibrary = true;
+    [SerializeField] private string inputActionsAssetPath = "Assets/Scripts/Player/InputManager/Resources/PlayerControls.inputactions";
     [SerializeField] private string keyboardIconsFolder = "Assets/eXSert Assets/2D Assets/UI/Icons/KeyboardIcons";
     [SerializeField] private string gamepadIconsFolder = "Assets/eXSert Assets/2D Assets/UI/Icons/ControllerIcons";
 
@@ -260,29 +261,7 @@ public class KeybindIconSet : ScriptableObject
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        if (actionBindings != null)
-        {
-            for (int i = 0; i < actionBindings.Count; i++)
-            {
-                ActionBinding binding = actionBindings[i];
-                bool changed = false;
-
-                if (string.IsNullOrEmpty(binding.keyboardBindingGroup))
-                {
-                    binding.keyboardBindingGroup = keyboardMouseSchemeName;
-                    changed = true;
-                }
-
-                if (string.IsNullOrEmpty(binding.gamepadBindingGroup))
-                {
-                    binding.gamepadBindingGroup = gamepadSchemeName;
-                    changed = true;
-                }
-
-                if (changed)
-                    actionBindings[i] = binding;
-            }
-        }
+        RepairMissingActionReferences();
 
         if (autoPopulateIconLibrary)
         {
@@ -607,6 +586,94 @@ public class KeybindIconSet : ScriptableObject
     }
 
 #if UNITY_EDITOR
+    private void RepairMissingActionReferences()
+    {
+        if (actionBindings == null || actionBindings.Count == 0)
+            return;
+
+        UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(inputActionsAssetPath);
+        if (assets == null || assets.Length == 0)
+            return;
+
+        bool changed = false;
+        for (int i = 0; i < actionBindings.Count; i++)
+        {
+            ActionBinding binding = actionBindings[i];
+            if (binding.actionReference != null)
+                continue;
+
+            string actionName = GetInputActionName(binding.action);
+            if (string.IsNullOrEmpty(actionName))
+                continue;
+
+            InputActionReference actionReference = FindActionReferenceAsset(assets, actionName);
+            if (actionReference == null)
+                continue;
+
+            binding.actionReference = actionReference;
+
+            if (string.IsNullOrEmpty(binding.keyboardBindingGroup))
+                binding.keyboardBindingGroup = keyboardMouseSchemeName;
+
+            if (string.IsNullOrEmpty(binding.gamepadBindingGroup))
+                binding.gamepadBindingGroup = gamepadSchemeName;
+
+            actionBindings[i] = binding;
+            changed = true;
+        }
+
+        if (changed)
+            EditorUtility.SetDirty(this);
+    }
+
+    private static InputActionReference FindActionReferenceAsset(UnityEngine.Object[] assets, string actionName)
+    {
+        for (int i = 0; i < assets.Length; i++)
+        {
+            if (assets[i] is not InputActionReference actionReference)
+                continue;
+
+            if (actionReference.action == null)
+                continue;
+
+            if (string.Equals(actionReference.action.name, actionName, StringComparison.OrdinalIgnoreCase))
+                return actionReference;
+        }
+
+        return null;
+    }
+
+    private static string GetInputActionName(KeybindAction action)
+    {
+        switch (action)
+        {
+            case KeybindAction.GP_Dash:
+                return "Dash";
+            case KeybindAction.GP_Guard:
+                return "Guard";
+            case KeybindAction.GP_TargetLock:
+                return "LockOn";
+            case KeybindAction.GP_NavigationMenu:
+                return "NavigationMenu";
+            case KeybindAction.GP_ChangeTarget_L:
+                return "LeftTarget";
+            case KeybindAction.GP_ChangeTarget_R:
+                return "RightTarget";
+            case KeybindAction.GP_PauseMenu:
+                return "Pause";
+            case KeybindAction.GP_HeavyAttackAoe:
+                return "HeavyAttack";
+            case KeybindAction.GP_FastAttackSingle:
+                return "LightAttack";
+            case KeybindAction.GP_Interact:
+                return "Interact";
+            case KeybindAction.GP_Jump:
+                return "Jump";
+            default:
+                return null;
+        }
+    }
+
     private List<TmpControlIcon> BuildKeyboardTmpIconLibrary()
     {
         Dictionary<string, TmpSpriteLookupEntry> spriteMap = LoadTmpSpriteMap(keyboardIconsFolder);
@@ -996,36 +1063,30 @@ public enum KeybindAction
     GP_Guard = 1,
     GP_TargetLock = 2,
     GP_NavigationMenu = 3,
-    GP_ChangeTarget = 4,
-    GP_ChangeTarget_L = 16,
-    GP_ChangeTarget_R = 17,
     GP_PauseMenu = 5,
     GP_HeavyAttackAoe = 6,
     GP_FastAttackSingle = 7,
     GP_Interact = 8,
     GP_Jump = 9,
+    GP_ChangeTarget_L = 16,
+    GP_ChangeTarget_R = 17,
 
-    UI_Navigate = 11,
+    UI_Navigate = 10,
+    UI_Confirm = 14,
+    UI_Cancel = 15,
     UI_Swap = 18,
     UI_RestoreDefault = 19,
-    UI_Confirm = 15,
-    UI_Cancel = 16,
 
     // Crane actions moved to the bottom for inspector readability.
-    CraneExit = 12,
-    CraneConfirm = 13,
-    CraneMove = 14,
+    CraneExit = 11,
+    CraneConfirm = 12,
+    CraneMove = 13,
 
     // Elevator Lift actions
     BackToGameplay = 20,
     FloorOne = 21,
     FloorTwo = 22,
     FloorThree = 23,
-
-    // Credits Page
-
-    PreviousPage = 24,
-    NextPage = 25,
 
     // UI page/selection helpers
     UI_Left = 26,
