@@ -36,10 +36,15 @@ public class UISelectOutline : MonoBehaviour,
 
     public void OnPointerExit(PointerEventData e) => SetVisualState(false);
 
+    private void OnDisable()
+    {
+        SetVisualState(false);
+    }
+
     private void SetVisualState(bool selected)
     {
         Selectable selectable = GetComponent<Selectable>();
-        if (selectable != null && !selectable.IsInteractable())
+        if (selected && selectable != null && !selectable.IsInteractable())
             return;
             
         // Toggle outline

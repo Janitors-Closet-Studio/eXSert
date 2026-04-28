@@ -479,9 +479,29 @@ public static class SceneLoader
         // Clear any stale input locks that may have survived the loading screen or a prior death sequence.
         // This is the safest moment to do it: all scenes are loaded, the player hasn't been spawned yet.
         InputReader.ForceResetInputLocks("LoadIntoGameCoroutine");
+        RestoreGameplayUiStateAfterLoad();
 
         if (newGame)
             CutsceneManager.PlayCutscene(Cutscene.GetCutscene("Opening Cutscene"));
+    }
+
+    private static void RestoreGameplayUiStateAfterLoad()
+    {
+        PlayerCanvasManager canvasManager = UnityEngine.Object.FindFirstObjectByType<PlayerCanvasManager>(FindObjectsInactive.Include);
+        canvasManager?.SetPlayerCanvasVisible(true);
+
+        PauseManager pauseManager = UnityEngine.Object.FindFirstObjectByType<PauseManager>(FindObjectsInactive.Include);
+        if (pauseManager != null)
+        {
+            pauseManager.HideMenusForSceneTransition();
+            pauseManager.SetGameplayHUDVisible(true);
+        }
+
+        if (InputReader.PlayerInput != null)
+        {
+            InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+            CursorManager.RefreshPolicy();
+        }
     }
 
     /// <summary>Loads the player scene and optionally positions/initializes the player. (Legacy API)</summary>

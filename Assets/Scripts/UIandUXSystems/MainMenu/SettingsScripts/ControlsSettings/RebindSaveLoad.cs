@@ -48,6 +48,8 @@ public class RebindSaveLoad : MonoBehaviour
         if (runtimeInput != null && !string.IsNullOrEmpty(runtimeInput.currentControlScheme))
             PlayerPrefs.SetString(ControlSchemeKey, runtimeInput.currentControlScheme);
 
+        ApplyRebindsImmediately(rebinds, runtimeInput);
+
         PlayerPrefs.Save();
     }
 
@@ -113,6 +115,9 @@ public class RebindSaveLoad : MonoBehaviour
         if (actions != null)
             actions.LoadBindingOverridesFromJson(rebinds);
 
+        if (InputReader.PlayerControls != null)
+            InputReader.PlayerControls.LoadBindingOverridesFromJson(rebinds);
+
         var runtimeInput = GetRuntimePlayerInput();
         if (runtimeInput != null && runtimeInput.actions != null)
             runtimeInput.actions.LoadBindingOverridesFromJson(rebinds);
@@ -130,7 +135,7 @@ public class RebindSaveLoad : MonoBehaviour
             {
                 var rebinds = PlayerPrefs.GetString(BindingOverridesKey);
                 if (!string.IsNullOrEmpty(rebinds))
-                    runtimeInput.actions.LoadBindingOverridesFromJson(rebinds);
+                    ApplyRebindsImmediately(rebinds, runtimeInput);
 
                 LoadControlScheme();
                 RefreshBindingUI();
@@ -148,6 +153,23 @@ public class RebindSaveLoad : MonoBehaviour
             return runtimeInput.actions.SaveBindingOverridesAsJson();
 
         return actions != null ? actions.SaveBindingOverridesAsJson() : string.Empty;
+    }
+
+    private static void ApplyRebindsImmediately(string rebinds, PlayerInput runtimeInput)
+    {
+        if (string.IsNullOrEmpty(rebinds))
+            return;
+
+        if (InputReader.PlayerControls != null)
+            InputReader.PlayerControls.LoadBindingOverridesFromJson(rebinds);
+
+        if (runtimeInput != null && runtimeInput.actions != null)
+            runtimeInput.actions.LoadBindingOverridesFromJson(rebinds);
+
+        if (InputReader.PlayerInput != null && InputReader.PlayerInput.actions != null && InputReader.PlayerInput != runtimeInput)
+            InputReader.PlayerInput.actions.LoadBindingOverridesFromJson(rebinds);
+
+        RefreshBindingUI();
     }
 
     private static void RefreshBindingUI()

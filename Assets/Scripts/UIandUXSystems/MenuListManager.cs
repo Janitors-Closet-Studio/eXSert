@@ -713,6 +713,8 @@ public class MenuListManager : MonoBehaviour
 
     public void ResetForGameplay()
     {
+        MenuSelectionSuppression.SuppressForFrames(10);
+
         temporarilyHiddenMenusByOwner.Clear();
         selectionHistory.Clear();
 

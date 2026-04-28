@@ -275,6 +275,18 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (Time.unscaledTime < ignoreBackUntilTime)
             return;
 
+        InputActionMap currentActionMap = InputReader.PlayerInput != null
+            ? InputReader.PlayerInput.currentActionMap
+            : null;
+        bool isUiActionMapActive = currentActionMap != null
+            && string.Equals(currentActionMap.name, "UI", System.StringComparison.OrdinalIgnoreCase);
+
+        if (!IsPaused && !isUiActionMapActive)
+            return;
+
+        if (!IsPauseUiActive())
+            return;
+
         if (MainMenu.isInMainMenu)
         {
             Debug.Log("[PauseManager] OnBack ignored - currently in main menu");
@@ -970,6 +982,16 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if (playerHUDRoot.activeSelf != visible)
             playerHUDRoot.SetActive(visible);
+    }
+
+    private bool IsPauseUiActive()
+    {
+        return IsPaused
+            || currentActiveMenu != ActiveMenu.None
+            || (pauseOverlay != null && pauseOverlay.activeInHierarchy)
+            || (pauseMenuHolder != null && pauseMenuHolder.activeInHierarchy)
+            || (navigationMenuHolder != null && navigationMenuHolder.activeInHierarchy)
+            || (settingsMenuContainer != null && settingsMenuContainer.activeInHierarchy);
     }
 
     public void SetGameplayHUDVisible(bool visible)

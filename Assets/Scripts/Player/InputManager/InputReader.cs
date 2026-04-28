@@ -46,10 +46,11 @@ public class InputReader : Singleton<InputReader>
 
             try
             {
-                string mapName = PlayerInput.currentActionMap.name;
+                string mapName = GetCurrentActionMapName();
                 return mapName switch
                 {
                     "Gameplay" => ActionMap.Gameplay,
+                    "UI" => ActionMap.Menu,
                     "Menu" => ActionMap.Menu,
                     "Loading" => ActionMap.Loading,
                     _ => ActionMap.Gameplay,
@@ -67,7 +68,7 @@ public class InputReader : Singleton<InputReader>
                 string mapName = value switch
                 {
                     ActionMap.Gameplay => "Gameplay",
-                    ActionMap.Menu => "Menu",
+                    ActionMap.Menu => ResolveUiActionMapName(),
                     ActionMap.Loading => "Loading",
                     _ => "Gameplay",
                 };
@@ -79,6 +80,9 @@ public class InputReader : Singleton<InputReader>
             }
         }
     }
+
+    internal static bool IsUiActionMapActive => string.Equals(GetCurrentActionMapName(), "UI", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(GetCurrentActionMapName(), "Menu", StringComparison.OrdinalIgnoreCase);
 
     public static InputActionAsset PlayerControls { get; private set; }
     private PlayerControls runtimeGeneratedControls;
@@ -114,6 +118,27 @@ public class InputReader : Singleton<InputReader>
         private set { _playerInput = value; }
     }
     private static PlayerInput _playerInput;
+
+    private static string GetCurrentActionMapName()
+    {
+        return PlayerInput != null && PlayerInput.currentActionMap != null
+            ? PlayerInput.currentActionMap.name
+            : string.Empty;
+    }
+
+    private static string ResolveUiActionMapName()
+    {
+        if (PlayerInput != null && PlayerInput.actions != null)
+        {
+            if (PlayerInput.actions.FindActionMap("UI", throwIfNotFound: false) != null)
+                return "UI";
+
+            if (PlayerInput.actions.FindActionMap("Menu", throwIfNotFound: false) != null)
+                return "Menu";
+        }
+
+        return "UI";
+    }
 
     internal float mouseSens;
 

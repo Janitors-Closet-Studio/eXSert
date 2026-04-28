@@ -468,11 +468,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (!Player.TryGetPlayerObject(out GameObject playerObject) || playerObject == null)
             return false;
 
+        CharacterController characterController = playerObject.GetComponent<CharacterController>()
+            ?? playerObject.GetComponentInChildren<CharacterController>(true)
+            ?? playerObject.GetComponentInParent<CharacterController>();
+
+        Bounds interactionBounds = interactionCollider.bounds;
+        if (characterController != null && characterController.enabled && interactionBounds.Intersects(characterController.bounds))
+            return true;
+
         Collider[] playerColliders = playerObject.GetComponentsInChildren<Collider>(true);
         if (playerColliders == null || playerColliders.Length == 0)
             return false;
 
-        Bounds interactionBounds = interactionCollider.bounds;
         for (int index = 0; index < playerColliders.Length; index++)
         {
             Collider playerCollider = playerColliders[index];
