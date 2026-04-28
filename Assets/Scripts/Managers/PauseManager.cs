@@ -150,6 +150,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         MainMenu.isInMainMenu = scene.name == "MainMenu";
+        MufffleMusicForMenu(false);
         TryResolveHudRoot();
         HideAllMenus();
         if (!MainMenu.isInMainMenu)
@@ -617,6 +618,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         ForceCloseAllWarningUi();
 
+        // Ensure menu muffling does not leak into gameplay after scene transition.
+        MufffleMusicForMenu(false);
+
         // Release this menu's pause ownership so restart transitions do not leave the game paused.
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);
 
@@ -823,6 +827,9 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         var musicSource = SoundManager.Instance.levelMusicSource;
 
+        if (cachedPauseLowPassFilter != null && cachedPauseLowPassFilter.gameObject != musicSource.gameObject)
+            cachedPauseLowPassFilter = null;
+
         AudioLowPassFilter lowPassFilter = cachedPauseLowPassFilter;
         if (lowPassFilter == null)
         {
@@ -861,7 +868,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             Debug.Log("Restoring music after menu");
 
             lowPassFilter.cutoffFrequency = cachedLowPassCutoffBeforePause ?? defaultCutoff;
-            lowPassFilter.enabled = cachedLowPassEnabledBeforePause ?? true;
+            lowPassFilter.enabled = cachedLowPassEnabledBeforePause ?? false;
 
             musicIsMuffled = false;
             cachedLowPassCutoffBeforePause = null;
