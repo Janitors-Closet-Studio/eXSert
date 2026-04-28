@@ -3421,7 +3421,8 @@ public class PlayerMovement : MonoBehaviour
 
         string expectedLocomotionState = GetExpectedLocomotionStateName();
         if (!string.IsNullOrEmpty(expectedLocomotionState)
-            && animationController.IsPlaying(expectedLocomotionState, out _))
+            && (animationController.IsPlaying(expectedLocomotionState, out _)
+                || animationController.CurrentStateName == expectedLocomotionState))
         {
             nextLocomotionFailsafeRefreshTime = 0f;
             return;
