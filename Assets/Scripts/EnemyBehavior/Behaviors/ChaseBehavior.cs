@@ -15,6 +15,7 @@ namespace Behaviors
         private Coroutine chaseCoroutine;
         private BaseEnemy<TState, TTrigger> enemy;
         private Transform playerTarget;
+        private float savedStoppingDistance;
 
         // Cache the state value once (add at class level)
         private TState chaseStateValue;
@@ -26,6 +27,11 @@ namespace Behaviors
 
             // Cache the Chase state value for this enum type
             chaseStateValue = (TState)System.Enum.Parse(typeof(TState), "Chase");
+
+            // Save current stoppingDistance so we can restore it on exit.
+            // MoveToAttackRange will overwrite it during the chase.
+            if (enemy.agent != null)
+                savedStoppingDistance = enemy.agent.stoppingDistance;
 
             // Special handling for BaseCrawlerEnemy with ForceChasePlayer
             if (enemy is BaseCrawlerEnemy crawler && crawler.ForceChasePlayer)
@@ -72,7 +78,11 @@ namespace Behaviors
                 chaseCoroutine = null;
             }
             if (enemy.agent != null)
+            {
                 enemy.agent.ResetPath();
+                // Restore the stoppingDistance that was overwritten by MoveToAttackRange.
+                enemy.agent.stoppingDistance = savedStoppingDistance;
+            }
         }
 
         // Blob chase for crawlers
@@ -176,18 +186,30 @@ namespace Behaviors
         {
             const float losePlayerDistance = 25f;
             const float updateInterval = 0.05f; // More frequent updates for smoother motion
-            const float destinationUpdateThreshold = 0.5f; // Only update destination if player moved significantly
+            const float destinationUpdateThreshold = 0.15f; // Recalculate when player moves this far
             var wait = WaitForSecondsCache.Get(updateInterval);
 
+            // Wait one frame before the first range check so the agent has a chance to
+            // start moving. Without this, re-entering Chase from Attack (e.g. after the
+            // enemy backed off while the player was guarding) can instantly re-fire
+            // InAttackRange before any movement occurs, causing an Attack<->Chase loop.
+            yield return null;
+
             Vector3 lastDestination = playerTarget != null ? playerTarget.position : Vector3.zero;
-            
+
             while (enemy.enemyAI.State.Equals(chaseStateValue) && playerTarget != null)
             {
                 if (enemy.agent != null && enemy.agent.enabled)
                 {
-                    // Only recalculate path if player has moved significantly
                     float playerMovement = Vector3.Distance(playerTarget.position, lastDestination);
-                    if (playerMovement > destinationUpdateThreshold || !enemy.agent.hasPath)
+                    // Recalculate path if: player moved meaningfully, no path yet, or the
+                    // agent has reached its destination but is still out of attack range
+                    // (catches the slow-walk-away case where incremental moves < threshold).
+                    bool agentIdleShortOfTarget = enemy.agent.hasPath
+                        && !enemy.agent.pathPending
+                        && enemy.agent.remainingDistance <= enemy.agent.stoppingDistance + 0.05f;
+
+                    if (playerMovement > destinationUpdateThreshold || !enemy.agent.hasPath || agentIdleShortOfTarget)
                     {
                         MoveToAttackRange(playerTarget);
                         lastDestination = playerTarget.position;
@@ -213,64 +235,26 @@ namespace Behaviors
             }
         }
 
-        // Picks an approach point around the player at the desired reach and avoids obstacle corners
         private void MoveToAttackRange(Transform player)
         {
             if (enemy.agent == null) return;
 
-            // Desired radial distance from player to stand at before attacking
-            float chaseBuffer = 0.2f;
-            float reach = (Mathf.Max(enemy.attackBoxSize.x, enemy.attackBoxSize.z) * 0.5f) + enemy.attackBoxDistance - chaseBuffer;
-            reach = Mathf.Max(0.1f, reach);
+            // Compute the radius at which the enemy is considered in attack range.
+            float attackRange = (Mathf.Max(enemy.attackBoxSize.x, enemy.attackBoxSize.z) * 0.5f)
+                                + enemy.attackBoxDistance;
 
-            Vector3 toPlayer = player.position - enemy.transform.position; toPlayer.y = 0f;
-            Vector3 baseDir = toPlayer.sqrMagnitude < 0.001f ? enemy.transform.forward : toPlayer.normalized;
+            // Set stoppingDistance so the agent naturally halts just inside attack range.
+            // A small inward margin ensures the enemy lands firmly inside the attack box
+            // rather than right on its edge, without requiring any offset point calculation.
+            // Previous approach computed an explicit offset candidate and called
+            // NavMesh.SamplePosition on it, which could snap the destination up to 1 m
+            // away from the intended point — causing inconsistent stopping distances that
+            // no inspector value could reliably compensate for.
+            const float arrivalMargin = 0.15f;
+            enemy.agent.stoppingDistance = Mathf.Max(0f, attackRange - arrivalMargin);
 
-            // Try candidates around an arc near the facing direction: 0, ±20, ±40, ±60 degrees
-            float[] angles = new float[] { 0f, 20f, -20f, 40f, -40f, 60f, -60f };
-            Vector3 best = Vector3.zero;
-            bool found = false;
-            for (int i = 0; i < angles.Length; i++)
-            {
-                Vector3 dir = Quaternion.AngleAxis(angles[i], Vector3.up) * baseDir;
-                Vector3 candidate = player.position - dir * reach;
-                candidate.y = enemy.transform.position.y;
-
-                // Snap to closest navmesh point near candidate
-                if (!NavMesh.SamplePosition(candidate, out var hit, 1.0f, NavMesh.AllAreas))
-                    continue;
-
-                // Prefer straight clear ray on navmesh between current and candidate
-                if (!NavMesh.Raycast(enemy.transform.position, hit.position, out var navHit, NavMesh.AllAreas))
-                {
-                    best = hit.position;
-                    found = true;
-                    break;
-                }
-
-                // Keep first valid sample as fallback
-                if (!found)
-                {
-                    best = hit.position;
-                    found = true;
-                }
-            }
-
-            if (!found)
-            {
-                // Final fallback: head directly to player's sampled position
-                if (NavMesh.SamplePosition(player.position, out var phit, 1.5f, NavMesh.AllAreas))
-                {
-                    best = phit.position;
-                    found = true;
-                }
-            }
-
-            if (found)
-            {
-                enemy.agent.isStopped = false;
-                enemy.agent.SetDestination(best);
-            }
+            enemy.agent.isStopped = false;
+            enemy.agent.SetDestination(player.position);
         }
         public void Tick(BaseEnemy<TState, TTrigger> enemy)
         {
