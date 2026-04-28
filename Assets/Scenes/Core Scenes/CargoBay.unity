@@ -15104,7 +15104,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat the boxer bots and find the keycard!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!4 &497097210 stripped
 Transform:
@@ -18558,8 +18558,30 @@ MonoBehaviour:
   noticeManager: {fileID: 604273673}
   objectives:
   - interactionToActivate: {fileID: 0}
-    objectiveID: 
-    objectiveText: 
+    triggerSource: {fileID: 209182630}
+    triggerOnWaveCompletion: 0
+    objectiveID: 1
+    objectiveText: "\"Cleanser's forces are already waiting. \nTime to scrap 'em
+      and push deeper.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 1366759822}
+    triggerOnWaveCompletion: 0
+    objectiveID: 2
+    objectiveText: "\"They're trying to stall me. \nI'm not going to let them.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 1366759822}
+    triggerOnWaveCompletion: 1
+    objectiveID: 3
+    objectiveText: "\"They locked down the route. \nI need to get this container
+      out of the way.\""
     objectiveType: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
@@ -41230,7 +41252,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat the boxer bots and find the key
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!43 &1366937069
 Mesh:
@@ -61194,7 +61216,7 @@ GameObject:
   - component: {fileID: 2052891193}
   - component: {fileID: 2052891192}
   m_Layer: 0
-  m_Name: CargoUnload
+  m_Name: ElevatorUnload
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -61209,7 +61231,7 @@ Transform:
   m_GameObject: {fileID: 2052891190}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 29.92, y: 5.2, z: -148.42}
+  m_LocalPosition: {x: 29.92, y: 5.2, z: -173.93}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

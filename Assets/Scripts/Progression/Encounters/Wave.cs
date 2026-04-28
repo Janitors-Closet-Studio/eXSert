@@ -129,7 +129,10 @@ namespace Progression.Encounters
             enemies.Remove(enemy);
 
             if (!RemainingEnemiesCheck() && !waveCompleted)
+            {
+                waveCompleted = true;
                 OnWaveComplete?.Invoke(this); // trigger next wave or end encounter
+            }
 
             bool RemainingEnemiesCheck()
             {
