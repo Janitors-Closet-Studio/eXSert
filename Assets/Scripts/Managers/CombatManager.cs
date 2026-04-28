@@ -84,6 +84,25 @@ namespace Utilities.Combat
             // Initialize to single target mode (stance 0)
             singleTargetMode = true;
             isInCombat = false;
+
+            // Hard-reset guard/parry statics in case they survived a scene reload.
+            // If the CombatManager was destroyed mid-guard (e.g., player died and scene reloaded),
+            // these statics could be left true and permanently block player attacks via ShouldIgnoreAttackInput.
+            if (isGuarding)
+            {
+                Debug.LogWarning("[CombatManager] Awake detected stale isGuarding=true. Resetting to false.");
+                isGuarding = false;
+            }
+            if (isParrying)
+            {
+                Debug.LogWarning("[CombatManager] Awake detected stale isParrying=true. Resetting to false.");
+                isParrying = false;
+            }
+            if (parryWindowRoutine != null)
+            {
+                StopCoroutine(parryWindowRoutine);
+                parryWindowRoutine = null;
+            }
         }
 
         private void OnEnable()

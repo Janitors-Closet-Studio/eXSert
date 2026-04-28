@@ -671,6 +671,28 @@ public class InputReader : Singleton<InputReader>
         }
     }
 
+    /// <summary>
+    /// Clears all gameplay input blocks and resets inputBusy.
+    /// Call this when transitioning into fresh gameplay (e.g., after a save-file load) to prevent
+    /// a stale loading-screen block or mid-action lock from carrying over and permanently suppressing attacks.
+    /// </summary>
+    public static void ForceResetInputLocks(string context = "")
+    {
+        if (gameplayInputBlockOwners.Count > 0)
+        {
+            Debug.LogWarning($"[InputReader] ForceResetInputLocks: clearing {gameplayInputBlockOwners.Count} stale gameplay input block(s). Context: {context}");
+            gameplayInputBlockOwners.Clear();
+            MoveInput = Vector2.zero;
+            LookInput = Vector2.zero;
+        }
+
+        if (inputBusy)
+        {
+            Debug.LogWarning($"[InputReader] ForceResetInputLocks: clearing stale inputBusy=true. Context: {context}");
+            inputBusy = false;
+        }
+    }
+
     private static bool IsGameplayActionTriggered(InputAction action)
     {
         return !IsGameplayInputBlocked

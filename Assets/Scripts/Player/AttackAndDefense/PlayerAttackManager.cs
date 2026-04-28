@@ -375,10 +375,26 @@ public class PlayerAttackManager : MonoBehaviour
         InputReader.inputBusy = false;
     }
 
+    private void OnEnable()
+    {
+        // Defensively clear any stale attack-lock state that might have survived a scene reload
+        // or a prior death sequence that was interrupted before it could clean itself up.
+        currentAttack = null;
+        currentAttackDamageMultiplier = 1f;
+        currentAttackSpeedMultiplier = 1f;
+        currentAttackEarliestEndTime = -1f;
+        currentAttackLockFailsafeTime = -1f;
+        plungeAoeUnlockReadyTime = -1f;
+        bufferedAttackButton = AttackButton.None;
+        bufferedAttackExpiresAt = -1f;
+        animationController?.ResetAnimatorSpeed();
+    }
+
     private void Update()
     {
         UpdateGroundedAttackGraceState();
         EnsureAttackStateConsistency();
+        EnsureGameplayInputBlockConsistency();
 
         if (ShouldIgnoreAttackInput())
         {
@@ -443,6 +459,29 @@ public class PlayerAttackManager : MonoBehaviour
         animationController?.ResetAnimatorSpeed();
         playerMovement?.SuppressLocomotionAnimations(false);
         playerMovement?.ForceLocomotionRefresh();
+    }
+
+    /// <summary>
+    /// Watchdog that detects a stale gameplay input block (IsGameplayInputBlocked == true) when no
+    /// loading screen is active and no loading is in progress. This can happen if the LoadingScreenController
+    /// is destroyed before its finally-block releases the block token, permanently preventing all attacks.
+    /// </summary>
+    private void EnsureGameplayInputBlockConsistency()
+    {
+        if (!InputReader.IsGameplayInputBlocked)
+            return;
+
+        // Loading is legitimately in progress — don't interfere.
+        if (UI.Loading.LoadingScreenController.IsLoading)
+            return;
+
+        // If the loading screen still has a live instance it should clear itself; give it a moment.
+        if (UI.Loading.LoadingScreenController.HasInstance)
+            return;
+
+        // No loading screen, no loading in progress — stale block detected.
+        Debug.LogWarning("[PlayerAttackManager] Detected stale gameplay input block with no active loading screen. Force-clearing via InputReader.ForceResetInputLocks.");
+        InputReader.ForceResetInputLocks("PlayerAttackManager.EnsureGameplayInputBlockConsistency");
     }
 
     private void HandleGuardStateAttacks()
