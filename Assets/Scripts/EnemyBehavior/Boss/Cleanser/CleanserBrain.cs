@@ -479,6 +479,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private float defaultAnimatorSpeed = 1f;
         private bool isExecutingGapCloseDash;
         private bool isExecutingRetreatJump;
+        private int consecutiveRetreatJumps;
+        private float lastRetreatJumpEndTime = -999f;
         private float currentComboMovementSpeedMultiplier = 1f;
         private bool hasPostRecoveryTargetDistance;
         private float currentPostRecoveryTargetDistance;
@@ -2435,12 +2437,30 @@ namespace EnemyBehavior.Boss.Cleanser
         /// <summary>
         /// Retreats away from the player using a jump arc when useRetreatJump is enabled.
         /// Falls back to MoveAwayFromPlayer if jump is disabled or no valid NavMesh landing point is found.
+        /// On repeated consecutive jumps the distance doubles on the 2nd attempt, and on the 3rd+
+        /// the jump is skipped entirely so the boss is forced into its next behaviour.
         /// </summary>
         private IEnumerator JumpAwayFromPlayer(float duration)
         {
             if (!useRetreatJump || player == null || agent == null)
             {
                 yield return MoveAwayFromPlayer(duration);
+                yield break;
+            }
+
+            // Reset the consecutive counter if enough time has passed since the last jump
+            // (i.e. the player broke the chase loop and the boss did something else).
+            const float consecutiveResetWindow = 3f;
+            if (Time.time - lastRetreatJumpEndTime > consecutiveResetWindow)
+                consecutiveRetreatJumps = 0;
+
+            consecutiveRetreatJumps++;
+
+            // 3rd+ consecutive jump — skip entirely and force next behaviour.
+            if (consecutiveRetreatJumps >= 3)
+            {
+                consecutiveRetreatJumps = 0;
+                lastRetreatJumpEndTime = Time.time;
                 yield break;
             }
 
@@ -2455,6 +2475,10 @@ namespace EnemyBehavior.Boss.Cleanser
                 ? cfg.OverrideJumpDistance
                 : Mathf.Max(2f, aggressionSystem?.GetCurrentMovementConfig()?.PreferredDistance ?? 6f);
 
+            // 2nd consecutive jump — double the distance.
+            if (consecutiveRetreatJumps == 2)
+                jumpDist *= 2f;
+
             Vector3 desiredLanding = transform.position + awayDir * jumpDist;
             desiredLanding.y = transform.position.y;
 
@@ -2463,6 +2487,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 || Mathf.Abs(hit.position.y - transform.position.y) > 1f)
             {
                 // Can't jump there — fall back to walking away
+                lastRetreatJumpEndTime = Time.time;
                 yield return MoveAwayFromPlayer(duration);
                 yield break;
             }
@@ -2477,11 +2502,13 @@ namespace EnemyBehavior.Boss.Cleanser
                 new Vector3(landingPos.x, 0f, landingPos.z));
             if (flatDist < minJump)
             {
+                lastRetreatJumpEndTime = Time.time;
                 yield return MoveAwayFromPlayer(duration);
                 yield break;
             }
 
             yield return ExecuteRetreatJump(landingPos);
+            lastRetreatJumpEndTime = Time.time;
         }
 
         private bool ShouldUseComboGapCloseDash(float distanceToPlayer)
