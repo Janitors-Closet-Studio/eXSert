@@ -133,6 +133,10 @@ public class PlayerAnimationController : MonoBehaviour
     // Set by the PlungeWaitForLanding animation event; cleared when the player lands.
     private bool waitingForPlungeLand;
 
+    // One-shot transition override consumed by the next locomotion CrossFade (Walk/Jog/Sprint).
+    // Set before ForceLocomotionRefresh() on plunge exit so the blend feels smooth.
+    private float nextLocomotionBlendOverride = -1f;
+
     /// <summary>
     /// True while the Plunge animation is frozen mid-air waiting for the player to land.
     /// External systems (e.g. EnsureAnimatorRuntimeHealthy) must respect this and not reset animator speed.
@@ -239,6 +243,16 @@ public class PlayerAnimationController : MonoBehaviour
         animator.speed = 0f;
     }
 
+    /// <summary>
+    /// Primes a one-shot blend duration that will be consumed by the next Walk/Jog/Sprint
+    /// CrossFade, overriding the default transition. Use before ForceLocomotionRefresh() on
+    /// plunge exit so movement snaps in smoothly regardless of which locomotion state fires.
+    /// </summary>
+    public void SetNextLocomotionBlendOverride(float duration)
+    {
+        nextLocomotionBlendOverride = Mathf.Max(0f, duration);
+    }
+
     public void PlayIdle() => CrossFade(PlayerAnim.SingleTarget.Breathing);
 
     public void PlaySingleTargetBreathing(float transition = -1f) => CrossFade(PlayerAnim.SingleTarget.Breathing, transition);
@@ -249,12 +263,12 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayAoeIdleWorld(float transition = -1f) => CrossFade(PlayerAnim.AreaOfEffect.IdleWorld, transition);
     public void PlayAoeIdleCombat(float transition = -1f) => CrossFade(PlayerAnim.AreaOfEffect.IdleCombat, transition);
 
-    public void PlayWalk(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Walk, -1f, forceRestart);
+    public void PlayWalk(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Walk, ConsumeLocomotionBlendOverride(), forceRestart);
     public void PlayWalkBack(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkBack, -1f, forceRestart);
     public void PlayWalkStrafeLeft(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkStrafeLeft, -1f, forceRestart);
     public void PlayWalkStrafeRight(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.WalkStrafeRight, -1f, forceRestart);
-    public void PlayJog(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Jog, -1f, forceRestart);
-    public void PlaySprint(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Sprint, -1f, forceRestart);
+    public void PlayJog(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Jog, ConsumeLocomotionBlendOverride(), forceRestart);
+    public void PlaySprint(bool forceRestart = false) => CrossFade(PlayerAnim.Locomotion.Sprint, ConsumeLocomotionBlendOverride(), forceRestart);
     public void PlayDash(float transition = 0.08f)
     {
         StartHardLock(PlayerAnim.Locomotion.Dash);
@@ -409,6 +423,16 @@ public class PlayerAnimationController : MonoBehaviour
     public void PlayCustom(string stateName, float transition = -1f, bool restart = false)
     {
         CrossFade(stateName, transition, restart);
+    }
+
+    private float ConsumeLocomotionBlendOverride()
+    {
+        if (nextLocomotionBlendOverride < 0f)
+            return -1f;
+
+        float value = nextLocomotionBlendOverride;
+        nextLocomotionBlendOverride = -1f;
+        return value;
     }
 
     private void CrossFade(string stateName, float transition = -1f, bool forceRestart = false)

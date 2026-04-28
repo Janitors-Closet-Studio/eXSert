@@ -44,6 +44,8 @@ public class PlayerAttackManager : MonoBehaviour
     [Range(0f, 2f)] private float plungeRecoveryDelay = 0.75f;
     [SerializeField, Tooltip("Cross-fade duration when exiting a plunge into combat idle.")]
     [Range(0f, 1f)] private float plungeIdleBlendTime = 0.25f;
+    [SerializeField, Tooltip("Cross-fade duration when the plunge exit blends directly into a locomotion state (walk/jog/sprint). Prevents the snap when the player is already moving on landing.")]
+    [Range(0f, 1f)] private float plungeToLocomotionBlendTime = 0.25f;
 
     [Header("Plunge Drone Effects")]
     [SerializeField, Tooltip("Enable plunge-specific drone effects (shared splash + optional physics collapse).")]
@@ -1447,7 +1449,6 @@ public class PlayerAttackManager : MonoBehaviour
         StopDeferredCancelRoutine();
         InputReader.inputBusy = false;
         playerMovement?.SuppressLocomotionAnimations(false);
-        playerMovement?.ForceLocomotionRefresh();
 
         var finishedAttack = currentAttack;
 
@@ -1460,8 +1461,16 @@ public class PlayerAttackManager : MonoBehaviour
                 && characterController.isGrounded;
 
             if (shouldReturnToCombatIdle)
+            {
+                // Prime the locomotion blend override BEFORE ForceLocomotionRefresh so that
+                // if the player is already holding movement input the next Walk/Jog/Sprint
+                // CrossFade uses a smooth transition instead of snapping.
+                animationController?.SetNextLocomotionBlendOverride(plungeToLocomotionBlendTime);
                 PlayCombatIdle(plungeIdleBlendTime);
+            }
         }
+
+        playerMovement?.ForceLocomotionRefresh();
 
         currentAttack = null;
         currentAttackDamageMultiplier = 1f;
