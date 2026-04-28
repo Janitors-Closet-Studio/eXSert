@@ -110,11 +110,16 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             _interactionBusyOwned = false;
         }
 
-        InteractionUI interactionUI = GetInteractionUIIfAvailable();
-        if (isPlayerNearby && interactionUI != null)
-            interactionUI.HideInteractPrompt();
+        ClearPromptIfOwned();
 
         isPlayerNearby = false;
+    }
+
+    private void ClearPromptIfOwned()
+    {
+        InteractionUI interactionUI = GetInteractionUIIfAvailable();
+        if (interactionUI != null && interactionUI.currentInteractable == this)
+            interactionUI.HideInteractPrompt();
     }
 
 
@@ -346,6 +351,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         {
             if (!interactable)
             {
+                ClearPromptIfOwned();
                 Debug.Log($"Player entered interaction zone of {gameObject.name}, but it's not interactable.");
                 return;
             }
@@ -375,6 +381,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             if (blockPromptWhenAttackingOrDashing && (isAttacking || isDashing || isInCombatMode))
             {
                 if (debugLogging) Debug.Log($"[InteractionManager] Blocking prompt because player is attacking: {isAttacking}, dashing: {isDashing}, or in combat mode: {isInCombatMode}");
+                ClearPromptIfOwned();
                 return;
             }
 
@@ -392,14 +399,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (other.transform.root.CompareTag("Player"))
         {
             isPlayerNearby = false;
-            var interactionUI = GetInteractionUIIfAvailable();
-            // Only clear currentInteractable if it matches this
-            if (interactionUI != null && interactionUI.currentInteractable == this)
-            {
-                interactionUI.HideInteractPrompt();
-                interactionUI.currentInteractable = null;
-
-            }
+            ClearPromptIfOwned();
         }
     }
 
@@ -420,7 +420,11 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         }
 
         if (!interactable || !isPlayerNearby)
+        {
+            if (interactionUI.currentInteractable == this)
+                interactionUI.HideInteractPrompt();
             return;
+        }
 
         if (interactionUI.currentInteractable != null && interactionUI.currentInteractable != this)
             return;

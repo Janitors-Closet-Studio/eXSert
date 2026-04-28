@@ -90,6 +90,7 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     {
         ApplyActsManagerColorsIfAvailable();
         SceneManager.sceneLoaded += OnSceneLoaded;
+        RefreshVisualState();
     }
 
     private void OnDisable()
@@ -100,16 +101,48 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        string sceneName = scene.name;
-        if (sceneName == this.sceneName)
+        if (string.Equals(scene.name, this.sceneName, System.StringComparison.Ordinal))
         {
-            for (int i = 0; i < mapLocationImage.Length; i++)
-            {
-                if (mapLocationImage[i] != null)
-                {
-                    mapLocationImage[i].SetActive(true);
-                }
-            }
+            SetAllMapLocationImagesActive(true);
+        }
+    }
+
+    public void RefreshVisualState()
+    {
+        RefreshMapLocationImagesForLoadedScenes();
+        UpdateMapLocationImageColor();
+    }
+
+    private void RefreshMapLocationImagesForLoadedScenes()
+    {
+        bool matchingSceneLoaded = false;
+
+        for (int i = 0; i < SceneManager.sceneCount; i++)
+        {
+            Scene loadedScene = SceneManager.GetSceneAt(i);
+            if (!loadedScene.IsValid() || !loadedScene.isLoaded)
+                continue;
+
+            if (!string.Equals(loadedScene.name, sceneName, System.StringComparison.Ordinal))
+                continue;
+
+            matchingSceneLoaded = true;
+            break;
+        }
+
+        bool shouldBeActive = matchingSceneLoaded || actNumber == 0;
+        SetAllMapLocationImagesActive(shouldBeActive);
+    }
+
+    private void SetAllMapLocationImagesActive(bool isActive)
+    {
+        if (mapLocationImage == null)
+            return;
+
+        for (int i = 0; i < mapLocationImage.Length; i++)
+        {
+            if (mapLocationImage[i] != null)
+                mapLocationImage[i].SetActive(isActive);
         }
     }
 
@@ -143,7 +176,11 @@ public class ActButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             return;
 
         if (!thisButton.interactable)
+        {
+            StopActiveColorRoutine();
+            highlightedMapLocationImageRenderer.color = defaultMapImageColor;
             return;
+        }
 
         StopActiveColorRoutine();
 

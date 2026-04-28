@@ -12480,6 +12480,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 604273671}
   - {fileID: 1094843851}
   - {fileID: 2052891191}
   - {fileID: 209182628}
@@ -18509,6 +18510,83 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1357911731733883350, guid: 24dfe058bf31c0f419fe6e1dbef78c54, type: 3}
   m_PrefabInstance: {fileID: 602470551}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &604273670
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 604273671}
+  - component: {fileID: 604273673}
+  - component: {fileID: 604273672}
+  m_Layer: 0
+  m_Name: ObjectiveManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &604273671
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 604273670}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 14.893351, y: -0.7790874, z: -157.50443}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 387321457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &604273672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 604273670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d30f4205766a16444a17f2c75bfb05e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MasterObjectiveClass
+  noticeManager: {fileID: 604273673}
+  objectives:
+  - interactionToActivate: {fileID: 0}
+    objectiveID: 
+    objectiveText: 
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  objectiveNotices:
+  - interactionToActivate: {fileID: 0}
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    noticeID: 
+    noticeText: 
+    bottomText: 
+    fadeDuration: 0
+    displayDuration: 0
+    priority: 0
+--- !u!114 &604273673
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 604273670}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 848cee7bc7c61664eb5de4245d28af33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NoticeManager
+  debugLogging: 0
 --- !u!1 &614134388
 GameObject:
   m_ObjectHideFlags: 0

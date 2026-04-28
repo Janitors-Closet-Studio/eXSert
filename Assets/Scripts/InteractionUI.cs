@@ -65,6 +65,39 @@ public class InteractionUI : Singleton<InteractionUI>
         SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
 
+    private void LateUpdate()
+    {
+        ValidatePromptOwnerState();
+    }
+
+    private void ValidatePromptOwnerState()
+    {
+        bool promptVisible = (_interactText != null && _interactText.gameObject.activeSelf)
+            || (_interactIcon != null && _interactIcon.gameObject.activeSelf);
+
+        if (currentInteractable == null)
+        {
+            if (promptVisible)
+                HideInteractPrompt();
+            return;
+        }
+
+        if (!currentInteractable.isActiveAndEnabled)
+        {
+            HideInteractPrompt();
+            return;
+        }
+
+        if (currentInteractable is IInteractable interactable && !interactable.isPlayerNearby)
+        {
+            HideInteractPrompt();
+            return;
+        }
+
+        if (currentInteractable is InteractionManager interactionManager && !interactionManager.interactable)
+            HideInteractPrompt();
+    }
+
     public void WriteTextToCollectUI(string text, string bottomText)
     {
         if (_collectText != null)

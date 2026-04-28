@@ -377,7 +377,7 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                 else if (m_BindingText != null)
                     m_BindingText.text = deviceMismatch;
                 m_RebindStopEvent?.Invoke(this, null);
-                StartCoroutine(HideRebindOverlayAfterDelay(.5f));
+                StartCoroutine(HideRebindOverlayAfterDelay(.25f));
                 return;
             }
 
