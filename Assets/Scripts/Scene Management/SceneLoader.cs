@@ -742,6 +742,22 @@ public static class SceneLoader
         yield return UnloadAllScenesExceptCoroutine(MAIN_MENU_SCENE, LOADING_SCENE);
     }
 
+    public static IEnumerator ReloadCheckpointSceneStackCoroutine(SceneAsset checkpointScene)
+    {
+        if (checkpointScene == null)
+        {
+            Debug.LogError("[Scene Loader] Cannot reload checkpoint scene stack for a null SceneAsset.");
+            yield break;
+        }
+
+        Initialize();
+
+        yield return UnloadAllScenesExceptCoroutine(PLAYER_SCENE, POST_PROCESS_SCENE, LOADING_SCENE);
+        yield return LoadCoroutine(checkpointScene, loadScreen: false);
+        yield return EnsurePostProcessSceneLoadedCoroutine();
+        EnsureGameplayActiveScene();
+    }
+
     private static IEnumerator UnloadAllScenesExceptCoroutine(params string[] sceneNamesToKeep)
     {
         HashSet<string> keepScenes = new(sceneNamesToKeep ?? Array.Empty<string>(), StringComparer.Ordinal);

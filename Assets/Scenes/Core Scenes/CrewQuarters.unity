@@ -80398,7 +80398,7 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 1801951081}
   - {fileID: 1906613297}
-  onlyInteractableOnce: 0
+  onlyInteractableOnce: 1
   requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
   useCameraTransition: 1
   useSpecialTransition: 1
@@ -176233,6 +176233,10 @@ PrefabInstance:
       objectReference: {fileID: 933755502}
     - target: {fileID: 98182257937175027, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
       propertyPath: doorLockState
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
+      propertyPath: onlyInteractableOnce
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 175163030191510768, guid: 4035be4eb2b4efe4c8a9fd7eacb50070, type: 3}
@@ -301230,7 +301234,7 @@ Transform:
   m_GameObject: {fileID: 1543028325}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.5029998, y: -2.1099997, z: -30.388}
+  m_LocalPosition: {x: 0.5029998, y: -2.1099997, z: -33.742}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -380477,7 +380481,7 @@ MonoBehaviour:
   - {fileID: 5931443435776852929}
   - {fileID: 1707735465}
   - {fileID: 8816446724120656196}
-  onlyInteractableOnce: 0
+  onlyInteractableOnce: 1
   requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
   useCameraTransition: 1
   useSpecialTransition: 1

@@ -1,0 +1,330 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4369339521626160602
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4174187970302306481}
+  - component: {fileID: 9155082250247857179}
+  m_Layer: 0
+  m_Name: ObjectiveTrigger2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4174187970302306481
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4369339521626160602}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.13, y: 4.03, z: 41.27}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2477967604847116439}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &9155082250247857179
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4369339521626160602}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.33, y: 9.5, z: 4.26}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &6032165109582017170
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 264342049556442339}
+  - component: {fileID: 7791892080370139940}
+  m_Layer: 0
+  m_Name: ObjectiveTrigger3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &264342049556442339
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6032165109582017170}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.13, y: 4.03, z: 79.639}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2477967604847116439}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &7791892080370139940
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6032165109582017170}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.33, y: 9.5, z: 4.26}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &6960543490580399795
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2477967604847116439}
+  - component: {fileID: 4999882038848579192}
+  - component: {fileID: 8260267329785932196}
+  m_Layer: 0
+  m_Name: ObjectiveManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2477967604847116439
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6960543490580399795}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 14.893351, y: -0.7790874, z: -157.50443}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3671981865218598270}
+  - {fileID: 4174187970302306481}
+  - {fileID: 264342049556442339}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4999882038848579192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6960543490580399795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 848cee7bc7c61664eb5de4245d28af33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NoticeManager
+  debugLogging: 0
+--- !u!114 &8260267329785932196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6960543490580399795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d30f4205766a16444a17f2c75bfb05e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MasterObjectiveClass
+  noticeManager: {fileID: 4999882038848579192}
+  objectives:
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 1
+    objectiveText: "\"Cleanser's forces are already waiting. \nTime to scrap 'em
+      and push deeper.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 2
+    objectiveText: "\"They're trying to stall me. \nI'm not going to let them.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 1
+    objectiveID: 3
+    objectiveText: "\"They locked down the route. \nI need to get this container
+      out of the way.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 1
+    triggerOnWaveCompletion: 0
+    objectiveID: 4
+    objectiveText: '"Path is Clear.
+
+      Let''s keep on moving."'
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 1950461955991407257}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 5
+    objectiveText: "\"Another lockdown. Same as before. \nWipe them out, keep moving.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 9155082250247857179}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 6
+    objectiveText: '"Seems like they''re getting desperate.
+
+      Let''s push through."'
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 1
+    objectiveID: 7
+    objectiveText: "\"Area secured. \nTime to get that door open.\""
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 7791892080370139940}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
+    objectiveID: 8
+    objectiveText: '"Catch my breath. Check my gear.
+
+      Keep moving."'
+    objectiveType: 0
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    priority: 0
+  objectiveNotices:
+  - interactionToActivate: {fileID: 0}
+    disableInteraction: 0
+    interactionToDisable: {fileID: 0}
+    noticeID: 
+    noticeText: 
+    bottomText: 
+    fadeDuration: 0
+    displayDuration: 0
+    priority: 0
+--- !u!1 &8730528902559922108
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3671981865218598270}
+  - component: {fileID: 1950461955991407257}
+  m_Layer: 0
+  m_Name: ObjectiveTrigger1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3671981865218598270
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8730528902559922108}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 31.15, y: 4.03, z: 13.77}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2477967604847116439}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1950461955991407257
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8730528902559922108}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 18.33, y: 9.5, z: 4.26}
+  m_Center: {x: 0, y: 0, z: 0}
