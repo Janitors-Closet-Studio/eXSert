@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Progression;
+using Progression.Checkpoints;
 using Progression.Encounters;
 using Singletons;
 using UnityEngine;
@@ -42,6 +43,7 @@ public class NoticeData
 public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 {
     [SerializeField] private NoticeManager noticeManager;
+    private bool subscribedToCheckpointTriggers;
 
     [Header("Objectives")]
     [SerializeField] public List<ObjectiveData> objectives = new List<ObjectiveData>();
@@ -116,6 +118,10 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
             switch (triggerSource)
             {
+                case CheckpointBehavior:
+                    EnsureCheckpointTriggerSubscription();
+                    break;
+
                 case InteractionManager interaction:
                     interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
                     interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
@@ -141,6 +147,10 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             MonoBehaviour triggerSource = GetObjectiveTriggerSource(objective);
             switch (triggerSource)
             {
+                case CheckpointBehavior:
+                    RemoveCheckpointTriggerSubscription();
+                    break;
+
                 case InteractionManager interaction:
                     interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
                     break;
@@ -154,6 +164,25 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                     break;
             }
         }
+    }
+
+    private void EnsureCheckpointTriggerSubscription()
+    {
+        if (subscribedToCheckpointTriggers)
+            return;
+
+        CheckpointBehavior.OnCheckpointTriggered -= HandleCheckpointTriggered;
+        CheckpointBehavior.OnCheckpointTriggered += HandleCheckpointTriggered;
+        subscribedToCheckpointTriggers = true;
+    }
+
+    private void RemoveCheckpointTriggerSubscription()
+    {
+        if (!subscribedToCheckpointTriggers)
+            return;
+
+        CheckpointBehavior.OnCheckpointTriggered -= HandleCheckpointTriggered;
+        subscribedToCheckpointTriggers = false;
     }
 
     private void HandleInteractionTriggerStateChanged(InteractionManager interaction, bool isEnabled)
@@ -171,6 +200,11 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     private void HandleWaveStarted(Wave wave)
     {
         ShowObjectivesForTrigger(wave);
+    }
+
+    private void HandleCheckpointTriggered(CheckpointBehavior checkpoint)
+    {
+        ShowObjectivesForTrigger(checkpoint);
     }
 
     private void ShowObjectivesForTrigger(MonoBehaviour triggerSource)
