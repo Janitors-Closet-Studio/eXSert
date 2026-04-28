@@ -50,6 +50,8 @@ public class PlayerAttackManager : MonoBehaviour
     [Range(0f, 0.3f)] private float plungeToAttackBlendTime = 0.08f;
     [SerializeField, Tooltip("Cross-fade duration when the first single-target attack after a plunge starts. Can be longer than the AoE blend because ST animations are shorter and their cancel windows don't conflict with the blend.")]
     [Range(0f, 0.5f)] private float plungeToSingleTargetBlendTime = 0.25f;
+    [SerializeField, Tooltip("Cross-fade duration when a dash starts immediately after a plunge landing. Kept separate from the locomotion blend so it can be tuned independently.")]
+    [Range(0f, 1f)] private float plungeToDashBlendTime = 0.25f;
     [SerializeField, Tooltip("Minimum delay after a plunge resolves before an AoE (heavy grounded) attack can actually execute. Single-target attacks are unaffected. Input pressed during this window is buffered normally.")]
     [Range(0f, 0.5f)] private float plungeAoeUnlockDelay = 0.08f;
 
@@ -1450,6 +1452,18 @@ public class PlayerAttackManager : MonoBehaviour
 
         if (needsPlungeRecovery)
         {
+            // Guard against a spurious CancelWindowStart event fired by the AirDash animation
+            // while it is cross-fading into the Plunge state. If the animator is not yet on the
+            // Plunge state (e.g. the AirDash clip fires its own CancelWindowStart during the
+            // transition), we are not at the post-slam cancel point and should ignore this event.
+            // Without this guard, the recovery routine starts too early, runs its delay while
+            // the player is still airborne, and completes before landing — skipping both the
+            // plunge recovery delay and the combat-idle blend on touchdown.
+            string animState = animationController != null ? animationController.CurrentStateName : null;
+            bool plungeAnimIsActive = string.IsNullOrEmpty(animState) || animState == "Plunge";
+            if (!plungeAnimIsActive)
+                return;
+
             if (plungeRecoveryRoutine != null)
                 StopCoroutine(plungeRecoveryRoutine);
 
@@ -1531,7 +1545,7 @@ public class PlayerAttackManager : MonoBehaviour
                 animationController?.SetNextLocomotionBlendOverride(plungeToLocomotionBlendTime);
                 // Separate dash override — locomotion won't consume it, so it survives until
                 // the dash input lock clears and PlayDash actually fires.
-                animationController?.SetNextDashBlendOverride(plungeToLocomotionBlendTime);
+                animationController?.SetNextDashBlendOverride(plungeToDashBlendTime);
                 // Separate attack override — shorter than the locomotion blend so a buffered
                 // AoE attack (e.g. AY1) doesn't inherit the long locomotion crossfade time,
                 // which would cause its CancelWindowStart event to fire while most of the
