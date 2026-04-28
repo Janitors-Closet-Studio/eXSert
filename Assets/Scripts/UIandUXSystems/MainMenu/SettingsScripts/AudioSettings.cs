@@ -41,7 +41,7 @@ public class AudioSettings : MonoBehaviour
 
         if (HasSavedVolumes())
         {
-            CacheRawVolumesFromSources();
+            LoadRawVolumesFromPrefsOrDefaults();
         }
         else
         {
@@ -118,21 +118,17 @@ public class AudioSettings : MonoBehaviour
             || PlayerPrefs.HasKey("voiceVolume");
     }
 
-    // This method caches the raw volume levels from the audio sources, which are used for applying master volume scaling correctly.
-    private void CacheRawVolumesFromSources()
+    private void LoadRawVolumesFromPrefsOrDefaults()
     {
-        _masterVolumeRaw = SoundManager.Instance.masterSource.volume;
-        _musicVolumeRaw = GetRawVolume(SoundManager.Instance.musicSource.volume, _masterVolumeRaw);
-        _sfxVolumeRaw = GetRawVolume(SoundManager.Instance.sfxSource.volume, _masterVolumeRaw);
-        _voiceVolumeRaw = GetRawVolume(SoundManager.Instance.voiceSource.volume, _masterVolumeRaw);
-    }
+        _masterVolumeRaw = PlayerPrefs.GetFloat("masterVolume", defaultVolume);
+        _musicVolumeRaw = PlayerPrefs.GetFloat("musicVolume", defaultVolume);
+        _sfxVolumeRaw = PlayerPrefs.GetFloat("sfxVolume", defaultVolume);
+        _voiceVolumeRaw = PlayerPrefs.GetFloat("voiceVolume", defaultVolume);
 
-    private float GetRawVolume(float scaledVolume, float masterVolume)
-    {
-        if (masterVolume <= 0f)
-            return 0f;
-
-        return Mathf.Clamp01(scaledVolume / masterVolume);
+        _masterVolumeRaw = Mathf.Clamp01(_masterVolumeRaw);
+        _musicVolumeRaw = Mathf.Clamp01(_musicVolumeRaw);
+        _sfxVolumeRaw = Mathf.Clamp01(_sfxVolumeRaw);
+        _voiceVolumeRaw = Mathf.Clamp01(_voiceVolumeRaw);
     }
 
     private void ApplyScaledVolumes()
