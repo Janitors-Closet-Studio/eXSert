@@ -229,6 +229,8 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         if (!pauseOverlay.activeInHierarchy)
             StartCoroutine(fadeMenus.FadeMenu(pauseOverlay, fadeMenus.fadeDuration, true));
 
+        pauseMenuHolder.SetActive(true);
+
         if (SoundManager.Instance != null)
         {
             if (SoundManager.Instance.sfxSource != null)
@@ -258,6 +260,12 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         if (HasBlockingSubmenuActive())
         {
+            return;
+        }
+
+        if (currentActiveMenu == ActiveMenu.PauseMenu || currentActiveMenu == ActiveMenu.NavigationMenu)
+        {
+            ResumeGame();
             return;
         }
 
@@ -294,9 +302,34 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             CloseSettingsMenu();
             return;
+        }   
+
+        SyncActiveMenuToStackTop();
+
+        if (menuListManager == null || menuListManager.menusToManage == null)
+        {
+            Debug.LogWarning("[PauseManager] OnBack: menuListManager reference is missing. Falling back to resume if paused.");
+            if (IsPaused)
+                ResumeGame();
+            return;
         }
 
-        bool canGoBackOneLevel = menuListManager != null && menuListManager.CanGoBackOneLevel();
+        if (menuListManager.menusToManage.Count > 0 && menuListManager.menusToManage[0] == menuListManager.firstMenuToOpen)
+        {
+            Debug.Log("[PauseManager] OnBack: At root menu, treating Back as unpause");
+            ResumeGame();
+            return;
+        }
+
+        bool canGoBackOneLevel = menuListManager.CanGoBackOneLevel();
+
+        // If pause is active but the active-menu tracker drifted (e.g. protected root menu on top),
+        // treat Back as an unpause when there is no valid stack back target.
+        if (currentActiveMenu == ActiveMenu.None && IsPaused && !canGoBackOneLevel)
+        {
+            ResumeGame();
+            return;
+        }
 
         if (canGoBackOneLevel)
         {

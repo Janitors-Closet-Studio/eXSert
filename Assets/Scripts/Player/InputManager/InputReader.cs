@@ -651,6 +651,9 @@ public class InputReader : Singleton<InputReader>
         {
             MoveInput = Vector2.zero;
             LookInput = Vector2.zero;
+
+            if (gameplayInputBlockOwners.Count == 1)
+                FlushGameplayActionState();
         }
 
         return ownerId;
@@ -705,6 +708,48 @@ public class InputReader : Singleton<InputReader>
         return !IsGameplayInputBlocked
             && action != null
             && action.IsPressed();
+    }
+
+    private static void FlushGameplayActionState()
+    {
+        InputReader instance = Instance;
+        if (instance == null)
+            return;
+
+        // Briefly cycling gameplay actions clears held/queued action phases that can leak into cutscenes.
+        InputAction[] actionsToFlush =
+        {
+            instance.moveAction,
+            instance.jumpAction,
+            instance.lookAction,
+            instance.changeStanceAction,
+            instance.guardAction,
+            instance.lightAttackAction,
+            instance.heavyAttackAction,
+            instance.dashAction,
+            instance.interactAction,
+            instance.escapePuzzleAction,
+            instance.lockOnAction,
+            instance.leftTargetAction,
+            instance.rightTargetAction,
+            instance.toggleWalkAction
+        };
+
+        foreach (InputAction action in actionsToFlush)
+        {
+            if (action == null || !action.enabled)
+                continue;
+
+            try
+            {
+                action.Disable();
+                action.Enable();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[InputReader] Failed to flush action '{action.name}': {e.Message}");
+            }
+        }
     }
 
     private Vector2 ReadGameplayMoveValue()

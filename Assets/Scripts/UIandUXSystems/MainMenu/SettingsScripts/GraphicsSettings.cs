@@ -69,10 +69,6 @@ public class GraphicsSettings : MonoBehaviour
     [SerializeField] private TMP_Text cameraShakeText;
     private bool isCameraShake;
 
-    [Header("Motion Blur Settings")]
-    [SerializeField] private TMP_Text motionBlurText;
-    private bool isMotionBlur;
-
     [Space(20)]
 
     [SerializeField] private InputActionReference _applyAction;
@@ -93,9 +89,6 @@ public class GraphicsSettings : MonoBehaviour
 
         fpsLevel = PlayerPrefs.GetInt("masterFPS", 60);
         SetFPS(fpsLevel);
-
-        isMotionBlur = PlayerPrefs.GetInt("masterMotionBlur", 1) == 1;
-        SetMotionBlur(isMotionBlur);
 
         displayModeLevel = PlayerPrefs.GetInt("masterFullscreen", 0);
         SetDisplayMode(displayModeLevel);
@@ -296,12 +289,6 @@ public class GraphicsSettings : MonoBehaviour
         }
     }
 
-    public void SetMotionBlur(bool motionBlur)
-    {
-        isMotionBlur = motionBlur;
-        motionBlurText.text = motionBlur ? "On" : "Off";
-    }
-
     public void SetResolution(string resolution)
     {
         if (resolution == "1920x1080")
@@ -368,7 +355,6 @@ public class GraphicsSettings : MonoBehaviour
         PlayerPrefs.SetFloat("masterBrightness", brightnessLevel);
         PlayerPrefs.SetInt("masterFPS", fpsLevel);
         ApplyRuntimeFPSSetting(fpsLevel);
-        PlayerPrefs.SetInt("masterMotionBlur", isMotionBlur ? 1 : 0);
         PlayerPrefs.SetInt("masterFullscreen", displayModeLevel);
         PlayerPrefs.SetInt("masterCameraShake", isCameraShake ? 1 : 0);
         PlayerPrefs.SetInt("masterResolution", isResolution1920x1080 ? 0 : 1);
@@ -384,9 +370,6 @@ public class GraphicsSettings : MonoBehaviour
         ApplyRuntimeFPSSetting(60);
         fpsText.text = "60";
         fpsLevel = 60;
-
-        isMotionBlur = true;
-        motionBlurText.text = "On";
 
         isCameraShake = true;
         cameraShakeText.text = "On";

@@ -9,7 +9,7 @@ public class MenusWithFooters
 {
     public GameObject menuName;
     public string footerMessage;
-
+    public bool keepFooterVisible;
     public List <GameObject> activateOnMenuOpen;
 }
 
@@ -19,7 +19,7 @@ public class FooterManager : MonoBehaviour
     [SerializeField] private GameObject footerPanel;
     [SerializeField] private TMP_Text footerText;
     [SerializeField] private string defaultFooterMessage = "Explore Your Settings";
-    [SerializeField] private List<MenusWithFooters> menuFooters = new List<MenusWithFooters>();
+    [SerializeField] public List<MenusWithFooters> menuFooters = new List<MenusWithFooters>();
 
     [SerializeField] private bool isOnPause = false;
     private MenuListManager menuListManager;
@@ -28,6 +28,8 @@ public class FooterManager : MonoBehaviour
     private bool skipFadeForNextUpdate;
     private bool forceImmediateFooterUpdates;
     private bool suppressFooterVisibility;
+    private string lastMappedFooterMessage = string.Empty;
+    private bool lastMenuHadMappedFooter;
 
     public static Action<string> OnFooterTextUpdated;
 
@@ -209,6 +211,8 @@ public class FooterManager : MonoBehaviour
             SetActivateOnOpenObjects(null);
             OnFooterTextUpdated?.Invoke(string.Empty);
             DeactivateOtherActivateOnOpenObjects(null);
+            lastMappedFooterMessage = string.Empty;
+            lastMenuHadMappedFooter = false;
             return;
         }
 
@@ -221,8 +225,27 @@ public class FooterManager : MonoBehaviour
         SetActivateOnOpenObjects(activeMenuFooter);
         DeactivateOtherActivateOnOpenObjects(activeMenuFooter);
 
+        if (activeMenuFooter != null && activeMenuFooter.keepFooterVisible)
+        {
+            string inheritedFooterMessage = lastMenuHadMappedFooter
+                ? lastMappedFooterMessage
+                : defaultFooterMessage;
+
+            OnFooterTextUpdated?.Invoke(inheritedFooterMessage);
+            return;
+        }
+
         if (activeMenuFooter != null && !string.IsNullOrWhiteSpace(activeMenuFooter.footerMessage))
+        {
             footerMessage = activeMenuFooter.footerMessage;
+            lastMappedFooterMessage = footerMessage;
+            lastMenuHadMappedFooter = true;
+        }
+        else
+        {
+            lastMappedFooterMessage = string.Empty;
+            lastMenuHadMappedFooter = false;
+        }
 
         OnFooterTextUpdated?.Invoke(footerMessage);
     }

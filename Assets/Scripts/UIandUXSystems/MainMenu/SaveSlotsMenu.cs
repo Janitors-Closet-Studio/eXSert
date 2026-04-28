@@ -23,7 +23,7 @@ public class SaveSlotsMenu : MonoBehaviour
     [SerializeField] private Button playButton;
 
     [SerializeField] private Button loadButton;
-    private bool isInLoadMenu = false;
+    internal bool isInLoadMenu = false;
 
     [SerializeField] internal SaveSlots currentSaveSlotSelected = null;
 
@@ -99,6 +99,21 @@ public class SaveSlotsMenu : MonoBehaviour
         UpdateActTextForProfile(selectedProfileId);
 
         
+    }
+
+    public bool SelectedSlotHasData()
+    {
+        EnsureReferences();
+
+        if (currentSaveSlotSelected == null)
+            return false;
+
+        string selectedProfileId = currentSaveSlotSelected.GetProfileId();
+        if (string.IsNullOrWhiteSpace(selectedProfileId) || DataPersistenceManager.Instance == null)
+            return false;
+
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
+        return profilesGameData.TryGetValue(selectedProfileId, out GameData selectedProfileData) && selectedProfileData != null;
     }
 
     /// <summary>
