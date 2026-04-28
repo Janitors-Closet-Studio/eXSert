@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Timers;
+using UI.Loading;
 
 
 public class ActsManager : Singleton<ActsManager>
@@ -506,7 +507,8 @@ public class ActsManager : Singleton<ActsManager>
 
         // Unload other tracked gameplay scenes first so special transitions (like EngineCore)
         // do not stack over previously loaded scenes.
-        StartCoroutine(LoadActSceneFromCleanState(sceneAsset));
+        // Use CoroutineRunner so this flow survives unloading the scene that owns ActsManager.
+        CoroutineRunner.Run(LoadActSceneFromCleanState(sceneAsset));
 
         SceneAsset currentSceneAsset = SceneAsset.GetSceneAssetOfObject(this.gameObject);
         MasterObjectiveClass masterObjective = currentSceneAsset != null
@@ -554,6 +556,78 @@ public class ActsManager : Singleton<ActsManager>
         // Use the same startup flow as initial game load, but force-reload the selected scene
         // so collectibles, encounters, and scene-local runtime state reset every teleport.
         SceneLoader.LoadIntoGame(targetScene, newGame: false, forceReloadFirstScene: true);
+
+        // If transition stalls and target gameplay scene never appears,
+        // force-load it so acts teleport cannot strand the player on a black screen.
+        yield return EnsureActSceneLoadedOrRecover(targetScene);
+    }
+
+    private IEnumerator EnsureActSceneLoadedOrRecover(SceneAsset targetScene)
+    {
+        if (targetScene == null)
+            yield break;
+
+        const float timeoutSeconds = 8f;
+        float elapsed = 0f;
+
+        while (elapsed < timeoutSeconds)
+        {
+            Scene targetLoadedScene = SceneManager.GetSceneByName(targetScene.SceneName);
+            if (targetLoadedScene.IsValid() && targetLoadedScene.isLoaded)
+            {
+                yield return FinalizeActTeleportState("ActsManager.EnsureActSceneLoadedOrRecover.SuccessPath");
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        Debug.LogWarning($"[ActsManager] Act teleport recovery triggered for '{targetScene.SceneName}'. Target scene did not load in time.");
+
+        AsyncOperation fallbackLoadOperation = SceneManager.LoadSceneAsync(targetScene.SceneName, LoadSceneMode.Additive);
+        if (fallbackLoadOperation != null)
+            yield return fallbackLoadOperation;
+
+        yield return FinalizeActTeleportState("ActsManager.EnsureActSceneLoadedOrRecover.FallbackPath");
+
+        Player.SpawnPlayerAtCheckpoint();
+    }
+
+    private static IEnumerator FinalizeActTeleportState(string context)
+    {
+        const float loadingSettleTimeoutSeconds = 5f;
+        float elapsed = 0f;
+
+         if (PauseManager.Instance != null)
+            PauseManager.Instance.SetGameplayHUDVisible(true);
+
+        PlayerCanvasManager canvasManager = Object.FindFirstObjectByType<PlayerCanvasManager>(FindObjectsInactive.Include);
+        if (canvasManager != null)
+            canvasManager.SetPlayerCanvasVisible(true);
+
+        // Re-assert one frame later in case late scene-load callbacks toggle UI state.
+        yield return null;
+
+        if (PauseManager.Instance != null)
+            PauseManager.Instance.SetGameplayHUDVisible(true);
+
+        if (canvasManager != null)
+            canvasManager.SetPlayerCanvasVisible(true);
+
+        while (LoadingScreenController.IsLoading && elapsed < loadingSettleTimeoutSeconds)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        InputReader.ForceResetInputLocks(context);
+
+        if (InputReader.PlayerInput != null)
+            InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
+
+       
+
     }
 
 

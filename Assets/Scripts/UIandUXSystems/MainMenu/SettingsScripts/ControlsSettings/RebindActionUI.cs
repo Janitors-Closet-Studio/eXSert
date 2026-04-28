@@ -6,6 +6,7 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -366,6 +367,20 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
         {
             m_RebindOperation?.Cancel(); // Will null out m_RebindOperation.
 
+            // Block rebind if the player is using the wrong device for this binding's scheme.
+            string deviceMismatch = GetDeviceMismatchMessage(action.bindings[bindingIndex]);
+            if (deviceMismatch != null)
+            {
+                m_RebindOverlay?.SetActive(true);
+                if (m_RebindText != null)
+                    m_RebindText.text = deviceMismatch;
+                else if (m_BindingText != null)
+                    m_BindingText.text = deviceMismatch;
+                m_RebindStopEvent?.Invoke(this, null);
+                StartCoroutine(HideRebindOverlayAfterDelay(.5f));
+                return;
+            }
+
             var originalBinding = action.bindings[bindingIndex];
 
             void CleanUp()
@@ -403,15 +418,8 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                         
                         m_RebindStopEvent?.Invoke(this, operation);
 
-                        if (CheckDuplicateBindings(action, bindingIndex, allCompositeParts))
-                        {
-                            RestoreBinding(action, bindingIndex, originalBinding);
-                            UpdateBindingDisplay();
-                            action.Enable();
-                            CleanUp();
-                            return;
-                        }
-
+                        ReassignDuplicateBindingsToBlank(action, bindingIndex);
+                        RefreshAllBindingDisplays();
 
                         // Update display to show new binding
                         UpdateBindingDisplay();
@@ -468,6 +476,40 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
             m_RebindOperation.Start();
         }
 
+        private string GetDeviceMismatchMessage(InputBinding binding)
+        {
+            if (string.IsNullOrEmpty(binding.groups))
+                return null;
+
+            bool bindingIsKeyboard = binding.groups.IndexOf("Keyboard", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool bindingIsGamepad  = binding.groups.IndexOf("Gamepad",  StringComparison.OrdinalIgnoreCase) >= 0;
+
+            // Binding applies to both or neither scheme — no restriction.
+            if (bindingIsKeyboard == bindingIsGamepad)
+                return null;
+
+            var pi = InputReader.PlayerInput;
+            bool usingGamepad = pi != null
+                && !string.IsNullOrEmpty(pi.currentControlScheme)
+                && pi.currentControlScheme.IndexOf("Gamepad", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (bindingIsKeyboard && usingGamepad)
+                return "Use keyboard to edit controls";
+            if (bindingIsGamepad && !usingGamepad)
+                return "Use gamepad to edit controls";
+
+            return null;
+        }
+
+        private IEnumerator HideRebindOverlayAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (m_RebindOverlay != null)
+                m_RebindOverlay.SetActive(false);
+            // Restore whatever the binding text was showing before the message.
+            UpdateBindingDisplay();
+        }
+
         private static void RestoreBinding(InputAction action, int bindingIndex, InputBinding originalBinding)
         {
             if (string.IsNullOrEmpty(originalBinding.overridePath)
@@ -484,6 +526,66 @@ namespace UnityEngine.InputSystem.Samples.RebindUI
                 overrideInteractions = originalBinding.overrideInteractions,
                 overrideProcessors = originalBinding.overrideProcessors
             });
+        }
+
+        private static void ReassignDuplicateBindingsToBlank(InputAction action, int bindingIndex)
+        {
+            if (action == null || bindingIndex < 0 || bindingIndex >= action.bindings.Count)
+                return;
+
+            InputBinding newBinding = action.bindings[bindingIndex];
+            string newPath = newBinding.effectivePath;
+            if (string.IsNullOrEmpty(newPath))
+                return;
+
+            if (s_RebindActionUIs == null)
+                return;
+
+            // Iterate all UI rows - each knows its own runtime action and binding index,
+            // so this is guaranteed to cover every binding visible in the controls screen.
+            for (int ui = 0; ui < s_RebindActionUIs.Count; ui++)
+            {
+                var uiComponent = s_RebindActionUIs[ui];
+                if (uiComponent == null)
+                    continue;
+
+                if (!uiComponent.ResolveActionAndBinding(out var otherAction, out var otherBindingIndex))
+                    continue;
+
+                InputBinding otherBinding = otherAction.bindings[otherBindingIndex];
+
+                // Skip the binding we just rebound.
+                if (otherBinding.id == newBinding.id)
+                    continue;
+
+                string otherPath = otherBinding.effectivePath;
+                if (string.IsNullOrEmpty(otherPath))
+                    continue;
+
+                if (!string.Equals(otherPath, newPath, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Blank the conflicting binding so its slot is visually and functionally empty.
+                otherAction.ApplyBindingOverride(otherBindingIndex, new InputBinding
+                {
+                    overridePath = string.Empty,
+                    overrideInteractions = otherBinding.overrideInteractions,
+                    overrideProcessors = otherBinding.overrideProcessors
+                });
+            }
+        }
+
+        private static void RefreshAllBindingDisplays()
+        {
+            if (s_RebindActionUIs == null)
+                return;
+
+            for (int i = 0; i < s_RebindActionUIs.Count; i++)
+            {
+                RebindActionUI ui = s_RebindActionUIs[i];
+                if (ui != null)
+                    ui.UpdateBindingDisplay();
+            }
         }
 
         private bool CheckDuplicateBindings(InputAction action, int bindingIndex, bool allCompositeParts = false)

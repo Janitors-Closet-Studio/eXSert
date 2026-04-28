@@ -12,6 +12,8 @@ public class ResetDeviceBindings : MonoBehaviour
     public static bool controlsAreOpen = false;
 
     private const string BindingOverridesKey = "InputBindingOverrides";
+    private const string KeyboardSchemeName = "Keyboard&Mouse";
+    private const string GamepadSchemeName = "Gamepad";
 
     private System.Action<InputAction.CallbackContext> resetPerformedHandler;
 
@@ -59,11 +61,11 @@ public class ResetDeviceBindings : MonoBehaviour
     {
         if(schemeIndex == 0)
         {
-            _targetControlScheme = "Keyboard&Mouse";
+            _targetControlScheme = KeyboardSchemeName;
         }
         else if(schemeIndex == 1)
         {
-            _targetControlScheme = "Gamepad";
+            _targetControlScheme = GamepadSchemeName;
         }
     }
 
@@ -73,11 +75,18 @@ public class ResetDeviceBindings : MonoBehaviour
         if (!targetControlSchemeObject.activeInHierarchy)
             return;
 
-        ResetBindingsInAsset(_inputActions);
+        string targetScheme = ResolveTargetControlScheme();
+        if (string.IsNullOrEmpty(targetScheme))
+        {
+            Debug.LogWarning("Reset bindings aborted: unable to resolve target control scheme.");
+            return;
+        }
+
+        ResetBindingsInAsset(_inputActions, targetScheme);
 
         var runtimeActions = InputReader.PlayerInput != null ? InputReader.PlayerInput.actions : null;
         if (runtimeActions != null && runtimeActions != _inputActions)
-            ResetBindingsInAsset(runtimeActions);
+            ResetBindingsInAsset(runtimeActions, targetScheme);
 
         var sourceForSave = runtimeActions != null ? runtimeActions : _inputActions;
         if (sourceForSave != null)
@@ -92,12 +101,46 @@ public class ResetDeviceBindings : MonoBehaviour
         if (rebindSaveLoad != null)
             rebindSaveLoad.SaveRebindsManually();
 
-        Debug.Log($"Reset {_targetControlScheme} bindings to default.");
+        _targetControlScheme = targetScheme;
+        Debug.Log($"Reset {targetScheme} bindings to default.");
     }
 
-    private void ResetBindingsInAsset(InputActionAsset asset)
+    private string ResolveTargetControlScheme()
     {
-        if (asset == null || string.IsNullOrEmpty(_targetControlScheme))
+        if (string.Equals(_targetControlScheme, KeyboardSchemeName, System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_targetControlScheme, GamepadSchemeName, System.StringComparison.OrdinalIgnoreCase))
+        {
+            return _targetControlScheme;
+        }
+
+        var runtimeInput = InputReader.PlayerInput;
+        string currentScheme = runtimeInput != null ? runtimeInput.currentControlScheme : string.Empty;
+        if (!string.IsNullOrEmpty(currentScheme))
+        {
+            if (currentScheme.IndexOf("Keyboard", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return KeyboardSchemeName;
+            if (currentScheme.IndexOf("Gamepad", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return GamepadSchemeName;
+        }
+
+        if (targetControlSchemeObject != null)
+        {
+            string objectName = targetControlSchemeObject.name;
+            if (!string.IsNullOrEmpty(objectName))
+            {
+                if (objectName.IndexOf("Keyboard", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    return KeyboardSchemeName;
+                if (objectName.IndexOf("Gamepad", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    return GamepadSchemeName;
+            }
+        }
+
+        return null;
+    }
+
+    private void ResetBindingsInAsset(InputActionAsset asset, string targetScheme)
+    {
+        if (asset == null || string.IsNullOrEmpty(targetScheme))
             return;
 
         foreach (InputActionMap map in asset.actionMaps)
@@ -106,7 +149,7 @@ public class ResetDeviceBindings : MonoBehaviour
             {
                 for (int i = 0; i < action.bindings.Count; i++)
                 {
-                    if (!BindingMatchesTargetScheme(action.bindings[i]))
+                    if (!BindingMatchesTargetScheme(action.bindings[i], targetScheme))
                         continue;
 
                     action.RemoveBindingOverride(i);
@@ -115,22 +158,29 @@ public class ResetDeviceBindings : MonoBehaviour
         }
     }
 
-    private bool BindingMatchesTargetScheme(InputBinding binding)
+    private static bool BindingMatchesTargetScheme(InputBinding binding, string targetScheme)
     {
-        if (!string.IsNullOrEmpty(binding.groups) && binding.groups.Contains(_targetControlScheme))
-            return true;
+        if (!string.IsNullOrEmpty(binding.groups))
+        {
+            string[] groups = binding.groups.Split(';');
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (string.Equals(groups[i].Trim(), targetScheme, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
 
-        string path = binding.path;
+        string path = !string.IsNullOrEmpty(binding.path) ? binding.path : binding.effectivePath;
         if (string.IsNullOrEmpty(path))
             return false;
 
-        if (string.Equals(_targetControlScheme, "Keyboard&Mouse", System.StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(targetScheme, KeyboardSchemeName, System.StringComparison.OrdinalIgnoreCase))
         {
             return path.StartsWith("<Keyboard>", System.StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith("<Mouse>", System.StringComparison.OrdinalIgnoreCase);
         }
 
-        if (string.Equals(_targetControlScheme, "Gamepad", System.StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(targetScheme, GamepadSchemeName, System.StringComparison.OrdinalIgnoreCase))
         {
             return path.StartsWith("<Gamepad>", System.StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith("<XInputController>", System.StringComparison.OrdinalIgnoreCase)

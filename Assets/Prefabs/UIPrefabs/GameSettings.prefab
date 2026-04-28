@@ -705,13 +705,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GraphicsSettings
   graphicsSettingsContainer: {fileID: 8173967944021420439}
   brightnessSlider: {fileID: 8805785396339515538}
-  defaultBrightness: 0.5
+  defaultBrightness: 1
   brightnessVolumeProfile: {fileID: 11400000, guid: 5609b36b3bcc4824eac0f43eeed59779, type: 2}
-  minBrightnessGamma: 0
-  maxBrightnessGamma: 1
+  minBrightnessGamma: 0.5
+  maxBrightnessGamma: 1.5
   neutralBrightnessGamma: 1
-  minBrightnessSliderValue: 0
-  maxBrightnessSliderValue: 1
+  minBrightnessSliderValue: 0.5
+  maxBrightnessSliderValue: 1.5
   displayModeText: {fileID: 316751845660639954}
   frameRate: 60
   fpsText: {fileID: 3597753128188470430}
@@ -2895,7 +2895,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8296120800612894311, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8397583391704282975, guid: d55bd6e960c29a84f93f0333f2747984, type: 3}
       propertyPath: m_Value
@@ -6348,19 +6348,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1097064591989255038, guid: ac63f3eadc46b984c8c75442ba4ac468, type: 3}
       propertyPath: m_Value
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1097064591989255038, guid: ac63f3eadc46b984c8c75442ba4ac468, type: 3}
       propertyPath: m_MaxValue
-      value: 1
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 1097064591989255038, guid: ac63f3eadc46b984c8c75442ba4ac468, type: 3}
       propertyPath: m_MinValue
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 1097064591989255038, guid: ac63f3eadc46b984c8c75442ba4ac468, type: 3}
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1097064591989255038, guid: ac63f3eadc46b984c8c75442ba4ac468, type: 3}
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
