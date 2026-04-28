@@ -1415,6 +1415,22 @@ public class PlayerAttackManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Called the moment the player lands from a plunge. Resets the earliest-end-time gate so
+    /// that the fall duration (during which the animator was frozen) is not counted against the
+    /// post-slam cancel window, preventing an unintended freeze frame after landing.
+    /// </summary>
+    public void OnPlungeLanded()
+    {
+        if (currentAttack == null || currentAttack.attackType != AttackType.HeavyAerial)
+            return;
+
+        // Collapse the remaining deferred wait to "now" so CanCompleteCancelWindowNow passes
+        // as soon as HandleAnimationCancelWindow fires after the slam plays.
+        currentAttackEarliestEndTime = Time.time;
+        StopDeferredCancelRoutine();
+    }
+
     private IEnumerator PlungeRecoveryRoutine(float delay)
     {
         yield return new WaitForSeconds(Mathf.Max(0f, delay));

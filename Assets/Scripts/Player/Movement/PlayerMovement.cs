@@ -1957,6 +1957,9 @@ public class PlayerMovement : MonoBehaviour
         if (Time.time < nextDashAllowedTime)
             return;
 
+        if (isPlunging || plungeLandingPending || waitingForPlungeRecoveryUnlock)
+            return;
+
         if (CombatManager.isGuarding)
             return;
 
@@ -3095,6 +3098,8 @@ public class PlayerMovement : MonoBehaviour
             if (landedFromPlunge)
             {
                 Debug.Log($"[Plunge] Landing detected | plungeLandingPending={plungeLandingPending} | isPlunging={isPlunging} | wasGrounded={wasGrounded} | grounded={grounded} | animWaiting={animationController?.IsWaitingForPlungeLand} | frame={Time.frameCount}");
+                // Reset the attack earliest-end-time so the fall duration isn't counted against the post-slam cancel window.
+                attackManager?.OnPlungeLanded();
                 // Resume the plunge animation from the freeze point set by the PlungeWaitForLanding event.
                 animationController?.ResumePlungeFromLanding();
             }
