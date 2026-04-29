@@ -120,10 +120,7 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
             return;
         }
 
-        playerControllerWasEnabled = playerController.enabled;
-        if (playerControllerWasEnabled)
-            playerController.enabled = false;
-
+        playerController.enabled = false;
         if (!InputReader.inputBusy)
         {
             InputReader.inputBusy = true;
@@ -136,7 +133,7 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
         if (playerController != null)
         {
             EnsurePlayerReturnsToPlayerScene();
-            playerController.enabled = playerControllerWasEnabled;
+            playerController.enabled = true;
         }
 
         if (inputBusyOwned)
@@ -152,6 +149,8 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
         {
             return;
         }
+
+        playerController.enabled = false; // Disable CharacterController to prevent physics issues during rotation
 
         LockPlayerForRotation();
         targetLocalRotation = nextTargetRotation;
