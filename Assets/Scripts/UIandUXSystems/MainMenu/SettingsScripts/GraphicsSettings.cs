@@ -74,6 +74,10 @@ public class GraphicsSettings : MonoBehaviour
     [SerializeField] private TMP_Text cameraShakeText;
     private bool isCameraShake;
 
+    [Header("Motion Blur Settings")]
+    [SerializeField] private TMP_Text motionBlurText;
+    private bool isMotionBlur;
+
     [Space(20)]
 
     [SerializeField] private InputActionReference _applyAction;
@@ -175,6 +179,26 @@ public class GraphicsSettings : MonoBehaviour
         );
     }
 
+    public void SetMotionBlur(bool motionBlur)
+    {
+        isMotionBlur = motionBlur;
+        brightnessVolumeProfile.TryGet(out MotionBlur motionBlurComponent);
+
+        if (motionBlur)
+        {
+            motionBlurText.text = "On";
+            
+            motionBlurComponent.active = true;
+            SettingsManager.Instance.motionBlur = true;
+            
+            return;
+        }
+
+        motionBlurText.text = "Off";
+        motionBlurComponent.active = false;
+        SettingsManager.Instance.motionBlur = false;
+    }
+
     public void SetQuality(int quality)
     {
         qualityLevel = quality;
@@ -195,7 +219,7 @@ public class GraphicsSettings : MonoBehaviour
 
         if (quality == 2)
         {
-             QualitySettings.SetQualityLevel(2);
+            QualitySettings.SetQualityLevel(2);
             qualityText.text = "High";
             return;
         }
@@ -303,13 +327,13 @@ public class GraphicsSettings : MonoBehaviour
         if (displayMode == 0)
         {
             Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
-            displayModeText.text = "Fullscreen";
+            displayModeText.text = "FULLSCREEN";
             isFullscreen = true;
         }
         else if (displayMode == 1)
         {
             Screen.fullScreenMode = FullScreenMode.Windowed;
-            displayModeText.text = "Windowed";
+            displayModeText.text = "WINDOWED";
             isFullscreen = false;
         }
         else if (displayMode == 2)
@@ -319,7 +343,7 @@ public class GraphicsSettings : MonoBehaviour
                 Screen.currentResolution.height,
                 FullScreenMode.FullScreenWindow
             );
-            displayModeText.text = "Borderless";
+            displayModeText.text = "BORDERLESS";
             isFullscreen = false;
         }
     }
@@ -345,12 +369,12 @@ public class GraphicsSettings : MonoBehaviour
 
         if (cameraShake)
         {
-            cameraShakeText.text = "On";
+            cameraShakeText.text = "ON";
             SettingsManager.Instance.cameraShake = true;
             return;
         }
 
-        cameraShakeText.text = "Off";
+        cameraShakeText.text = "OFF";
         SettingsManager.Instance.cameraShake = false;
     }
 
@@ -394,6 +418,7 @@ public class GraphicsSettings : MonoBehaviour
         PlayerPrefs.SetInt("masterFullscreen", displayModeLevel);
         PlayerPrefs.SetInt("masterCameraShake", isCameraShake ? 1 : 0);
         PlayerPrefs.SetInt("masterResolution", isResolution1920x1080 ? 0 : 1);
+        PlayerPrefs.SetInt("masterMotionBlur", isMotionBlur ? 1 : 0);
         PlayerPrefs.Save();
     }
 
@@ -408,18 +433,23 @@ public class GraphicsSettings : MonoBehaviour
         fpsLevel = 60;
 
         isCameraShake = true;
-        cameraShakeText.text = "On";
+        cameraShakeText.text = "ON";
 
         isResolution1920x1080 = true;
         resolutionText.text = "1920 x 1080";
 
         SetDisplayMode(0);
-        displayModeText.text = "Fullscreen";
+        displayModeText.text = "FULLSCREEN";
         displayModeLevel = 0;
 
         SetQuality(1);
         qualityText.text = "Medium";
         qualityLevel = 1;
+
+        SetMotionBlur(false);
+        SettingsManager.Instance.motionBlur = false;
+        motionBlurText.text = "OFF";
+
         GraphicsApply();
     }
 }

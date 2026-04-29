@@ -17,6 +17,7 @@ public class SettingsManager : Singleton<SettingsManager>
     [SerializeField] internal bool comboProgression;
     [SerializeField] internal float rumbleStrength;
     [SerializeField] internal bool cameraShake = true;
+    [SerializeField] internal bool motionBlur = true;
 
     private GameObject player;
     private List<CinemachineInputAxisController> playerCameraController = new List<CinemachineInputAxisController>();
@@ -64,6 +65,7 @@ public class SettingsManager : Singleton<SettingsManager>
         comboProgression = PlayerPrefs.GetInt("masterCombo", 1) == 1;
         rumbleStrength = PlayerPrefs.GetFloat("masterVibrateStrength", defaultRumble);
         cameraShake = PlayerPrefs.GetInt("masterCameraShake", 1) == 1;
+        motionBlur = PlayerPrefs.GetInt("masterMotionBlur", 1) == 1;
         pendingCameraInputApply = true;
 
         // Apply settings on start
