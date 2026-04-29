@@ -80,13 +80,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorInteractions
   _showHitbox: 1
+  debugLogging: 0
+  blockPromptWhenAttackingOrDashing: 0
+  interactable: 1
   _interactAnimation: {fileID: 0}
+  _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
   _interactionPrompt: Press to Open
+  displayName: Door Opened
+  uiDisplayDuration: 4
+  uiFadeDuration: 2
+  bottomFlavorText: 
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.5
+  _rumbleHighFrequency: 0.5
+  _rumbleDuration: 0.5
   requiredItemID: 
+  requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
     m_PersistentCalls:
@@ -94,9 +107,26 @@ MonoBehaviour:
   doorHandlers:
   - {fileID: 98182257937175027}
   onlyInteractableOnce: 0
-  usePuzzleCameraOnInteraction: 0
-  puzzleCinemachineCamera: {fileID: 0}
-  puzzleCameraDurationSeconds: 2
+  requireUnlockedDoorsWhenRequiredItemIsEmpty: 0
+  useCameraTransition: 0
+  useSpecialTransition: 0
+  transitionCinemachineCamera: {fileID: 0}
+  cameraTransitionDurationSeconds: 3
+  specialTransitionFailsafeSeconds: 7
+  specialTransitionPanDurationSeconds: 3
+  specialTransitionYawDirection: 0
+  specialTransitionFadeDurationSeconds: 0.35
+  specialTransitionRevealDurationSeconds: 0.5
+  specialTransitionBlackHoldSeconds: 0.08
+  specialTransitionReturnBlackHoldSeconds: 0.2
+  useSpecialTransitionRenderer: 0
+  specialTransitionRendererFeatureName: FullScreenPassRendererFeature
+  specialTransitionOutputCamera: {fileID: 0}
+  specialTransitionOutputSceneName: PlayerScene
+  specialTransitionOutputCameraName: MainCamera
+  specialTransitionOutputCameraTag: PlayerCamera
+  specialTransitionStartPose: {fileID: 0}
+  specialTransitionEndPose: {fileID: 0}
 --- !u!65 &5925842294498272219
 BoxCollider:
   m_ObjectHideFlags: 0

@@ -31706,6 +31706,14 @@ PrefabInstance:
       value: CrewQuarterDoor
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: _interactionSFX
+      value: 
+      objectReference: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: _interactionPrompt
       value: Press to Interact
       objectReference: {fileID: 0}
@@ -50175,6 +50183,10 @@ PrefabInstance:
       value: secondcrane
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: requiredItemDisplayName
       value: North Crane Computer Key
       objectReference: {fileID: 0}
@@ -56125,7 +56137,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: bottomFlavorText
-      value: 
+      value: Press Pause to View
       objectReference: {fileID: 0}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalScale.y
@@ -59084,11 +59096,11 @@ MonoBehaviour:
   _interactBusyFallbackDuration: 0.6
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 995fbf4aca020534c8a6a2fe2fb99e9c, type: 3}
-  _interactionPrompt: 
-  displayName: 
+  _interactionPrompt: Press to Interact
+  displayName: Door Opened
   uiDisplayDuration: 4
   uiFadeDuration: 2
-  bottomFlavorText: Press Pause to View
+  bottomFlavorText: 
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
@@ -64845,6 +64857,10 @@ PrefabInstance:
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: requiredItemID
       value: firstcrane
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: bottomFlavorText
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: requiredItemDisplayName

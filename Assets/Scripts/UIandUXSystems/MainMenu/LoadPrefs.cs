@@ -18,6 +18,7 @@ public class LoadPrefs : MonoBehaviour
     [SerializeField] Slider voiceVolumeSlider = null;
 
     [Header("Graphics Settings")]
+    [SerializeField] private TMP_Text qualityText = null;
     [SerializeField] private TMP_Text displayModeText = null;
     [SerializeField] private Slider brightnessSlider = null;
     [SerializeField] private TMP_Text resolutionTextValue = null;
@@ -185,6 +186,37 @@ public class LoadPrefs : MonoBehaviour
 
     public void LoadGraphicsSettings()
     {
+        if (PlayerPrefs.HasKey("masterQuality"))
+        {
+            int qualityInt = PlayerPrefs.GetInt("masterQuality");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterQuality: {qualityInt}");
+            if (qualityInt == 0)
+            {
+                if (graphics != null)
+                {
+                    graphics.SetQuality(0); // Low
+                }
+            }
+            else if (qualityInt == 1)
+            {
+                if (graphics != null)
+                {
+                    graphics.SetQuality(1); // Medium
+                }
+            }
+            else
+            {
+                if (graphics != null)
+                {
+                    graphics.SetQuality(2); // High
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[LoadPrefs] masterQuality key not found in PlayerPrefs.");
+        }
+
         if (PlayerPrefs.HasKey("masterFullscreen"))
         {
             int fullscreenInt = PlayerPrefs.GetInt("masterFullscreen");

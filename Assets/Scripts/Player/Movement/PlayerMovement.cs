@@ -27,6 +27,7 @@ using UnityEngine.InputSystem;
 using Utilities.Combat;
 using Utilities.Combat.Attacks;
 using EnemyBehavior.Boss;
+using UI.Loading;
 #pragma warning disable CS0414
 
 public class PlayerMovement : MonoBehaviour
@@ -980,6 +981,12 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        if (LoadingScreenController.IsLoading)
+            return;
+
+        if (CutsceneManager.IsCutscenePlaying)
+            return;
+
         // At timeScale=0 (paused) Update still runs with deltaTime=0. Skip all game-logic
         // so failsafes cannot queue CrossFade transitions or mutate state while paused.
         if (Mathf.Approximately(Time.timeScale, 0f))

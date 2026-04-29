@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using UI.Loading;
 using UnityEngine;
 
 using Utilities.Combat;
@@ -1690,6 +1691,12 @@ public class PlayerAttackManager : MonoBehaviour
             return true;
 
         if (InputReader.IsGameplayInputBlocked)
+            return true;
+
+        if (LoadingScreenController.IsLoading)
+            return true;
+
+        if (CutsceneManager.IsCutscenePlaying)
             return true;
 
         if (CombatManager.isGuarding || CombatManager.isParrying)

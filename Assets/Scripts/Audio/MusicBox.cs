@@ -20,6 +20,7 @@ public class MusicBox : MonoBehaviour
 {
     // Track the currently active MusicBox
     private static MusicBox currentActiveBox;
+    public static MusicBox CurrentActiveBox => currentActiveBox;
     [SerializeField] private AudioClip levelMusic;
     [SerializeField] private AudioClip ambienceClip;
     private AudioSource musicSource;
@@ -40,6 +41,7 @@ public class MusicBox : MonoBehaviour
     private Rigidbody rb;
     private Coroutine fadeOutMusicRoutine;
     private Coroutine fadeOutAmbienceRoutine;
+    private Coroutine autoActivateRoutine;
     private bool canPlay = false;
 
     private SoundManager cachedSoundManager;
@@ -60,6 +62,15 @@ public class MusicBox : MonoBehaviour
     }
 #pragma warning restore CS0414
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+        CutsceneManager.CutsceneFinished -= HandleCutsceneFinished;
+        CutsceneManager.CutsceneFinished += HandleCutsceneFinished;
+        StartAutoActivateProbe();
+    }
+
     public void UpdateCachedVolumes()
     {
         if (cachedSoundManager == null)
@@ -77,12 +88,181 @@ public class MusicBox : MonoBehaviour
 
     private bool IsSceneLoaded(string sceneToCheck)
     {
+        if (string.IsNullOrWhiteSpace(sceneToCheck))
+            return false;
+
         for (int i = 0; i < SceneManager.sceneCount; i++)
         {
             if (SceneManager.GetSceneAt(i).name == sceneToCheck)
                 return true;
         }
         return false;
+    }
+
+    private string ResolveTargetSceneName()
+    {
+        if (!string.IsNullOrWhiteSpace(sceneName))
+            return sceneName;
+
+        Scene ownScene = gameObject.scene;
+        return ownScene.IsValid() ? ownScene.name : string.Empty;
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        string targetScene = ResolveTargetSceneName();
+        if (string.Equals(scene.name, targetScene, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(scene.name, "PlayerScene", StringComparison.OrdinalIgnoreCase))
+        {
+            StartAutoActivateProbe();
+        }
+    }
+
+    private void HandleCutsceneFinished()
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        StartAutoActivateProbe();
+    }
+
+    private void StartAutoActivateProbe()
+    {
+        if (autoActivateRoutine != null)
+            StopCoroutine(autoActivateRoutine);
+
+        autoActivateRoutine = StartCoroutine(AutoActivateIfPlayerStartsInside());
+    }
+
+    private IEnumerator AutoActivateIfPlayerStartsInside()
+    {
+        const float maxProbeDurationSeconds = 8f;
+        float elapsed = 0f;
+
+        while (elapsed < maxProbeDurationSeconds)
+        {
+            if (TryAutoActivateFromPlayerPosition())
+            {
+                autoActivateRoutine = null;
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        autoActivateRoutine = null;
+    }
+
+    private bool TryAutoActivateFromPlayerPosition()
+    {
+        if (CutsceneManager.IsCutscenePlaying)
+            return false;
+
+        string targetScene = ResolveTargetSceneName();
+        if (!IsSceneLoaded(targetScene))
+            return false;
+
+        if (boxCollider == null)
+            boxCollider = GetComponent<BoxCollider>();
+
+        if (boxCollider == null)
+            return false;
+
+        if (!IsAnyPlayerInsideMusicBox())
+            return false;
+
+        if (levelMusic != null && !TryBindMusicSource())
+            return false;
+
+        if (ambienceClip != null)
+        {
+            if (cachedSoundManager == null)
+                cachedSoundManager = SoundManager.Instance;
+
+            if (cachedSoundManager == null || cachedSoundManager.ambienceSource == null)
+                return false;
+
+            ambienceSource = cachedSoundManager.ambienceSource;
+        }
+
+        ActivateMusicBox();
+        return true;
+    }
+
+    private bool IsAnyPlayerInsideMusicBox()
+    {
+        GameObject[] taggedPlayers = GameObject.FindGameObjectsWithTag("Player");
+        for (int i = 0; i < taggedPlayers.Length; i++)
+        {
+            GameObject candidate = taggedPlayers[i];
+            if (candidate == null || !candidate.activeInHierarchy)
+                continue;
+
+            if (boxCollider.bounds.Contains(candidate.transform.position))
+                return true;
+
+            Collider[] colliders = candidate.GetComponentsInChildren<Collider>(true);
+            for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++)
+            {
+                Collider candidateCollider = colliders[colliderIndex];
+                if (candidateCollider == null || !candidateCollider.enabled)
+                    continue;
+
+                if (boxCollider.bounds.Intersects(candidateCollider.bounds))
+                    return true;
+            }
+        }
+
+        if (Player.TryGetPlayerObject(out GameObject playerObject) && playerObject != null)
+        {
+            if (boxCollider.bounds.Contains(playerObject.transform.position))
+                return true;
+
+            Collider[] colliders = playerObject.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider candidateCollider = colliders[i];
+                if (candidateCollider == null || !candidateCollider.enabled)
+                    continue;
+
+                if (boxCollider.bounds.Intersects(candidateCollider.bounds))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void StopAudioTransitionCoroutines()
+    {
+        if (fadeOutMusicRoutine != null)
+        {
+            StopCoroutine(fadeOutMusicRoutine);
+            fadeOutMusicRoutine = null;
+        }
+
+        if (fadeOutAmbienceRoutine != null)
+        {
+            StopCoroutine(fadeOutAmbienceRoutine);
+            fadeOutAmbienceRoutine = null;
+        }
+    }
+
+    private void ActivateMusicBox()
+    {
+        if (currentActiveBox != null && currentActiveBox != this)
+        {
+            currentActiveBox.StopAudioTransitionCoroutines();
+        }
+
+        currentActiveBox = this;
+        StopAudioTransitionCoroutines();
+        PlayLevelMusic();
+        PlayAmbience();
     }
 
     private void PlayLevelMusic()
@@ -248,17 +428,9 @@ public class MusicBox : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && IsSceneLoaded(sceneName) && CutsceneManager.IsCutscenePlaying == false)
+        if (other.CompareTag("Player") && IsSceneLoaded(ResolveTargetSceneName()) && CutsceneManager.IsCutscenePlaying == false)
         {
-            // If another box was active, stop its fade coroutines
-            if (currentActiveBox != null && currentActiveBox != this)
-            {
-                currentActiveBox.StopAllCoroutines();
-            }
-            currentActiveBox = this;
-            StopAllCoroutines();
-            PlayLevelMusic();
-            PlayAmbience();
+            ActivateMusicBox();
         }
     }
 
@@ -284,6 +456,27 @@ public class MusicBox : MonoBehaviour
             fadeOutAmbienceRoutine = StartCoroutine(FadeOutAmbience(2f));
         }
 
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        CutsceneManager.CutsceneFinished -= HandleCutsceneFinished;
+
+        if (autoActivateRoutine != null)
+        {
+            StopCoroutine(autoActivateRoutine);
+            autoActivateRoutine = null;
+        }
+
+        if (currentActiveBox == this)
+            currentActiveBox = null;
+    }
+
+    private void OnDestroy()
+    {
+        if (currentActiveBox == this)
+            currentActiveBox = null;
     }
 
     private void OnValidate()

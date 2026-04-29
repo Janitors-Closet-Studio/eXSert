@@ -111,7 +111,10 @@ public class ActsManager : Singleton<ActsManager>
         UpdateActButtonsForProfile(GetCurrentProfileId());
 
         if (IsActsPanelOpen())
+        {
+            ShowUnlockedPreviewForCurrentProfile();
             RestoreActPreviewFromCurrentSelection();
+        }
         else
             RefreshMapLocationState();
     }
@@ -325,7 +328,7 @@ public class ActsManager : Singleton<ActsManager>
         if (!IsActsPanelOpen())
             return;
 
-        HideAllMapLocationImages();
+        ShowUnlockedPreviewForCurrentProfile();
 
         if (actsButton == null)
             return;
@@ -368,7 +371,24 @@ public class ActsManager : Singleton<ActsManager>
             }
         }
 
+        ShowUnlockedPreviewForCurrentProfile();
+    }
+
+    private void ShowUnlockedPreviewForCurrentProfile()
+    {
         HideAllMapLocationImages();
+
+        int highestUnlockedAct = Mathf.Max(0, GetHighestUnlockedActForProfile(GetCurrentProfileId()));
+        HashSet<GameObject> unlockedRoots = GetPreviewRootsForAct(highestUnlockedAct);
+
+        foreach (GameObject previewRoot in unlockedRoots)
+        {
+            if (previewRoot == null)
+                continue;
+
+            previewRoot.SetActive(true);
+            ResetLocationVisual(previewRoot);
+        }
     }
 
     private static bool TryGetPreviewActButton(GameObject candidate, out ActButton actButton)

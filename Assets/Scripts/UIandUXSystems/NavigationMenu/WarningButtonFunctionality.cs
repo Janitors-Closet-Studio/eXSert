@@ -246,50 +246,34 @@ public class WarningButtonFunctionality : MonoBehaviour
 
     private MusicBox FindSceneMusicBox()
     {
-        MusicBox musicBox;
-        string foundSceneName;
+        MusicBox activeBox = MusicBox.CurrentActiveBox;
+        if (activeBox != null && activeBox.gameObject.scene.IsValid() && activeBox.gameObject.scene.isLoaded)
+            return activeBox;
 
-        List<string> additiveScenes =  new List<string>()
+        for (int i = 0; i < SceneManager.sceneCount; i++)
         {
-            "Elevator",
-            "CargoBay",
-            "Hangar",
-            "CrewQuarters",
-            "Boss"
-        };
-        List<string> loadedAdditiveScenes = new List<string>();
+            Scene loadedScene = SceneManager.GetSceneAt(i);
+            if (!loadedScene.IsValid() || !loadedScene.isLoaded)
+                continue;
 
-        foreach (var sceneName in additiveScenes)
-        {
-            Scene scene = SceneManager.GetSceneByName(sceneName);
-            if (scene.isLoaded)
+            if (loadedScene.name == "PlayerScene" || loadedScene.name == "PostProcessScene" || loadedScene.name == "LoadingScene" || loadedScene.name == "MainMenu")
+                continue;
+
+            GameObject[] roots = loadedScene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
             {
-                loadedAdditiveScenes.Add(sceneName);
+                MusicBox[] musicBoxes = roots[rootIndex].GetComponentsInChildren<MusicBox>(true);
+                if (musicBoxes != null && musicBoxes.Length > 0)
+                    return musicBoxes[0];
             }
         }
 
-        if(loadedAdditiveScenes.Count == 0)
-        {
-            Debug.LogWarning("[WarningButtonFunctionality] No additive scenes loaded. Cannot find MusicBox.");
-            return null;
-        } 
-        else
-        {
-            foundSceneName = loadedAdditiveScenes[0];
-        }
+        MusicBox[] anyMusicBoxes = FindObjectsByType<MusicBox>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (anyMusicBoxes != null && anyMusicBoxes.Length > 0)
+            return anyMusicBoxes[0];
 
-        string musicBoxName = foundSceneName + "MusicBox";
-        GameObject musicBoxObj = GameObject.Find(musicBoxName);
-        if (musicBoxObj == null)
-        {
-            Debug.LogWarning($"[WarningButtonFunctionality] MusicBox object '{musicBoxName}' not found in scene. Cannot fade music.");
-            return null;
-        }
-        musicBox = musicBoxObj.GetComponent<MusicBox>();
-        
-
-        return musicBox;
-
+        Debug.LogWarning("[WarningButtonFunctionality] No MusicBox found in loaded scenes. Cannot fade music.");
+        return null;
     }
 
     private void FadeOutLevelMusic()
@@ -299,8 +283,6 @@ public class WarningButtonFunctionality : MonoBehaviour
         if (musicBox != null)
         {
             Debug.Log("[WarningButtonFunctionality] FadeOutLevelMusic - MusicBox found, starting fade coroutines.");
-            StopCoroutine(musicBox.FadeOutMusic(1f));
-            StopCoroutine(musicBox.FadeOutAmbience(1f));
             Debug.Log("[WarningButtonFunctionality] Fading out music and ambience.");
             Debug.Log("Music Box reference: " + musicBox);
             musicBox.StartCoroutine(musicBox.FadeOutMusic(1f));

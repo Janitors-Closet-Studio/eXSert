@@ -36,6 +36,11 @@ public class SoundManager : Singleton<SoundManager>
     private float ogVoiceVolume = 1f;   
     private float ogPlayerActionVolume = 1f;
     private Coroutine playerActionSfxRoutine;
+    private Coroutine pauseSfxFadeOutRoutine;
+    private Coroutine pauseVoiceFadeOutRoutine;
+    private Coroutine pauseSfxFadeInRoutine;
+    private Coroutine pauseVoiceFadeInRoutine;
+    private bool sfxVoiceRequestsPaused;
     private int playerActionSfxPriority = -1;
     private int playerActionSfxRequestToken;
 
@@ -208,6 +213,92 @@ public class SoundManager : Singleton<SoundManager>
 
         musicSource.volume = 0f;
         musicSource.Stop();
+    }
+
+    public void PauseSFXAndVoiceRequests(bool shouldPause)
+    {
+        if (shouldPause)
+        {
+            if (sfxVoiceRequestsPaused)
+                return;
+
+            if (sfxSource != null)
+                ogSfxVolume = sfxSource.volume;
+            if (voiceSource != null)
+                ogVoiceVolume = voiceSource.volume;
+
+            StopPauseSfxVoiceTransitionCoroutines();
+
+            if (sfxSource != null)
+                pauseSfxFadeOutRoutine = StartCoroutine(FadeOutCoroutine(sfxSource, 0.3f));
+            if (voiceSource != null)
+                pauseVoiceFadeOutRoutine = StartCoroutine(FadeOutCoroutine(voiceSource, 0.3f));
+
+            sfxVoiceRequestsPaused = true;
+        }
+        else
+        {
+            if (!sfxVoiceRequestsPaused)
+                return;
+
+            StopPauseSfxVoiceTransitionCoroutines();
+
+            if (sfxSource != null)
+                pauseSfxFadeInRoutine = StartCoroutine(FadeInCoroutine(sfxSource, ogSfxVolume, 0.3f));
+            if (voiceSource != null)
+                pauseVoiceFadeInRoutine = StartCoroutine(FadeInCoroutine(voiceSource, ogVoiceVolume, 0.3f));
+
+            sfxVoiceRequestsPaused = false;
+        }
+    }
+
+    private void StopPauseSfxVoiceTransitionCoroutines()
+    {
+        if (pauseSfxFadeOutRoutine != null)
+        {
+            StopCoroutine(pauseSfxFadeOutRoutine);
+            pauseSfxFadeOutRoutine = null;
+        }
+
+        if (pauseVoiceFadeOutRoutine != null)
+        {
+            StopCoroutine(pauseVoiceFadeOutRoutine);
+            pauseVoiceFadeOutRoutine = null;
+        }
+
+        if (pauseSfxFadeInRoutine != null)
+        {
+            StopCoroutine(pauseSfxFadeInRoutine);
+            pauseSfxFadeInRoutine = null;
+        }
+
+        if (pauseVoiceFadeInRoutine != null)
+        {
+            StopCoroutine(pauseVoiceFadeInRoutine);
+            pauseVoiceFadeInRoutine = null;
+        }
+    }
+
+    private IEnumerator FadeInCoroutine(AudioSource source, float targetVolume, float fadeDuration)
+    {
+        if (source == null || fadeDuration <= 0f)
+            yield break;
+
+        source.volume = 0f;
+        if (!source.isPlaying)
+            source.Play();
+
+        float elapsedTime = 0f;
+
+        while (elapsedTime < fadeDuration)
+        {
+            elapsedTime += Time.unscaledDeltaTime;
+            float newVolume = Mathf.Lerp(0f, targetVolume, elapsedTime / fadeDuration);
+            source.volume = newVolume;
+            yield return null;
+        }
+
+        source.volume = targetVolume;
     }
 
     public void PauseAllMusic(bool shouldPause)
