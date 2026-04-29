@@ -139,6 +139,10 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private float defaultCurrentHealth;
     private int lastKnownSceneHandle = -1;
     private float lastCombatActivityTime;
+    private Coroutine healthBarRebindRoutine;
+
+    private const float HealthBarRebindRetrySeconds = 0.1f;
+    private const float HealthBarRebindWindowSeconds = 2f;
 
     #region Unity MonoBehaviour Functions
     private void Awake()
@@ -196,6 +200,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         hasLoadedPersistentHealth = false;
 
         EnsureHealthBarReference();
+        StartHealthBarRebindRoutine();
 
         RefreshRegistration();
     }
@@ -209,6 +214,12 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         CheckpointBehavior.UnsubscribeFromPlayerRespawn();
         LoadingScreenController.OnLoadingScreenShown -= HandleLoadingScreenShown;
         waitingForRespawnHeal = false;
+
+        if (healthBarRebindRoutine != null)
+        {
+            StopCoroutine(healthBarRebindRoutine);
+            healthBarRebindRoutine = null;
+        }
 
         dashInvincibilityActive = false;
         dashInvincibilityFailsafeUntilUnscaledTime = 0f;
@@ -240,6 +251,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             return;
 
         RestoreRuntimeStateAfterSceneLoad();
+        StartHealthBarRebindRoutine();
     }
     #endregion
 
@@ -545,6 +557,44 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         }
 
         healthBar = preferred ?? fallback;
+    }
+
+    private void StartHealthBarRebindRoutine()
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        if (healthBarRebindRoutine != null)
+            StopCoroutine(healthBarRebindRoutine);
+
+        healthBarRebindRoutine = StartCoroutine(HealthBarRebindRoutine());
+    }
+
+    private IEnumerator HealthBarRebindRoutine()
+    {
+        float timeoutAt = Time.unscaledTime + HealthBarRebindWindowSeconds;
+        HealthBar lastBoundHealthBar = healthBar;
+
+        while (isActiveAndEnabled && Time.unscaledTime < timeoutAt)
+        {
+            EnsureHealthBarReference();
+
+            bool hasPreferredHealthBar = healthBar != null && IsPlayerHudHealthBar(healthBar);
+            bool healthBarChanged = healthBar != lastBoundHealthBar;
+
+            if (healthBarChanged)
+            {
+                lastBoundHealthBar = healthBar;
+                RefreshRegistration();
+            }
+
+            if (hasPreferredHealthBar)
+                break;
+
+            yield return new WaitForSecondsRealtime(HealthBarRebindRetrySeconds);
+        }
+
+        healthBarRebindRoutine = null;
     }
 
     private static bool IsPlayerHudHealthBar(HealthBar candidate)

@@ -119,7 +119,7 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     public static void NewGame()
     {
         if (InternalPlayerInventory.Instance != null)
-            InternalPlayerInventory.Instance.RemoveTransientKeycardItems();
+            InternalPlayerInventory.Instance.ResetCollectedItems();
 
         // Delete the existing save for the currently selected profile (clean reset)
         if (fileDataHandler != null && !string.IsNullOrEmpty(selectedProfileId))
