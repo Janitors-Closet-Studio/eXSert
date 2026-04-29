@@ -235,7 +235,9 @@ namespace Progression.Checkpoints
                     if (getIdMethod != null)
                         profileId = (string)getIdMethod.Invoke(DataPersistenceManager.Instance, null);
                 }
-                manager.MarkActCompleted(profileId, MatchSceneActToRoadMap());
+                int actNumber = MatchSceneActToRoadMap();
+                manager.MarkActCompleted(profileId, actNumber);
+                DataPersistenceManager.RegisterHighestUnlockedAct(actNumber);
                 updatedActsForCheckpoint = true;
             }
         }

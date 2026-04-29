@@ -305,6 +305,9 @@ public class SaveSlotsMenu : MonoBehaviour
             }
         }
 
+        if (PlayerHealthBarManager.Instance != null)
+            PlayerHealthBarManager.Instance.ResetPersistentLoadState();
+
         DataPersistenceManager.NewGame();
 
         // Potentially consider adding the ability to reset progress here
@@ -316,6 +319,9 @@ public class SaveSlotsMenu : MonoBehaviour
 
     private void LoadGame()
     {
+        if (PlayerHealthBarManager.Instance != null)
+            PlayerHealthBarManager.Instance.ResetPersistentLoadState();
+
         DataPersistenceManager.LoadGame();
 
         // Get checkpoint from the loaded profile's game data
@@ -336,7 +342,7 @@ public class SaveSlotsMenu : MonoBehaviour
             return;
         }
 
-        SceneLoader.LoadIntoGame(savedScene, newGame: false);
+        SceneLoader.LoadIntoGame(savedScene, newGame: false, restoreSavedCheckpoint: true);
     }
 
     private bool IsLoaded(SceneAsset scene)
@@ -429,7 +435,9 @@ public class SaveSlotsMenu : MonoBehaviour
     {
         if (currentSaveSlotSelected == null)
             return;
-        
+
+        SaveSlots deletedSlot = currentSaveSlotSelected;
+        bool preserveCurrentSelection = !isLoadingGame;
 
         string profileId = currentSaveSlotSelected.GetProfileId();
         if (string.IsNullOrEmpty(profileId))
@@ -478,10 +486,13 @@ public class SaveSlotsMenu : MonoBehaviour
         }
 
         // Refresh displayed slots
-        currentSaveSlotSelected = null;
+        currentSaveSlotSelected = preserveCurrentSelection ? deletedSlot : null;
         CollapseDetailsPanel();
         ActivateMenu(isLoadingGame);
-        SelectFirstSaveSlotButton();
+
+        if (!preserveCurrentSelection)
+            SelectFirstSaveSlotButton();
+
         TurnOffLoadButtonIfNoData();
     }
 
@@ -572,17 +583,23 @@ public class SaveSlotsMenu : MonoBehaviour
             ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
             : new Dictionary<string, GameData>();
 
+        string activeProfileId = DataPersistenceManager.GetSelectedProfileId();
+        bool hasInMemoryProfileData = DataPersistenceManager.HasGameData();
+
         // Update slot data and interactability for both load and new game
         foreach (SaveSlots saveSlot in saveSlots)
         {
             if (saveSlot == null) continue;
             GameData profileData = null;
             profilesGameData.TryGetValue(saveSlot.GetProfileId(), out profileData);
-            saveSlot.SetData(profileData); // This will update the slot's text (e.g., 'no data')
+            bool treatAsPopulated = profileData != null
+                || (hasInMemoryProfileData && string.Equals(saveSlot.GetProfileId(), activeProfileId, System.StringComparison.Ordinal));
+
+            saveSlot.SetData(treatAsPopulated ? profileData ?? new GameData() : null); // This will update the slot's text (e.g., 'no data')
             // Interactability: only disable in load menu if no data, otherwise always interactable
             if (isLoadingGame)
             {
-                saveSlot.SetInteractable(profileData != null);
+                saveSlot.SetInteractable(treatAsPopulated);
             }
             else
             {

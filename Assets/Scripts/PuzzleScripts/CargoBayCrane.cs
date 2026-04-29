@@ -691,46 +691,32 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
             RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while dropping magnet
             float step = dropSpeed * Time.deltaTime;
             bool hasExplicitDropZone = targetCollider != null && activeDropZoneCollider != null;
+            float effectiveStep = step;
+            bool releaseAfterMove = false;
 
             if (TryGetDropStep(targetCollider, activeDropZoneCollider, crateBottomOffset, step, out float adjustedStep, out bool shouldRelease))
             {
-                if (adjustedStep > 0f)
-                {
-                    magnetExtender.transform.localPosition += Vector3.down * adjustedStep;
-                    droppedDistance += adjustedStep;
-                }
-
-                reachedDropTarget = shouldRelease;
-                if (shouldRelease)
-                {
-                    Debug.Log("[CraneDrop] Active drop zone reached based on collider bounds.");
-                    RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while retracting magnet
-                    break;
-                }
-            }
-
-            if (hasExplicitDropZone)
-            {
-                magnetExtender.transform.localPosition += Vector3.down * step;
-                droppedDistance += step;
-                yield return null;
-                continue;
+                effectiveStep = adjustedStep;
+                releaseAfterMove = shouldRelease;
             }
 
             // --- Vertical raycast from magnet tip to prevent clipping ---
             Vector3 magnetTip = magnetExtender.transform.position;
-            float raycastLength = step + 0.05f; // slightly more than step
+            float raycastLength = Mathf.Max(0f, effectiveStep) + 0.05f; // slightly more than the next move step
             RaycastHit verticalHit;
             if (Physics.Raycast(magnetTip, Vector3.down, out verticalHit, raycastLength, obstacleMask, QueryTriggerInteraction.Ignore))
             {
                 bool hitActiveDropZone = IsDropZoneMatch(verticalHit.collider, activeDropZoneCollider);
                 Debug.Log($"[CraneDrop] Magnet vertical ray hit: {verticalHit.collider.name} at {verticalHit.point.y:F3}, active zone match: {hitActiveDropZone}.");
-                reachedDropTarget = hitActiveDropZone;
+                reachedDropTarget = hitActiveDropZone || !hasExplicitDropZone;
                 break;
             }
 
-            magnetExtender.transform.localPosition += Vector3.down * step;
-            droppedDistance += step;
+            if (effectiveStep > 0f)
+            {
+                magnetExtender.transform.localPosition += Vector3.down * effectiveStep;
+                droppedDistance += effectiveStep;
+            }
 
             if (targetCollider != null)
             {
@@ -751,6 +737,14 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
                         break;
                     }
                 }
+            }
+
+            if (releaseAfterMove)
+            {
+                Debug.Log("[CraneDrop] Active drop zone reached based on collider bounds.");
+                reachedDropTarget = true;
+                RumbleManager.Instance.RumblePulse(rumbleDuration, rumbleLowFrequency, rumbleHighFrequency); // Subtle rumble while retracting magnet
+                break;
             }
 
             yield return null;
@@ -899,6 +893,7 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
         {
             craneGrabObjectScript.GrabObject(targetObject);
             isGrabbed = true;
+            indicatorActive = false;
         }
 
         return DetectionResult.Target;
@@ -1228,6 +1223,13 @@ public class CargoBayCrane : CranePuzzle, IConsoleSelectable
     private void UpdateMagnetIndicator()
     {
         if (!showMagnetIndicator || magnetExtender == null)
+        {
+            if (magnetIndicator != null)
+                magnetIndicator.enabled = false;
+            return;
+        }
+
+        if (isGrabbed)
         {
             if (magnetIndicator != null)
                 magnetIndicator.enabled = false;

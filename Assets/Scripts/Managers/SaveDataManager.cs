@@ -10,12 +10,12 @@ public class SaveDataManager : Singleton<SaveDataManager>, IDataPersistenceManag
 {
     public void LoadData(GameData data)
     {
-        CombatManager.Instance.health = data.health;
-
+        // PlayerHealthBarManager is the authoritative HP owner.
+        // Leave CombatManager out of save/load so it cannot overwrite profile health.
     }
 
     public void SaveData(GameData data)
     {
-        data.health = CombatManager.Instance.health;
+        // PlayerHealthBarManager saves health directly.
     }
 }

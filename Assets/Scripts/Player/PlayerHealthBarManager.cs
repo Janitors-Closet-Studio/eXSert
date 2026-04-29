@@ -151,6 +151,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         if (animationController == null) animationController = GetComponentInChildren<PlayerAnimationController>();
         if (playerMovement == null) playerMovement = GetComponent<PlayerMovement>();
         if (attackManager == null) attackManager = GetComponent<PlayerAttackManager>();
+        EnsureHealthBarReference();
 
         if (currentHealth < 0f)
         {
@@ -192,6 +193,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         // Allow LoadData to run again if the component was cycled (e.g., player scene reloaded).
         hasLoadedPersistentHealth = false;
+
+        EnsureHealthBarReference();
 
         RefreshRegistration();
     }
@@ -499,11 +502,58 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private void NotifyHealthChanged()
     {
         var snapshot = new HealthSnapshot(currentHealth, maxHealth);
+        EnsureHealthBarReference();
         if (healthBar != null)
         {
             healthBar.SetHealth(snapshot.current, snapshot.max);
         }
         OnPlayerHealthChanged?.Invoke(snapshot);
+    }
+
+    private void EnsureHealthBarReference()
+    {
+        if (healthBar != null)
+            return;
+
+        HealthBar[] healthBars = FindObjectsByType<HealthBar>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        HealthBar fallback = null;
+
+        for (int i = 0; i < healthBars.Length; i++)
+        {
+            HealthBar candidate = healthBars[i];
+            if (candidate == null)
+                continue;
+
+            fallback ??= candidate;
+
+            if (IsPlayerHudHealthBar(candidate))
+            {
+                healthBar = candidate;
+                return;
+            }
+        }
+
+        healthBar = fallback;
+    }
+
+    private static bool IsPlayerHudHealthBar(HealthBar candidate)
+    {
+        Transform current = candidate != null ? candidate.transform : null;
+        while (current != null)
+        {
+            if (current.GetComponent<PlayerCanvasManager>() != null)
+                return true;
+
+            if (string.Equals(current.name, "PlayerHealthGauge", StringComparison.Ordinal)
+                || string.Equals(current.name, "PlayerHUD", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            current = current.parent;
+        }
+
+        return false;
     }
 
     private void RefreshRegistration()
@@ -513,6 +563,34 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         OnPlayerHealthRegistered?.Invoke(this);
         NotifyHealthChanged();
+    }
+
+    public void ResetPersistentLoadState()
+    {
+        hasLoadedPersistentHealth = false;
+    }
+
+    public void RestoreRuntimeStateAfterSceneLoad()
+    {
+        if (animationController == null)
+            animationController = GetComponentInChildren<PlayerAnimationController>(true);
+
+        if (playerMovement == null)
+            playerMovement = GetComponent<PlayerMovement>()
+                ?? GetComponentInChildren<PlayerMovement>(true)
+                ?? GetComponentInParent<PlayerMovement>();
+
+        if (attackManager == null)
+            attackManager = GetComponent<PlayerAttackManager>()
+                ?? GetComponentInChildren<PlayerAttackManager>(true)
+                ?? GetComponentInParent<PlayerAttackManager>();
+
+        EnsureHealthBarReference();
+
+        if (!isDead)
+            ResetDeathSequenceState();
+
+        RefreshRegistration();
     }
 
     private void HandlePlayerAttackPerformed(PlayerAttack attack)

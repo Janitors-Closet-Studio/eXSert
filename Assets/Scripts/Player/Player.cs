@@ -62,7 +62,7 @@ public static class Player
 
         playerObject.transform.SetParent(null, true);
 
-        PlayerMovement move = playerObject.GetComponent<PlayerMovement>();
+        PlayerMovement move = ResolvePlayerMovement(playerObject);
         if (move == null)
         {
             Debug.LogError("[Player] Cannot spawn at checkpoint because PlayerMovement is missing from the player root object.");
@@ -72,6 +72,22 @@ public static class Player
         move.enabled = true;
         move.TrySnapToSoftLock(currentCheckpoint.GetSpawnPosition(), currentCheckpoint.GetSpawnRotation());
         playerObject.SetActive(true);
+    }
+
+    private static PlayerMovement ResolvePlayerMovement(GameObject playerObject)
+    {
+        if (playerObject == null)
+            return null;
+
+        PlayerMovement move = playerObject.GetComponent<PlayerMovement>();
+        if (move != null)
+            return move;
+
+        move = playerObject.GetComponentInChildren<PlayerMovement>(true);
+        if (move != null)
+            return move;
+
+        return playerObject.GetComponentInParent<PlayerMovement>();
     }
 
     private static GameObject FindPlayerObjectInLoadedScenes()

@@ -411,7 +411,7 @@ public static class SceneLoader
     }
 
     /// <summary>Load the first gameplay scene then the player scene. (Legacy API)</summary>
-    public static void LoadIntoGame(SceneAsset firstScene, bool newGame = false, bool forceReloadFirstScene = false)
+    public static void LoadIntoGame(SceneAsset firstScene, bool newGame = false, bool forceReloadFirstScene = false, bool restoreSavedCheckpoint = false)
     {
         if (firstScene == null)
         {
@@ -421,9 +421,9 @@ public static class SceneLoader
 
         Initialize();
 
-        CoroutineRunner.Run(LoadIntoGameTransitionRoutine(firstScene, newGame, forceReloadFirstScene));
+        CoroutineRunner.Run(LoadIntoGameTransitionRoutine(firstScene, newGame, forceReloadFirstScene, restoreSavedCheckpoint));
 
-        static IEnumerator LoadIntoGameTransitionRoutine(SceneAsset firstScene, bool newGame, bool forceReloadFirstScene)
+        static IEnumerator LoadIntoGameTransitionRoutine(SceneAsset firstScene, bool newGame, bool forceReloadFirstScene, bool restoreSavedCheckpoint)
         {
             if (newGame)
             {
@@ -433,7 +433,7 @@ public static class SceneLoader
                 if (openingCutscene != null)
                 {
                     CutsceneManager.PlayCutscene(openingCutscene);
-                    yield return LoadIntoGameCoroutine(firstScene, newGame: false, forceReloadFirstScene: forceReloadFirstScene);
+                    yield return LoadIntoGameCoroutine(firstScene, newGame: false, forceReloadFirstScene: forceReloadFirstScene, restoreSavedCheckpoint: false);
                     yield break;
                 }
 
@@ -445,23 +445,25 @@ public static class SceneLoader
             if (!LoadingScreenController.HasInstance)
             {
                 Debug.LogWarning("[Scene Loader] LoadingScreenController is unavailable. Falling back to direct game load.");
-                yield return LoadIntoGameCoroutine(firstScene, newGame, forceReloadFirstScene);
+                yield return LoadIntoGameCoroutine(firstScene, newGame, forceReloadFirstScene, restoreSavedCheckpoint);
                 yield break;
             }
 
-            LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame, forceReloadFirstScene));
+            LoadingScreenController.BeginLoading(LoadIntoGameCoroutine(firstScene, newGame, forceReloadFirstScene, restoreSavedCheckpoint));
         }
     }
 
-    private static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame, bool forceReloadFirstScene)
+    private static IEnumerator LoadIntoGameCoroutine(SceneAsset firstScene, bool newGame, bool forceReloadFirstScene, bool restoreSavedCheckpoint)
     {
         MainMenu.isInMainMenu = false;
 
         // Load first gameplay scene, wait for it
         yield return LoadCoroutine(firstScene, forceReload: forceReloadFirstScene, loadScreen: false);
 
-        // Sets the first checkpoint to the first scene so that the player will spawn there when the player scene loads
-        CheckpointBehavior.OverrideCurrentCheckpoint(ProgressionManager.GetInstance(firstScene).FirstCheckpoint);
+        // Saved-profile loads restore their checkpoint through DataPersistenceManager scene-load callbacks.
+        // Only fall back to the scene's default checkpoint when no matching saved checkpoint is available.
+        if (!TryUseSavedCheckpointForScene(firstScene, restoreSavedCheckpoint))
+            CheckpointBehavior.OverrideCurrentCheckpoint(ProgressionManager.GetInstance(firstScene).FirstCheckpoint);
 
         // Load player scene, wait for it
         yield return LoadPlayerSceneCoroutine();
@@ -479,13 +481,28 @@ public static class SceneLoader
         // Clear any stale input locks that may have survived the loading screen or a prior death sequence.
         // This is the safest moment to do it: all scenes are loaded, the player hasn't been spawned yet.
         InputReader.ForceResetInputLocks("LoadIntoGameCoroutine");
-        RestoreGameplayUiStateAfterLoad();
+        RestoreGameplayUiStateAfterLoad(restoreSavedCheckpoint);
 
         if (newGame)
             CutsceneManager.PlayCutscene(Cutscene.GetCutscene("Opening Cutscene"));
     }
 
-    private static void RestoreGameplayUiStateAfterLoad()
+    private static bool TryUseSavedCheckpointForScene(SceneAsset scene, bool restoreSavedCheckpoint)
+    {
+        if (!restoreSavedCheckpoint || scene == null || !DataPersistenceManager.HasGameData())
+            return false;
+
+        CheckpointBehavior activeCheckpoint = CheckpointBehavior.currentCheckpoint;
+        if (activeCheckpoint == null || activeCheckpoint.CheckpointSceneAsset == null)
+            return false;
+
+        return string.Equals(
+            activeCheckpoint.CheckpointSceneAsset.SceneName,
+            scene.SceneName,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void RestoreGameplayUiStateAfterLoad(bool restoreSavedCheckpoint)
     {
         PlayerCanvasManager canvasManager = UnityEngine.Object.FindFirstObjectByType<PlayerCanvasManager>(FindObjectsInactive.Include);
         canvasManager?.SetPlayerCanvasVisible(true);
@@ -502,6 +519,57 @@ public static class SceneLoader
             InputReader.PlayerInput.SwitchCurrentActionMap("Gameplay");
             CursorManager.RefreshPolicy();
         }
+
+        RestorePlayerRuntimeStateAfterLoad(restoreSavedCheckpoint);
+    }
+
+    private static void RestorePlayerRuntimeStateAfterLoad(bool restoreSavedCheckpoint)
+    {
+        if (!Player.TryGetPlayerObject(out GameObject playerObject) || playerObject == null)
+            return;
+
+        PlayerMovement playerMovement = FindComponentOnPlayer<PlayerMovement>(playerObject);
+        if (playerMovement != null)
+        {
+            playerMovement.ExitDeathState();
+            playerMovement.enabled = true;
+            playerMovement.SuppressLocomotionAnimations(false);
+            playerMovement.ForceLocomotionRefresh();
+
+            CharacterController characterController = playerMovement.GetComponent<CharacterController>();
+            if (characterController != null && !characterController.enabled)
+                characterController.enabled = true;
+        }
+
+        PlayerHealthBarManager healthManager = FindComponentOnPlayer<PlayerHealthBarManager>(playerObject);
+        healthManager?.RestoreRuntimeStateAfterSceneLoad();
+
+        if (restoreSavedCheckpoint && healthManager != null)
+        {
+            // Loading a profile should behave like restarting from that checkpoint:
+            // revive and fully heal the player, then notify the HUD from the live runtime object.
+            healthManager.ForceFullHeal();
+        }
+
+        PlayerAttackManager attackManager = FindComponentOnPlayer<PlayerAttackManager>(playerObject);
+        if (attackManager != null && (healthManager == null || !healthManager.IsDead))
+            attackManager.enabled = true;
+    }
+
+    private static T FindComponentOnPlayer<T>(GameObject playerObject) where T : Component
+    {
+        if (playerObject == null)
+            return null;
+
+        T component = playerObject.GetComponent<T>();
+        if (component != null)
+            return component;
+
+        component = playerObject.GetComponentInChildren<T>(true);
+        if (component != null)
+            return component;
+
+        return playerObject.GetComponentInParent<T>();
     }
 
     /// <summary>Loads the player scene and optionally positions/initializes the player. (Legacy API)</summary>
