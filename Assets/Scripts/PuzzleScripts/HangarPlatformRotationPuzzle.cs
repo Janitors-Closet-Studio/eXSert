@@ -150,8 +150,6 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
             return;
         }
 
-        playerController.enabled = false; // Disable CharacterController to prevent physics issues during rotation
-
         LockPlayerForRotation();
         targetLocalRotation = nextTargetRotation;
         lastPlatformRotation = transform.rotation;
