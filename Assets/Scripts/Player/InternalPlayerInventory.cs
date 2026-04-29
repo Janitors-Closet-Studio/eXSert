@@ -5,6 +5,7 @@
     This will be called when the player collects an item.
 */
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Singletons;
@@ -24,10 +25,10 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
 
     public void AddCollectible(string collectibleId)
     {
-        if (string.IsNullOrEmpty(collectibleId))
+        string normalizedId = NormalizeCollectibleId(collectibleId);
+        if (string.IsNullOrEmpty(normalizedId))
             return;
-            
-        string normalizedId = collectibleId.Trim().ToLowerInvariant();
+
         if (!collectedInteractables.Contains(normalizedId))
         {
             collectedInteractables.Add(normalizedId);
@@ -46,7 +47,7 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
     public bool HasItem(string itemID)
     {
         if (string.IsNullOrEmpty(itemID)) return true;
-        string normalizedID = itemID.Trim().ToLowerInvariant();
+        string normalizedID = NormalizeCollectibleId(itemID);
         return collectedInteractables.Contains(normalizedID);
     }
 
@@ -62,5 +63,42 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
     {
         collectedInteractables.Clear();
         AddCollectible(DefaultCollectibleId);
+    }
+
+    public int RemoveTransientKeycardItems()
+    {
+        int removedCount = RemoveTransientKeycardEntries(collectedInteractables);
+        if (removedCount > 0)
+            Debug.Log($"[InternalPlayerInventory] Removed {removedCount} transient keycard item(s) from runtime inventory.");
+
+        if (!collectedInteractables.Contains(DefaultCollectibleId))
+            AddCollectible(DefaultCollectibleId);
+
+        return removedCount;
+    }
+
+    public static int RemoveTransientKeycardEntries(List<string> collectibleIds)
+    {
+        if (collectibleIds == null || collectibleIds.Count == 0)
+            return 0;
+
+        return collectibleIds.RemoveAll(IsTransientKeycardId);
+    }
+
+    private static bool IsTransientKeycardId(string collectibleId)
+    {
+        string normalizedId = NormalizeCollectibleId(collectibleId);
+        if (string.IsNullOrEmpty(normalizedId) || string.Equals(normalizedId, DefaultCollectibleId, StringComparison.Ordinal))
+            return false;
+
+        string compactId = normalizedId.Replace(" ", string.Empty).Replace("_", string.Empty).Replace("-", string.Empty);
+        return compactId.Contains("keycard", StringComparison.Ordinal);
+    }
+
+    private static string NormalizeCollectibleId(string collectibleId)
+    {
+        return string.IsNullOrWhiteSpace(collectibleId)
+            ? string.Empty
+            : collectibleId.Trim().ToLowerInvariant();
     }
 }

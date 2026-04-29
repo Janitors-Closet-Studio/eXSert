@@ -4,6 +4,8 @@ using Managers.TimeLord;
 
 public class DebugMenu : Singletons.Singleton<DebugMenu>
 {
+    private const bool DebugMenuEnabled = false;
+
     public override string ToString() => "Debug Menu";
 
     private static GameObject _debugMenu;
@@ -17,6 +19,9 @@ public class DebugMenu : Singletons.Singleton<DebugMenu>
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoInitialize()
     {
+        if (!DebugMenuEnabled)
+            return;
+
         // Only load if an instance doesn't already exist in the scene manually
         if (Instance == null) CreateInstance();
     }
@@ -24,6 +29,9 @@ public class DebugMenu : Singletons.Singleton<DebugMenu>
     protected override void Awake()
     {
         base.Awake(); // Base singleton setup
+
+        if (!DebugMenuEnabled)
+            return;
 
         GameObject prefab = Resources.Load<GameObject>("Debug Menu Canvas");
         if (prefab == null)
@@ -42,6 +50,9 @@ public class DebugMenu : Singletons.Singleton<DebugMenu>
 
     private void Update()
     {
+        if (!DebugMenuEnabled)
+            return;
+
         if (Keyboard.current.backquoteKey.wasPressedThisFrame) ToggleMenu();
     }
 

@@ -71,6 +71,7 @@ public class PlayerMovement : MonoBehaviour
         public event Action Landed;
     public bool HasPerformedDoubleJumpSinceGrounded { get; private set; }
     public bool IsPlunging => isPlunging;
+    public bool IsGuardLockedByPlunge => isPlunging || plungeLandingPending || waitingForPlungeRecoveryUnlock;
 
     [Header("Input")]
     [SerializeField] private InputActionReference _jumpAction;

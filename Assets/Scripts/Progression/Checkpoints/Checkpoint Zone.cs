@@ -115,6 +115,9 @@ namespace Progression.Checkpoints
         {
             Debug.Log("[Checkpoint] Respawning player at current checkpoint...");
 
+            if (InternalPlayerInventory.Instance != null)
+                InternalPlayerInventory.Instance.RemoveTransientKeycardItems();
+
             if (currentCheckpoint == null)
             {
                 if (PlayerMovement.IsTestingOrDebugMode)

@@ -123,6 +123,8 @@ namespace EnemyBehavior.Boss
             if (player.parent != null)
                 player.SetParent(null, true);
 
+            NormalizePlayerForSceneTransfer(playerRoot);
+
             // Move player from DontDestroyOnLoad to this scene
             SceneManager.MoveGameObjectToScene(playerRoot, SceneManager.GetActiveScene());
             playerClaimed = true;
@@ -168,6 +170,8 @@ namespace EnemyBehavior.Boss
                 return;
             }
 
+            NormalizePlayerForSceneTransfer(playerRoot);
+
             Scene playerScene = SceneManager.GetSceneByName(PlayerSceneName);
             if (playerScene.IsValid() && playerScene.isLoaded)
             {
@@ -189,6 +193,35 @@ namespace EnemyBehavior.Boss
 
             if (PlayerPresenceManager.Instance != null)
                 PlayerPresenceManager.Instance.RegisterPlayer(player);
+        }
+
+        private static void NormalizePlayerForSceneTransfer(GameObject playerRoot)
+        {
+            if (playerRoot == null)
+                return;
+
+            PlayerMovement playerMovement = playerRoot.GetComponent<PlayerMovement>()
+                ?? playerRoot.GetComponentInChildren<PlayerMovement>(true)
+                ?? playerRoot.GetComponentInParent<PlayerMovement>();
+
+            PlayerAnimationController animationController = playerRoot.GetComponentInChildren<PlayerAnimationController>(true)
+                ?? playerRoot.GetComponentInParent<PlayerAnimationController>();
+
+            if (playerMovement != null)
+            {
+                playerMovement.CancelPlungeState();
+                playerMovement.ClearExternalVelocity();
+                playerMovement.SuppressLocomotionAnimations(false);
+                playerMovement.ForceLocomotionRefresh();
+            }
+
+            if (animationController != null)
+            {
+                if (animationController.IsWaitingForPlungeLand)
+                    animationController.ResumePlungeFromLanding();
+
+                animationController.EnsureAnimatorRuntimeHealthy();
+            }
         }
 
         /// <summary>
