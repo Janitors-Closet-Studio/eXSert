@@ -187,6 +187,7 @@ namespace Behaviors
             const float losePlayerDistance = 25f;
             const float updateInterval = 0.05f; // More frequent updates for smoother motion
             const float destinationUpdateThreshold = 0.15f; // Recalculate when player moves this far
+            const float attackRangeTolerance = 0.35f; // Prevent guard-state stalls when the agent stops just outside raw attack range.
             var wait = WaitForSecondsCache.Get(updateInterval);
 
             // Wait one frame before the first range check so the agent has a chance to
@@ -219,7 +220,7 @@ namespace Behaviors
                 float attackRange = (Mathf.Max(enemy.attackBoxSize.x, enemy.attackBoxSize.z) * 0.5f) + enemy.attackBoxDistance;
                 float distance = Vector3.Distance(enemy.transform.position, playerTarget.position);
 
-                if (distance <= attackRange)
+                if (distance <= attackRange + attackRangeTolerance)
                 {
                     enemy.TryFireTriggerByName("InAttackRange");
                     yield break;

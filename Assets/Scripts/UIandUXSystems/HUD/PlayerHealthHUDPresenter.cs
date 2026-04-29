@@ -162,6 +162,8 @@ public class PlayerHealthHUDPresenter : MonoBehaviour
 
     private void HandleHealthChanged(PlayerHealthBarManager.HealthSnapshot snapshot)
     {
+        SetRootActive(true);
+
         if (slider != null)
         {
             slider.maxValue = snapshot.max;

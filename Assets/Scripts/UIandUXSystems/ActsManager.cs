@@ -123,7 +123,7 @@ public class ActsManager : Singleton<ActsManager>
 
     private void RefreshMapLocationState()
     {
-        string currentSceneName = GetAuthoritativeProgressSceneName(null);
+        string currentSceneName = GetCurrentLoadedTrackedSceneName();
         if (string.IsNullOrEmpty(currentSceneName))
             return;
 
@@ -260,7 +260,7 @@ public class ActsManager : Singleton<ActsManager>
 
     public void ActivateAllImagesBefore()
     {
-        string currentSceneName = GetAuthoritativeProgressSceneName(null);
+        string currentSceneName = GetCurrentLoadedTrackedSceneName();
         ActivateAllImagesBefore(currentSceneName);
     }
 
@@ -470,8 +470,19 @@ public class ActsManager : Singleton<ActsManager>
 
     private int ResolveHighestUnlockedAct(GameData profileData)
     {
-        string sceneName = GetAuthoritativeProgressSceneName(profileData);
+        if (profileData != null)
+        {
+            int savedHighest = Mathf.Max(0, profileData.highestUnlockedActIndex);
+            int inferredHighest = ResolveHighestUnlockedActFromSceneName(GetSavedProgressSceneName(profileData));
+            return Mathf.Max(savedHighest, inferredHighest);
+        }
 
+        string loadedSceneName = GetCurrentLoadedTrackedSceneName();
+        return ResolveHighestUnlockedActFromSceneName(loadedSceneName);
+    }
+
+    private int ResolveHighestUnlockedActFromSceneName(string sceneName)
+    {
         if (string.IsNullOrWhiteSpace(sceneName))
             return -1;
 
@@ -487,12 +498,8 @@ public class ActsManager : Singleton<ActsManager>
         return highestUnlockedAct;
     }
 
-    private string GetAuthoritativeProgressSceneName(GameData profileData)
+    private string GetSavedProgressSceneName(GameData profileData)
     {
-        Progression.Checkpoints.CheckpointBehavior activeCheckpoint = Progression.Checkpoints.CheckpointBehavior.currentCheckpoint;
-        if (activeCheckpoint != null && activeCheckpoint.CheckpointSceneAsset != null)
-            return activeCheckpoint.CheckpointSceneAsset.SceneName;
-
         if (profileData != null)
         {
             if (!string.IsNullOrWhiteSpace(profileData.currentSceneName))
@@ -502,7 +509,35 @@ public class ActsManager : Singleton<ActsManager>
                 return profileData.lastSavedScene;
         }
 
+        return null;
+    }
+
+    private string GetCurrentLoadedTrackedSceneName()
+    {
+        Progression.Checkpoints.CheckpointBehavior activeCheckpoint = Progression.Checkpoints.CheckpointBehavior.currentCheckpoint;
+        if (activeCheckpoint != null
+            && activeCheckpoint.CheckpointSceneAsset != null
+            && IsTrackedSceneName(activeCheckpoint.CheckpointSceneAsset.SceneName)
+            && SceneManager.GetSceneByName(activeCheckpoint.CheckpointSceneAsset.SceneName).isLoaded)
+        {
+            return activeCheckpoint.CheckpointSceneAsset.SceneName;
+        }
+
         return GetHighestLoadedTrackedSceneName();
+    }
+
+    private bool IsTrackedSceneName(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+            return false;
+
+        foreach (var kvp in sceneNames)
+        {
+            if (SceneNameMatchesAct(sceneName, kvp.Value))
+                return true;
+        }
+
+        return false;
     }
 
     private bool IsActsPanelOpen()
@@ -552,15 +587,7 @@ public class ActsManager : Singleton<ActsManager>
         if (string.IsNullOrEmpty(sceneName))
             return;
 
-        int highestUnlockedAct = -1;
-        foreach (var kvp in actSceneMap)
-        {
-            if (string.Equals(kvp.Value, sceneName, System.StringComparison.Ordinal))
-            {
-                highestUnlockedAct = kvp.Key;
-                break;
-            }
-        }
+        int highestUnlockedAct = ResolveHighestUnlockedActFromSceneName(sceneName);
 
         if (highestUnlockedAct < 0)
             return;
@@ -830,6 +857,9 @@ public class ActsManager : Singleton<ActsManager>
         if (targetScene == null)
             yield break;
 
+        if (InternalPlayerInventory.Instance != null)
+            InternalPlayerInventory.Instance.ResetCollectedItems();
+
         string targetName = targetScene.SceneName;
 
         for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
@@ -852,6 +882,7 @@ public class ActsManager : Singleton<ActsManager>
 
         // Use the same startup flow as initial game load, but force-reload the selected scene
         // so collectibles, encounters, and scene-local runtime state reset every teleport.
+        Player.TriggerRespawn();
         SceneLoader.LoadIntoGame(targetScene, newGame: false, forceReloadFirstScene: true);
 
         // If transition stalls and target gameplay scene never appears,

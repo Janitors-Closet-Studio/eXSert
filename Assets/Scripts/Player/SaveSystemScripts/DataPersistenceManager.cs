@@ -217,6 +217,12 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
         fileDataHandler.Save(gameData, selectedProfileId);
     }
 
+    public static void RegisterHighestUnlockedAct(int actIndex)
+    {
+        gameData ??= new GameData();
+        gameData.highestUnlockedActIndex = Mathf.Max(gameData.highestUnlockedActIndex, Mathf.Max(0, actIndex));
+    }
+
     /// <summary>
     /// Returns the last saved scene for the currently-selected profile (or empty string if none).
     /// </summary>

@@ -11,10 +11,11 @@ using Singletons;
 public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
 {
     internal List<string> collectedInteractables = new List<string>();
+    private const string DefaultCollectibleId = "null";
 
     protected override void Awake()
     {
-        AddCollectible("null"); // Adding "null" as a default collected item
+        AddCollectible(DefaultCollectibleId); // Adding a default collected item keeps legacy checks stable.
 
         base.Awake();
     }
@@ -55,5 +56,11 @@ public class InternalPlayerInventory : Singleton<InternalPlayerInventory>
     public List<string> GetCollectedItems()
     {
         return new List<string>(collectedInteractables);
+    }
+
+    public void ResetCollectedItems()
+    {
+        collectedInteractables.Clear();
+        AddCollectible(DefaultCollectibleId);
     }
 }

@@ -29,6 +29,7 @@ public class GameData
     // Checkpoint/Progress data
     public string currentSceneName;
     public string currentSpawnPointID;
+    public int highestUnlockedActIndex;
     // Last scene that was saved for this profile (stored as a scene name string for JSON persistence)
     public string lastSavedScene;
     public List<string> checkpointThrobberScenesShown;
@@ -46,6 +47,7 @@ public class GameData
         // Default checkpoint is the first level
         currentSceneName = "VS_Elevator";
         currentSpawnPointID = "default";
+        highestUnlockedActIndex = 0;
         // default last saved scene matches the current scene name on new games
         lastSavedScene = currentSceneName;
         checkpointThrobberScenesShown = new List<string>();

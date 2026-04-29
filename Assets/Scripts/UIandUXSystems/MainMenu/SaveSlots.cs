@@ -7,8 +7,9 @@ Changes text on the save slots depending on if there is data assigned to that sa
 
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
-public class SaveSlots : MonoBehaviour
+public class SaveSlots : MonoBehaviour, ISelectHandler
 {
     [Header("Profile")]
     [SerializeField] private string profileId = "";
@@ -52,7 +53,14 @@ public class SaveSlots : MonoBehaviour
 
     public void SetCurrentSaveSlot()
     {
-        saveSlotsMenu.currentSaveSlotSelected = this.gameObject.GetComponent<SaveSlots>();
+        if (saveSlotsMenu != null)
+            saveSlotsMenu.OnSaveSlotSelected(this);
+    }
+
+    public void OnSelect(BaseEventData eventData)
+    {
+        if (saveSlotsMenu != null)
+            saveSlotsMenu.OnSaveSlotSelected(this);
     }
 
     //Sets interactability of save slots
