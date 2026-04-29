@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using Unity.VisualScripting;
+using UI.Loading;
 
 public class WritingTextUI : MonoBehaviour
 {
@@ -157,6 +158,12 @@ public class WritingTextUI : MonoBehaviour
         private void PlayRandomTypingSound()
         {
             if (keyboardTypingSounds == null || keyboardTypingSounds.Count == 0)
+                return;
+
+            if (LoadingScreenController.IsLoading)
+                return;
+
+            if (CutsceneManager.IsCutscenePlaying)
                 return;
 
             int randomIndex = UnityEngine.Random.Range(0, keyboardTypingSounds.Count);
