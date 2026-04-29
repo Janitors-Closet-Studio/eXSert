@@ -170,6 +170,13 @@ public class DoorInteractions : UnlockableInteraction
 
         RefreshExecutionState();
 
+        // Block repeat execution before the base class fires ExecuteInteraction and UnityEvents.
+        if (onlyInteractableOnce && hasInteracted)
+        {
+            SetInteractionEnabled(false);
+            return false;
+        }
+
         if (ShouldBlockLockedDoorWithoutRequiredItem())
             return false;
 
@@ -181,13 +188,6 @@ public class DoorInteractions : UnlockableInteraction
         if (!canExecuteInteraction)
         {
             // Optionally, play error SFX or show locked prompt here if needed
-            return false;
-        }
-
-        // Block repeat execution at the interaction entrypoint so base class events do not fire again.
-        if (onlyInteractableOnce && hasInteracted)
-        {
-            SetInteractionEnabled(false);
             return false;
         }
 

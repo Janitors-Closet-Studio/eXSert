@@ -7,6 +7,7 @@
 
 using UnityEngine;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 
 public class HangarPlatformRotationPuzzle : PuzzlePart
@@ -41,6 +42,9 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
     private Quaternion lastPlatformRotation;
     private bool isRotating;
     private bool hasLoggedMissingPlayerWarning;
+    private bool inputBusyOwned;
+    private bool playerControllerWasEnabled;
+    private Coroutine rotationRoutine;
 
     private void Awake()
     {
@@ -104,7 +108,7 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
         }
     }
 
-    private void ParentPlayerToPlatform(bool parent)
+    private void LockPlayerForRotation()
     {
         if (!TryResolvePlayerController())
         {
@@ -116,17 +120,29 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
             return;
         }
 
-        if (parent)
-        {
-            playerController.transform.SetParent(transform, worldPositionStays: true);
+        playerControllerWasEnabled = playerController.enabled;
+        if (playerControllerWasEnabled)
             playerController.enabled = false;
-            InputReader.inputBusy = true;
-        }
-        else
+
+        if (!InputReader.inputBusy)
         {
-            playerController.transform.SetParent(null, worldPositionStays: true);
-            playerController.enabled = true;
+            InputReader.inputBusy = true;
+            inputBusyOwned = true;
+        }
+    }
+
+    private void ReleasePlayerAfterRotation()
+    {
+        if (playerController != null)
+        {
+            EnsurePlayerReturnsToPlayerScene();
+            playerController.enabled = playerControllerWasEnabled;
+        }
+
+        if (inputBusyOwned)
+        {
             InputReader.inputBusy = false;
+            inputBusyOwned = false;
         }
     }
 
@@ -137,16 +153,31 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
             return;
         }
 
-        ParentPlayerToPlatform(true);
+        LockPlayerForRotation();
         targetLocalRotation = nextTargetRotation;
         lastPlatformRotation = transform.rotation;
         isRotating = true;
         isCompleted = completedState;
-        StartCoroutine(RotateOverTime(transform.localRotation, targetLocalRotation, rotationDegrees / rotationSpeedDegreesPerSecond));
+
+        if (rotationRoutine != null)
+            StopCoroutine(rotationRoutine);
+
+        float rotationDuration = rotationSpeedDegreesPerSecond <= 0f
+            ? 0f
+            : Mathf.Abs(rotationDegrees) / rotationSpeedDegreesPerSecond;
+
+        rotationRoutine = StartCoroutine(RotateOverTime(transform.localRotation, targetLocalRotation, rotationDuration));
     }
 
     private IEnumerator RotateOverTime(Quaternion startRotation, Quaternion endRotation, float duration)
     {
+        if (duration <= 0f)
+        {
+            transform.localRotation = endRotation;
+            CompleteRotation();
+            yield break;
+        }
+
         float elapsed = 0f;
         // Play the rotation SFX once at the start
         if (rotationSFX != null)
@@ -166,12 +197,20 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
             yield return null;
         }
         transform.localRotation = endRotation;
-        isRotating = false;
-        SoundManager.Instance.sfxSource.Stop();
-        SoundManager.Instance.sfxSource.PlayOneShot(rotationCompleteSFX);
-        ParentPlayerToPlatform(false);
+        CompleteRotation();
     }
 
+    private void CompleteRotation()
+    {
+        isRotating = false;
+        rotationRoutine = null;
+        SoundManager.Instance.sfxSource.Stop();
+
+        if (rotationCompleteSFX != null)
+            SoundManager.Instance.sfxSource.PlayOneShot(rotationCompleteSFX);
+
+        ReleasePlayerAfterRotation();
+    }
 
     private void RotatePlayerWithPlatform()
     {
@@ -180,13 +219,50 @@ public class HangarPlatformRotationPuzzle : PuzzlePart
 
         Quaternion currentPlatformRotation = transform.rotation;
         Quaternion rotationDelta = currentPlatformRotation * Quaternion.Inverse(lastPlatformRotation);
-        Vector3 playerOffset = playerController.transform.position - transform.position;
+        Transform playerTransform = playerController.transform;
+        Vector3 playerOffset = playerTransform.position - transform.position;
         Vector3 rotatedOffset = rotationDelta * playerOffset;
         Vector3 targetPlayerPosition = transform.position + rotatedOffset;
-        Vector3 movement = targetPlayerPosition - playerController.transform.position;
-
-        playerController.Move(movement);
+        playerTransform.position = targetPlayerPosition;
+        playerTransform.rotation = rotationDelta * playerTransform.rotation;
         lastPlatformRotation = currentPlatformRotation;
+    }
+
+    private void EnsurePlayerReturnsToPlayerScene()
+    {
+        if (playerController == null)
+            return;
+
+        Transform playerRoot = playerController.transform.root;
+        if (playerRoot == null)
+            return;
+
+        Scene playerScene = SceneManager.GetSceneByName("PlayerScene");
+        if (!playerScene.IsValid() || !playerScene.isLoaded)
+            return;
+
+        if (playerRoot.gameObject.scene == playerScene)
+            return;
+
+        playerRoot.SetParent(null, true);
+        SceneManager.MoveGameObjectToScene(playerRoot.gameObject, playerScene);
+    }
+
+    private void OnDisable()
+    {
+        if (rotationRoutine != null)
+        {
+            StopCoroutine(rotationRoutine);
+            rotationRoutine = null;
+        }
+
+        isRotating = false;
+        ReleasePlayerAfterRotation();
+    }
+
+    private void OnDestroy()
+    {
+        ReleasePlayerAfterRotation();
     }
 
     private bool TryResolvePlayerController()
