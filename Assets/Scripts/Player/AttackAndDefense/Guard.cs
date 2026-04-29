@@ -129,6 +129,9 @@ public class Guard : MonoBehaviour
 
     private void EnterGuard()
     {
+        if (playerMovement != null && playerMovement.IsGuardLockedByPlunge)
+            return;
+
         guardActive = true;
         guardWalkAnimationActive = false;
         guardRaiseLockUntilTime = Time.time + Mathf.Max(0f, guardRaiseBlendLockDuration);

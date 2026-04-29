@@ -47,8 +47,7 @@ public static class Player
 
     public static void SpawnPlayerAtCheckpoint()
     {
-
-        if (currentCheckpoint == null)
+        if (currentCheckpoint == null && !CheckpointBehavior.EnsureRespawnCheckpointAvailable())
         {
             Debug.LogError("[Player] Cannot spawn at checkpoint because no checkpoint is currently set.");
             return;

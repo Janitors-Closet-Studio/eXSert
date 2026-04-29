@@ -186,6 +186,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Player.SetActive(true); 
         Player.RespawnPlayer += HandleRespawnRequested;
         PlayerAttackManager.OnAttack += HandlePlayerAttackPerformed;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
         CheckpointBehavior.SubscribeToPlayerRespawn();
 
         dashInvincibilityActive = false;
@@ -204,6 +205,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         Player.SetActive(false); 
         Player.RespawnPlayer -= HandleRespawnRequested;
         PlayerAttackManager.OnAttack -= HandlePlayerAttackPerformed;
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
         CheckpointBehavior.UnsubscribeFromPlayerRespawn();
         LoadingScreenController.OnLoadingScreenShown -= HandleLoadingScreenShown;
         waitingForRespawnHeal = false;
@@ -230,6 +232,14 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     {
         Player.ClearCachedPlayerObject();
         RefreshRegistration();
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (!isActiveAndEnabled || MainMenu.isInMainMenu)
+            return;
+
+        RestoreRuntimeStateAfterSceneLoad();
     }
     #endregion
 
@@ -512,11 +522,12 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
     private void EnsureHealthBarReference()
     {
-        if (healthBar != null)
+        if (healthBar != null && IsPlayerHudHealthBar(healthBar))
             return;
 
         HealthBar[] healthBars = FindObjectsByType<HealthBar>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        HealthBar fallback = null;
+        HealthBar preferred = null;
+        HealthBar fallback = healthBar;
 
         for (int i = 0; i < healthBars.Length; i++)
         {
@@ -528,12 +539,12 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
             if (IsPlayerHudHealthBar(candidate))
             {
-                healthBar = candidate;
-                return;
+                preferred = candidate;
+                break;
             }
         }
 
-        healthBar = fallback;
+        healthBar = preferred ?? fallback;
     }
 
     private static bool IsPlayerHudHealthBar(HealthBar candidate)
@@ -790,7 +801,9 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         yield return WaitForDeathFadeTiming(playDeathAnimation);
 
-        bool canRespawnAtCheckpoint = CheckpointBehavior.currentCheckpoint != null || PlayerMovement.IsTestingOrDebugMode;
+        bool canRespawnAtCheckpoint = CheckpointBehavior.currentCheckpoint != null
+            || CheckpointBehavior.EnsureRespawnCheckpointAvailable()
+            || PlayerMovement.IsTestingOrDebugMode;
 
         if (restartFromCheckpointOnDeath && canRespawnAtCheckpoint)
         {

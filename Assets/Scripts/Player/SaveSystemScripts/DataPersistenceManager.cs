@@ -118,6 +118,9 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     //When selecting a new game, new game data is created
     public static void NewGame()
     {
+        if (InternalPlayerInventory.Instance != null)
+            InternalPlayerInventory.Instance.RemoveTransientKeycardItems();
+
         // Delete the existing save for the currently selected profile (clean reset)
         if (fileDataHandler != null && !string.IsNullOrEmpty(selectedProfileId))
         {
@@ -141,6 +144,9 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     {
         if (Instance.disableDataPersistence) return;
 
+        if (InternalPlayerInventory.Instance != null)
+            InternalPlayerInventory.Instance.RemoveTransientKeycardItems();
+
         //Loads the game data if it exists
         gameData = fileDataHandler.Load(selectedProfileId);
 
@@ -148,6 +154,9 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
         //If it doesnt, it will call the NewGame function
         if (gameData == null) return;
+
+        if (gameData.collectedInteractables != null)
+            InternalPlayerInventory.RemoveTransientKeycardEntries(gameData.collectedInteractables);
 
         // Keep the manager's cached lastSavedScene in sync with the loaded profile
         lastSavedScene = gameData.lastSavedScene;
@@ -162,6 +171,9 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     {
         if (Instance.disableDataPersistence) return;
         if (gameData == null) return;
+
+        if (gameData.collectedInteractables != null)
+            InternalPlayerInventory.RemoveTransientKeycardEntries(gameData.collectedInteractables);
 
         //Goes through each of the found items that needs to be saved and saves them
         foreach (IDataPersistenceManager dataPersistenceObj in GetValidDataPersistenceObjects())
