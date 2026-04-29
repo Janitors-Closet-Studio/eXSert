@@ -152,6 +152,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
     {
         MainMenu.isInMainMenu = scene.name == "MainMenu";
         MufffleMusicForMenu(false);
+        SoundManager.Instance?.PauseSFXAndVoiceRequests(false);
         TryResolveHudRoot();
         HideAllMenus();
         menuListManager?.ResetForGameplay();
@@ -221,7 +222,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             return;
         }
-        
+
         if (LoadingScreenController.IsLoading)
         {
             Debug.Log("[PauseManager] OnNavigationMenu ignored - currently loading");
@@ -467,6 +468,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
             Debug.Log("[PauseManager] OnNavigationMenu ignored - confirmation dialog open");
             return;
         }
+
         Debug.Log($"[PauseManager] OnNavigationMenu called - Current menu: {currentActiveMenu}, IsPaused: {IsPaused}");
 
         RefreshNaviEntryIndicator();
@@ -600,6 +602,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         SetMenuStates(showPause: true, showNavigation: false, showSettings: false);
         SetBlurEnabled(true);
+        SoundManager.Instance?.PauseSFXAndVoiceRequests(true);
 
         // Prevent same physical key press from immediately firing Back after action map switch.
         ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
@@ -640,6 +643,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         SetMenuStates(showPause: false, showNavigation: true, showSettings: false);
         SetBlurEnabled(true);
+        SoundManager.Instance?.PauseSFXAndVoiceRequests(true);
 
         // Prevent same physical key press from immediately firing Back after action map switch.
         ignoreBackUntilTime = Time.unscaledTime + inputDebounceSeconds;
@@ -762,7 +766,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         footerManager?.UpdateFooterForMenu(null);
 
-        
+        SoundManager.Instance?.PauseSFXAndVoiceRequests(false);
 
         HideAllMenus();
         SetBlurEnabled(false);
@@ -824,6 +828,7 @@ public class PauseManager : Singletons.Singleton<PauseManager>
 
         // Ensure menu muffling does not leak into gameplay after scene transition.
         MufffleMusicForMenu(false);
+        SoundManager.Instance?.PauseSFXAndVoiceRequests(false);
 
         // Release this menu's pause ownership so restart transitions do not leave the game paused.
         PauseCoordinator.ReleaseTimeScale(GameplayInputBlockOwnerId);

@@ -25,6 +25,8 @@ public class SaveSlotsMenu : MonoBehaviour
     [SerializeField] private Button playButton;
 
     [SerializeField] private Button loadButton;
+
+    [SerializeField] private MusicFader musicFader;
     internal bool isInLoadMenu = false;
 
     [SerializeField] private GameObject detailsPanel;
@@ -142,9 +144,12 @@ public class SaveSlotsMenu : MonoBehaviour
 
         if (hasStartedSceneTransition) return;
         hasStartedSceneTransition = true;
-        playButton.interactable = false; // Prevent multiple clicks
+        
+        playButton.targetGraphic.raycastTarget = false; // Use target graphic raycast instead of interactable to keep visual state while preventing clicks.
 
         DisableMenuButtons();
+
+        musicFader?.FadeOutMusic();
 
         // Ensure a slot is selected; if not, pick a sensible default
         if (currentSaveSlotSelected == null)
@@ -676,7 +681,12 @@ public class SaveSlotsMenu : MonoBehaviour
             foreach (SaveSlots saveSlot in saveSlots)
             {
                 if (saveSlot == null) continue;
-                saveSlot.SetInteractable(false);
+                var button = saveSlot.GetComponent<Button>();
+                if (button != null)
+                {
+                    if (button.targetGraphic != null)
+                        button.targetGraphic.raycastTarget = false; // Use target graphic raycast instead of interactable to keep visual state while preventing clicks.
+                }
             }
         }
 

@@ -15468,12 +15468,12 @@ MonoBehaviour:
   _interactAnimation: {fileID: 0}
   _interactBusyFallbackDuration: 0.6
   _interactId: 
-  _interactionSFX: {fileID: 0}
+  _interactionSFX: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
   _interactionPrompt: Press to Interact
-  displayName: 
+  displayName: Conservatory Verification Console
   uiDisplayDuration: 4
   uiFadeDuration: 2
-  bottomFlavorText: Press Pause to View
+  bottomFlavorText: 
   _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
@@ -77035,6 +77035,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 6288e0fdc7059a743816927723b48f54, type: 3}
   m_PrefabInstance: {fileID: 1900756261}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1913879950
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -41.2345
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 29.7436
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 616.19135
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7259501367457533165, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: m_Name
+      value: SceneObjectiveManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
 --- !u!1001 &1916387288
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -82000,6 +82057,10 @@ PrefabInstance:
       value: Roomba
       objectReference: {fileID: 0}
     - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: associatedDiary
+      value: 
+      objectReference: {fileID: 11400000, guid: 9dbca7e8a00f2704c8c0a7223f24a946, type: 2}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
       propertyPath: isActCheckpoint
       value: 1
       objectReference: {fileID: 0}
@@ -85407,3 +85468,4 @@ SceneRoots:
   - {fileID: 539540028}
   - {fileID: 157958679}
   - {fileID: 346649961}
+  - {fileID: 1913879950}

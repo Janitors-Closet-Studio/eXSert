@@ -20,6 +20,11 @@ public class GraphicsSettings : MonoBehaviour
 
     [Space(20)]
 
+    [Header("Quality Settings")]
+    [SerializeField] private TMP_Text qualityText;
+    private int qualityLevel;
+
+
     [Header("Brightness Settings")]
     [SerializeField] private Slider brightnessSlider;
     public float defaultBrightness = 0.5f;
@@ -98,6 +103,11 @@ public class GraphicsSettings : MonoBehaviour
 
         isResolution1920x1080 = PlayerPrefs.GetInt("masterResolution", 0) == 0;
         SetResolution(isResolution1920x1080 ? "1920x1080" : "2560x1440");
+
+        qualityLevel = PlayerPrefs.GetInt("masterQuality", 1);
+        SetQuality(qualityLevel);
+
+        GraphicsApply();
     }
 
     private void OnEnable()
@@ -165,6 +175,31 @@ public class GraphicsSettings : MonoBehaviour
         );
     }
 
+    public void SetQuality(int quality)
+    {
+        qualityLevel = quality;
+
+        if (quality == 0)
+        {
+            QualitySettings.SetQualityLevel(0);
+            qualityText.text = "Low";
+            return;
+        }
+
+        if (quality == 1)
+        {
+            QualitySettings.SetQualityLevel(1);
+            qualityText.text = "Medium";
+            return;
+        }
+
+        if (quality == 2)
+        {
+             QualitySettings.SetQualityLevel(2);
+            qualityText.text = "High";
+            return;
+        }
+    }
     public void SetBrightness(float brightness)
     {
         if (brightnessVolumeProfile == null)
@@ -352,6 +387,7 @@ public class GraphicsSettings : MonoBehaviour
 
     public void GraphicsApply()
     {
+        PlayerPrefs.SetInt("masterQuality", qualityLevel);
         PlayerPrefs.SetFloat("masterBrightness", brightnessLevel);
         PlayerPrefs.SetInt("masterFPS", fpsLevel);
         ApplyRuntimeFPSSetting(fpsLevel);
@@ -379,6 +415,11 @@ public class GraphicsSettings : MonoBehaviour
 
         SetDisplayMode(0);
         displayModeText.text = "Fullscreen";
+        displayModeLevel = 0;
+
+        SetQuality(1);
+        qualityText.text = "Medium";
+        qualityLevel = 1;
         GraphicsApply();
     }
 }
