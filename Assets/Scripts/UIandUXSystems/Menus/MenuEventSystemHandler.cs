@@ -26,6 +26,7 @@ public class MenuEventSystemHandler : MonoBehaviour
 
     [Header("Sounds")]
     [SerializeField] protected UnityEvent SoundEvent;
+    [SerializeField] protected AudioClip clickSFX;
 
     // stores all the scales of all the UI Selectables
     protected Dictionary<Selectable, Vector3> _scales = new Dictionary<Selectable, Vector3>();
@@ -202,8 +203,8 @@ public class MenuEventSystemHandler : MonoBehaviour
 
     public void OnSelect(BaseEventData eventData)
     {
-        // play sound
-        SoundEvent?.Invoke();
+        if (eventData.selectedObject != _firstSelected.gameObject)
+            SoundManager.Instance.uiSource.PlayOneShot(clickSFX);
 
 
         _lastSelected = eventData.selectedObject.GetComponent<Selectable>();
@@ -229,7 +230,8 @@ public class MenuEventSystemHandler : MonoBehaviour
     }
 
     public void OnPointerEnter(BaseEventData eventData)
-    {
+    {   
+
         PointerEventData pointerEventData = eventData as PointerEventData;
         if (pointerEventData != null)
         {

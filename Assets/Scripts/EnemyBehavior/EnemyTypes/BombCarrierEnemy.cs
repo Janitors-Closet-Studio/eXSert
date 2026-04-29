@@ -169,6 +169,10 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
     [SerializeField, Tooltip("High frequency of the rumble effect.")]
     private float rumbleHighFrequency = 0.35f;
 
+    [Header("Explosion SFX")]
+    [SerializeField, Tooltip("Sound effect to play when the bomb explodes.")]
+    private AudioClip explosionSfx;
+
     // Spawn context
     private bool spawnedByAlarm = false;
     private AlarmCarrierEnemy alarmSource;
@@ -312,6 +316,8 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             particleSystem.Clear(true);
             particleSystem.Play(true);
         }
+
+        SoundManager.Instance.sfxSource.PlayOneShot(explosionSfx);
     }
 
     private void StopExplosionVfx()
