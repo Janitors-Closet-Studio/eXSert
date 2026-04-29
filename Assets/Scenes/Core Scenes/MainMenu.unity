@@ -957,6 +957,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Quit
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Navigation.m_Mode
       value: 4
@@ -1137,10 +1141,6 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Quit
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1239,10 +1239,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuEventSystemHandler
   Selectables:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  _firstSelected: {fileID: 0}
+  - {fileID: 813460771}
+  - {fileID: 751629649}
+  - {fileID: 1091006906}
+  _firstSelected: {fileID: 813460771}
   _navigateReference: {fileID: 271995281}
   _selectedAnimationScale: 1
   _scaleDuration: 0.25
@@ -1251,6 +1251,7 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
+  selectSFX: {fileID: 8300000, guid: d873165871ed7b64ca544185d8bed61e, type: 3}
   clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
 --- !u!114 &152299553 stripped
 MonoBehaviour:
@@ -6686,6 +6687,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Credits
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Navigation.m_Mode
       value: 4
@@ -6865,10 +6870,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Credits
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -7782,6 +7783,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Navigation.m_Mode
       value: 4
@@ -7973,12 +7980,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -9081,6 +9082,7 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
+  selectSFX: {fileID: 0}
   clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
 --- !u!114 &1120368910
 MonoBehaviour:
@@ -12193,7 +12195,8 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
-  clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
+  selectSFX: {fileID: 8300000, guid: d873165871ed7b64ca544185d8bed61e, type: 3}
+  clickSFX: {fileID: 8300000, guid: 779c926e3163d5b408338742cde66ac3, type: 3}
 --- !u!1 &1487454281
 GameObject:
   m_ObjectHideFlags: 0
@@ -15888,6 +15891,7 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
+  selectSFX: {fileID: 0}
   clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
 --- !u!1 &2076094287
 GameObject:
@@ -16763,6 +16767,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Interactable
       value: 1
@@ -16962,12 +16972,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
