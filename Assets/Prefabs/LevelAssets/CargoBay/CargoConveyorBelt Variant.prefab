@@ -292,7 +292,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3206400811469835703}
   serializedVersion: 2
-  m_LocalRotation: {x: -5.684342e-14, y: 0.000000044703597, z: -8.0704025e-14, w: -1}
+  m_LocalRotation: {x: 0, y: 0, z: -0, w: -1}
   m_LocalPosition: {x: -27.89313, y: -3.226502, z: -50.579662}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -666,6 +666,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5170064283238825637}
     m_Modifications:
+    - target: {fileID: 1896626189430207458, guid: 66a766a461775a3478040a6c92794fd7, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 3910920909592753829, guid: 66a766a461775a3478040a6c92794fd7, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.7
@@ -722,6 +726,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: light (6)
       objectReference: {fileID: 0}
+    - target: {fileID: 8499435278080138043, guid: 66a766a461775a3478040a6c92794fd7, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -740,6 +748,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5170064283238825637}
     m_Modifications:
+    - target: {fileID: 3968925910383274689, guid: d542482e73d002e41a605f435483f2cf, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.25
+      objectReference: {fileID: 0}
     - target: {fileID: 6045672726786602411, guid: d542482e73d002e41a605f435483f2cf, type: 3}
       propertyPath: m_Name
       value: GarageDoorBoring
@@ -805,6 +817,10 @@ PrefabInstance:
     - target: {fileID: 3568131056816282866, guid: aea3de5327326de4b819f82c614c8885, type: 3}
       propertyPath: m_Name
       value: ConveyorFull
+      objectReference: {fileID: 0}
+    - target: {fileID: 3568131056816282866, guid: aea3de5327326de4b819f82c614c8885, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4237707917343753800, guid: aea3de5327326de4b819f82c614c8885, type: 3}
       propertyPath: m_LocalPosition.x
