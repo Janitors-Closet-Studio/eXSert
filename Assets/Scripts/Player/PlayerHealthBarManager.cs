@@ -801,7 +801,9 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
 
         yield return WaitForDeathFadeTiming(playDeathAnimation);
 
-        bool canRespawnAtCheckpoint = CheckpointBehavior.currentCheckpoint != null || PlayerMovement.IsTestingOrDebugMode;
+        bool canRespawnAtCheckpoint = CheckpointBehavior.currentCheckpoint != null
+            || CheckpointBehavior.EnsureRespawnCheckpointAvailable()
+            || PlayerMovement.IsTestingOrDebugMode;
 
         if (restartFromCheckpointOnDeath && canRespawnAtCheckpoint)
         {

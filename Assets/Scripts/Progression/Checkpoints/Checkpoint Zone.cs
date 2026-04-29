@@ -105,6 +105,20 @@ namespace Progression.Checkpoints
             currentCheckpoint = newCheckpoint;
         }
 
+        public static bool EnsureRespawnCheckpointAvailable()
+        {
+            if (currentCheckpoint != null)
+                return true;
+
+            CheckpointBehavior fallbackCheckpoint = ResolveFallbackRespawnCheckpoint();
+            if (fallbackCheckpoint == null)
+                return false;
+
+            currentCheckpoint = fallbackCheckpoint;
+            Debug.Log($"[Checkpoint] Promoted fallback respawn checkpoint '{currentCheckpoint.CheckpointId}'.");
+            return true;
+        }
+
         public static void SubscribeToPlayerRespawn() => Player.RespawnPlayer += RespawnPlayer;
 
         public static void UnsubscribeFromPlayerRespawn() => Player.RespawnPlayer -= RespawnPlayer;
@@ -118,7 +132,7 @@ namespace Progression.Checkpoints
             if (InternalPlayerInventory.Instance != null)
                 InternalPlayerInventory.Instance.RemoveTransientKeycardItems();
 
-            if (currentCheckpoint == null)
+            if (!EnsureRespawnCheckpointAvailable())
             {
                 if (PlayerMovement.IsTestingOrDebugMode)
                 {
@@ -216,6 +230,50 @@ namespace Progression.Checkpoints
 
                 Player.SpawnPlayerAtCheckpoint(); // This will internally use the currentCheckpoint reference to get the spawn position and rotation
             }
+        }
+
+        private static CheckpointBehavior ResolveFallbackRespawnCheckpoint()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            CheckpointBehavior fallbackCheckpoint = ResolveFirstCheckpointForScene(activeScene);
+            if (fallbackCheckpoint != null)
+                return fallbackCheckpoint;
+
+            for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
+            {
+                Scene scene = SceneManager.GetSceneAt(sceneIndex);
+                if (!scene.IsValid() || !scene.isLoaded || scene == activeScene)
+                    continue;
+
+                fallbackCheckpoint = ResolveFirstCheckpointForScene(scene);
+                if (fallbackCheckpoint != null)
+                    return fallbackCheckpoint;
+            }
+
+            return null;
+        }
+
+        private static CheckpointBehavior ResolveFirstCheckpointForScene(Scene scene)
+        {
+            if (!scene.IsValid() || !scene.isLoaded)
+                return null;
+
+            string sceneName = scene.name;
+            if (string.IsNullOrWhiteSpace(sceneName)
+                || string.Equals(sceneName, "PlayerScene", StringComparison.Ordinal)
+                || string.Equals(sceneName, "PostProcessScene", StringComparison.Ordinal)
+                || string.Equals(sceneName, "LoadingScene", StringComparison.Ordinal)
+                || string.Equals(sceneName, "MainMenu", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            SceneAsset sceneAsset = SceneAsset.GetSceneAsset(scene);
+            if (sceneAsset == null)
+                return null;
+
+            Progression.ProgressionManager progressionManager = Progression.ProgressionManager.GetInstance(sceneAsset);
+            return progressionManager != null ? progressionManager.FirstCheckpoint : null;
         }
 
         private void UpdateAvailableActs()
