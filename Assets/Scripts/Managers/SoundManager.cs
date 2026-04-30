@@ -222,9 +222,10 @@ public class SoundManager : Singleton<SoundManager>
             if (sfxVoiceRequestsPaused)
                 return;
 
-            if (sfxSource != null)
+
+            if (pauseSfxFadeInRoutine == null && sfxSource != null)
                 ogSfxVolume = sfxSource.volume;
-            if (voiceSource != null)
+            if (pauseVoiceFadeInRoutine == null && voiceSource != null)
                 ogVoiceVolume = voiceSource.volume;
 
             StopPauseSfxVoiceTransitionCoroutines();
@@ -284,10 +285,14 @@ public class SoundManager : Singleton<SoundManager>
         if (source == null || fadeDuration <= 0f)
             yield break;
 
-        source.volume = 0f;
-        if (!source.isPlaying)
-            source.Play();
 
+        if (!source.isPlaying)
+        {
+            source.volume = targetVolume;
+            yield break;
+        }
+
+        source.volume = 0f;
         float elapsedTime = 0f;
 
         while (elapsedTime < fadeDuration)
