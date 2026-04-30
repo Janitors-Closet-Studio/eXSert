@@ -24,6 +24,7 @@ public class LoadPrefs : MonoBehaviour
     [SerializeField] private TMP_Text resolutionTextValue = null;
     [SerializeField] private TMP_Text cameraShakeOnOffText = null;
     [SerializeField] private TMP_Text fpsTextValue = null;
+    [SerializeField] private TMP_Text motionBlurOnOffText = null;
 
     [Header("General Settings")]
     [SerializeField] private Slider sensSlider = null;
@@ -331,6 +332,27 @@ public class LoadPrefs : MonoBehaviour
         {
             Debug.LogWarning("[LoadPrefs] masterBrightness key not found in PlayerPrefs.");
         }
+
+        if (PlayerPrefs.HasKey("masterMotionBlur"))
+        {
+            int motionBlurInt = PlayerPrefs.GetInt("masterMotionBlur");
+            DebugLogSettingsM.ConditionalLog(DebugLogCategory.Settings, $"[LoadPrefs] Loading masterMotionBlur: {motionBlurInt}");
+            bool isMotionBlur = motionBlurInt == 1;
+            if (graphics != null)
+            {
+                graphics.SetMotionBlur(isMotionBlur);
+                SettingsManager.Instance.motionBlur = isMotionBlur;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[LoadPrefs] masterMotionBlur key not found in PlayerPrefs.");
+            if (graphics != null)
+                graphics.SetMotionBlur(false);
+
+            PlayerPrefs.SetInt("masterMotionBlur", 0);
+        }
+
 
         PlayerPrefs.Save();
     }

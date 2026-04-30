@@ -54,6 +54,12 @@ public class MenuEventSystemHandler : MonoBehaviour
             }
         }
 
+        foreach (var selectable in Selectables)
+        {
+            if (selectable != null)
+                AddSoundForWhenButtonClicked(selectable.GetComponent<Button>());
+        }
+
         if (_putallSelectablesInExclusions)
         {
             foreach (var selectable in Selectables)
@@ -104,11 +110,6 @@ public class MenuEventSystemHandler : MonoBehaviour
             }
         }
 
-        foreach (var selectable in Selectables)
-        {
-            if (selectable != null)
-                AddSoundForWhenButtonClicked(selectable.GetComponent<Button>());
-        }
     }
 
     private void AddSoundForWhenButtonClicked(Button button)
