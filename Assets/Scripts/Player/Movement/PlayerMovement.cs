@@ -4132,6 +4132,12 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
+        if (InputReader.inputBusy)
+        {
+            DebugMovementLog("PlayMovementAnimation blocked: inputBusy=true");
+            return;
+        }
+
         if (animationController == null)
         {
             DebugMovementLog("PlayMovementAnimation blocked: animationController is null");

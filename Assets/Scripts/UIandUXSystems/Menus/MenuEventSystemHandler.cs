@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using System.Collections;
 using UnityEngine.Events;
+using Unity.VisualScripting;
 
 public class MenuEventSystemHandler : MonoBehaviour
 {
@@ -26,6 +27,7 @@ public class MenuEventSystemHandler : MonoBehaviour
 
     [Header("Sounds")]
     [SerializeField] protected UnityEvent SoundEvent;
+    [SerializeField] protected AudioClip selectSFX;
     [SerializeField] protected AudioClip clickSFX;
 
     // stores all the scales of all the UI Selectables
@@ -50,6 +52,12 @@ public class MenuEventSystemHandler : MonoBehaviour
             {
                 Debug.LogWarning("A selectable in the Selectables list is null or already exists in the dictionary.");
             }
+        }
+
+        foreach (var selectable in Selectables)
+        {
+            if (selectable != null)
+                AddSoundForWhenButtonClicked(selectable.GetComponent<Button>());
         }
 
         if (_putallSelectablesInExclusions)
@@ -101,6 +109,21 @@ public class MenuEventSystemHandler : MonoBehaviour
                 Debug.LogError("No valid selectable found to set as first selected.");
             }
         }
+
+    }
+
+    private void AddSoundForWhenButtonClicked(Button button)
+    {
+        if (button == null)
+        {
+            Debug.LogWarning("Button is null. Cannot add click sound.");
+            return;
+        }
+
+        button.onClick.AddListener(() =>
+        {
+            SoundManager.Instance.uiSource.PlayOneShot(clickSFX);
+        });
     }
 
     protected virtual IEnumerator SelectAfterDelay()
@@ -204,7 +227,7 @@ public class MenuEventSystemHandler : MonoBehaviour
     public void OnSelect(BaseEventData eventData)
     {
         if (eventData.selectedObject != _firstSelected.gameObject)
-            SoundManager.Instance.uiSource.PlayOneShot(clickSFX);
+            SoundManager.Instance.uiSource.PlayOneShot(selectSFX);
 
 
         _lastSelected = eventData.selectedObject.GetComponent<Selectable>();

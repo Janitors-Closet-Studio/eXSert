@@ -1099,6 +1099,9 @@ namespace EnemyBehavior.Boss.Cleanser
             cleanserVfxManager = cleanserVfxManager ?? GetComponent<CleanserVFXManager>() ?? GetComponentInChildren<CleanserVFXManager>(true);
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
 
+            voiceLineSource = SoundManager.Instance.voiceSource;
+            sfxSource = SoundManager.Instance.sfxSource;
+
             if (voiceLineSource == null)
             {
                 voiceLineSource = gameObject.AddComponent<AudioSource>();

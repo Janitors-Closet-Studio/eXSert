@@ -35,10 +35,15 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
     private float holdRepeatDelay = 0.35f;
     [SerializeField, Min(0.01f), Tooltip("Interval between repeated slider changes while an input is held.")]
     private float holdRepeatInterval = 0.08f;
+    [SerializeField, Min(0.01f), Tooltip("Minimum time between slider adjust sound plays to prevent clipping while dragging.")]
+    private float adjustSfxInterval = 0.08f;
+
+    [SerializeField] private AudioClip adjustSFX;
 
     private Slider sourceSlider;
     private Coroutine increaseRepeatRoutine;
     private Coroutine decreaseRepeatRoutine;
+    private float lastAdjustSfxTime = float.NegativeInfinity;
 
     private void Awake()
     {
@@ -57,7 +62,10 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
     private void OnEnable()
     {
         if (sourceSlider != null)
+        {
             sourceSlider.onValueChanged.AddListener(SyncVisualSlider);
+            sourceSlider.onValueChanged.AddListener(PlayAdjustSfx);
+        }
 
         SubscribeInput(increaseAction, OnIncreaseStarted, OnIncreaseCanceled);
         SubscribeInput(decreaseAction, OnDecreaseStarted, OnDecreaseCanceled);
@@ -66,13 +74,29 @@ public class SliderValueProxy : MonoBehaviour, IPointerClickHandler, IPointerEnt
     private void OnDisable()
     {
         if (sourceSlider != null)
+        {
             sourceSlider.onValueChanged.RemoveListener(SyncVisualSlider);
+            sourceSlider.onValueChanged.RemoveListener(PlayAdjustSfx);
+        }
 
         UnsubscribeInput(increaseAction, OnIncreaseStarted, OnIncreaseCanceled);
         UnsubscribeInput(decreaseAction, OnDecreaseStarted, OnDecreaseCanceled);
         StopRepeat(ref increaseRepeatRoutine);
         StopRepeat(ref decreaseRepeatRoutine);
         IsAdjustingSlider = false;
+    }
+
+    private void PlayAdjustSfx(float value)
+    {
+        if (adjustSFX == null || SoundManager.Instance == null || SoundManager.Instance.sfxSource == null)
+            return;
+
+        float currentTime = Time.unscaledTime;
+        if (currentTime - lastAdjustSfxTime < adjustSfxInterval)
+            return;
+
+        SoundManager.Instance.sfxSource.PlayOneShot(adjustSFX);
+        lastAdjustSfxTime = currentTime;
     }
 
 

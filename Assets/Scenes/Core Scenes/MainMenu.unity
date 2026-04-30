@@ -511,7 +511,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4282598211
-  m_fontColor: {r: 0.2627451, g: 0.2627451, b: 0.2627451, a: 1}
+  m_fontColor: {r: 0.92156863, g: 0.9019608, b: 0.84705883, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -957,6 +957,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Quit
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Navigation.m_Mode
       value: 4
@@ -1137,10 +1141,6 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Quit
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1239,10 +1239,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuEventSystemHandler
   Selectables:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  _firstSelected: {fileID: 0}
+  - {fileID: 813460771}
+  - {fileID: 751629649}
+  - {fileID: 1091006906}
+  _firstSelected: {fileID: 813460771}
   _navigateReference: {fileID: 271995281}
   _selectedAnimationScale: 1
   _scaleDuration: 0.25
@@ -1251,7 +1251,8 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
-  clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
+  selectSFX: {fileID: 8300000, guid: d873165871ed7b64ca544185d8bed61e, type: 3}
+  clickSFX: {fileID: 8300000, guid: 0e837cbeef9d3fa42abc3e9261cd72c4, type: 3}
 --- !u!114 &152299553 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3979303703383663157, guid: 6bb166523572a5f418993d49cf07a606, type: 3}
@@ -1802,6 +1803,17 @@ RectTransform:
 --- !u!114 &236940876 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 952095238851189389, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+  m_PrefabInstance: {fileID: 1223060377}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &248677613 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3829561425111205309, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
   m_PrefabInstance: {fileID: 1223060377}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
@@ -6686,6 +6698,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: Credits
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Navigation.m_Mode
       value: 4
@@ -6865,10 +6881,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: Credits
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -7782,6 +7794,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Navigation.m_Mode
       value: 4
@@ -7973,12 +7991,6 @@ PrefabInstance:
     - target: {fileID: 6905624367414435793, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_HorizontalAlignment
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -9081,6 +9093,7 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
+  selectSFX: {fileID: 0}
   clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
 --- !u!114 &1120368910
 MonoBehaviour:
@@ -10027,6 +10040,14 @@ PrefabInstance:
       propertyPath: increaseAction
       value: 
       objectReference: {fileID: 1984691153}
+    - target: {fileID: 7697595267423727897, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1041919914}
+    - target: {fileID: 7697595267423727897, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      value: 
+      objectReference: {fileID: 1041919914}
     - target: {fileID: 8805785396339515538, guid: 105945bbdb2333f4d8de11426b8da412, type: 3}
       propertyPath: m_OnValueChanged.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
@@ -12193,7 +12214,8 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
-  clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
+  selectSFX: {fileID: 8300000, guid: d873165871ed7b64ca544185d8bed61e, type: 3}
+  clickSFX: {fileID: 8300000, guid: 0e837cbeef9d3fa42abc3e9261cd72c4, type: 3}
 --- !u!1 &1487454281
 GameObject:
   m_ObjectHideFlags: 0
@@ -15888,7 +15910,8 @@ MonoBehaviour:
   SoundEvent:
     m_PersistentCalls:
       m_Calls: []
-  clickSFX: {fileID: 8300000, guid: 913aa1a4fe8ce6d4a924761c584b49b3, type: 3}
+  selectSFX: {fileID: 8300000, guid: d873165871ed7b64ca544185d8bed61e, type: 3}
+  clickSFX: {fileID: 8300000, guid: 0e837cbeef9d3fa42abc3e9261cd72c4, type: 3}
 --- !u!1 &2076094287
 GameObject:
   m_ObjectHideFlags: 0
@@ -16763,6 +16786,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1854126247}
     m_Modifications:
+    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
+      propertyPath: m_text
+      value: 'Settings
+
+'
+      objectReference: {fileID: 0}
     - target: {fileID: 848682714314222994, guid: 5189e6826b55d754d8ccbe5400227907, type: 3}
       propertyPath: m_Interactable
       value: 1
@@ -16963,12 +16992,6 @@ PrefabInstance:
       propertyPath: m_HorizontalAlignment
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 5164768708078241116, guid: a880051b5dbf6b34f9a4c8307b9322fe, type: 3}
-      propertyPath: m_text
-      value: 'Settings
-
-'
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -16991,6 +17014,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SettingsManager
       objectReference: {fileID: 0}
+    - target: {fileID: 5946355462515358723, guid: 408c9e50c8fd81246804f4ccdf5b022c, type: 3}
+      propertyPath: motionBlur
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5946355462515358723, guid: 408c9e50c8fd81246804f4ccdf5b022c, type: 3}
+      propertyPath: brightnessVolumeProfile
+      value: 
+      objectReference: {fileID: 11400000, guid: 5609b36b3bcc4824eac0f43eeed59779, type: 2}
     - target: {fileID: 6920368802861262289, guid: 408c9e50c8fd81246804f4ccdf5b022c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 30.74393
@@ -17426,6 +17457,10 @@ PrefabInstance:
       propertyPath: masterVolumeSlider
       value: 
       objectReference: {fileID: 256770169}
+    - target: {fileID: 5217535595193317142, guid: 2134fa2bf068dae49a032a722faa8529, type: 3}
+      propertyPath: motionBlurOnOffText
+      value: 
+      objectReference: {fileID: 248677613}
     - target: {fileID: 5217535595193317142, guid: 2134fa2bf068dae49a032a722faa8529, type: 3}
       propertyPath: resolutionTextValue
       value: 
