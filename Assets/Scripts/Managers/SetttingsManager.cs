@@ -9,6 +9,9 @@ using Singletons;
 using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+using System.Runtime.Serialization.Formatters;
 
 public class SettingsManager : Singleton<SettingsManager>
 {
@@ -18,6 +21,10 @@ public class SettingsManager : Singleton<SettingsManager>
     [SerializeField] internal float rumbleStrength;
     [SerializeField] internal bool cameraShake = true;
     [SerializeField] internal bool motionBlur = true;
+
+    [SerializeField]
+    [Tooltip("Assign the shared post-process volume profile here. Brightness uses its LiftGammaGain override just like PauseManager uses a VolumeProfile.")]
+    private VolumeProfile brightnessVolumeProfile;
 
     private GameObject player;
     private List<CinemachineInputAxisController> playerCameraController = new List<CinemachineInputAxisController>();
@@ -29,11 +36,13 @@ public class SettingsManager : Singleton<SettingsManager>
     private void OnEnable()
     {
         SceneManager.sceneLoaded += ReapplyFPSLimit;
+        SceneManager.sceneLoaded += ApplyMotionBlurToMain;
     }
 
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= ReapplyFPSLimit;
+        SceneManager.sceneLoaded -= ApplyMotionBlurToMain;
     }
 
     protected override void Awake()
@@ -57,6 +66,12 @@ public class SettingsManager : Singleton<SettingsManager>
             defaultSet = true;
         }
 
+        if (!PlayerPrefs.HasKey("masterMotionBlur"))
+        {
+            PlayerPrefs.SetInt("masterMotionBlur", 1);
+            defaultSet = true;
+        }
+
         if (defaultSet)
             PlayerPrefs.Save();
 
@@ -72,6 +87,21 @@ public class SettingsManager : Singleton<SettingsManager>
         UpdatePlayerCameraSens(sensitivity);
         UpdatePlayerInvertY(invertY);
         UpdateComboProgressionDisplay(comboProgression);
+    }
+
+    private void ApplyMotionBlurToMain(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != "PostProcessScene")
+            return;
+
+        if (!brightnessVolumeProfile.TryGet(out MotionBlur motionBlurComponent))
+            motionBlurComponent = brightnessVolumeProfile.Add<MotionBlur>(true);
+
+        motionBlurComponent.active = motionBlur;
+        motionBlurComponent.intensity.overrideState = motionBlur;
+        if (motionBlur && Mathf.Approximately(motionBlurComponent.intensity.value, 0f))
+            motionBlurComponent.intensity.value = 0.15f;
+        motionBlurComponent.mode.overrideState = motionBlur;
     }
 
     private void LateUpdate()

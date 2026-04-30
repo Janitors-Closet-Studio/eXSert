@@ -24,6 +24,7 @@ public class LoadPrefs : MonoBehaviour
     [SerializeField] private TMP_Text resolutionTextValue = null;
     [SerializeField] private TMP_Text cameraShakeOnOffText = null;
     [SerializeField] private TMP_Text fpsTextValue = null;
+    [SerializeField] private TMP_Text motionBlurOnOffText = null;
 
     [Header("General Settings")]
     [SerializeField] private Slider sensSlider = null;

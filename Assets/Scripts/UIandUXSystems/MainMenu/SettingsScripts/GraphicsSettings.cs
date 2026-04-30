@@ -108,6 +108,9 @@ public class GraphicsSettings : MonoBehaviour
         isResolution1920x1080 = PlayerPrefs.GetInt("masterResolution", 0) == 0;
         SetResolution(isResolution1920x1080 ? "1920x1080" : "2560x1440");
 
+        isMotionBlur = PlayerPrefs.GetInt("masterMotionBlur", 1) == 1;
+        SetMotionBlur(isMotionBlur);
+
         qualityLevel = PlayerPrefs.GetInt("masterQuality", 1);
         SetQuality(qualityLevel);
 
@@ -182,21 +185,23 @@ public class GraphicsSettings : MonoBehaviour
     public void SetMotionBlur(bool motionBlur)
     {
         isMotionBlur = motionBlur;
-        brightnessVolumeProfile.TryGet(out MotionBlur motionBlurComponent);
 
-        if (motionBlur)
+        if (brightnessVolumeProfile == null)
         {
-            motionBlurText.text = "On";
-            
-            motionBlurComponent.active = true;
-            SettingsManager.Instance.motionBlur = true;
-            
+            Debug.LogWarning("[GraphicsSettings] SetMotionBlur: no VolumeProfile assigned.");
             return;
         }
 
-        motionBlurText.text = "Off";
-        motionBlurComponent.active = false;
-        SettingsManager.Instance.motionBlur = false;
+        if (!brightnessVolumeProfile.TryGet(out MotionBlur motionBlurComponent))
+            motionBlurComponent = brightnessVolumeProfile.Add<MotionBlur>(true);
+
+        motionBlurComponent.active = motionBlur;
+        motionBlurComponent.intensity.overrideState = motionBlur;
+        if (motionBlur && Mathf.Approximately(motionBlurComponent.intensity.value, 0f))
+            motionBlurComponent.intensity.value = 0.15f;
+        motionBlurComponent.mode.overrideState = motionBlur;
+        motionBlurText.text = motionBlur ? "On" : "Off";
+        SettingsManager.Instance.motionBlur = motionBlur;
     }
 
     public void SetQuality(int quality)
