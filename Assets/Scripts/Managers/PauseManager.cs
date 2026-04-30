@@ -1138,7 +1138,17 @@ public class PauseManager : Singletons.Singleton<PauseManager>
         {
             if (!musicIsMuffled)
             {
-                Debug.Log("[PauseManager] Music not muffled, skipping restore.");
+
+                if (lowPassFilter.enabled && lowPassFilter.cutoffFrequency < defaultCutoff)
+                {
+                    Debug.Log("[PauseManager] Stale low-pass filter detected; force-resetting.");
+                    lowPassFilter.cutoffFrequency = defaultCutoff;
+                    lowPassFilter.enabled = false;
+                }
+                else
+                {
+                    Debug.Log("[PauseManager] Music not muffled, skipping restore.");
+                }
                 return;
             }
             Debug.Log("Restoring music after menu");
