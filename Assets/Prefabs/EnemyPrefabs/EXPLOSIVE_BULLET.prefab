@@ -137,11 +137,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyProjectile
   lifetime: 5
-  damage: 10
+  damage: 30
   damageLayers:
     serializedVersion: 2
     m_Bits: 0
   playerTag: Player
+  rumbleDuration: 0.15
+  rumbleLowFrequency: 0.35
+  rumbleHighFrequency: 0.35
 --- !u!54 &4189744004058145726
 Rigidbody:
   m_ObjectHideFlags: 0
