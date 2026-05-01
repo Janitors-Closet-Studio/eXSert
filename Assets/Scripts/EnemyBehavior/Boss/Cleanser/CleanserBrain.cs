@@ -322,6 +322,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private AudioClip deathVoiceLine;
         [Tooltip("Voice line played when the player dies.")]
         [SerializeField] private AudioClip playerDeathVoiceLine;
+        [Tooltip("Voice lines randomly chosen when Cleanser rises into the ultimate hover phase.")]
+        [SerializeField] private List<AudioClip> ultimateHoverVoiceLines = new List<AudioClip>();
         [Tooltip("Voice lines randomly chosen when a combo starts at low aggression (Levels 1-2).")]
         [SerializeField] private List<AudioClip> lowAggressionComboVoiceLines = new List<AudioClip>();
         [Tooltip("Voice lines randomly chosen when a combo starts at high aggression (Levels 3-5).")]
@@ -498,6 +500,9 @@ namespace EnemyBehavior.Boss.Cleanser
         private Coroutine playerRefRetryCoroutine;
         private float lastUltimateDiagnosticLogTime = -999f;
         private Coroutine endingFlowCoroutine;
+        private string lastVoiceLineClipName;
+        private string lastVoiceLineReason;
+        private float lastVoiceLinePlayTime = -999f;
 
         private void LogCriticalDiagnostic(string message, bool warning = false)
         {
@@ -509,6 +514,15 @@ namespace EnemyBehavior.Boss.Cleanser
                 Debug.LogWarning(final, this);
             else
                 Debug.Log(final, this);
+        }
+
+        private bool IsUltimateVoiceDiagnosticActive()
+        {
+            return pendingUltimateByHealth
+                || ultimateAttackLockActive
+                || isExecutingUltimate
+                || isInUltimatePreSweepPhase
+                || isInUltimateHoverPhase;
         }
 
         #region IQueuedAttacker Implementation
@@ -1763,7 +1777,7 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             yield return new WaitForSeconds(0.5f);
 
-            PlayVoiceLine(battleStartVoiceLine);
+            PlayVoiceLine(battleStartVoiceLine, "BattleStart");
 
             while (!isDefeated)
             {
@@ -1779,7 +1793,7 @@ namespace EnemyBehavior.Boss.Cleanser
                     yield return null;
                 }
 
-                if (ultimateAttackLockActive && !isExecutingUltimate)
+                if (pendingUltimateByHealth || ultimateAttackLockActive || isExecutingUltimate)
                 {
                     yield return null;
                     continue;
@@ -1979,6 +1993,12 @@ namespace EnemyBehavior.Boss.Cleanser
             pickedUpWeaponThisCombo = false;
             currentComboMovementSpeedMultiplier = GetEffectiveComboMovementSpeedMultiplier(combo);
             bool comboExecutedAnyStep = false;
+
+            if (ultimateAttackLockActive || isExecutingUltimate || pendingUltimateByHealth)
+            {
+                comboSystem.CancelCombo();
+                yield break;
+            }
 
             TryPlayComboStartVoiceLine();
 
@@ -4616,6 +4636,7 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return WaitForJumpArcMovementEventOrFallback();
             yield return JumpToPosition(floatPos, 0.8f, false);
             cleanserVfxManager?.BeginAirborneVfx();
+            TryPlayRandomVoiceLine(ultimateHoverVoiceLines, "UltimateHoverRise");
             TriggerAnimation(UltimateSettings.JumpArcHoldTrigger);
             SetFloatingAerialAssistActive(true);
 
@@ -5368,7 +5389,7 @@ namespace EnemyBehavior.Boss.Cleanser
         public void OnPlayerDied()
         {
             if (isDefeated) return;
-            PlayVoiceLine(playerDeathVoiceLine);
+            PlayVoiceLine(playerDeathVoiceLine, "PlayerDeath");
             ResetPlatformsWithFailsafe();
         }
 
@@ -6461,7 +6482,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// Plays a voice line on the dedicated voice line AudioSource.
         /// Interrupts any currently playing voice line.
         /// </summary>
-        private void PlayVoiceLine(AudioClip clip)
+        private void PlayVoiceLine(AudioClip clip, string reason = null)
         {
             if (clip == null || voiceLineSource == null) return;
 
@@ -6472,8 +6493,24 @@ namespace EnemyBehavior.Boss.Cleanser
                 voiceLineSource.mute = template.mute;
             }
 
+            if (IsUltimateVoiceDiagnosticActive())
+            {
+                string effectiveReason = string.IsNullOrWhiteSpace(reason) ? "Unspecified" : reason;
+                string previousClip = string.IsNullOrWhiteSpace(lastVoiceLineClipName) ? "<none>" : lastVoiceLineClipName;
+                string previousReason = string.IsNullOrWhiteSpace(lastVoiceLineReason) ? "<none>" : lastVoiceLineReason;
+                float timeSincePrevious = lastVoiceLinePlayTime > 0f ? Time.time - lastVoiceLinePlayTime : -1f;
+
+                LogCriticalDiagnostic(
+                    $"UltimateVoiceLine: clip='{clip.name}' reason='{effectiveReason}' sourcePlaying={voiceLineSource.isPlaying} previousClip='{previousClip}' previousReason='{previousReason}' dtSincePrevious={timeSincePrevious:F2}s",
+                    true);
+            }
+
             voiceLineSource.Stop();
             voiceLineSource.PlayOneShot(clip);
+
+            lastVoiceLineClipName = clip.name;
+            lastVoiceLineReason = string.IsNullOrWhiteSpace(reason) ? "Unspecified" : reason;
+            lastVoiceLinePlayTime = Time.time;
         }
 
         /// <summary>
@@ -6490,6 +6527,13 @@ namespace EnemyBehavior.Boss.Cleanser
             bool isHighAggression = level >= AggressionLevel.Level3;
 
             List<AudioClip> pool = isHighAggression ? highAggressionComboVoiceLines : lowAggressionComboVoiceLines;
+            string reason = isHighAggression ? "ComboStartHighAggression" : "ComboStartLowAggression";
+
+            TryPlayRandomVoiceLine(pool, reason);
+        }
+
+        private void TryPlayRandomVoiceLine(List<AudioClip> pool, string reason)
+        {
             if (pool == null || pool.Count == 0)
                 return;
 
@@ -6498,7 +6542,7 @@ namespace EnemyBehavior.Boss.Cleanser
             if (valid.Count == 0)
                 return;
 
-            PlayVoiceLine(valid[Random.Range(0, valid.Count)]);
+            PlayVoiceLine(valid[Random.Range(0, valid.Count)], reason);
         }
 
         private void SetDamageReduction(bool active, float reduction)
@@ -6644,7 +6688,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 TriggerAnimation(triggerDeath);
 
             cleanserVfxManager?.PlayDeathVfx();
-            PlayVoiceLine(deathVoiceLine);
+            PlayVoiceLine(deathVoiceLine, "Death");
             LogCriticalDiagnostic($"Death animation played. animControllerPresent={animController != null}", true);
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death animation dispatched. triggerDeath='{triggerDeath}'");
