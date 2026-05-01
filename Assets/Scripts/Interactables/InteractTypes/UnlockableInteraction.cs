@@ -20,6 +20,18 @@ public abstract class UnlockableInteraction : InteractionManager
     [Tooltip("Prompt shown while the required item is missing.")]
     [SerializeField] protected string lockedInteractionPrompt = "LOCKED";
 
+    [Header("Locked Notice Settings")]
+    [Tooltip("Optional custom title shown when the interaction is locked. Falls back to 'Authentication Failed' when empty.")]
+    [SerializeField] private string lockedNoticeTitle = "";
+    [Tooltip("Optional custom detail text shown when the interaction is locked. Leave empty to use the default required-item message. Use {item} to insert the required item display name or ID.")]
+    [SerializeField] [TextArea(2, 4)] private string lockedNoticeBottomText = "";
+
+    [Header("Unlock Success Notice Settings")]
+    [Tooltip("Optional custom title shown when the required item is successfully used. Leave empty to use the default 'Used <item>' message. Use {item} and {target} tokens if needed.")]
+    [SerializeField] private string usedNoticeTitle = "";
+    [Tooltip("Optional custom detail text shown when the required item successfully unlocks this interaction. Leave empty to use the default unlocked message. Use {item} and {target} tokens.")]
+    [SerializeField] [TextArea(2, 4)] private string usedNoticeBottomText = "";
+
     [SerializeField] private bool interactOnce = true;
 
     protected bool needsItem => !string.IsNullOrEmpty(requiredItemID);
@@ -65,6 +77,59 @@ public abstract class UnlockableInteraction : InteractionManager
     protected void RefreshExecutionState()
     {
         canExecuteInteraction = !needsItem || canUnlock || canExecuteWithoutItem;
+    }
+
+    private string GetRequiredItemNoticeName()
+    {
+        return !string.IsNullOrWhiteSpace(requiredItemDisplayName)
+            ? requiredItemDisplayName
+            : requiredItemID;
+    }
+
+    protected string GetUnlockTargetNoticeName()
+    {
+        return !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
+            : interactId;
+    }
+
+    private string ReplaceNoticeTokens(string template)
+    {
+        return template
+            .Replace("{item}", GetRequiredItemNoticeName())
+            .Replace("{target}", GetUnlockTargetNoticeName());
+    }
+
+    private string ResolveLockedNoticeTitle()
+    {
+        return string.IsNullOrWhiteSpace(lockedNoticeTitle)
+            ? "Authentication Failed"
+            : lockedNoticeTitle;
+    }
+
+    private string ResolveLockedNoticeBottomText()
+    {
+        string itemName = GetRequiredItemNoticeName();
+        if (string.IsNullOrWhiteSpace(lockedNoticeBottomText))
+            return $"{itemName} is required to use this machine.";
+
+        return lockedNoticeBottomText.Replace("{item}", itemName);
+    }
+
+    protected string ResolveUsedNoticeTitle()
+    {
+        if (string.IsNullOrWhiteSpace(usedNoticeTitle))
+            return $"Used {GetRequiredItemNoticeName()}";
+
+        return ReplaceNoticeTokens(usedNoticeTitle);
+    }
+
+    protected string ResolveUsedNoticeBottomText()
+    {
+        if (string.IsNullOrWhiteSpace(usedNoticeBottomText))
+            return $"Unlocked {GetUnlockTargetNoticeName()} with {GetRequiredItemNoticeName()}.";
+
+        return ReplaceNoticeTokens(usedNoticeBottomText);
     }
 
 
@@ -121,7 +186,7 @@ public abstract class UnlockableInteraction : InteractionManager
 
         // Notice stuff
         if (masterObjective != null)
-            masterObjective.CreateAndShowNotice(this, $"{this.interactId}_locked", "Authentication Failed", $"{requiredItemDisplayName} is required to use this machine.", 2f, 4f, priority: 11);
+            masterObjective.CreateAndShowNotice(this, $"{this.interactId}_locked", ResolveLockedNoticeTitle(), ResolveLockedNoticeBottomText(), 2f, 4f, priority: 11);
     }
 
     protected override bool Interact()    
@@ -155,7 +220,7 @@ public abstract class UnlockableInteraction : InteractionManager
         if (!(this is DoorInteractions doorInt) || !(doorInt.HasActiveCameraTransition()))
         {
             if (needsItem && canUnlock && masterObjective != null)
-                masterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", $"Used {requiredItemDisplayName}", $"Unlocked {displayName} with {requiredItemDisplayName}.", 2f, 4f, priority: 8);
+                masterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", ResolveUsedNoticeTitle(), ResolveUsedNoticeBottomText(), 2f, 4f, priority: 8);
         }
 
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
