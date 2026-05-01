@@ -390,6 +390,12 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         if (PlayerMovement.isDashingFlag || CombatManager.isGuarding)
             return true;
 
+        // Use CombatManager.isInCombat which already tracks enemy proximity, recent damage,
+        // recent hits dealt, and active combat encounters — all the signals that should
+        // prevent the player from interacting mid-combat.
+        if (CombatManager.isInCombat)
+            return true;
+
         if (_combatIdleController != null && _combatIdleController.IsInCombat)
             return true;
 
