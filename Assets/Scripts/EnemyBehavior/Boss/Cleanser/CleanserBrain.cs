@@ -25,6 +25,14 @@ namespace EnemyBehavior.Boss.Cleanser
     {
         private const string PlayerSceneName = "PlayerScene";
 
+        private enum VoiceLinePriority
+        {
+            Combo = 0,
+            Ultimate = 1,
+            BattleStart = 2,
+            Death = 3,
+        }
+
         [System.Serializable]
         private class PostRecoveryDistanceRangesByAggression
         {
@@ -316,6 +324,10 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private CleanserVFXManager cleanserVfxManager;
 
         [Header("Voice Lines")]
+        [Tooltip("Duration of the fade-out applied to a lower-priority voice line before a higher-priority one plays (seconds).")]
+        [SerializeField, Min(0f)] private float voiceLineFadeOutDuration = 0.25f;
+        [Tooltip("Silence buffer inserted between fade-out end and the next voice line starting (seconds).")]
+        [SerializeField, Min(0f)] private float voiceLineInterruptBuffer = 0.05f;
         [Tooltip("Voice line played once when the Cleanser's combat loop begins.")]
         [SerializeField] private AudioClip battleStartVoiceLine;
         [Tooltip("Voice line played when the Cleanser is defeated.")]
@@ -503,6 +515,8 @@ namespace EnemyBehavior.Boss.Cleanser
         private string lastVoiceLineClipName;
         private string lastVoiceLineReason;
         private float lastVoiceLinePlayTime = -999f;
+        private VoiceLinePriority lastVoiceLinePriority = VoiceLinePriority.Combo;
+        private Coroutine voiceLineFadeCoroutine;
 
         private void LogCriticalDiagnostic(string message, bool warning = false)
         {
@@ -1354,6 +1368,12 @@ namespace EnemyBehavior.Boss.Cleanser
                 endingFlowCoroutine = null;
             }
 
+            if (voiceLineFadeCoroutine != null)
+            {
+                StopCoroutine(voiceLineFadeCoroutine);
+                voiceLineFadeCoroutine = null;
+            }
+
             EndSpinDashHitboxPhase();
             EndWhirlwindDamagePhase();
             aggressionSystem?.SetAggressionProcessingPaused(false);
@@ -1777,7 +1797,7 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             yield return new WaitForSeconds(0.5f);
 
-            PlayVoiceLine(battleStartVoiceLine, "BattleStart");
+            PlayVoiceLine(battleStartVoiceLine, "BattleStart", VoiceLinePriority.BattleStart);
 
             while (!isDefeated)
             {
@@ -4636,7 +4656,7 @@ namespace EnemyBehavior.Boss.Cleanser
             yield return WaitForJumpArcMovementEventOrFallback();
             yield return JumpToPosition(floatPos, 0.8f, false);
             cleanserVfxManager?.BeginAirborneVfx();
-            TryPlayRandomVoiceLine(ultimateHoverVoiceLines, "UltimateHoverRise");
+            TryPlayRandomVoiceLine(ultimateHoverVoiceLines, "UltimateHoverRise", VoiceLinePriority.Ultimate);
             TriggerAnimation(UltimateSettings.JumpArcHoldTrigger);
             SetFloatingAerialAssistActive(true);
 
@@ -5404,7 +5424,7 @@ namespace EnemyBehavior.Boss.Cleanser
         public void OnPlayerDied()
         {
             if (isDefeated) return;
-            PlayVoiceLine(playerDeathVoiceLine, "PlayerDeath");
+            PlayVoiceLine(playerDeathVoiceLine, "PlayerDeath", VoiceLinePriority.Death);
             ResetPlatformsWithFailsafe();
         }
 
@@ -6494,12 +6514,25 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
-        /// Plays a voice line on the dedicated voice line AudioSource.
-        /// Interrupts any currently playing voice line.
+        /// Plays a voice line on the dedicated voice line AudioSource with priority gating.
+        /// Higher-priority voice lines always supersede currently playing ones.
+        /// If the incoming line has equal or lower priority and a line is already playing,
+        /// the request is silently dropped.
+        /// A fade-out is applied to the current voice line before the new one starts
+        /// whenever an interrupt is allowed.
+        /// Priority order (highest to lowest): Death > BattleStart > Ultimate > Combo.
         /// </summary>
-        private void PlayVoiceLine(AudioClip clip, string reason = null)
+        private void PlayVoiceLine(AudioClip clip, string reason = null, VoiceLinePriority priority = VoiceLinePriority.Combo)
         {
             if (clip == null || voiceLineSource == null) return;
+
+            // Gate: drop lower-or-equal priority requests while a higher-priority line is playing.
+            if (voiceLineSource.isPlaying && priority < lastVoiceLinePriority)
+                return;
+
+            // Same-priority or lower while still playing: death/battle-start lines never interrupt each other.
+            if (voiceLineSource.isPlaying && priority == lastVoiceLinePriority && priority >= VoiceLinePriority.BattleStart)
+                return;
 
             AudioSource template = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
             if (template != null && template != voiceLineSource)
@@ -6516,16 +6549,60 @@ namespace EnemyBehavior.Boss.Cleanser
                 float timeSincePrevious = lastVoiceLinePlayTime > 0f ? Time.time - lastVoiceLinePlayTime : -1f;
 
                 LogCriticalDiagnostic(
-                    $"UltimateVoiceLine: clip='{clip.name}' reason='{effectiveReason}' sourcePlaying={voiceLineSource.isPlaying} previousClip='{previousClip}' previousReason='{previousReason}' dtSincePrevious={timeSincePrevious:F2}s",
+                    $"UltimateVoiceLine: clip='{clip.name}' reason='{effectiveReason}' priority={priority} sourcePlaying={voiceLineSource.isPlaying} previousClip='{previousClip}' previousReason='{previousReason}' dtSincePrevious={timeSincePrevious:F2}s",
                     true);
             }
 
-            voiceLineSource.Stop();
+            // Cancel any in-flight fade and start a fresh fade-then-play sequence.
+            if (voiceLineFadeCoroutine != null)
+            {
+                StopCoroutine(voiceLineFadeCoroutine);
+                voiceLineFadeCoroutine = null;
+            }
+
+            voiceLineFadeCoroutine = StartCoroutine(FadeOutAndPlayVoiceLine(clip, reason, priority));
+        }
+
+        private IEnumerator FadeOutAndPlayVoiceLine(AudioClip clip, string reason, VoiceLinePriority priority)
+        {
+            float fadeOut = Mathf.Max(0f, voiceLineFadeOutDuration);
+            float buffer  = Mathf.Max(0f, voiceLineInterruptBuffer);
+
+            if (voiceLineSource.isPlaying && fadeOut > 0f)
+            {
+                // Determine the target volume before we start (may have been changed by mixer).
+                float startVolume = voiceLineSource.volume;
+                float elapsed = 0f;
+                while (elapsed < fadeOut && voiceLineSource.isPlaying)
+                {
+                    elapsed += Time.deltaTime;
+                    voiceLineSource.volume = Mathf.Lerp(startVolume, 0f, elapsed / fadeOut);
+                    yield return null;
+                }
+                voiceLineSource.Stop();
+                voiceLineSource.volume = startVolume; // restore before playing new line
+            }
+            else
+            {
+                voiceLineSource.Stop();
+            }
+
+            if (buffer > 0f)
+                yield return WaitForSecondsCache.Get(buffer);
+
+            // Re-sync volume from mixer in case it changed during the fade.
+            AudioSource template = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
+            if (template != null && template != voiceLineSource)
+                voiceLineSource.volume = template.volume;
+
             voiceLineSource.PlayOneShot(clip);
 
             lastVoiceLineClipName = clip.name;
             lastVoiceLineReason = string.IsNullOrWhiteSpace(reason) ? "Unspecified" : reason;
             lastVoiceLinePlayTime = Time.time;
+            lastVoiceLinePriority = priority;
+
+            voiceLineFadeCoroutine = null;
         }
 
         /// <summary>
@@ -6544,10 +6621,10 @@ namespace EnemyBehavior.Boss.Cleanser
             List<AudioClip> pool = isHighAggression ? highAggressionComboVoiceLines : lowAggressionComboVoiceLines;
             string reason = isHighAggression ? "ComboStartHighAggression" : "ComboStartLowAggression";
 
-            TryPlayRandomVoiceLine(pool, reason);
+            TryPlayRandomVoiceLine(pool, reason, VoiceLinePriority.Combo);
         }
 
-        private void TryPlayRandomVoiceLine(List<AudioClip> pool, string reason)
+        private void TryPlayRandomVoiceLine(List<AudioClip> pool, string reason, VoiceLinePriority priority = VoiceLinePriority.Combo)
         {
             if (pool == null || pool.Count == 0)
                 return;
@@ -6557,7 +6634,7 @@ namespace EnemyBehavior.Boss.Cleanser
             if (valid.Count == 0)
                 return;
 
-            PlayVoiceLine(valid[Random.Range(0, valid.Count)], reason);
+            PlayVoiceLine(valid[Random.Range(0, valid.Count)], reason, priority);
         }
 
         private void SetDamageReduction(bool active, float reduction)
@@ -6703,7 +6780,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 TriggerAnimation(triggerDeath);
 
             cleanserVfxManager?.PlayDeathVfx();
-            PlayVoiceLine(deathVoiceLine, "Death");
+            PlayVoiceLine(deathVoiceLine, "Death", VoiceLinePriority.Death);
             LogCriticalDiagnostic($"Death animation played. animControllerPresent={animController != null}", true);
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death animation dispatched. triggerDeath='{triggerDeath}'");
