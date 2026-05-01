@@ -68,6 +68,21 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         return soundManager != null ? soundManager.sfxSource : null;
     }
 
+    protected MasterObjectiveClass GetMasterObjectiveIfAvailable()
+    {
+        if (masterObjective != null)
+            return masterObjective;
+
+        SceneAsset sceneAsset = SceneAsset.GetSceneAssetOfObject(gameObject);
+        if (sceneAsset != null)
+            masterObjective = MasterObjectiveClass.GetInstance(sceneAsset);
+
+        if (masterObjective == null)
+            masterObjective = FindFirstObjectByType<MasterObjectiveClass>();
+
+        return masterObjective;
+    }
+
     protected virtual void Awake()
     {
         this.GetComponent<BoxCollider>().isTrigger = true;
@@ -77,7 +92,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     private void Start()
     {
-        masterObjective = MasterObjectiveClass.GetInstance(SceneAsset.GetSceneAssetOfObject(this.gameObject));
+        masterObjective = GetMasterObjectiveIfAvailable();
         if (masterObjective == null)
             Debug.LogWarning($"[InteractionManager] No MasterObjectiveClass instance found for {gameObject.name} in scene {SceneManager.GetActiveScene().name}. Notices will not show for this interaction.");
         StartCoroutine(FindPlayerScene("PlayerScene"));
