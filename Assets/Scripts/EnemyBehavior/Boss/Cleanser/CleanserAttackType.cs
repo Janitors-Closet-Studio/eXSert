@@ -300,6 +300,13 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Sound effect played when Anime Dash Slash starts.")]
         public AudioClip AttackSFX;
 
+        [Tooltip("Looping SFX played for the entire duration of the Anime Dash movement (slide/glide sound). Stopped automatically when the dash ends.")]
+        public AudioClip DashLoopSFX;
+
+        [Range(0f, 1f)]
+        [Tooltip("Volume of the Anime Dash looping SFX.")]
+        public float DashLoopSFXVolume = 1f;
+
         [Header("Circular Trail VFX")]
         [Tooltip("Optional after-image VFX prefab spawned repeatedly while circling (circular pattern only).")]
         public GameObject CircleAfterImageVFX;
@@ -924,6 +931,17 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("SFX/VFX")]
         [Tooltip("Sound when ultimate is initiated (wall jump).")]
         public AudioClip InitiateSFX;
+
+        [Tooltip("Looping SFX played for the entire duration of the hover phase. Stopped automatically when hovering ends.")]
+        public AudioClip HoverLoopSFX;
+
+        [Range(0f, 1f)]
+        [Tooltip("Volume of the ultimate hover looping SFX.")]
+        public float HoverLoopSFXVolume = 1f;
+
+        [Min(0f)]
+        [Tooltip("Seconds to wait after entering the hover phase before the looping SFX begins.")]
+        public float HoverLoopSFXDelay = 0f;
 
         [Tooltip("Sound played when jumping to a sweep position or back to arena center (JumpFull hops during ultimate).")]
         public AudioClip UltimateJumpSFX;

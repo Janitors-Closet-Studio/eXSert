@@ -21,6 +21,7 @@ namespace EnemyBehavior.Boss.Cleanser
     /// </summary>
     [HelpURL("https://docs.google.com/document/d/18pi24ZJ65GG307F6SvKpSoHPs0izxSb6yZ6cfjvYqMQ/edit?tab=t.0#bookmark=id.pru60xl52koz")]
     [RequireComponent(typeof(NavMeshAgent))]
+    [RequireComponent(typeof(AudioSource))]
     public class CleanserBrain : MonoBehaviour, IQueuedAttacker, IHealthSystem
     {
         private const string PlayerSceneName = "PlayerScene";
@@ -316,7 +317,7 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private CleanserAnimController animController;
         [Tooltip("Animator component used for fallback parameter/trigger control. Auto-found on Awake if left empty.")]
         [SerializeField] private Animator animator;
-        [Tooltip("Audio source for boss SFX. Auto-falls back to SoundManager if left empty.")]
+        [Tooltip("Audio source for boss SFX. Auto-configured as a 3D spatial source on Awake. Leave empty — assigned automatically.")]
         [SerializeField] private AudioSource sfxSource;
         [Tooltip("Audio source used exclusively for Cleanser voice lines. Auto-created on Awake if left empty.")]
         [SerializeField] private AudioSource voiceLineSource;
@@ -332,16 +333,30 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField, Min(0f)] private float voiceLineInterruptBuffer = 0.05f;
         [Tooltip("Voice line played once when the Cleanser's combat loop begins.")]
         [SerializeField] private AudioClip battleStartVoiceLine;
+        [Tooltip("If true, Battle Start voice line plays through SoundManager (2D, always audible regardless of distance).")]
+        [SerializeField] private bool battleStartVoiceLineGlobal = true;
+
         [Tooltip("Voice line played when the Cleanser is defeated.")]
         [SerializeField] private AudioClip deathVoiceLine;
+        [Tooltip("If true, Cleanser Death voice line plays through SoundManager (2D, always audible).")]
+        [SerializeField] private bool deathVoiceLineGlobal = true;
+
         [Tooltip("Voice line played when the player dies.")]
         [SerializeField] private AudioClip playerDeathVoiceLine;
+        [Tooltip("If true, Player Death voice line plays through SoundManager (2D, always audible).")]
+        [SerializeField] private bool playerDeathVoiceLineGlobal = true;
+
         [Tooltip("Voice lines randomly chosen when Cleanser rises into the ultimate hover phase.")]
         [SerializeField] private List<AudioClip> ultimateHoverVoiceLines = new List<AudioClip>();
+        [Tooltip("If true, Ultimate voice lines play through SoundManager (2D, always audible).")]
+        [SerializeField] private bool ultimateVoiceLinesGlobal = false;
+
         [Tooltip("Voice lines randomly chosen when a combo starts at low aggression (Levels 1-2).")]
         [SerializeField] private List<AudioClip> lowAggressionComboVoiceLines = new List<AudioClip>();
         [Tooltip("Voice lines randomly chosen when a combo starts at high aggression (Levels 3-5).")]
         [SerializeField] private List<AudioClip> highAggressionComboVoiceLines = new List<AudioClip>();
+        [Tooltip("If true, Combo voice lines play through SoundManager (2D, always audible).")]
+        [SerializeField] private bool comboVoiceLinesGlobal = false;
 
         [Header("Hitbox References")]
         [Tooltip("Optional additional halberd colliders (for example pole capsule + blade sphere). Used together to derive halberd hit range.")]
@@ -444,6 +459,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isInUltimatePreSweepPhase;
         private bool isExecutingAttack;
         private bool isInUltimateHoverPhase;
+        private Coroutine _hoverLoopSfxDelayCoroutine;
         private bool ultimateCanceledByAerial;
         private bool ultimateAttackLockActive;
         private int combosSinceUltimate;
@@ -1138,21 +1154,33 @@ namespace EnemyBehavior.Boss.Cleanser
             animator = animator ?? GetComponentInChildren<Animator>();
             cleanserVfxManager = cleanserVfxManager ?? GetComponent<CleanserVFXManager>() ?? GetComponentInChildren<CleanserVFXManager>(true);
             footstepSystem = footstepSystem ?? GetComponent<CleanserFootstepSystem>() ?? GetComponentInChildren<CleanserFootstepSystem>(true);
-            footstepSystem?.SetWalkSpeedGetter(() => agent != null ? agent.velocity.magnitude : 0f);
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
 
-            SoundManager soundManager = SoundManager.Instance;
-            if (sfxSource == null && soundManager != null)
-            {
-                sfxSource = soundManager.sfxSource;
-            }
+            // Grab the AudioSource guaranteed by RequireComponent and configure it for
+            // 3D spatial playback so all Cleanser SFX attenuate correctly in the world.
+            if (sfxSource == null)
+                sfxSource = GetComponent<AudioSource>();
+            sfxSource.playOnAwake = false;
+            sfxSource.loop = false;
+            sfxSource.spatialBlend = 1f;
+            sfxSource.rolloffMode = AudioRolloffMode.Linear;
+            sfxSource.minDistance = 3f;
+            sfxSource.maxDistance = 40f;
+
+            // Share the same source with DualWieldSystem so weapon SFX are also 3D.
+            if (dualWieldSystem != null && dualWieldSystem.SFXSource == null)
+                dualWieldSystem.SFXSource = sfxSource;
 
             if (voiceLineSource == null)
             {
-                voiceLineSource = gameObject.AddComponent<AudioSource>();
+                // Use the second AudioSource already on the object (CleanserFootstepSystem
+                // owns one, CleanserBrain owns one via RequireComponent). If a second one
+                // isn't present yet, add it — but in normal setup two will already exist.
+                AudioSource[] sources = GetComponents<AudioSource>();
+                voiceLineSource = sources.Length > 1 ? sources[1] : gameObject.AddComponent<AudioSource>();
             }
 
-            ConfigureDedicatedVoiceLineSource(soundManager != null ? soundManager.voiceSource : null);
+            ConfigureDedicatedVoiceLineSource(SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null);
 
             if (dualWieldSystem != null)
             {
@@ -1811,7 +1839,7 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             yield return new WaitForSeconds(0.5f);
 
-            PlayVoiceLine(battleStartVoiceLine, "BattleStart", VoiceLinePriority.BattleStart);
+            PlayVoiceLine(battleStartVoiceLine, "BattleStart", VoiceLinePriority.BattleStart, useGlobalAudio: battleStartVoiceLineGlobal);
 
             while (!isDefeated)
             {
@@ -3692,6 +3720,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
                 TriggerAnimation(settings.AnimationTrigger);
                 PlaySFX(settings.AttackSFX);
+                StartLoopingSFX(settings.DashLoopSFX, settings.DashLoopSFXVolume);
 
                 // Start speed-relative footsteps for the legacy Anime Dash path.
                 footstepSystem?.BeginAnimeDashFootsteps(() => agent != null ? agent.velocity.magnitude : 0f);
@@ -3842,6 +3871,7 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 // Re-enable lock-on regardless of how the dash ended (completed, interrupted, exception).
                 TryUnblockPlayerLockOn();
+                StopLoopingSFX();
                 footstepSystem?.EndAnimeDashFootsteps();
                 cleanserVfxManager?.WingEnd();
                 cleanserVfxManager?.EndAnimeDashMeshTrail();
@@ -3857,8 +3887,9 @@ namespace EnemyBehavior.Boss.Cleanser
             ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
             TriggerAnimation(settings.AnimationTrigger);
             PlaySFX(settings.AttackSFX);
+            StartLoopingSFX(settings.DashLoopSFX, settings.DashLoopSFXVolume);
 
-            // Start speed-relative footsteps for the Anime Dash. The lambda reads the
+            // Start speed-relative footsteps for the Anime Dash.
             // agent's current velocity each interval so cadence scales with actual speed.
             footstepSystem?.BeginAnimeDashFootsteps(() => agent != null ? agent.velocity.magnitude : 0f);
 
@@ -4163,6 +4194,7 @@ namespace EnemyBehavior.Boss.Cleanser
             // Re-enable lock-on now that the circular dash is fully complete.
             TryUnblockPlayerLockOn();
 
+            StopLoopingSFX();
             ResetAnimationSpeed();
         }
 
@@ -4687,10 +4719,18 @@ namespace EnemyBehavior.Boss.Cleanser
             float hoverBaseY = (ultimateArenaCenterPoint != null ? ultimateArenaCenterPoint.position.y : arenaCenter.y) + UltimateSettings.HoverHeightOffset;
             Vector3 floatPos = new Vector3(arenaCenter.x, hoverBaseY, arenaCenter.z);
             TriggerJumpArcBaseAnimation();
+            float hoverSfxDelay = UltimateSettings?.HoverLoopSFXDelay ?? 0f;
+            if (hoverSfxDelay > 0f)
+                _hoverLoopSfxDelayCoroutine = StartCoroutine(StartLoopingSFXDelayed(
+                    UltimateSettings?.HoverLoopSFX,
+                    UltimateSettings?.HoverLoopSFXVolume ?? 1f,
+                    hoverSfxDelay));
+            else
+                StartLoopingSFX(UltimateSettings?.HoverLoopSFX, UltimateSettings?.HoverLoopSFXVolume ?? 1f);
             yield return WaitForJumpArcMovementEventOrFallback();
             yield return JumpToPosition(floatPos, 0.8f, false);
             cleanserVfxManager?.BeginAirborneVfx();
-            TryPlayRandomVoiceLine(ultimateHoverVoiceLines, "UltimateHoverRise", VoiceLinePriority.Ultimate);
+            TryPlayRandomVoiceLine(ultimateHoverVoiceLines, "UltimateHoverRise", VoiceLinePriority.Ultimate, ultimateVoiceLinesGlobal);
             TriggerAnimation(UltimateSettings.JumpArcHoldTrigger);
             SetFloatingAerialAssistActive(true);
 
@@ -5006,6 +5046,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 yield return null;
             }
             isInUltimateHoverPhase = false;
+            StopLoopingSFX();
         }
 
         private void ApplyUltimateHoverPositionLock(float hoverElapsedTime, float fallbackHoverBaseY)
@@ -5465,7 +5506,7 @@ namespace EnemyBehavior.Boss.Cleanser
         public void OnPlayerDied()
         {
             if (isDefeated) return;
-            PlayVoiceLine(playerDeathVoiceLine, "PlayerDeath", VoiceLinePriority.Death);
+            PlayVoiceLine(playerDeathVoiceLine, "PlayerDeath", VoiceLinePriority.Death, useGlobalAudio: playerDeathVoiceLineGlobal);
             ResetPlatformsWithFailsafe();
         }
 
@@ -6550,19 +6591,47 @@ namespace EnemyBehavior.Boss.Cleanser
         private void PlaySFX(AudioClip clip)
         {
             if (clip == null) return;
-
-            if (sfxSource != null)
-            {
-                sfxSource.PlayOneShot(clip);
-            }
-            else if (SoundManager.Instance != null)
-            {
-                SoundManager.Instance.sfxSource.PlayOneShot(clip);
-            }
+            sfxSource.PlayOneShot(clip);
         }
 
         /// <summary>
-        /// Waits for <paramref name="precedingClip"/> to finish, then plays <paramref name="trailClip"/> once.
+        /// Starts a looping clip on the sfxSource. Only one loop can run at a time —
+        /// call <see cref="StopLoopingSFX"/> before starting a new one.
+        /// </summary>
+        private void StartLoopingSFX(AudioClip clip, float volume = 1f)
+        {
+            if (clip == null) return;
+            sfxSource.clip = clip;
+            sfxSource.volume = volume;
+            sfxSource.loop = true;
+            sfxSource.Play();
+        }
+
+        /// <summary>
+        /// Stops the currently looping clip on the sfxSource and restores it to
+        /// one-shot mode so <see cref="PlaySFX"/> works correctly afterward.
+        /// </summary>
+        private void StopLoopingSFX()
+        {
+            if (_hoverLoopSfxDelayCoroutine != null)
+            {
+                StopCoroutine(_hoverLoopSfxDelayCoroutine);
+                _hoverLoopSfxDelayCoroutine = null;
+            }
+            sfxSource.loop = false;
+            sfxSource.Stop();
+            sfxSource.clip = null;
+        }
+
+        private IEnumerator StartLoopingSFXDelayed(AudioClip clip, float volume, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            _hoverLoopSfxDelayCoroutine = null;
+            StartLoopingSFX(clip, volume);
+        }
+
+        /// <summary>
+
         /// Used for the sweep trail SFX that emanates after the initial sweep sound ends.
         /// </summary>
         private IEnumerator PlaySFXAfterClip(AudioClip precedingClip, AudioClip trailClip)
@@ -6632,9 +6701,20 @@ namespace EnemyBehavior.Boss.Cleanser
         /// whenever an interrupt is allowed.
         /// Priority order (highest to lowest): Death > BattleStart > Ultimate > Combo.
         /// </summary>
-        private void PlayVoiceLine(AudioClip clip, string reason = null, VoiceLinePriority priority = VoiceLinePriority.Combo)
+        private void PlayVoiceLine(AudioClip clip, string reason = null, VoiceLinePriority priority = VoiceLinePriority.Combo, bool useGlobalAudio = false)
         {
-            if (clip == null || voiceLineSource == null) return;
+            if (clip == null) return;
+
+            // BattleStart / death lines play through SoundManager so they are guaranteed
+            // to be heard regardless of distance or 3D attenuation.
+            if (useGlobalAudio)
+            {
+                if (SoundManager.Instance != null && SoundManager.Instance.voiceSource != null)
+                    SoundManager.Instance.voiceSource.PlayOneShot(clip);
+                return;
+            }
+
+            if (voiceLineSource == null) return;
 
             // Gate: drop lower-or-equal priority requests while a higher-priority line is playing.
             if (voiceLineSource.isPlaying && priority < lastVoiceLinePriority)
@@ -6731,10 +6811,10 @@ namespace EnemyBehavior.Boss.Cleanser
             List<AudioClip> pool = isHighAggression ? highAggressionComboVoiceLines : lowAggressionComboVoiceLines;
             string reason = isHighAggression ? "ComboStartHighAggression" : "ComboStartLowAggression";
 
-            TryPlayRandomVoiceLine(pool, reason, VoiceLinePriority.Combo);
+            TryPlayRandomVoiceLine(pool, reason, VoiceLinePriority.Combo, comboVoiceLinesGlobal);
         }
 
-        private void TryPlayRandomVoiceLine(List<AudioClip> pool, string reason, VoiceLinePriority priority = VoiceLinePriority.Combo)
+        private void TryPlayRandomVoiceLine(List<AudioClip> pool, string reason, VoiceLinePriority priority = VoiceLinePriority.Combo, bool useGlobalAudio = false)
         {
             if (pool == null || pool.Count == 0)
                 return;
@@ -6744,7 +6824,7 @@ namespace EnemyBehavior.Boss.Cleanser
             if (valid.Count == 0)
                 return;
 
-            PlayVoiceLine(valid[Random.Range(0, valid.Count)], reason, priority);
+            PlayVoiceLine(valid[Random.Range(0, valid.Count)], reason, priority, useGlobalAudio);
         }
 
         private void SetDamageReduction(bool active, float reduction)
@@ -6855,6 +6935,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 // Kill any hover position lock by clearing the flag, then let gravity bring him down.
                 isInUltimateHoverPhase = false;
                 isExecutingUltimate = false;
+                StopLoopingSFX();
 
                 // Re-enable agent so NavMesh can provide a valid ground position, or fall via transform.
                 if (agent != null && !agent.enabled)
@@ -6890,7 +6971,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 TriggerAnimation(triggerDeath);
 
             cleanserVfxManager?.PlayDeathVfx();
-            PlayVoiceLine(deathVoiceLine, "Death", VoiceLinePriority.Death);
+            PlayVoiceLine(deathVoiceLine, "Death", VoiceLinePriority.Death, useGlobalAudio: deathVoiceLineGlobal);
             LogCriticalDiagnostic($"Death animation played. animControllerPresent={animController != null}", true);
 #if UNITY_EDITOR
             EnemyBehaviorDebugLogBools.Log(nameof(CleanserBrain), $"[Cleanser] Death animation dispatched. triggerDeath='{triggerDeath}'");

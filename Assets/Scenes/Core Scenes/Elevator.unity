@@ -3576,6 +3576,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 80390985}
   m_Mesh: {fileID: -4592533660117719367, guid: f81ade06bd75481409f069fe82a6128b, type: 3}
+--- !u!1 &80743088
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 80743089}
+  m_Layer: 0
+  m_Name: Spawn Point (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 2147483647
+  m_IsActive: 1
+--- !u!4 &80743089
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 80743088}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -3.3207498}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 275728539}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &83634414
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -50701,9 +50732,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7174264988403049420, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: m_Name
       value: PuzzleKeyCard (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -70768,7 +70807,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: lockedNoticeBottomText
-      value: 'Required: [Elevator Access Card]'
+      value: 'Required: Elevator Access Card'
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: requiredItemDisplayName
@@ -74777,6 +74816,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 1822240846}
     m_Modifications:
     - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: spawnPoint
+      value: 
+      objectReference: {fileID: 80743089}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
       propertyPath: checkpointName
       value: Elevator
       objectReference: {fileID: 0}
@@ -74792,6 +74835,38 @@ PrefabInstance:
       propertyPath: checkpointSceneAsset
       value: 
       objectReference: {fileID: 11400000, guid: 6bb1c77806410f841bb6a072295b2e64, type: 2}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: associatedDiaryNoticeTitle
+      value: ENTRY #01 ADDED
+      objectReference: {fileID: 0}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: showAttachedNoticeOnSceneLoad
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: associatedDiaryNoticeDescription
+      value: Open Nav Menu to read
+      objectReference: {fileID: 0}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: associatedDiaryNoticeFadeDuration
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: associatedDiaryNoticeDisplayDuration
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1989029368106997964, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: m_Size.x
+      value: 22.37
+      objectReference: {fileID: 0}
+    - target: {fileID: 1989029368106997964, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: m_Size.y
+      value: 8.14
+      objectReference: {fileID: 0}
+    - target: {fileID: 1989029368106997964, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: m_Size.z
+      value: 2.53
+      objectReference: {fileID: 0}
     - target: {fileID: 5754393107080565433, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1.74495
@@ -74802,7 +74877,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5754393107080565433, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2.5992503
+      value: 5.92
       objectReference: {fileID: 0}
     - target: {fileID: 5754393107080565433, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
       propertyPath: m_LocalRotation.w
@@ -74845,8 +74920,12 @@ PrefabInstance:
       value: 2147483647
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6380669366025552670, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 5754393107080565433, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 80743089}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
 --- !u!1660057539 &9223372036854775807
