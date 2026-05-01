@@ -1099,16 +1099,18 @@ namespace EnemyBehavior.Boss.Cleanser
             cleanserVfxManager = cleanserVfxManager ?? GetComponent<CleanserVFXManager>() ?? GetComponentInChildren<CleanserVFXManager>(true);
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
 
-            voiceLineSource = SoundManager.Instance.voiceSource;
-            sfxSource = SoundManager.Instance.sfxSource;
+            SoundManager soundManager = SoundManager.Instance;
+            if (sfxSource == null && soundManager != null)
+            {
+                sfxSource = soundManager.sfxSource;
+            }
 
             if (voiceLineSource == null)
             {
                 voiceLineSource = gameObject.AddComponent<AudioSource>();
-                voiceLineSource.playOnAwake = false;
-                voiceLineSource.spatialBlend = sfxSource != null ? sfxSource.spatialBlend : 0f;
-                voiceLineSource.volume = 1f;
             }
+
+            ConfigureDedicatedVoiceLineSource(soundManager != null ? soundManager.voiceSource : null);
 
             if (dualWieldSystem != null)
             {
@@ -1140,6 +1142,40 @@ namespace EnemyBehavior.Boss.Cleanser
             // If no CleanserEnabler is present, show the health bar immediately (legacy behaviour).
             if (FindObjectOfType<CleanserEnabler>() == null)
                 ShowHealthBar();
+        }
+
+        private void ConfigureDedicatedVoiceLineSource(AudioSource template)
+        {
+            if (voiceLineSource == null)
+                return;
+
+            voiceLineSource.playOnAwake = false;
+            voiceLineSource.loop = false;
+
+            if (template != null)
+            {
+                voiceLineSource.outputAudioMixerGroup = template.outputAudioMixerGroup;
+                voiceLineSource.priority = template.priority;
+                voiceLineSource.mute = template.mute;
+                voiceLineSource.bypassEffects = template.bypassEffects;
+                voiceLineSource.bypassListenerEffects = template.bypassListenerEffects;
+                voiceLineSource.bypassReverbZones = template.bypassReverbZones;
+                voiceLineSource.volume = template.volume;
+                voiceLineSource.pitch = template.pitch;
+                voiceLineSource.panStereo = template.panStereo;
+                voiceLineSource.spatialBlend = template.spatialBlend;
+                voiceLineSource.reverbZoneMix = template.reverbZoneMix;
+                voiceLineSource.dopplerLevel = template.dopplerLevel;
+                voiceLineSource.spread = template.spread;
+                voiceLineSource.minDistance = template.minDistance;
+                voiceLineSource.maxDistance = template.maxDistance;
+                voiceLineSource.rolloffMode = template.rolloffMode;
+            }
+            else
+            {
+                voiceLineSource.spatialBlend = sfxSource != null ? sfxSource.spatialBlend : 0f;
+                voiceLineSource.volume = 1f;
+            }
         }
 
         private void ApplyMovementSettings()
@@ -6428,6 +6464,14 @@ namespace EnemyBehavior.Boss.Cleanser
         private void PlayVoiceLine(AudioClip clip)
         {
             if (clip == null || voiceLineSource == null) return;
+
+            AudioSource template = SoundManager.Instance != null ? SoundManager.Instance.voiceSource : null;
+            if (template != null && template != voiceLineSource)
+            {
+                voiceLineSource.volume = template.volume;
+                voiceLineSource.mute = template.mute;
+            }
+
             voiceLineSource.Stop();
             voiceLineSource.PlayOneShot(clip);
         }
