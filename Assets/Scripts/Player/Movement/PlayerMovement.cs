@@ -1622,7 +1622,14 @@ public class PlayerMovement : MonoBehaviour
             return Vector3.zero;
 
         bool attackActive = attackManager != null && attackManager.IsAttackInProgress;
-        if (InputReader.inputBusy && !attackActive)
+
+        // Never push the player away from the boss while they are actively attacking.
+        // Low horizontal speed during attack animations was causing the unstick logic to fire
+        // every attack, shoving the player back from the boss on each hit.
+        if (attackActive)
+            return Vector3.zero;
+
+        if (InputReader.inputBusy)
             return Vector3.zero;
 
         Vector2 moveInput = ApplyMoveDeadZone(InputReader.MoveInput);

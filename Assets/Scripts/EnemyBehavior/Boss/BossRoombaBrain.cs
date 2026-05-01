@@ -300,6 +300,8 @@ namespace EnemyBehavior.Boss
         public VacuumSuctionEffect VacuumSuctionController;
         [Tooltip("Duration of the vacuum suction pull effect")]
         public float VacuumSuctionDuration = 4.0f;
+        [Tooltip("Minimum time the vacuum SFX plays, even if suction ends early (e.g. player was already inside cage bounds). Prevents the audio being a half-second blip.")]
+        [Min(0f)] public float VacuumSFXMinDuration = 2.0f;
         [Tooltip("Base pull strength for vacuum suction")]
         public float VacuumPullStrength = 10f;
         [Tooltip("Maximum pull strength when player is close")]
@@ -1673,7 +1675,7 @@ namespace EnemyBehavior.Boss
             
             // START VACUUM SUCTION EFFECT during the active phase
             if (animator != null && !string.IsNullOrEmpty(a.AnimatorTriggerOnActive)) animator.SetTrigger(a.AnimatorTriggerOnActive);
-            PlaySFX(VacuumSuctionSFX); // Vacuum-specific suction SFX
+            // NOTE: Vacuum SFX is played via VacuumSuctionController.VacuumAudioSource so StopSuction() can stop it.
             
             // Calculate active phase duration
             float activePhaseDuration = a.ActiveSpeedMultiplier * GetClipLength(animator, a.ActiveClipName);
@@ -1842,8 +1844,25 @@ namespace EnemyBehavior.Boss
                 Debug.LogWarning($"[BossRoombaBrain] Neither ArenaCenterBounds nor VacuumPosition set! Using boss position as fallback: {transform.position}");
             }
 
-            // Start the suction
-            PlaySFX(VacuumSuctionSFX, VacuumSuctionSFXVolume);
+            // Route vacuum SFX through VacuumSuctionController's AudioSource so StopSuction() can stop it.
+            // Using PlayOneShot on AttackAudioSource would prevent stopping the sound mid-suction.
+            if (VacuumSuctionSFX != null)
+            {
+                if (VacuumSuctionController.VacuumAudioSource == null)
+                {
+                    var audioSrc = gameObject.AddComponent<AudioSource>();
+                    audioSrc.playOnAwake = false;
+                    audioSrc.spatialBlend = 1f;
+                    VacuumSuctionController.VacuumAudioSource = audioSrc;
+                }
+                VacuumSuctionController.VacuumAudioSource.clip = VacuumSuctionSFX;
+                VacuumSuctionController.VacuumAudioSource.volume = MasterSFXVolume * Mathf.Clamp01(VacuumSuctionSFXVolume);
+                VacuumSuctionController.VacuumAudioSource.loop = true;
+            }
+            // Ensure the suction audio plays for at least VacuumSFXMinDuration regardless of how
+            // quickly the suction effect itself completes (e.g. player already at cage center).
+            float audioPlayDuration = Mathf.Max(duration, VacuumSFXMinDuration);
+            VacuumSuctionController.VacuumAudioMinDuration = audioPlayDuration;
             VacuumSuctionController.StartSuction(duration);
         }
 
@@ -2022,8 +2041,9 @@ namespace EnemyBehavior.Boss
                     0.01f,
                     5f
                 );
-                augurVfxManager?.ShowDashTelegraph(end, staticChargeWindupDuration);
-                augurVfxManager?.ShowDashRing(staticChargeWindupDuration + staticChargeDashDuration);
+                augurVfxManager?.ShowStaticChargeTelegraph(end, staticChargeWindupDuration);
+                augurVfxManager?.ShowStaticChargeRing(staticChargeWindupDuration + staticChargeDashDuration);
+                augurVfxManager?.ShowStaticChargeSpeedLines(end);
 
                 if (animator != null && !string.IsNullOrEmpty(StaticCharge.AnimatorTriggerOnWindup))
                     animator.SetTrigger(StaticCharge.AnimatorTriggerOnWindup);
@@ -2515,8 +2535,9 @@ namespace EnemyBehavior.Boss
                 0.01f,
                 5f
             );
-            augurVfxManager?.ShowDashTelegraph(overshootTarget, targetedChargeWindupDuration + targetedChargeTurnDuration);
-            augurVfxManager?.ShowDashRing(targetedChargeWindupDuration + targetedChargeTurnDuration + targetedChargeDashDuration);
+            augurVfxManager?.ShowTargetedChargeTelegraph(overshootTarget, targetedChargeWindupDuration + targetedChargeTurnDuration);
+            augurVfxManager?.ShowTargetedChargeRing(targetedChargeWindupDuration + targetedChargeTurnDuration + targetedChargeDashDuration);
+            augurVfxManager?.ShowTargetedChargeSpeedLines(overshootTarget);
 
 
             // Windup animation

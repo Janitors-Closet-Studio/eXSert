@@ -79,6 +79,8 @@ namespace EnemyBehavior.Boss
 
         [Tooltip("Optional audio source for vacuum sound")]
         public AudioSource VacuumAudioSource;
+        [Tooltip("Minimum time the vacuum audio plays before it can be stopped. Set by BossRoombaBrain via VacuumSFXMinDuration.")]
+        [HideInInspector] public float VacuumAudioMinDuration = 2f;
 
         [Header("References")]
         [Tooltip("The target point to pull the player towards (usually arena center)")]
@@ -101,6 +103,8 @@ namespace EnemyBehavior.Boss
         private BossRoombaBrain bossBrain;
         private float damageTickInterval = 0.5f; // Apply damage every 0.5 seconds
         private float lastDamageTickTime;
+        private float _audioStartTime = -999f;
+        private Coroutine _audioStopRoutine;
 
         private void Awake()
         {
@@ -243,10 +247,29 @@ namespace EnemyBehavior.Boss
                 SuctionVFX.Stop();
             }
 
-            if (VacuumAudioSource != null)
+            if (VacuumAudioSource != null && VacuumAudioSource.isPlaying)
             {
-                VacuumAudioSource.Stop();
+                float elapsed = Time.time - _audioStartTime;
+                float remaining = VacuumAudioMinDuration - elapsed;
+                if (remaining > 0f)
+                {
+                    // Let audio finish minimum duration before stopping
+                    if (_audioStopRoutine != null) StopCoroutine(_audioStopRoutine);
+                    _audioStopRoutine = StartCoroutine(DelayedAudioStop(remaining));
+                }
+                else
+                {
+                    VacuumAudioSource.Stop();
+                }
             }
+        }
+
+        private IEnumerator DelayedAudioStop(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (VacuumAudioSource != null)
+                VacuumAudioSource.Stop();
+            _audioStopRoutine = null;
         }
 
         private IEnumerator SuctionCoroutine(float duration)
@@ -269,6 +292,7 @@ namespace EnemyBehavior.Boss
 
             if (VacuumAudioSource != null)
             {
+                _audioStartTime = Time.time;
                 VacuumAudioSource.Play();
             }
 
