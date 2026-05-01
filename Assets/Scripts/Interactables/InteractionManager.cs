@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 using System;
+using System.Text;
 using UnityEngine.SceneManagement;
 using Utilities.Combat;
 
@@ -56,6 +57,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     internal MasterObjectiveClass masterObjective;
     public event Action<InteractionManager, bool> InteractionEnabledStateChanged;
+    public event Action<InteractionManager> InteractionExecuted;
 
     protected static InteractionUI GetInteractionUIIfAvailable()
     {
@@ -130,7 +132,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         isPlayerNearby = false;
     }
 
-    private void ClearPromptIfOwned()
+    protected void ClearPromptIfOwned()
     {
         InteractionUI interactionUI = GetInteractionUIIfAvailable();
         if (interactionUI != null && interactionUI.currentInteractable == this)
@@ -274,6 +276,58 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
         InteractionEnabledStateChanged?.Invoke(this, isEnabled);
     }
 
+    protected void NotifyInteractionExecuted()
+    {
+        InteractionExecuted?.Invoke(this);
+    }
+
+    protected string GetContextualNoticeId(string suffix = "")
+    {
+        string baseId = !string.IsNullOrWhiteSpace(interactId)
+            ? interactId
+            : !string.IsNullOrWhiteSpace(displayName)
+                ? displayName
+                : gameObject.name;
+
+        string sanitizedBaseId = SanitizeNoticeId(baseId);
+        string sanitizedSuffix = string.IsNullOrWhiteSpace(suffix)
+            ? string.Empty
+            : SanitizeNoticeId(suffix).TrimStart('_');
+
+        if (string.IsNullOrWhiteSpace(sanitizedSuffix))
+            return sanitizedBaseId;
+
+        return $"{sanitizedBaseId}_{sanitizedSuffix}";
+    }
+
+    private static string SanitizeNoticeId(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        StringBuilder builder = new StringBuilder(value.Length);
+        bool previousWasSeparator = false;
+
+        for (int index = 0; index < value.Length; index++)
+        {
+            char current = char.ToLowerInvariant(value[index]);
+            if (char.IsLetterOrDigit(current))
+            {
+                builder.Append(current);
+                previousWasSeparator = false;
+                continue;
+            }
+
+            if (previousWasSeparator)
+                continue;
+
+            builder.Append('_');
+            previousWasSeparator = true;
+        }
+
+        return builder.ToString().Trim('_');
+    }
+
     private void OnInteract(InputAction.CallbackContext context)
     {
         if (!RefreshPlayerNearbyState())
@@ -329,7 +383,7 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
             PlayPlayerInteractAnimation();
     }
 
-    private bool IsPlayerBusyForInteraction()
+    protected bool IsPlayerBusyForInteraction()
     {
         CachePlayerCombatController();
 

@@ -82,7 +82,7 @@ public class PuzzleInteraction : UnlockableInteraction
         {
             MasterObjectiveClass resolvedMasterObjective = GetMasterObjectiveIfAvailable();
             if (resolvedMasterObjective != null)
-                resolvedMasterObjective.CreateAndShowNotice(this, $"{this.interactId}_puzzle", optionalStringMessage, "", 0.5f, 1.5f, priority: 5);
+                resolvedMasterObjective.CreateAndShowNotice(this, GetContextualNoticeId("puzzle"), optionalStringMessage, "", 0.5f, 1.5f, priority: 5);
         }
     }
 

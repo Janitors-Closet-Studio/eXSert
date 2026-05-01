@@ -121,6 +121,12 @@ public abstract class UnlockableInteraction : InteractionManager
         if (!needsItem || canExecuteInteraction)
             return;
 
+        if (IsPlayerBusyForInteraction())
+        {
+            ClearPromptIfOwned();
+            return;
+        }
+
         InteractionUI interactionUI = InteractionUI.Instance;
         if (interactionUI == null || interactionUI._interactText == null)
             return;
@@ -202,16 +208,21 @@ public abstract class UnlockableInteraction : InteractionManager
             ? $"Find {requiredItemDisplayName}"
             : $"Find {requiredItemID}";
 
-        ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
+        if (!ObjectiveManager.HasSubObjective(requiredItemID))
+            ObjectiveManager.AddSubObjective(requiredItemID, objectiveMessage);
 
         // Notice stuff
         MasterObjectiveClass resolvedMasterObjective = GetMasterObjectiveIfAvailable();
         if (resolvedMasterObjective != null)
-            resolvedMasterObjective.CreateAndShowNotice(this, $"{this.interactId}_locked", ResolveLockedNoticeTitle(), ResolveLockedNoticeBottomText(), 2f, 4f, priority: 11);
+            resolvedMasterObjective.CreateAndShowNotice(this, GetContextualNoticeId("locked"), ResolveLockedNoticeTitle(), ResolveLockedNoticeBottomText(), 2f, 4f, priority: 11);
     }
 
     protected override bool Interact()    
     {
+        MasterObjectiveClass resolvedMasterObjective = GetMasterObjectiveIfAvailable();
+        if (resolvedMasterObjective != null)
+            resolvedMasterObjective.CancelCurrentCollectNotice();
+
         RefreshExecutionState();
         
         Debug.Log($"[UnlockableInteraction] Interact called on {gameObject.name}.\n needsItem: {needsItem}, canUnlock: {canUnlock}, canExecuteWithoutItem: {canExecuteWithoutItem}, canExecuteInteraction: {canExecuteInteraction}, requiredItemID: '{requiredItemID}', playerHasItem: {(InternalPlayerInventory.Instance != null ? InternalPlayerInventory.Instance.HasItem(requiredItemID) : (bool?)null)}");
@@ -236,13 +247,13 @@ public abstract class UnlockableInteraction : InteractionManager
 
         ExecuteInteraction();
         onInteractionExecuted?.Invoke();
+    NotifyInteractionExecuted();
 
         // Only show notice immediately if not using camera transition (handled in DoorInteractions otherwise)
         if (!(this is DoorInteractions doorInt) || !(doorInt.HasActiveCameraTransition()))
         {
-            MasterObjectiveClass resolvedMasterObjective = GetMasterObjectiveIfAvailable();
             if (needsItem && canUnlock && resolvedMasterObjective != null)
-                resolvedMasterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", ResolveUsedNoticeTitle(), ResolveUsedNoticeBottomText(), 2f, 4f, priority: 8);
+                resolvedMasterObjective.CreateAndShowNotice(this, GetContextualNoticeId("used"), ResolveUsedNoticeTitle(), ResolveUsedNoticeBottomText(), 2f, 4f, priority: 8);
         }
 
         if(_interactionSFX != null && SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)

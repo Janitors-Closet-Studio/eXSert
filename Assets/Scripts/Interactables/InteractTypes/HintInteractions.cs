@@ -60,6 +60,9 @@ public class HintInteractions : InteractionManager
             }
         }
 
+        if (hint != null)
+            NotifyInteractionExecuted();
+
         return hint != null;
     }
 
