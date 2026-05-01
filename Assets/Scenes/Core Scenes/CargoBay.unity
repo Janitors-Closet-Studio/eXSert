@@ -16352,6 +16352,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7025297468091847141, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
   m_PrefabInstance: {fileID: 512283598}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &512283602 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+  m_PrefabInstance: {fileID: 512283598}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 512283599}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57bcea94c08a27e4683e9a39f8d0ea34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemInteractions
 --- !u!1001 &512864301
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18799,47 +18810,23 @@ MonoBehaviour:
   - interactionToActivate: {fileID: 0}
     triggerSource: {fileID: 209182630}
     triggerZoneSource: {fileID: 0}
+    triggerZoneOnlyOnce: 1
     triggerOnPuzzleInteractionComplete: 0
     triggerOnWaveCompletion: 0
     objectiveID: 1
-    objectiveText: "\"Cleanser's forces are already waiting. \nTime to scrap 'em
-      and push deeper.\""
+    objectiveText: Prepare to be scrap, clankers!
     objectiveType: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
     priority: 0
-  - interactionToActivate: {fileID: 0}
-    triggerSource: {fileID: 1366759822}
+  - interactionToActivate: {fileID: 1340020918}
+    triggerSource: {fileID: 0}
     triggerZoneSource: {fileID: 0}
-    triggerOnPuzzleInteractionComplete: 0
-    triggerOnWaveCompletion: 0
-    objectiveID: 2
-    objectiveText: "\"They're trying to stall me. \nI'm not going to let them.\""
-    objectiveType: 0
-    disableInteraction: 0
-    interactionToDisable: {fileID: 0}
-    priority: 0
-  - interactionToActivate: {fileID: 0}
-    triggerSource: {fileID: 1366759822}
-    triggerZoneSource: {fileID: 0}
-    triggerOnPuzzleInteractionComplete: 0
-    triggerOnWaveCompletion: 1
-    objectiveID: 3
-    objectiveText: "\"They locked down the route. \nI need to get this container
-      out of the way.\""
-    objectiveType: 0
-    disableInteraction: 0
-    interactionToDisable: {fileID: 0}
-    priority: 0
-  - interactionToActivate: {fileID: 0}
-    triggerSource: {fileID: 5960073906962354268}
-    triggerZoneSource: {fileID: 0}
+    triggerZoneOnlyOnce: 1
     triggerOnPuzzleInteractionComplete: 1
     triggerOnWaveCompletion: 0
-    objectiveID: 4
-    objectiveText: '"Path is Clear.
-
-      Let''s keep on moving."'
+    objectiveID: 2
+    objectiveText: Let's get that shipping container out of the way.
     objectiveType: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
@@ -18847,10 +18834,11 @@ MonoBehaviour:
   - interactionToActivate: {fileID: 0}
     triggerSource: {fileID: 0}
     triggerZoneSource: {fileID: 1507246519}
+    triggerZoneOnlyOnce: 1
     triggerOnPuzzleInteractionComplete: 0
     triggerOnWaveCompletion: 0
-    objectiveID: 5
-    objectiveText: "\"Another lockdown. Same as before. \nWipe them out, keep moving.\""
+    objectiveID: 3
+    objectiveText: Guess I have to use this crane too.
     objectiveType: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
@@ -18858,36 +18846,23 @@ MonoBehaviour:
   - interactionToActivate: {fileID: 0}
     triggerSource: {fileID: 0}
     triggerZoneSource: {fileID: 2109478563}
+    triggerZoneOnlyOnce: 1
     triggerOnPuzzleInteractionComplete: 0
     triggerOnWaveCompletion: 0
-    objectiveID: 6
-    objectiveText: '"Seems like they''re getting desperate.
-
-      Let''s push through."'
+    objectiveID: 4
+    objectiveText: These rustbuckets don't know when to quit.
     objectiveType: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
     priority: 0
-  - interactionToActivate: {fileID: 0}
-    triggerSource: {fileID: 244521764}
-    triggerZoneSource: {fileID: 0}
-    triggerOnPuzzleInteractionComplete: 0
-    triggerOnWaveCompletion: 1
-    objectiveID: 7
-    objectiveText: "\"Area secured. \nTime to get that door open.\""
-    objectiveType: 0
-    disableInteraction: 0
-    interactionToDisable: {fileID: 0}
-    priority: 0
-  - interactionToActivate: {fileID: 0}
+  - interactionToActivate: {fileID: 512283602}
     triggerSource: {fileID: 0}
-    triggerZoneSource: {fileID: 33532714}
+    triggerZoneSource: {fileID: 0}
+    triggerZoneOnlyOnce: 1
     triggerOnPuzzleInteractionComplete: 0
     triggerOnWaveCompletion: 0
-    objectiveID: 8
-    objectiveText: '"Catch my breath. Check my gear.
-
-      Keep moving."'
+    objectiveID: 5
+    objectiveText: Easy. I'll get to the Cleanser in no time!
     objectiveType: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
@@ -40766,6 +40741,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
   m_PrefabInstance: {fileID: 1340020915}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1340020918 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+  m_PrefabInstance: {fileID: 1340020915}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1340020917}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57bcea94c08a27e4683e9a39f8d0ea34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemInteractions
 --- !u!1001 &1340260227
 PrefabInstance:
   m_ObjectHideFlags: 0
