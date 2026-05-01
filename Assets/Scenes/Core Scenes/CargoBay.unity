@@ -6286,6 +6286,14 @@ PrefabInstance:
       propertyPath: checkpointSceneAsset
       value: 
       objectReference: {fileID: 11400000, guid: 248abdb68d5b5464eabe3268014145e2, type: 2}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: associatedDiaryNoticeTitle
+      value: ENTRY #02 ADDED
+      objectReference: {fileID: 0}
+    - target: {fileID: 1706817641471256140, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
+      propertyPath: associatedDiaryNoticeDescription
+      value: 'Open Nav Menu to read '
+      objectReference: {fileID: 0}
     - target: {fileID: 1989029368106997964, guid: bb1190ce6d75c18488afa28f9d551b2c, type: 3}
       propertyPath: m_Size.x
       value: 8.95
@@ -16255,7 +16263,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: displayName
-      value: Crew Quarters Key
+      value: ACCESS CARD ACQUIRED
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _rumbleDuration
@@ -16263,7 +16271,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: bottomFlavorText
-      value: 
+      value: Crew Quarters Access Card added
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _rumbleLowFrequency
@@ -31840,8 +31848,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8300000, guid: 29de3fe0d877fc747bbb4fed12cacf1b, type: 3}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: usedNoticeTitle
+      value: OVERRIDE SUCCESSFUL
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: bottomFlavorText
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: lockedNoticeTitle
+      value: ACCESS DENIED
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: _interactionPrompt
@@ -31850,6 +31866,14 @@ PrefabInstance:
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: onlyInteractableOnce
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: usedNoticeBottomText
+      value: Crew Quarters Door Opening
+      objectReference: {fileID: 0}
+    - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
+      propertyPath: lockedNoticeBottomText
+      value: 'Required: Crew Quarters Access Card'
       objectReference: {fileID: 0}
     - target: {fileID: 3611071323446665129, guid: 9c2ac6d0d836019459d0bfb4e3391823, type: 3}
       propertyPath: doorHandlers.Array.size
@@ -36559,11 +36583,11 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: a4ffd7266933cd74e9fb8bacbdca8713, type: 2}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: displayName
-      value: DATAFILE ENTRY #004
+      value: ARCHIVE_004 ACQUIRED
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: bottomFlavorText
-      value: 
+      value: Open Nav Menu to read
       objectReference: {fileID: 0}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalPosition.x
@@ -38246,7 +38270,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: displayName
-      value: North Crane Console Key
+      value: ACCESS CARD ACQUIRED
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _rumbleDuration
@@ -38254,7 +38278,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: bottomFlavorText
-      value: 
+      value: Cargo Crane Access Card B
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _rumbleLowFrequency
@@ -40661,7 +40685,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: displayName
-      value: South Crane Console Key
+      value: ACCESS CARD ACQUIRED
+      objectReference: {fileID: 0}
+    - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: bottomFlavorText
+      value: Cargo Crane Access Card A
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _interactionPrompt
@@ -40707,9 +40735,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7174264988403049420, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: m_Name
       value: 1stCraneKeyCard
+      objectReference: {fileID: 0}
+    - target: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8395392445939120458, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -50313,12 +50349,28 @@ PrefabInstance:
       value: secondcrane
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: usedNoticeTitle
+      value: OVERRIDE SUCCESSFUL
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: bottomFlavorText
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: lockedNoticeTitle
+      value: ACCESS DENIED
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: usedNoticeBottomText
+      value: 'Crane Activated '
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: lockedNoticeBottomText
+      value: 'Required: Cargo Crane Access Card B'
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: requiredItemDisplayName
-      value: North Crane Computer Key
+      value: Cargo Crane Access Card B
       objectReference: {fileID: 0}
     - target: {fileID: 5108432916783851341, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -56267,11 +56319,11 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 68b523c5b7f34cc4db62046c6fa8a18e, type: 2}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: displayName
-      value: DATAFILE ENTRY #002
+      value: ARCHIVE_002 ACQUIRED
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: bottomFlavorText
-      value: Press Pause to View
+      value: Open Nav Menu to read
       objectReference: {fileID: 0}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalScale.y
@@ -64144,11 +64196,11 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 58b00db1641c211448ac89d50730c985, type: 2}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: displayName
-      value: DATAFILE ENTRY #003
+      value: ARCHIVE_003 ACQUIRED
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: bottomFlavorText
-      value: 
+      value: Open Nav Menu to read
       objectReference: {fileID: 0}
     - target: {fileID: 8876989916128129437, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: m_LocalScale.y
@@ -64997,6 +65049,10 @@ PrefabInstance:
       value: firstcrane
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: usedNoticeTitle
+      value: OVERRIDE SUCCESSFUL
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: bottomFlavorText
       value: 
       objectReference: {fileID: 0}
@@ -65005,12 +65061,16 @@ PrefabInstance:
       value: ACCESS DENIED
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: usedNoticeBottomText
+      value: 'Crane Activated '
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: lockedNoticeBottomText
       value: 'Required: Cargo Crane Access Card A'
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: requiredItemDisplayName
-      value: South Crane Console Key
+      value: Cargo Crane Access Card A
       objectReference: {fileID: 0}
     - target: {fileID: 5108432916783851341, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: m_StaticEditorFlags

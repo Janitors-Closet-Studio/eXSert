@@ -160,7 +160,26 @@ namespace EnemyBehavior.Boss.Cleanser
                 Instantiate(owner.TossImpactVFX, impactVfxPosition, Quaternion.identity);
             }
 
-            owner.PlaySpareTossImpactSfx();
+            // Play the impact SFX from the weapon's own position so each landing
+            // is heard as a distinct 3D sound at the correct world location.
+            AudioClip impactClip = owner.GetRandomTossImpactClip();
+            if (impactClip != null && weapon.WeaponObject != null)
+            {
+                AudioSource weaponAudio = weapon.WeaponObject.GetComponent<AudioSource>();
+                if (weaponAudio == null)
+                    weaponAudio = weapon.WeaponObject.AddComponent<AudioSource>();
+
+                weaponAudio.spatialBlend = 1f;
+                weaponAudio.rolloffMode = AudioRolloffMode.Linear;
+                weaponAudio.minDistance = 2f;
+                weaponAudio.maxDistance = 35f;
+
+                float sfxVolume = SoundManager.Instance != null && SoundManager.Instance.sfxSource != null
+                    ? SoundManager.Instance.sfxSource.volume
+                    : 1f;
+                weaponAudio.PlayOneShot(impactClip, owner.TossImpactSFXVolume * sfxVolume);
+            }
+
             onComplete?.Invoke();
         }
 

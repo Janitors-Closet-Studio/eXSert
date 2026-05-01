@@ -208,6 +208,9 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Fallback SFX played when each weapon impacts the ground (used if TossImpactSFXClips is empty).")]
         public AudioClip TossImpactSFX;
 
+        [Tooltip("Volume for toss impact SFX (0-1).")]
+        [Range(0f, 1f)] public float TossImpactSFXVolume = 1f;
+
         [Tooltip("Impact VFX spawned when each weapon lodges in the ground.")]
         public GameObject TossImpactVFX;
 
@@ -843,6 +846,27 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
+        /// Returns a random clip from <see cref="TossImpactSFXClips"/>, falling back to
+        /// <see cref="TossImpactSFX"/> if the list is empty. Returns null if neither is set.
+        /// Used by <see cref="SpareTossVolley"/> to play the clip spatially on each weapon.
+        /// </summary>
+        public AudioClip GetRandomTossImpactClip()
+        {
+            if (TossImpactSFXClips != null && TossImpactSFXClips.Count > 0)
+            {
+                // Shuffle through until a non-null entry is found.
+                int attempts = 0;
+                while (attempts < TossImpactSFXClips.Count * 2)
+                {
+                    AudioClip clip = TossImpactSFXClips[Random.Range(0, TossImpactSFXClips.Count)];
+                    if (clip != null) return clip;
+                    attempts++;
+                }
+            }
+            return TossImpactSFX;
+        }
+
+        /// <summary>
         /// Disables all trigger colliders on a weapon so it cannot deal damage while hovering/in-flight.
         /// Colliders are only re-enabled by SpareTossVolley when the weapon is actually launched.
         /// </summary>
@@ -1210,17 +1234,16 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void PlaySFX(AudioClip clip)
         {
-            if (clip == null)
-                return;
+            if (clip == null) return;
 
             if (SFXSource != null)
             {
+                if (SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
+                    SFXSource.volume = SoundManager.Instance.sfxSource.volume;
                 SFXSource.PlayOneShot(clip);
             }
             else if (SoundManager.Instance != null)
-            {
                 SoundManager.Instance.sfxSource.PlayOneShot(clip);
-            }
         }
 
         /// <summary>

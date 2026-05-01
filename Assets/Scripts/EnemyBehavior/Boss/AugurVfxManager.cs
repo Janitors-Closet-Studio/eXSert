@@ -65,6 +65,42 @@ namespace EnemyBehavior.Boss
         [SerializeField, Tooltip("Extra lifetime after the dash ring is hidden before the prefab is destroyed.")]
         private float dashRingDestroyDelay = 0.05f;
 
+        [Header("Static Charge VFX")]
+        [SerializeField, Tooltip("Anchor for the static charge telegraph (falls back to dashVfxTargetLocation).")]
+        private Transform staticChargeVfxTargetLocation;
+        [SerializeField, Tooltip("Anchor used to spawn the static charge ring on the boss. Falls back to staticChargeVfxTargetLocation, then dashRingVfxTargetLocation, then dashVfxTargetLocation.")]
+        private Transform staticChargeRingVfxTargetLocation;
+        [SerializeField, Tooltip("Telegraph prefab shown before a static charge. Falls back to dashIndicatorVfxPrefab if null.")]
+        private GameObject staticChargeTelegraphVfxPrefab;
+        [SerializeField, Tooltip("Applied to the computed charge distance before sizing the static charge telegraph. Use to compensate for authored prefab length.")]
+        private float staticChargeIndicatorLengthOffset = -10f;
+        [SerializeField, Min(0f), Tooltip("Seconds to wait after ShowStaticChargeTelegraph is called before the telegraph VFX actually spawns.")]
+        private float staticChargeTelegraphStartDelay = 0f;
+        [SerializeField, Tooltip("Ring prefab spawned when the static charge launches. Falls back to dashRingVfxPrefab if null.")]
+        private GameObject staticChargeRingVfxPrefab;
+        [SerializeField, Min(0f), Tooltip("Seconds to wait after ShowStaticChargeRing is called before the ring VFX actually spawns.")]
+        private float staticChargeRingStartDelay = 0f;
+        [SerializeField, Tooltip("Audio clip played alongside the static charge telegraph.")]
+        private AudioClip staticChargeTelegraphAudioClip;
+
+        [Header("Targeted Charge VFX")]
+        [SerializeField, Tooltip("Anchor for the targeted charge telegraph (falls back to dashVfxTargetLocation).")]
+        private Transform targetedChargeVfxTargetLocation;
+        [SerializeField, Tooltip("Anchor used to spawn the targeted charge ring on the boss. Falls back to targetedChargeVfxTargetLocation, then dashRingVfxTargetLocation, then dashVfxTargetLocation.")]
+        private Transform targetedChargeRingVfxTargetLocation;
+        [SerializeField, Tooltip("Telegraph prefab shown before a targeted charge. Falls back to dashIndicatorVfxPrefab if null.")]
+        private GameObject targetedChargeTelegraphVfxPrefab;
+        [SerializeField, Tooltip("Applied to the computed charge distance before sizing the targeted charge telegraph.")]
+        private float targetedChargeIndicatorLengthOffset = -10f;
+        [SerializeField, Min(0f), Tooltip("Seconds to wait after ShowTargetedChargeTelegraph is called before the telegraph VFX actually spawns.")]
+        private float targetedChargeTelegraphStartDelay = 0f;
+        [SerializeField, Tooltip("Ring prefab spawned when the targeted charge launches. Falls back to dashRingVfxPrefab if null.")]
+        private GameObject targetedChargeRingVfxPrefab;
+        [SerializeField, Min(0f), Tooltip("Seconds to wait after ShowTargetedChargeRing is called before the ring VFX actually spawns.")]
+        private float targetedChargeRingStartDelay = 0f;
+        [SerializeField, Tooltip("Audio clip played alongside the targeted charge telegraph.")]
+        private AudioClip targetedChargeTelegraphAudioClip;
+
         [Header("Panel Break")]
         [SerializeField, Tooltip("Optional electricity prefab spawned when a side panel breaks.")]
         private GameObject panelBreakElectricityPrefab;
@@ -103,6 +139,18 @@ namespace EnemyBehavior.Boss
         private GameObject activeDashRingInstance;
         private ParticleSystem[] activeDashIndicatorParticles = Array.Empty<ParticleSystem>();
         private ParticleSystem[] activeDashRingParticles = Array.Empty<ParticleSystem>();
+        private GameObject activeStaticChargeTelegraphInstance;
+        private GameObject activeStaticChargeRingInstance;
+        private ParticleSystem[] activeStaticChargeTelegraphParticles = Array.Empty<ParticleSystem>();
+        private ParticleSystem[] activeStaticChargeRingParticles = Array.Empty<ParticleSystem>();
+        private GameObject activeTargetedChargeTelegraphInstance;
+        private GameObject activeTargetedChargeRingInstance;
+        private ParticleSystem[] activeTargetedChargeTelegraphParticles = Array.Empty<ParticleSystem>();
+        private ParticleSystem[] activeTargetedChargeRingParticles = Array.Empty<ParticleSystem>();
+        private Coroutine staticChargeTelegraphRoutine;
+        private Coroutine staticChargeRingRoutine;
+        private Coroutine targetedChargeTelegraphRoutine;
+        private Coroutine targetedChargeRingRoutine;
         private MaterialPropertyBlock alarmFlashPropertyBlock;
         private int alarmFlashEmissionPropertyId;
         private Color alarmFlashOriginalEmissionColor = Color.black;
@@ -330,6 +378,222 @@ namespace EnemyBehavior.Boss
             activeDashRingParticles = Array.Empty<ParticleSystem>();
         }
 
+        // ─── Static Charge VFX ───────────────────────────────────────────────
+
+        public void ShowStaticChargeTelegraph(Vector3 chargeDestination, float windupDelay)
+        {
+            if (deathTriggered)
+                return;
+
+            HideStaticChargeTelegraph();
+            staticChargeTelegraphRoutine = StartCoroutine(SpawnStaticChargeTelegraph(chargeDestination, windupDelay));
+        }
+
+        private IEnumerator SpawnStaticChargeTelegraph(Vector3 chargeDestination, float windupDelay)
+        {
+            if (staticChargeTelegraphStartDelay > 0f)
+                yield return new WaitForSeconds(staticChargeTelegraphStartDelay);
+
+            if (deathTriggered) yield break;
+
+            GameObject prefab = staticChargeTelegraphVfxPrefab != null ? staticChargeTelegraphVfxPrefab : dashIndicatorVfxPrefab;
+            if (prefab == null) yield break;
+
+            Transform anchor = staticChargeVfxTargetLocation != null ? staticChargeVfxTargetLocation
+                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform);
+            float dist = Mathf.Max(0.01f, GetFlatDistance(anchor.position, chargeDestination) + staticChargeIndicatorLengthOffset);
+            float lifetime = Mathf.Max(0.01f, windupDelay - staticChargeTelegraphStartDelay);
+            Quaternion rot = GetDashIndicatorRotation(anchor, chargeDestination);
+
+            activeStaticChargeTelegraphInstance = Instantiate(prefab, anchor.position, rot);
+            activeStaticChargeTelegraphParticles = activeStaticChargeTelegraphInstance.GetComponentsInChildren<ParticleSystem>(true);
+            ConfigureDashIndicator(activeStaticChargeTelegraphParticles, dist, lifetime);
+            RestartObject(activeStaticChargeTelegraphInstance);
+
+            AudioClip clip = staticChargeTelegraphAudioClip != null ? staticChargeTelegraphAudioClip : dashIndicatorAudioClip;
+            PlayClip(clip);
+
+            yield return new WaitForSeconds(lifetime);
+            HideStaticChargeTelegraph();
+        }
+
+        public void HideStaticChargeTelegraph()
+        {
+            if (staticChargeTelegraphRoutine != null)
+            {
+                StopCoroutine(staticChargeTelegraphRoutine);
+                staticChargeTelegraphRoutine = null;
+            }
+
+            if (activeStaticChargeTelegraphInstance == null)
+                return;
+
+            StopEffects(activeStaticChargeTelegraphInstance);
+            Destroy(activeStaticChargeTelegraphInstance, Mathf.Max(0f, dashIndicatorDestroyDelay));
+            activeStaticChargeTelegraphInstance = null;
+            activeStaticChargeTelegraphParticles = Array.Empty<ParticleSystem>();
+        }
+
+
+        public void ShowStaticChargeRing(float chargeDuration)
+        {
+            if (deathTriggered)
+                return;
+
+            HideStaticChargeRing();
+            staticChargeRingRoutine = StartCoroutine(SpawnStaticChargeRing(chargeDuration));
+        }
+
+        private IEnumerator SpawnStaticChargeRing(float chargeDuration)
+        {
+            if (staticChargeRingStartDelay > 0f)
+                yield return new WaitForSeconds(staticChargeRingStartDelay);
+
+            if (deathTriggered) yield break;
+
+            GameObject prefab = staticChargeRingVfxPrefab != null ? staticChargeRingVfxPrefab : dashRingVfxPrefab;
+            if (prefab == null) yield break;
+
+            Transform anchor = staticChargeRingVfxTargetLocation != null ? staticChargeRingVfxTargetLocation
+                : (staticChargeVfxTargetLocation != null ? staticChargeVfxTargetLocation
+                : (dashRingVfxTargetLocation != null ? dashRingVfxTargetLocation
+                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform)));
+            float lifetime = Mathf.Max(5f, chargeDuration);
+
+            activeStaticChargeRingInstance = Instantiate(prefab, anchor.position, anchor.rotation);
+            activeStaticChargeRingInstance.transform.SetParent(anchor, worldPositionStays: true);
+            activeStaticChargeRingParticles = activeStaticChargeRingInstance.GetComponentsInChildren<ParticleSystem>(true);
+            ConfigureParticleLifetime(activeStaticChargeRingParticles, lifetime);
+            RestartObject(activeStaticChargeRingInstance);
+            staticChargeRingRoutine = null;
+        }
+
+        public void HideStaticChargeRing()
+        {
+            if (staticChargeRingRoutine != null)
+            {
+                StopCoroutine(staticChargeRingRoutine);
+                staticChargeRingRoutine = null;
+            }
+
+            if (activeStaticChargeRingInstance == null)
+                return;
+
+            StopEffects(activeStaticChargeRingInstance);
+            Destroy(activeStaticChargeRingInstance, Mathf.Max(0f, dashRingDestroyDelay));
+            activeStaticChargeRingInstance = null;
+            activeStaticChargeRingParticles = Array.Empty<ParticleSystem>();
+        }
+
+        // ─── Targeted Charge VFX ─────────────────────────────────────────────
+
+        public void ShowTargetedChargeTelegraph(Vector3 chargeDestination, float windupDelay)
+        {
+            if (deathTriggered)
+                return;
+
+            HideTargetedChargeTelegraph();
+            targetedChargeTelegraphRoutine = StartCoroutine(SpawnTargetedChargeTelegraph(chargeDestination, windupDelay));
+        }
+
+        private IEnumerator SpawnTargetedChargeTelegraph(Vector3 chargeDestination, float windupDelay)
+        {
+            if (targetedChargeTelegraphStartDelay > 0f)
+                yield return new WaitForSeconds(targetedChargeTelegraphStartDelay);
+
+            if (deathTriggered) yield break;
+
+            GameObject prefab = targetedChargeTelegraphVfxPrefab != null ? targetedChargeTelegraphVfxPrefab : dashIndicatorVfxPrefab;
+            if (prefab == null) yield break;
+
+            Transform anchor = targetedChargeVfxTargetLocation != null ? targetedChargeVfxTargetLocation
+                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform);
+            float dist = Mathf.Max(0.01f, GetFlatDistance(anchor.position, chargeDestination) + targetedChargeIndicatorLengthOffset);
+            float lifetime = Mathf.Max(0.01f, windupDelay - targetedChargeTelegraphStartDelay);
+            Quaternion rot = GetDashIndicatorRotation(anchor, chargeDestination);
+
+            activeTargetedChargeTelegraphInstance = Instantiate(prefab, anchor.position, rot);
+            activeTargetedChargeTelegraphParticles = activeTargetedChargeTelegraphInstance.GetComponentsInChildren<ParticleSystem>(true);
+            ConfigureDashIndicator(activeTargetedChargeTelegraphParticles, dist, lifetime);
+            RestartObject(activeTargetedChargeTelegraphInstance);
+
+            AudioClip clip = targetedChargeTelegraphAudioClip != null ? targetedChargeTelegraphAudioClip : dashIndicatorAudioClip;
+            PlayClip(clip);
+
+            yield return new WaitForSeconds(lifetime);
+            HideTargetedChargeTelegraph();
+        }
+
+        public void HideTargetedChargeTelegraph()
+        {
+            if (targetedChargeTelegraphRoutine != null)
+            {
+                StopCoroutine(targetedChargeTelegraphRoutine);
+                targetedChargeTelegraphRoutine = null;
+            }
+
+            if (activeTargetedChargeTelegraphInstance == null)
+                return;
+
+            StopEffects(activeTargetedChargeTelegraphInstance);
+            Destroy(activeTargetedChargeTelegraphInstance, Mathf.Max(0f, dashIndicatorDestroyDelay));
+            activeTargetedChargeTelegraphInstance = null;
+            activeTargetedChargeTelegraphParticles = Array.Empty<ParticleSystem>();
+        }
+
+
+        public void ShowTargetedChargeRing(float chargeDuration)
+        {
+            if (deathTriggered)
+                return;
+
+            HideTargetedChargeRing();
+            targetedChargeRingRoutine = StartCoroutine(SpawnTargetedChargeRing(chargeDuration));
+        }
+
+        private IEnumerator SpawnTargetedChargeRing(float chargeDuration)
+        {
+            if (targetedChargeRingStartDelay > 0f)
+                yield return new WaitForSeconds(targetedChargeRingStartDelay);
+
+            if (deathTriggered) yield break;
+
+            GameObject prefab = targetedChargeRingVfxPrefab != null ? targetedChargeRingVfxPrefab : dashRingVfxPrefab;
+            if (prefab == null) yield break;
+
+            Transform anchor = targetedChargeRingVfxTargetLocation != null ? targetedChargeRingVfxTargetLocation
+                : (targetedChargeVfxTargetLocation != null ? targetedChargeVfxTargetLocation
+                : (dashRingVfxTargetLocation != null ? dashRingVfxTargetLocation
+                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform)));
+            float lifetime = Mathf.Max(5f, chargeDuration);
+
+            activeTargetedChargeRingInstance = Instantiate(prefab, anchor.position, anchor.rotation);
+            activeTargetedChargeRingInstance.transform.SetParent(anchor, worldPositionStays: true);
+            activeTargetedChargeRingParticles = activeTargetedChargeRingInstance.GetComponentsInChildren<ParticleSystem>(true);
+            ConfigureParticleLifetime(activeTargetedChargeRingParticles, lifetime);
+            RestartObject(activeTargetedChargeRingInstance);
+            targetedChargeRingRoutine = null;
+        }
+
+        public void HideTargetedChargeRing()
+        {
+            if (targetedChargeRingRoutine != null)
+            {
+                StopCoroutine(targetedChargeRingRoutine);
+                targetedChargeRingRoutine = null;
+            }
+
+            if (activeTargetedChargeRingInstance == null)
+                return;
+
+            StopEffects(activeTargetedChargeRingInstance);
+            Destroy(activeTargetedChargeRingInstance, Mathf.Max(0f, dashRingDestroyDelay));
+            activeTargetedChargeRingInstance = null;
+            activeTargetedChargeRingParticles = Array.Empty<ParticleSystem>();
+        }
+
+
+
         private void TriggerExhaustBurst(float duration)
         {
             if (exhaustVfxRoots == null || exhaustVfxRoots.Length == 0)
@@ -413,6 +677,10 @@ namespace EnemyBehavior.Boss
             deathTriggered = true;
             HideDashTelegraph();
             HideDashRing();
+            HideStaticChargeTelegraph();
+            HideStaticChargeRing();
+            HideTargetedChargeTelegraph();
+            HideTargetedChargeRing();
             StopAlarmFlash();
             StopExhaustImmediately();
 
@@ -561,6 +829,10 @@ namespace EnemyBehavior.Boss
 
             HideDashTelegraph();
             HideDashRing();
+            HideStaticChargeTelegraph();
+            HideStaticChargeRing();
+            HideTargetedChargeTelegraph();
+            HideTargetedChargeRing();
             StopAlarmFlash();
             RestoreAlarmLightsRotation();
             dashExhaustActive = false;

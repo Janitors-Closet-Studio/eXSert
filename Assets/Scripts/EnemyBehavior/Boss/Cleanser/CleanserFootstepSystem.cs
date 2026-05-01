@@ -28,6 +28,7 @@ namespace EnemyBehavior.Boss.Cleanser
     ///   active (call <see cref="SuppressFootsteps"/> / <see cref="ResumeFootsteps"/>
     ///   from CleanserBrain around the spin phase).
     /// </summary>
+    [RequireComponent(typeof(AudioSource))]
     public class CleanserFootstepSystem : MonoBehaviour
     {
         [Header("Footstep Clips")]
@@ -38,14 +39,10 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField, Range(0f, 1f)] private float footstepVolume = 0.7f;
 
         [Header("Animation-Aligned Walking")]
-        [Tooltip("Footstep cooldown (seconds) at the reference walk speed. " +
-                 "The actual cooldown scales inversely with the current walk speed so " +
-                 "that steps stay in sync when the animation is sped up or slowed down.")]
-        [SerializeField, Min(0.02f)] private float walkFootstepBaseCooldown = 0.35f;
-
-        [Tooltip("Walk speed (units/sec) at which the base cooldown applies. " +
-                 "Should match the NavMeshAgent speed used during normal walking.")]
-        [SerializeField, Min(0.1f)] private float walkReferenceSpeed = 3.5f;
+        [Tooltip("Minimum seconds between two animation-event-driven footsteps. " +
+                 "Acts only as a spam-guard against duplicate events firing on the same frame. " +
+                 "Timing sync is handled by the animator speed multiplier, not this value — keep it short.")]
+        [SerializeField, Min(0.02f)] private float walkFootstepMinGap = 0.08f;
 
         [Header("Anime Dash Footsteps")]
         [Tooltip("Movement speed (units/sec) considered 'normal' Anime Dash speed. " +
@@ -56,16 +53,14 @@ namespace EnemyBehavior.Boss.Cleanser
                  "Steps fire faster when accelerating and slower when decelerating.")]
         [SerializeField, Min(0.02f)] private float animeDashBaseInterval = 0.18f;
 
-        [Header("Audio Source")]
-        [Tooltip("Dedicated audio source for footsteps. Falls back to SoundManager if null.")]
-        [SerializeField] private AudioSource audioSource;
+        // Resolved automatically via RequireComponent — no Inspector slot needed.
+        private AudioSource audioSource;
 
         // ── Internal state ──────────────────────────────────────────────────────
         private float lastWalkFootstepTime = -999f;
         private int suppressionDepth;          // Reference-counted: 0 = footsteps active
         private bool animeDashActive;
         private Coroutine animeDashCoroutine;
-        private System.Func<float> walkSpeedGetter;
 
         // ── Public surface ──────────────────────────────────────────────────────
 
@@ -76,20 +71,18 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void Awake()
         {
-            TryResolveAudioSource();
+            // Grab the AudioSource that RequireComponent guarantees is on this object.
+            audioSource = GetComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+            // 3D spatial blend so footsteps are positional in the world.
+            audioSource.spatialBlend = 1f;
+            audioSource.rolloffMode = AudioRolloffMode.Linear;
+            audioSource.minDistance = 2f;
+            audioSource.maxDistance = 30f;
         }
 
         // ── API called by CleanserBrain ─────────────────────────────────────────
-
-        /// <summary>
-        /// Registers a delegate that returns the Cleanser's current walk speed (units/sec).
-        /// The footstep cooldown is scaled by <c>walkReferenceSpeed / currentSpeed</c> so
-        /// that faster walking produces faster steps, matching the animation rate.
-        /// </summary>
-        public void SetWalkSpeedGetter(System.Func<float> speedGetter)
-        {
-            walkSpeedGetter = speedGetter;
-        }
 
         /// <summary>
         /// Called by a walk-animation event on each footfall.
@@ -104,8 +97,7 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
 
             float now = Time.time;
-            float cooldown = ComputeWalkCooldown();
-            if (now - lastWalkFootstepTime < cooldown)
+            if (now - lastWalkFootstepTime < walkFootstepMinGap)
                 return;
 
             lastWalkFootstepTime = now;
@@ -193,26 +185,11 @@ namespace EnemyBehavior.Boss.Cleanser
             }
         }
 
-        /// <summary>
-        /// Returns the current walk footstep cooldown, scaled by the Cleanser's
-        /// actual walk speed relative to the reference speed.
-        /// </summary>
-        private float ComputeWalkCooldown()
-        {
-            float speed = walkSpeedGetter != null ? walkSpeedGetter() : walkReferenceSpeed;
-            if (speed <= 0.01f)
-                return walkFootstepBaseCooldown;
-
-            // Faster speed → shorter cooldown, keeping SFX in sync with animation.
-            return Mathf.Max(0.05f, walkFootstepBaseCooldown * (walkReferenceSpeed / speed));
-        }
-
         private void PlayRandomClip()
         {
             if (footstepClips == null || footstepClips.Length == 0)
                 return;
 
-            // Filter nulls and pick at random.
             int attempts = 0;
             AudioClip clip = null;
             while (clip == null && attempts < footstepClips.Length * 2)
@@ -224,20 +201,12 @@ namespace EnemyBehavior.Boss.Cleanser
             if (clip == null)
                 return;
 
-            TryResolveAudioSource();
-            if (audioSource != null)
-                audioSource.PlayOneShot(clip, footstepVolume);
-            else if (SoundManager.Instance != null)
-                SoundManager.Instance.sfxSource.PlayOneShot(clip, footstepVolume);
+            float sfxVolume = SoundManager.Instance != null && SoundManager.Instance.sfxSource != null
+                ? SoundManager.Instance.sfxSource.volume
+                : 1f;
+            audioSource.PlayOneShot(clip, footstepVolume * sfxVolume);
         }
 
-        private void TryResolveAudioSource()
-        {
-            if (audioSource != null)
-                return;
 
-            if (SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
-                audioSource = SoundManager.Instance.sfxSource;
-        }
     }
 }

@@ -80,8 +80,9 @@ public class PuzzleInteraction : UnlockableInteraction
 
         if (!needsItem)
         {
-            if (masterObjective != null)
-                masterObjective.CreateAndShowNotice(this, $"{this.interactId}_puzzle", optionalStringMessage, "", 0.5f, 1.5f, priority: 5);
+            MasterObjectiveClass resolvedMasterObjective = GetMasterObjectiveIfAvailable();
+            if (resolvedMasterObjective != null)
+                resolvedMasterObjective.CreateAndShowNotice(this, GetContextualNoticeId("puzzle"), optionalStringMessage, "", 0.5f, 1.5f, priority: 5);
         }
     }
 
@@ -132,7 +133,21 @@ public class PuzzleInteractionEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
+        serializedObject.Update();
+
+        SerializedProperty property = serializedObject.GetIterator();
+        bool enterChildren = true;
+        while (property.NextVisible(enterChildren))
+        {
+            using (new EditorGUI.DisabledScope(property.name == "m_Script"))
+            {
+                EditorGUILayout.PropertyField(property, true);
+            }
+
+            enterChildren = false;
+        }
+
+        serializedObject.ApplyModifiedProperties();
 
         EditorGUILayout.Space();
 

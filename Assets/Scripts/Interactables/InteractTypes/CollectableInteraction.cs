@@ -45,6 +45,7 @@ public abstract class CollectableInteraction : InteractionManager
             interactionSfxSource.PlayOneShot(_interactionSFX);
         ExecuteInteraction();
         AfterExecuteInteraction();
+        NotifyInteractionExecuted();
         
         if (masterObjective != null)
         {

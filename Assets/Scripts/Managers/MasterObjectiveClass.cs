@@ -20,6 +20,8 @@ public class ObjectiveData
     public MonoBehaviour triggerSource;
     [Tooltip("Optional plain trigger-box source. Assign a BoxCollider trigger here when you want the objective to fire from entering a basic trigger volume without a custom script.")]
     public BoxCollider triggerZoneSource;
+    [Tooltip("When enabled, objectives driven by Trigger Zone Source only show the first time the player enters that zone. Disable this if re-entry should replay the objective.")]
+    public bool triggerZoneOnlyOnce = true;
     [Tooltip("When the trigger source is a PuzzleInteraction, show this objective after that puzzle interaction fully completes instead of when the normal trigger fires.")]
     public bool triggerOnPuzzleInteractionComplete;
     [Tooltip("When the trigger source is a Wave, show this objective after the enemy wave completes instead of when the wave starts.")]
@@ -30,6 +32,7 @@ public class ObjectiveData
     public bool disableInteraction;
     public InteractionManager interactionToDisable;
     public int priority = 0;
+    [System.NonSerialized] public bool hasTriggeredFromZone;
 }
 
 [System.Serializable]
@@ -184,6 +187,11 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                         puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
                         puzzleInteraction.InteractionCompleted += HandlePuzzleInteractionCompleted;
                     }
+                    else if (objective.triggerSource == null && objective.interactionToActivate == puzzleInteraction)
+                    {
+                        puzzleInteraction.InteractionExecuted -= HandleInteractionExecuted;
+                        puzzleInteraction.InteractionExecuted += HandleInteractionExecuted;
+                    }
                     else
                     {
                         puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
@@ -196,8 +204,16 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                     break;
 
                 case InteractionManager interaction:
-                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
-                    interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    if (objective.triggerSource == null && objective.interactionToActivate == interaction)
+                    {
+                        interaction.InteractionExecuted -= HandleInteractionExecuted;
+                        interaction.InteractionExecuted += HandleInteractionExecuted;
+                    }
+                    else
+                    {
+                        interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                        interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    }
                     break;
 
                 case ProgressionZone zone:
@@ -233,6 +249,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 
                 case PuzzleInteraction puzzleInteraction:
                     puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
+                    puzzleInteraction.InteractionExecuted -= HandleInteractionExecuted;
                     puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
                     break;
 
@@ -241,6 +258,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                     break;
 
                 case InteractionManager interaction:
+                    interaction.InteractionExecuted -= HandleInteractionExecuted;
                     interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
                     break;
 
@@ -283,6 +301,11 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                         puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
                         puzzleInteraction.InteractionCompleted += HandlePuzzleInteractionCompleted;
                     }
+                    else if (notice.triggerSource == null && notice.interactionToActivate == puzzleInteraction)
+                    {
+                        puzzleInteraction.InteractionExecuted -= HandleInteractionExecuted;
+                        puzzleInteraction.InteractionExecuted += HandleInteractionExecuted;
+                    }
                     else
                     {
                         puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
@@ -295,8 +318,16 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                     break;
 
                 case InteractionManager interaction:
-                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
-                    interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    if (notice.triggerSource == null && notice.interactionToActivate == interaction)
+                    {
+                        interaction.InteractionExecuted -= HandleInteractionExecuted;
+                        interaction.InteractionExecuted += HandleInteractionExecuted;
+                    }
+                    else
+                    {
+                        interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                        interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    }
                     break;
 
                 case ProgressionZone zone:
@@ -332,6 +363,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 
                 case PuzzleInteraction puzzleInteraction:
                     puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
+                    puzzleInteraction.InteractionExecuted -= HandleInteractionExecuted;
                     puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
                     break;
 
@@ -340,6 +372,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
                     break;
 
                 case InteractionManager interaction:
+                    interaction.InteractionExecuted -= HandleInteractionExecuted;
                     interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
                     break;
 
@@ -381,6 +414,12 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             ShowObjectivesForTrigger(interaction);
             ShowNoticesForTrigger(interaction);
         }
+    }
+
+    private void HandleInteractionExecuted(InteractionManager interaction)
+    {
+        ShowObjectivesForTrigger(interaction);
+        ShowNoticesForTrigger(interaction);
     }
 
     private void HandleZoneEntered(ProgressionZone zone)
@@ -510,6 +549,9 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             if (objective == null || GetObjectiveTriggerSource(objective) != triggerSource)
                 continue;
 
+            if (triggerSource is BoxCollider && objective.triggerZoneSource != null && objective.triggerZoneOnlyOnce && objective.hasTriggeredFromZone)
+                continue;
+
             if ((triggerSource is PuzzleInteraction || triggerSource is PuzzlePart) && objective.triggerOnPuzzleInteractionComplete)
                 continue;
 
@@ -521,6 +563,9 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             }
 
             objective.objectiveID = effectiveObjectiveID;
+            if (triggerSource is BoxCollider && objective.triggerZoneSource != null && objective.triggerZoneOnlyOnce)
+                objective.hasTriggeredFromZone = true;
+
             ShowObjective(effectiveObjectiveID);
         }
     }
@@ -707,6 +752,23 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         }
 
         return null;
+    }
+
+    private static bool HasConfiguredNoticeContent(NoticeData notice)
+    {
+        return notice != null
+            && (!string.IsNullOrWhiteSpace(notice.noticeText)
+                || !string.IsNullOrWhiteSpace(notice.bottomText));
+    }
+
+    private static bool ShouldUseInteractionNoticeFallback(InteractionManager interaction, string effectiveNoticeID)
+    {
+        if (interaction == null || string.IsNullOrWhiteSpace(effectiveNoticeID))
+            return false;
+
+        string normalizedInteractionId = NormalizeNoticeID(interaction.interactId);
+        return !string.IsNullOrWhiteSpace(normalizedInteractionId)
+            && normalizedInteractionId == effectiveNoticeID;
     }
 
     private static float ResolveFadeDuration(float fadeDuration)
@@ -1051,11 +1113,16 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             return;
         }
 
-        NoticeData configuredNotice = TryFindNoticeByInteraction(interaction);
-        if (configuredNotice == null)
-            configuredNotice = TryFindNoticeById(effectiveNoticeID);
+        NoticeData configuredNotice = TryFindNoticeById(effectiveNoticeID);
+        if (!HasConfiguredNoticeContent(configuredNotice)
+            && ShouldUseInteractionNoticeFallback(interaction, effectiveNoticeID))
+        {
+            NoticeData interactionNotice = TryFindNoticeByInteraction(interaction);
+            if (HasConfiguredNoticeContent(interactionNotice))
+                configuredNotice = interactionNotice;
+        }
 
-        if (configuredNotice != null)
+        if (HasConfiguredNoticeContent(configuredNotice))
         {
             if (string.IsNullOrWhiteSpace(configuredNotice.noticeID))
                 configuredNotice.noticeID = effectiveNoticeID;
