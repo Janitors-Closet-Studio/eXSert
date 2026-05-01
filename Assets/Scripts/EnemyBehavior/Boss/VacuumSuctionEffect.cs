@@ -272,6 +272,13 @@ namespace EnemyBehavior.Boss
             _audioStopRoutine = null;
         }
 
+        private void SyncVacuumAudioVolume()
+        {
+            if (VacuumAudioSource == null) return;
+            if (SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
+                VacuumAudioSource.volume = SoundManager.Instance.sfxSource.volume;
+        }
+
         private IEnumerator SuctionCoroutine(float duration)
         {
             isActive = true;
@@ -292,6 +299,7 @@ namespace EnemyBehavior.Boss
 
             if (VacuumAudioSource != null)
             {
+                SyncVacuumAudioVolume();
                 _audioStartTime = Time.time;
                 VacuumAudioSource.Play();
             }
@@ -397,6 +405,9 @@ namespace EnemyBehavior.Boss
                     EnemyBehaviorDebugLogBools.Log(nameof(VacuumSuctionEffect), $"[VacuumSuctionEffect] Pulling - dist={distanceToTarget:F1}m, strength={currentPullStrength:F1}");
                 }
 #endif
+
+                if (VacuumAudioSource != null)
+                    SyncVacuumAudioVolume();
 
                 elapsed += Time.deltaTime;
                 yield return null;
