@@ -90,26 +90,15 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void PlayFootstep()
         {
-            Debug.Log($"[Footstep] PlayFootstep called. suppression={suppressionDepth} animeDash={animeDashActive} timeSinceLast={Time.time - lastWalkFootstepTime:F3} minGap={walkFootstepMinGap}");
-
             if (suppressionDepth > 0)
-            {
-                Debug.Log("[Footstep] BLOCKED by suppression.");
                 return;
-            }
 
             if (animeDashActive)
-            {
-                Debug.Log("[Footstep] BLOCKED by animeDashActive.");
                 return;
-            }
 
             float now = Time.time;
             if (now - lastWalkFootstepTime < walkFootstepMinGap)
-            {
-                Debug.Log("[Footstep] BLOCKED by min gap.");
                 return;
-            }
 
             lastWalkFootstepTime = now;
             PlayRandomClip();
@@ -198,15 +187,9 @@ namespace EnemyBehavior.Boss.Cleanser
 
         private void PlayRandomClip()
         {
-            Debug.Log($"[Footstep] PlayRandomClip called. clips={footstepClips?.Length ?? 0} audioSource={audioSource} audioSource.enabled={audioSource?.enabled} volume={footstepVolume}");
-
             if (footstepClips == null || footstepClips.Length == 0)
-            {
-                Debug.LogWarning("[Footstep] No clips assigned!");
                 return;
-            }
 
-            // Filter nulls and pick at random.
             int attempts = 0;
             AudioClip clip = null;
             while (clip == null && attempts < footstepClips.Length * 2)
@@ -216,12 +199,8 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             if (clip == null)
-            {
-                Debug.LogWarning("[Footstep] All clips in array are null!");
                 return;
-            }
 
-            Debug.Log($"[Footstep] Playing clip '{clip.name}' on source '{audioSource.name}'");
             audioSource.PlayOneShot(clip, footstepVolume);
         }
 
