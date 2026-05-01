@@ -46,6 +46,13 @@ namespace Utilities.Combat
         public static bool isGuarding { get; private set; } = false;
         public static bool isInCombat { get; private set; }
 
+        /// <summary>
+        /// True when the player is in combat based on proximity to enemies or recent damage
+        /// exchanges — but ignoring active combat encounters. Use this when encounter
+        /// boundaries alone shouldn't lock out gameplay systems (e.g. interactions).
+        /// </summary>
+        public static bool isInCombatIgnoringEncounter { get; private set; }
+
         [SerializeField, Range(0f, 1f)] private float _parryWindow = 0.3f;
         public static bool isParrying { get; private set; } = false;
 
@@ -119,7 +126,8 @@ namespace Utilities.Combat
             CombatEncounter.EncounterCombatStateChanged -= HandleEncounterCombatStateChanged;
             playerNearEnemy = false;
             playerInActiveCombatEncounter = false;
-            SetInCombatState(false);
+            isInCombatIgnoringEncounter = false;
+            SetInCombatState(false, false);
         }
 
         private void Update()
@@ -133,6 +141,7 @@ namespace Utilities.Combat
             bool tookDamageRecently = Time.time - lastPlayerDamagedTime <= Mathf.Max(0f, combatMemoryAfterTakingDamage);
             bool dealtDamageRecently = Time.time - lastEnemyHitTime <= Mathf.Max(0f, combatMemoryAfterDealingDamage);
             bool shouldBeInCombat = tookDamageRecently || dealtDamageRecently || playerNearEnemy || playerInActiveCombatEncounter;
+            bool shouldBeInCombatIgnoringEncounter = tookDamageRecently || dealtDamageRecently || playerNearEnemy;
 
             if (logCombatStateDebug && Time.time >= nextCombatDebugLogTime)
             {
@@ -140,7 +149,7 @@ namespace Utilities.Combat
                 Debug.Log($"[CombatManager] shouldBeInCombat={shouldBeInCombat} | tookDamageRecently={tookDamageRecently} dealtDamageRecently={dealtDamageRecently} nearEnemy={playerNearEnemy} encounterActive={playerInActiveCombatEncounter}");
             }
 
-            SetInCombatState(shouldBeInCombat);
+            SetInCombatState(shouldBeInCombat, shouldBeInCombatIgnoringEncounter);
         }
 
         private static Coroutine parryWindowRoutine;
@@ -301,8 +310,10 @@ namespace Utilities.Combat
             return cachedPlayerTransform;
         }
 
-        private static void SetInCombatState(bool value)
+        private static void SetInCombatState(bool value, bool valueIgnoringEncounter)
         {
+            isInCombatIgnoringEncounter = valueIgnoringEncounter;
+
             if (isInCombat == value)
                 return;
 

@@ -385,14 +385,18 @@ public abstract class InteractionManager : MonoBehaviour, IInteractable
 
     protected bool IsPlayerBusyForInteraction()
     {
-        CachePlayerCombatController();
-
         if (PlayerMovement.isDashingFlag || CombatManager.isGuarding)
             return true;
 
-        if (_combatIdleController != null && _combatIdleController.IsInCombat)
+        // Mirror the combat check the camera uses, but exclude active encounter state —
+        // the player may have fled far from enemies mid-encounter and should still be
+        // able to interact. Proximity, recent damage taken, and recent hits dealt are
+        // all still respected.
+        if (CombatManager.isInCombatIgnoringEncounter)
             return true;
 
+        // Also block while an attack animation is actively executing (isInCombat covers
+        // the hit-confirm path, but an attack that hasn't connected yet won't set it).
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player == null)
             return false;

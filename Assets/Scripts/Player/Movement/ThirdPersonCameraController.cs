@@ -118,7 +118,7 @@ public class ThirdPersonCameraController : MonoBehaviour
             targetRadius = guardRadius;
             targetOffset = new Vector3(originalTargetOffset.x, originalTargetOffset.y + guardHeightOffset, originalTargetOffset.z);
         }
-        else if (useCombatCameraAdjustments && CombatManager.isInCombat)
+        else if (useCombatCameraAdjustments && CombatManager.isInCombatIgnoringEncounter)
         {
             targetRadius = originalRadius * Mathf.Max(1f, combatRadiusMultiplier);
         }
@@ -131,7 +131,7 @@ public class ThirdPersonCameraController : MonoBehaviour
 
         if (cmCamera != null)
         {
-            float targetFov = (useCombatCameraAdjustments && !CombatManager.isGuarding && CombatManager.isInCombat)
+            float targetFov = (useCombatCameraAdjustments && !CombatManager.isGuarding && CombatManager.isInCombatIgnoringEncounter)
                 ? combatFieldOfView
                 : originalFieldOfView;
 
@@ -145,7 +145,7 @@ public class ThirdPersonCameraController : MonoBehaviour
         bool reachedFov = true;
         if (cmCamera != null)
         {
-            float targetFov = (useCombatCameraAdjustments && !CombatManager.isGuarding && CombatManager.isInCombat)
+            float targetFov = (useCombatCameraAdjustments && !CombatManager.isGuarding && CombatManager.isInCombatIgnoringEncounter)
                 ? combatFieldOfView
                 : originalFieldOfView;
             reachedFov = Mathf.Abs(cmCamera.Lens.FieldOfView - targetFov) < 0.05f;
