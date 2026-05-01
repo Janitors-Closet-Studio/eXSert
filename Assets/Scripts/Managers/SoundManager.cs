@@ -6,6 +6,7 @@ using UnityEngine;
 #pragma warning disable CS0414
 using Singletons;
 using System.Collections;
+using UnityEngine.SceneManagement;
 public class SoundManager : Singleton<SoundManager>
 {
     [SerializeField] protected override bool ShouldPersistAcrossScenes => true;
@@ -60,6 +61,9 @@ public class SoundManager : Singleton<SoundManager>
         PersistAudioSource(sfxSource);
         PersistAudioSource(voiceSource);
         PersistAudioSource(playerActionSfxSource);
+        PersistAudioSource(ambienceSource);
+        PersistAudioSource(uiSource);
+        PersistAudioSource(puzzleSource);
 
         base.Awake();
 
@@ -115,6 +119,22 @@ public class SoundManager : Singleton<SoundManager>
         
         if(levelMusicSource != null)
             levelMusicSource.volume = musicSource.volume;
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Restore volumes in case a fade-out or pause zeroed them during the previous scene transition
+        ApplySavedVolumes();
     }
 
     public void PauseUnPauseAudio(AudioSource source)

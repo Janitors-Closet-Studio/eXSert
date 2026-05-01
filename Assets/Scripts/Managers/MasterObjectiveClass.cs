@@ -78,11 +78,13 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     {
         CorrectIDsIfIsEntry();
         SubscribeObjectiveTriggers();
+        
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
         UnsubscribeObjectiveTriggers();
+        base.OnDestroy();
     }
 
     private Component GetObjectiveTriggerSource(ObjectiveData objective)
