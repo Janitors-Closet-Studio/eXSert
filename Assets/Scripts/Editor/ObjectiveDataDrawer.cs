@@ -20,7 +20,9 @@ public class ObjectiveDataDrawer : PropertyDrawer
             float currentY = foldoutRect.yMax + VerticalSpacing;
             DrawChild(ref currentY, position, property, "interactionToActivate");
             DrawChild(ref currentY, position, property, "triggerSource");
-            DrawChild(ref currentY, position, property, "triggerZoneSource");
+            DrawTriggerZoneSource(ref currentY, position, property);
+            if (ShouldShowTriggerZoneOnlyOnce(property))
+                DrawChild(ref currentY, position, property, "triggerZoneOnlyOnce");
             DrawChild(ref currentY, position, property, "triggerOnPuzzleInteractionComplete");
             DrawChild(ref currentY, position, property, "triggerOnWaveCompletion");
             DrawChild(ref currentY, position, property, "objectiveID");
@@ -46,6 +48,8 @@ public class ObjectiveDataDrawer : PropertyDrawer
         height += GetChildHeight(property, "interactionToActivate");
         height += GetChildHeight(property, "triggerSource");
         height += GetChildHeight(property, "triggerZoneSource");
+        if (ShouldShowTriggerZoneOnlyOnce(property))
+            height += GetChildHeight(property, "triggerZoneOnlyOnce");
         height += GetChildHeight(property, "triggerOnPuzzleInteractionComplete");
         height += GetChildHeight(property, "triggerOnWaveCompletion");
         height += GetChildHeight(property, "objectiveID");
@@ -70,6 +74,30 @@ public class ObjectiveDataDrawer : PropertyDrawer
         currentY += height + VerticalSpacing;
     }
 
+    private static void DrawTriggerZoneSource(ref float currentY, Rect totalRect, SerializedProperty parent)
+    {
+        SerializedProperty triggerZoneSource = parent.FindPropertyRelative("triggerZoneSource");
+        SerializedProperty triggerZoneOnlyOnce = parent.FindPropertyRelative("triggerZoneOnlyOnce");
+        if (triggerZoneSource == null)
+            return;
+
+        float height = EditorGUI.GetPropertyHeight(triggerZoneSource, true);
+        Rect childRect = new Rect(totalRect.x, currentY, totalRect.width, height);
+        Object previousReference = triggerZoneSource.objectReferenceValue;
+
+        EditorGUI.BeginChangeCheck();
+        EditorGUI.PropertyField(childRect, triggerZoneSource, true);
+        if (EditorGUI.EndChangeCheck()
+            && previousReference == null
+            && triggerZoneSource.objectReferenceValue != null
+            && triggerZoneOnlyOnce != null)
+        {
+            triggerZoneOnlyOnce.boolValue = true;
+        }
+
+        currentY += height + VerticalSpacing;
+    }
+
     private static float GetChildHeight(SerializedProperty parent, string childName)
     {
         SerializedProperty child = parent.FindPropertyRelative(childName);
@@ -77,5 +105,11 @@ public class ObjectiveDataDrawer : PropertyDrawer
             return 0f;
 
         return EditorGUI.GetPropertyHeight(child, true) + VerticalSpacing;
+    }
+
+    private static bool ShouldShowTriggerZoneOnlyOnce(SerializedProperty property)
+    {
+        SerializedProperty triggerZoneSource = property.FindPropertyRelative("triggerZoneSource");
+        return triggerZoneSource != null && triggerZoneSource.objectReferenceValue != null;
     }
 }
