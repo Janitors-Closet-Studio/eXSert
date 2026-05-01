@@ -21169,6 +21169,11 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 516640295}
   m_Mesh: {fileID: -7468449110986243466, guid: aec6a4438e1a1a941abcf78091f4f4eb, type: 3}
+--- !u!4 &518328178 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2030750693822079388, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+  m_PrefabInstance: {fileID: 4051711074320609365}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &521133018
 GameObject:
   m_ObjectHideFlags: 0
@@ -84555,6 +84560,14 @@ PrefabInstance:
       propertyPath: DashOvershootDistance
       value: 5
       objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: StaticChargeCountRange.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: StaticChargeCountRange.y
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3308009278746904747, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_Name
       value: Boss_Augur
@@ -84591,6 +84604,70 @@ PrefabInstance:
       propertyPath: 'crawlerSpawnPoints.Array.data[1]'
       value: 
       objectReference: {fileID: 278821151}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeRingVfxPrefab
+      value: 
+      objectReference: {fileID: 2423161447584847749, guid: 7412b307bafea0142851deabd46cdbed, type: 3}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeRingStartDelay
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeRingVfxPrefab
+      value: 
+      objectReference: {fileID: 2423161447584847749, guid: 7412b307bafea0142851deabd46cdbed, type: 3}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeSpeedLinesPrefab
+      value: 
+      objectReference: {fileID: 1246700582503276473, guid: 820ce9f18fe6efd418ba32b385a68036, type: 3}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeRingStartDelay
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeVfxTargetLocation
+      value: 
+      objectReference: {fileID: 518328178}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeTelegraphVfxPrefab
+      value: 
+      objectReference: {fileID: 2208531663650140585, guid: f8a301cf033fe904a8c26cd7a4a1a738, type: 3}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeSpeedLinesPrefab
+      value: 
+      objectReference: {fileID: 1246700582503276473, guid: 820ce9f18fe6efd418ba32b385a68036, type: 3}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeTelegraphStartDelay
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeVfxTargetLocation
+      value: 
+      objectReference: {fileID: 518328178}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeSpeedLinesStartDelay
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeTelegraphVfxPrefab
+      value: 
+      objectReference: {fileID: 2208531663650140585, guid: f8a301cf033fe904a8c26cd7a4a1a738, type: 3}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: staticChargeIndicatorLengthOffset
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeTelegraphStartDelay
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeSpeedLinesStartDelay
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4990874297734144411, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: targetedChargeIndicatorLengthOffset
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8773002588802439141, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 12.99
