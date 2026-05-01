@@ -611,7 +611,11 @@ public class PlayerAttackManager : MonoBehaviour
             return;
         }
 
-        OnAttack?.Invoke(airDashAttack);
+        // Do NOT invoke OnAttack for air dashes — firing OnAttack marks the player as
+        // in-combat (via PlayerCombatIdleController) and triggers AerialAttackHop in
+        // PlayerMovement, neither of which should apply to a pure movement air dash.
+        // The hitbox window still runs so the dash deals damage when it connects, and
+        // HitboxDamageManager.AttackHitConfirmed will set combat state if an enemy is hit.
         TriggerHitboxWindow(airDashAttack, airDashAttack.hitboxDuration);
     }
 
