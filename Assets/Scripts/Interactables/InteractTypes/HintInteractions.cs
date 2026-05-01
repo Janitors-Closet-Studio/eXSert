@@ -1,10 +1,20 @@
-using UnityEngine.Events;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class HintInteractions : InteractionManager
 {
     private Hint hint;
+
+    [Header("Interact Events")]
+    [SerializeField]
+    private UnityEvent onInteract;
+
     public UnityEvent[] collectEvents;
+
+    [Header("Unlockable Hint Settings")]
+    [Tooltip("Insert the ID of the item needed to unlock this hint; leave empty if none is needed")]
+    [SerializeField]
+    private string requiredItemID = "";
 
     protected override void Awake()
     {
@@ -13,57 +23,53 @@ public class HintInteractions : InteractionManager
         hint = GetComponent<Hint>();
         if (hint == null)
         {
-            Debug.LogWarning($"HintInteractions on {gameObject.name} does not have a Hint component attached.");
+            Debug.LogWarning(
+                $"HintInteractions on {gameObject.name} does not have a Hint component attached.");
+            return;
         }
-        else 
-        {
-            hint.enabled = false; // Ensure the hint is disabled at the start
-        }
+
+        hint.enabled = false;
     }
 
-    // Optional: Add requiredItemID and unlock logic if needed
-    [Header("Unlockable Hint Settings")]
-    [Tooltip("Insert the ID of the item needed to unlock this hint; leave empty if none is needed")]
-    [SerializeField] private string requiredItemID = "";
-
     protected override bool Interact()
-        
     {
         Debug.Log($"[HintInteractions] Interact called on {gameObject.name}");
+
         bool needsItem = !string.IsNullOrEmpty(requiredItemID);
-        bool canUnlock = InternalPlayerInventory.Instance != null && InternalPlayerInventory.Instance.HasItem(requiredItemID);
+        bool canUnlock = InternalPlayerInventory.Instance != null
+            && InternalPlayerInventory.Instance.HasItem(requiredItemID);
         bool canExecuteInteraction = !needsItem || canUnlock;
 
         if (!canExecuteInteraction)
         {
-            Debug.Log("[HintInteractions] Player does not have the required item. Interaction blocked.");
-            // Optionally play error SFX or show a message here
+            Debug.Log(
+                "[HintInteractions] Player does not have the required item. Interaction blocked.");
             return false;
         }
 
-        if (hint != null)
+        if (hint == null)
         {
-            hint.enabled = true; // Enable the hint component when interacted with
-            if(_interactionSFX != null)
-            {
-                Debug.Log($"[HintInteractions] Playing SFX: {_interactionSFX.name} on sfxSource from {gameObject.name}");
-                SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
-            }
-
-            foreach (UnityEvent collectEvent in collectEvents)
-            {
-                if (collectEvent != null)
-                {
-                    this.hint.enabled = true; // Enable the hint component when the item is collected
-                    collectEvent?.Invoke();
-                }
-            }
+            return false;
         }
 
-        if (hint != null)
-            NotifyInteractionExecuted();
+        if (!hint.OpenHint())
+            return false;
 
-        return hint != null;
+        if (_interactionSFX != null)
+        {
+            Debug.Log(
+                $"[HintInteractions] Playing SFX: {_interactionSFX.name} on sfxSource from {gameObject.name}");
+            SoundManager.Instance.sfxSource.PlayOneShot(_interactionSFX);
+        }
+
+        foreach (UnityEvent collectEvent in collectEvents)
+        {
+            collectEvent?.Invoke();
+        }
+
+        onInteract?.Invoke();
+
+        NotifyInteractionExecuted();
+        return true;
     }
-
 }

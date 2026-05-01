@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using UIandUXSystems.HUD;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
 namespace Progression.Encounters
@@ -23,6 +24,12 @@ namespace Progression.Encounters
 
         [SerializeField]
         private bool loadSceneOnClear = false;
+
+        [SerializeField]
+        private bool triggerEventOnClear = false;
+
+        [SerializeField]
+        private UnityEvent onClear;
 
         [SerializeField]
         private SceneAsset sceneToLoadOnClear;
@@ -59,6 +66,7 @@ namespace Progression.Encounters
 
             OnEncounterCompleted += DropItem;
             OnEncounterCompleted += LoadSceneOnClear;
+            OnEncounterCompleted += InvokeOnClearEvent;
 
             allWaves.Clear();
 
@@ -110,8 +118,17 @@ namespace Progression.Encounters
 
             OnEncounterCompleted -= DropItem;
             OnEncounterCompleted -= LoadSceneOnClear;
+            OnEncounterCompleted -= InvokeOnClearEvent;
         }
         #endregion
+
+        private void InvokeOnClearEvent()
+        {
+            if (!triggerEventOnClear)
+                return;
+
+            onClear?.Invoke();
+        }
 
         private void OnUpdateLastEnemyPosition(Vector3 position)
         {
