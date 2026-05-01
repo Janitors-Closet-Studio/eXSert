@@ -513,6 +513,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private bool isExecutingRetreatJump;
         private int consecutiveRetreatJumps;
         private float lastRetreatJumpEndTime = -999f;
+        private bool forceAttackIgnoreRange;
         private float currentComboMovementSpeedMultiplier = 1f;
         private bool hasPostRecoveryTargetDistance;
         private float currentPostRecoveryTargetDistance;
@@ -1603,6 +1604,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private void ResetComboMovementState(bool cancelActiveCombo)
         {
             currentComboMovementSpeedMultiplier = 1f;
+            forceAttackIgnoreRange = false;
 
             if (cancelActiveCombo && comboSystem != null && comboSystem.IsExecutingCombo)
                 comboSystem.CancelCombo();
@@ -2097,7 +2099,12 @@ namespace EnemyBehavior.Boss.Cleanser
                     bool hasCurrentStepRange = TryGetComboStepDesiredRange(step, out float stepRangeMin, out float stepRangeMax);
                     bool hasNextStepRange = TryGetComboStepDesiredRange(nextStep, out float nextStepRangeMin, out float nextStepRangeMax);
 
-                    if (hasCurrentStepRange)
+                    // If forceAttackIgnoreRange is set the boss has exhausted its retreat options;
+                    // skip all range/movement checks this combo so the attack fires regardless.
+                    bool skipRangeChecks = forceAttackIgnoreRange;
+                    forceAttackIgnoreRange = false;
+
+                    if (hasCurrentStepRange && !skipRangeChecks)
                     {
                         float currentDistance = GetPlayerDistanceXZ();
                         bool isInCurrentStepRange = IsDistanceInRange(currentDistance, stepRangeMin, stepRangeMax);
@@ -2577,11 +2584,12 @@ namespace EnemyBehavior.Boss.Cleanser
 
             consecutiveRetreatJumps++;
 
-            // 3rd+ consecutive jump — skip entirely and force next behaviour.
-            if (consecutiveRetreatJumps >= 3)
+            // 5th+ consecutive jump — player is clearly chasing; force an attack ignoring range.
+            if (consecutiveRetreatJumps >= 5)
             {
                 consecutiveRetreatJumps = 0;
                 lastRetreatJumpEndTime = Time.time;
+                forceAttackIgnoreRange = true;
                 yield break;
             }
 
@@ -2596,9 +2604,15 @@ namespace EnemyBehavior.Boss.Cleanser
                 ? cfg.OverrideJumpDistance
                 : Mathf.Max(2f, aggressionSystem?.GetCurrentMovementConfig()?.PreferredDistance ?? 6f);
 
-            // 2nd consecutive jump — double the distance.
-            if (consecutiveRetreatJumps == 2)
-                jumpDist *= 2f;
+            // Escalate distance: 1x, 2x, 3x, 3x on jumps 1–4.
+            jumpDist *= consecutiveRetreatJumps switch
+            {
+                1 => 1f,
+                2 => 2f,
+                3 => 3f,
+                4 => 3f,
+                _ => 3f
+            };
 
             Vector3 desiredLanding = transform.position + awayDir * jumpDist;
             desiredLanding.y = transform.position.y;
