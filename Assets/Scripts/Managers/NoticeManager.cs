@@ -12,6 +12,7 @@ public class NoticeManager : MonoBehaviour
     private int currentCollectPriority = 0;
     private Coroutine collectableUICoroutine;
     private bool fadeOutComplete = false;
+    private int currentNoticeRequestToken;
     private InteractionUI cachedInteractionUI;
 
     [Header("Debug")]
@@ -88,6 +89,8 @@ public class NoticeManager : MonoBehaviour
 
     internal void CancelCurrentCollectNotice(bool turnOffUI = false)
     {
+        currentNoticeRequestToken++;
+
         if (collectableUICoroutine != null)
         {
             StopCoroutine(collectableUICoroutine);
@@ -101,9 +104,23 @@ public class NoticeManager : MonoBehaviour
             WritingTextUI.RemoveWriter_Static(collectBottomTextMesh);
 
         ClearNotice();
+        ResetCollectUICanvasState();
+        fadeOutComplete = true;
 
         if (turnOffUI && collectUI != null)
             collectUI.SetActive(false);
+    }
+
+    private void ResetCollectUICanvasState()
+    {
+        if (collectUI == null)
+            return;
+
+        CanvasGroup canvasGroup = collectUI.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+            canvasGroup = collectUI.AddComponent<CanvasGroup>();
+
+        canvasGroup.alpha = 0f;
     }
 
     internal void ClearNotice()
@@ -149,11 +166,12 @@ public class NoticeManager : MonoBehaviour
         if (!gameObject.activeInHierarchy)
             gameObject.SetActive(true);
         CancelCurrentCollectNotice();
-        collectableUICoroutine = StartCoroutine(FadeInTypeFadeOutRoutine(collectedLabel, bottomFlavorText, fadeDuration, displayDuration, typeSpeed, invisibleCharacters, priority));
+        int requestToken = currentNoticeRequestToken;
+        collectableUICoroutine = StartCoroutine(FadeInTypeFadeOutRoutine(collectedLabel, bottomFlavorText, fadeDuration, displayDuration, typeSpeed, invisibleCharacters, priority, requestToken));
         if (debugLogging) Debug.Log($"[NoticeManager] FadeInTypeFadeOutRoutine coroutine started.");
     }
     // Fades in the collect UI and text
-    private IEnumerator FadeInUI(float fadeDuration)
+    private IEnumerator FadeInUI(float fadeDuration, int requestToken)
     {
         if (collectUI == null)
         {
@@ -178,6 +196,9 @@ public class NoticeManager : MonoBehaviour
         float elapsedTime = 0f;
         while (elapsedTime < fadeDuration)
         {
+            if (requestToken != currentNoticeRequestToken)
+                yield break;
+
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Clamp01(elapsedTime / fadeDuration);
 
@@ -192,7 +213,7 @@ public class NoticeManager : MonoBehaviour
 
     }
 
-    private IEnumerator FadeOutUI(float fadeDuration)
+    private IEnumerator FadeOutUI(float fadeDuration, int requestToken)
     {
 
         if (collectUI == null)
@@ -220,6 +241,9 @@ public class NoticeManager : MonoBehaviour
         float elapsedTime = 0f;
         while (elapsedTime < fadeDuration)
         {
+            if (requestToken != currentNoticeRequestToken)
+                yield break;
+
             if (debugLogging) Debug.Log("Fading out collect UI... Elapsed time: " + elapsedTime.ToString("F2") + "s");
             elapsedTime += Time.deltaTime;
             float alpha = Mathf.Lerp(startAlpha, 0f, Mathf.Clamp01(elapsedTime / fadeDuration));
@@ -235,7 +259,7 @@ public class NoticeManager : MonoBehaviour
     }
 
     // Coroutine to fade in, then type, then fade out
-    private IEnumerator FadeInTypeFadeOutRoutine(string collectedLabel, string bottomFlavorText, float fadeDuration, float displayDuration, float typeSpeed, bool invisibleCharacters, int priority)
+    private IEnumerator FadeInTypeFadeOutRoutine(string collectedLabel, string bottomFlavorText, float fadeDuration, float displayDuration, float typeSpeed, bool invisibleCharacters, int priority, int requestToken)
     {
         if (debugLogging) Debug.Log($"[NoticeManager] FadeInTypeFadeOutRoutine started. collectUI: {collectUI}, _collectText: {_collectText}, _collectBottomText: {_collectBottomText}");
         
@@ -255,9 +279,14 @@ public class NoticeManager : MonoBehaviour
         _collectBottomText.gameObject.SetActive(true);
         _collectText.gameObject.SetActive(true);
 
+        fadeOutComplete = false;
+
         // Fade in first, but cap pre-typing delay so notices feel responsive.
         float fadeInDuration = Mathf.Min(fadeDuration, MaxFadeInBeforeTyping);
-        yield return StartCoroutine(FadeInUI(fadeInDuration));
+        yield return StartCoroutine(FadeInUI(fadeInDuration, requestToken));
+
+        if (requestToken != currentNoticeRequestToken)
+            yield break;
 
         // Start typing effect after fade in (main text first)
         if (_collectText != null)
@@ -275,6 +304,9 @@ public class NoticeManager : MonoBehaviour
                 _collectText.text = collectedLabel;
                 yield return new WaitForSeconds(0.1f);
             }
+
+            if (requestToken != currentNoticeRequestToken)
+                yield break;
         }
 
         // Now type the bottom text
@@ -292,13 +324,22 @@ public class NoticeManager : MonoBehaviour
                 _collectBottomText.text = bottomFlavorText;
                 yield return new WaitForSeconds(displayDuration);
             }
+
+            if (requestToken != currentNoticeRequestToken)
+                yield break;
         }
 
         // Fade out (clamped so it never feels instant)
         float fadeOutDuration = Mathf.Max(fadeDuration, MinFadeOutDuration);
-        yield return StartCoroutine(FadeOutUI(fadeOutDuration));
+        yield return StartCoroutine(FadeOutUI(fadeOutDuration, requestToken));
+
+        if (requestToken != currentNoticeRequestToken)
+            yield break;
+
         // Only reset priority if this is the current one
         if (priority == currentCollectPriority)
             currentCollectPriority = 0;
+
+        collectableUICoroutine = null;
     }
 }

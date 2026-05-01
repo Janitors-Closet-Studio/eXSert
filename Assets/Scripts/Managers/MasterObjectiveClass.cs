@@ -709,6 +709,13 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         return null;
     }
 
+    private static bool HasConfiguredNoticeContent(NoticeData notice)
+    {
+        return notice != null
+            && (!string.IsNullOrWhiteSpace(notice.noticeText)
+                || !string.IsNullOrWhiteSpace(notice.bottomText));
+    }
+
     private static float ResolveFadeDuration(float fadeDuration)
     {
         return fadeDuration > 0f ? fadeDuration : 2f;
@@ -1051,11 +1058,15 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             return;
         }
 
-        NoticeData configuredNotice = TryFindNoticeByInteraction(interaction);
-        if (configuredNotice == null)
-            configuredNotice = TryFindNoticeById(effectiveNoticeID);
+        NoticeData configuredNotice = TryFindNoticeById(effectiveNoticeID);
+        if (!HasConfiguredNoticeContent(configuredNotice))
+        {
+            NoticeData interactionNotice = TryFindNoticeByInteraction(interaction);
+            if (HasConfiguredNoticeContent(interactionNotice))
+                configuredNotice = interactionNotice;
+        }
 
-        if (configuredNotice != null)
+        if (HasConfiguredNoticeContent(configuredNotice))
         {
             if (string.IsNullOrWhiteSpace(configuredNotice.noticeID))
                 configuredNotice.noticeID = effectiveNoticeID;
