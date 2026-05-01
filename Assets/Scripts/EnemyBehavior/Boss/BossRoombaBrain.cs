@@ -2043,7 +2043,6 @@ namespace EnemyBehavior.Boss
                 );
                 augurVfxManager?.ShowStaticChargeTelegraph(end, staticChargeWindupDuration);
                 augurVfxManager?.ShowStaticChargeRing(staticChargeWindupDuration + staticChargeDashDuration);
-                augurVfxManager?.ShowStaticChargeSpeedLines(end);
 
                 if (animator != null && !string.IsNullOrEmpty(StaticCharge.AnimatorTriggerOnWindup))
                     animator.SetTrigger(StaticCharge.AnimatorTriggerOnWindup);
@@ -2537,7 +2536,6 @@ namespace EnemyBehavior.Boss
             );
             augurVfxManager?.ShowTargetedChargeTelegraph(overshootTarget, targetedChargeWindupDuration + targetedChargeTurnDuration);
             augurVfxManager?.ShowTargetedChargeRing(targetedChargeWindupDuration + targetedChargeTurnDuration + targetedChargeDashDuration);
-            augurVfxManager?.ShowTargetedChargeSpeedLines(overshootTarget);
 
 
             // Windup animation
