@@ -560,6 +560,13 @@ namespace EnemyBehavior.Boss.Cleanser
 
         [Tooltip("High frequency intensity of the rumble (0-1).")]
         public float highFrequency = 0.75f;
+
+        [Header("SFX")]
+        [Tooltip("Sound played when this crescent wave is created (spawn SFX).")]
+        public AudioClip SpawnSFX;
+
+        [Tooltip("Follow-up trail/emanation sound played right after SpawnSFX finishes. Not looped.")]
+        public AudioClip SpawnTrailSFX;
     }
 
     /// <summary>
@@ -917,10 +924,19 @@ namespace EnemyBehavior.Boss.Cleanser
         [Header("SFX/VFX")]
         [Tooltip("Sound when ultimate is initiated (wall jump).")]
         public AudioClip InitiateSFX;
-        
+
+        [Tooltip("Sound played when jumping to a sweep position or back to arena center (JumpFull hops during ultimate).")]
+        public AudioClip UltimateJumpSFX;
+
+        [Tooltip("Sound played when landing after a JumpFull hop during ultimate.")]
+        public AudioClip UltimateJumpLandSFX;
+
         [Tooltip("Sound when crescent sweep is fired.")]
         public AudioClip SweepSFX;
-        
+
+        [Tooltip("Follow-up trail/emanation sound played after SweepSFX finishes. Not looped — played once right after the sweep SFX clip ends.")]
+        public AudioClip SweepTrailSFX;
+
         [Tooltip("Sound during charge up phase (looping).")]
         public AudioClip ChargeSFX;
         
@@ -952,6 +968,21 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("Duration in seconds the player input is locked during the knockback animation on massive strike.")]
         [Min(0f)] public float MassiveStrikeKnockbackDuration = 0.7f;
     }
+    /// <summary>
+    /// A single timed SFX entry for an attack. The clip plays <see cref="TimeBuffer"/> seconds
+    /// after the attack animation starts. If the combo is canceled before that delay elapses,
+    /// the SFX is skipped.
+    /// </summary>
+    [System.Serializable]
+    public class AttackSfxEntry
+    {
+        [Tooltip("The audio clip to play.")]
+        public AudioClip Clip;
+
+        [Tooltip("Seconds after attack start before this SFX plays. Set to 0 to play immediately.")]
+        [Min(0f)] public float TimeBuffer = 0f;
+    }
+
     [System.Serializable]
     public class CleanserAttackDescriptor
     {
@@ -1019,9 +1050,9 @@ namespace EnemyBehavior.Boss.Cleanser
         public CrescentArcProjectileConfig ProjectileConfig = new CrescentArcProjectileConfig();
 
         [Header("SFX/VFX")]
-        [Tooltip("Sound effect played at attack start.")]
-        public AudioClip AttackSFX;
-        
+        [Tooltip("Up to 3 SFX entries for this attack. Each entry has its own AudioClip and time buffer (seconds after attack start). All pending SFX are automatically canceled if the combo is interrupted.")]
+        public AttackSfxEntry[] AttackSFXEntries = new AttackSfxEntry[0];
+
         [Tooltip("Sound effect played on impact.")]
         public AudioClip ImpactSFX;
         

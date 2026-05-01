@@ -322,6 +322,8 @@ namespace EnemyBehavior.Boss.Cleanser
         [SerializeField] private AudioSource voiceLineSource;
         [Tooltip("Optional VFX coordinator used for animation-event-driven boss VFX.")]
         [SerializeField] private CleanserVFXManager cleanserVfxManager;
+        [Tooltip("Footstep audio system. Auto-found on Awake if left empty.")]
+        [SerializeField] private CleanserFootstepSystem footstepSystem;
 
         [Header("Voice Lines")]
         [Tooltip("Duration of the fade-out applied to a lower-priority voice line before a higher-priority one plays (seconds).")]
@@ -948,6 +950,16 @@ namespace EnemyBehavior.Boss.Cleanser
         }
 
         /// <summary>
+        /// Animation Event receiver: plays a footstep sound on the current foot contact.
+        /// Add this event to walk/run animation keyframes at the moment each foot strikes the ground.
+        /// Suppressed automatically during SpinDash and other non-locomotion states.
+        /// </summary>
+        public void PlayFootstep()
+        {
+            footstepSystem?.PlayFootstep();
+        }
+
+        /// <summary>
         /// Animation Event receiver: plays the pommel spark VFX.
         /// </summary>
         public void PommelSpark()
@@ -1125,6 +1137,8 @@ namespace EnemyBehavior.Boss.Cleanser
             animController = animController ?? GetComponent<CleanserAnimController>() ?? GetComponentInChildren<CleanserAnimController>();
             animator = animator ?? GetComponentInChildren<Animator>();
             cleanserVfxManager = cleanserVfxManager ?? GetComponent<CleanserVFXManager>() ?? GetComponentInChildren<CleanserVFXManager>(true);
+            footstepSystem = footstepSystem ?? GetComponent<CleanserFootstepSystem>() ?? GetComponentInChildren<CleanserFootstepSystem>(true);
+            footstepSystem?.SetWalkSpeedGetter(() => agent != null ? agent.velocity.magnitude : 0f);
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
 
             SoundManager soundManager = SoundManager.Instance;
@@ -2757,11 +2771,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 SetDamageReduction(true, attack.WindupDamageReduction);
             }
             
-            // Play SFX
-            PlaySFX(attack.AttackSFX);
+            // Schedule timed SFX entries.
+            var sfxCoroutines = ScheduleAttackSFXEntries(attack);
 
-            
-            
             // Spawn VFX
             if (attack.AttackVFX != null)
             {
@@ -2805,7 +2817,10 @@ namespace EnemyBehavior.Boss.Cleanser
             
             // Ensure hitbox is disabled
             isHitboxActive = false;
-            
+
+            // Cancel any pending timed SFX entries so they don't play after the attack ended/was canceled.
+            StopScheduledAttackSFX(sfxCoroutines);
+
             // Hide attack indicator when attack completes
             HideAttackIndicator();
             
@@ -3073,7 +3088,7 @@ namespace EnemyBehavior.Boss.Cleanser
             if (toPlayer.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.LookRotation(toPlayer.normalized);
 
-            SpawnCrescentArcProjectiles(DiagUpwardSlashAttack != null ? DiagUpwardSlashAttack.ProjectileConfig : null, player.position, 0f);
+            SpawnCrescentWave(DiagUpwardSlashAttack != null ? DiagUpwardSlashAttack.ProjectileConfig : null, player.position);
         }
 
         /// <summary>
@@ -3103,6 +3118,8 @@ namespace EnemyBehavior.Boss.Cleanser
             pendingUltimateSweepTargetPos = GetCurrentUltimateSweepTargetPosition(pendingUltimateSweepTargetPos);
             SpawnCrescentWave(UltimateSettings.LowSweepProjectile, pendingUltimateSweepTargetPos);
             PlaySFX(UltimateSettings.SweepSFX);
+            if (UltimateSettings.SweepSFX != null && UltimateSettings.SweepTrailSFX != null)
+                StartCoroutine(PlaySFXAfterClip(UltimateSettings.SweepSFX, UltimateSettings.SweepTrailSFX));
         }
 
         /// <summary>
@@ -3120,6 +3137,8 @@ namespace EnemyBehavior.Boss.Cleanser
             pendingUltimateSweepTargetPos = GetCurrentUltimateSweepTargetPosition(pendingUltimateSweepTargetPos);
             SpawnCrescentWave(UltimateSettings.MidSweepProjectile, pendingUltimateSweepTargetPos);
             PlaySFX(UltimateSettings.SweepSFX);
+            if (UltimateSettings.SweepSFX != null && UltimateSettings.SweepTrailSFX != null)
+                StartCoroutine(PlaySFXAfterClip(UltimateSettings.SweepSFX, UltimateSettings.SweepTrailSFX));
         }
 
         private IEnumerator DoAttackMovement()
@@ -3674,6 +3693,9 @@ namespace EnemyBehavior.Boss.Cleanser
                 TriggerAnimation(settings.AnimationTrigger);
                 PlaySFX(settings.AttackSFX);
 
+                // Start speed-relative footsteps for the legacy Anime Dash path.
+                footstepSystem?.BeginAnimeDashFootsteps(() => agent != null ? agent.velocity.magnitude : 0f);
+
                 if (settings.PreDashDelay > 0f)
                     yield return new WaitForSeconds(settings.PreDashDelay);
 
@@ -3820,6 +3842,7 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 // Re-enable lock-on regardless of how the dash ended (completed, interrupted, exception).
                 TryUnblockPlayerLockOn();
+                footstepSystem?.EndAnimeDashFootsteps();
                 cleanserVfxManager?.WingEnd();
                 cleanserVfxManager?.EndAnimeDashMeshTrail();
             }
@@ -3834,6 +3857,10 @@ namespace EnemyBehavior.Boss.Cleanser
             ApplyAnimationSpeedMultiplier(settings.AnimationSpeedMultiplier);
             TriggerAnimation(settings.AnimationTrigger);
             PlaySFX(settings.AttackSFX);
+
+            // Start speed-relative footsteps for the Anime Dash. The lambda reads the
+            // agent's current velocity each interval so cadence scales with actual speed.
+            footstepSystem?.BeginAnimeDashFootsteps(() => agent != null ? agent.velocity.magnitude : 0f);
 
             if (settings.PreDashDelay > 0f)
                 yield return new WaitForSeconds(settings.PreDashDelay);
@@ -4119,6 +4146,9 @@ namespace EnemyBehavior.Boss.Cleanser
             agent.Warp(transform.position);
 
             animController?.PlayIdle(0.05f);
+
+            // Stop Anime Dash footstep coroutine now that movement has fully ended.
+            footstepSystem?.EndAnimeDashFootsteps();
 
             if (useContinuousHitboxMode)
             {
@@ -4616,11 +4646,13 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 TriggerAnimation(UltimateSettings.JumpFullTrigger);
                 yield return WaitForJumpFullMovementEventOrFallback();
+                PlaySFX(UltimateSettings.UltimateJumpSFX);
                 yield return JumpToPosition(
                     sweepPos.position,
                     Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration),
                     true,
                     Mathf.Max(0f, UltimateSettings.JumpFullArcApexHeight));
+                PlaySFX(UltimateSettings.UltimateJumpLandSFX);
             }
 
             Vector3 arenaCenter = ultimateArenaCenterPoint != null
@@ -4644,11 +4676,13 @@ namespace EnemyBehavior.Boss.Cleanser
             // After double sweep completes, jump to arena center before entering hover ascent.
             TriggerAnimation(UltimateSettings.JumpFullTrigger);
             yield return WaitForJumpFullMovementEventOrFallback();
+            PlaySFX(UltimateSettings.UltimateJumpSFX);
             yield return JumpToPosition(
                 arenaCenter,
                 Mathf.Max(0.05f, UltimateSettings.JumpFullTravelDuration),
                 true,
                 Mathf.Max(0f, UltimateSettings.JumpFullArcApexHeight));
+            PlaySFX(UltimateSettings.UltimateJumpLandSFX);
 
             float hoverBaseY = (ultimateArenaCenterPoint != null ? ultimateArenaCenterPoint.position.y : arenaCenter.y) + UltimateSettings.HoverHeightOffset;
             Vector3 floatPos = new Vector3(arenaCenter.x, hoverBaseY, arenaCenter.z);
@@ -4800,6 +4834,13 @@ namespace EnemyBehavior.Boss.Cleanser
                 return;
 
             SpawnCrescentArcProjectiles(sourceConfig, targetPos, 0f);
+
+            if (sourceConfig.SpawnSFX != null)
+            {
+                PlaySFX(sourceConfig.SpawnSFX);
+                if (sourceConfig.SpawnTrailSFX != null)
+                    StartCoroutine(PlaySFXAfterClip(sourceConfig.SpawnSFX, sourceConfig.SpawnTrailSFX));
+            }
         }
 
         private void ApplySweepProjectileVisualFlipIfNeeded(GameObject projectile, CrescentArcProjectileConfig config)
@@ -6074,6 +6115,10 @@ namespace EnemyBehavior.Boss.Cleanser
 
             if (spinDashHitboxCollider != null)
                 spinDashHitboxCollider.enabled = true;
+
+            // Suppress footsteps during the spin hitbox phase — the spinning pose has
+            // no foot-contact moments and the walk cycle animation events should not fire.
+            footstepSystem?.SuppressFootsteps();
         }
 
         private void ResetDashHitAllowance(int maxHitCount)
@@ -6101,6 +6146,9 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 spinDashHitboxCollider.enabled = false;
             }
+
+            // Re-enable footsteps now that the spin phase has ended.
+            footstepSystem?.ResumeFootsteps();
         }
 
         public void HandleSpinDashHitboxTrigger(Collider other)
@@ -6511,6 +6559,68 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 SoundManager.Instance.sfxSource.PlayOneShot(clip);
             }
+        }
+
+        /// <summary>
+        /// Waits for <paramref name="precedingClip"/> to finish, then plays <paramref name="trailClip"/> once.
+        /// Used for the sweep trail SFX that emanates after the initial sweep sound ends.
+        /// </summary>
+        private IEnumerator PlaySFXAfterClip(AudioClip precedingClip, AudioClip trailClip)
+        {
+            if (precedingClip != null)
+                yield return new WaitForSeconds(precedingClip.length);
+            PlaySFX(trailClip);
+        }
+
+        /// <summary>
+        /// Schedules up to 3 timed SFX entries from <paramref name="attack"/>.AttackSFXEntries.
+        /// Each coroutine waits its configured time buffer before playing, so the SFX can be
+        /// canceled by stopping the returned coroutines if the combo is interrupted.
+        /// </summary>
+        private List<Coroutine> ScheduleAttackSFXEntries(CleanserAttackDescriptor attack)
+        {
+            var running = new List<Coroutine>();
+            if (attack == null || attack.AttackSFXEntries == null)
+                return running;
+
+            int count = Mathf.Min(attack.AttackSFXEntries.Length, 3);
+            for (int i = 0; i < count; i++)
+            {
+                var entry = attack.AttackSFXEntries[i];
+                if (entry == null || entry.Clip == null)
+                    continue;
+
+                running.Add(StartCoroutine(PlaySFXAfterDelay(entry.Clip, entry.TimeBuffer)));
+            }
+
+            return running;
+        }
+
+        /// <summary>
+        /// Stops all coroutines in <paramref name="coroutines"/> to prevent SFX from firing after a combo is canceled.
+        /// </summary>
+        private void StopScheduledAttackSFX(List<Coroutine> coroutines)
+        {
+            if (coroutines == null)
+                return;
+
+            for (int i = 0; i < coroutines.Count; i++)
+            {
+                if (coroutines[i] != null)
+                    StopCoroutine(coroutines[i]);
+            }
+
+            coroutines.Clear();
+        }
+
+        /// <summary>
+        /// Waits <paramref name="delay"/> seconds then plays <paramref name="clip"/> once.
+        /// </summary>
+        private IEnumerator PlaySFXAfterDelay(AudioClip clip, float delay)
+        {
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+            PlaySFX(clip);
         }
 
         /// <summary>
