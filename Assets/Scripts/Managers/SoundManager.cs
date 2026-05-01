@@ -46,6 +46,79 @@ public class SoundManager : Singleton<SoundManager>
     private int playerActionSfxRequestToken;
 
     //Debug logs
+    private AudioSource EnsureAudioSource(AudioSource source, bool loop = false)
+    {
+        if (source == null)
+            source = gameObject.AddComponent<AudioSource>();
+
+        source.playOnAwake = false;
+        source.loop = loop;
+        source.spatialBlend = 0f;
+        return source;
+    }
+
+    private void EnsureConfiguredSources()
+    {
+        int createdSources = 0;
+
+        if (musicSource == null)
+        {
+            musicSource = EnsureAudioSource(musicSource, true);
+            createdSources++;
+        }
+
+        if (sfxSource == null)
+        {
+            sfxSource = EnsureAudioSource(sfxSource);
+            createdSources++;
+        }
+
+        if (voiceSource == null)
+        {
+            voiceSource = EnsureAudioSource(voiceSource);
+            createdSources++;
+        }
+
+        if (playerActionSfxSource == null)
+        {
+            playerActionSfxSource = EnsureAudioSource(playerActionSfxSource);
+            createdSources++;
+        }
+
+        if (ambienceSource == null)
+        {
+            ambienceSource = EnsureAudioSource(ambienceSource, true);
+            createdSources++;
+        }
+
+        if (uiSource == null)
+        {
+            uiSource = EnsureAudioSource(uiSource);
+            createdSources++;
+        }
+
+        if (puzzleSource == null)
+        {
+            puzzleSource = EnsureAudioSource(puzzleSource);
+            createdSources++;
+        }
+
+        if (levelMusicSource == null)
+        {
+            levelMusicSource = EnsureAudioSource(levelMusicSource, true);
+            createdSources++;
+        }
+
+        if (masterSource == null)
+        {
+            masterSource = sfxSource != null ? sfxSource : EnsureAudioSource(masterSource);
+            createdSources++;
+        }
+
+        if (createdSources > 0)
+            Debug.LogWarning($"[SoundManager] Rebuilt {createdSources} missing audio source reference(s) on the active singleton. This usually means a fallback SoundManager was created before the configured prefab loaded.");
+    }
+
     private void PersistAudioSource(AudioSource source)
     {
         if (source == null) return;
@@ -55,6 +128,8 @@ public class SoundManager : Singleton<SoundManager>
 
     override protected void Awake()
     {
+        EnsureConfiguredSources();
+
         PersistAudioSource(masterSource);
         PersistAudioSource(musicSource);
         PersistAudioSource(levelMusicSource);
@@ -73,6 +148,7 @@ public class SoundManager : Singleton<SoundManager>
             return;
         }
 
+        EnsureConfiguredSources();
         ApplySavedVolumes();
     }
     private void ApplySavedVolumes()
