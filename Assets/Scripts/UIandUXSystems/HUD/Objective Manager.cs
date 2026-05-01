@@ -61,6 +61,11 @@ public class ObjectiveManager : Singleton<ObjectiveManager>
         OnSubObjectivesUpdated?.Invoke(subObjectives);
     }
 
+    public static bool HasSubObjective(string id)
+    {
+        return !string.IsNullOrWhiteSpace(id) && subObjectives.Exists(obj => obj.ID == id);
+    }
+
     /// <summary>
     /// Sets the sub-objective with the given ID as completed, then starts a coroutine to remove it after a delay. If no sub-objective with the given ID is found, a warning is logged and no action is taken.
     /// </summary>
