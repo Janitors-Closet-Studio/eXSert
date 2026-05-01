@@ -27,6 +27,7 @@ using UnityEngine.InputSystem;
 using Utilities.Combat;
 using Utilities.Combat.Attacks;
 using EnemyBehavior.Boss;
+using EnemyBehavior.Boss.Cleanser;
 using UI.Loading;
 #pragma warning disable CS0414
 
@@ -2740,14 +2741,15 @@ public class PlayerMovement : MonoBehaviour
                 BaseEnemyCore hardLockEnemy = hardLockTarget.GetComponentInParent<BaseEnemyCore>();
                 if (hardLockEnemy != null && hardLockEnemy.isAlive)
                 {
-                    float hardLockDistance = (hardLockTarget.position - transform.position).magnitude;
-                    bool hardLockIsDrone = IsDroneTarget(hardLockTarget);
+                    Transform resolvedHardLockTarget = ResolvePreferredAerialAssistTarget(hardLockTarget);
+                    float hardLockDistance = (resolvedHardLockTarget.position - transform.position).magnitude;
+                    bool hardLockIsDrone = IsDroneTarget(resolvedHardLockTarget);
                     bool canUseHardLockTarget = hardLockDistance <= range
                         && (!prioritizeDronesForAerialAssist || hardLockIsDrone);
 
                     if (canUseHardLockTarget)
                     {
-                        target = hardLockTarget;
+                        target = resolvedHardLockTarget;
                         return true;
                     }
                 }
@@ -2862,6 +2864,72 @@ public class PlayerMovement : MonoBehaviour
         }
 
         return target != null;
+    }
+
+    private Transform ResolvePreferredAerialAssistTarget(Transform target)
+    {
+        if (target == null)
+            return null;
+
+        BaseEnemyCore enemy = target.GetComponentInParent<BaseEnemyCore>();
+        if (enemy == null)
+            return target;
+
+        CleanserBrain cleanser = enemy.GetComponent<CleanserBrain>()
+            ?? enemy.GetComponentInParent<CleanserBrain>()
+            ?? enemy.GetComponentInChildren<CleanserBrain>();
+        Transform cleanserHoverAssistTarget = cleanser != null
+            ? cleanser.GetActiveFloatingAerialAssistTarget()
+            : null;
+        if (cleanserHoverAssistTarget != null)
+            return cleanserHoverAssistTarget;
+
+        Collider[] colliders = enemy.GetComponentsInChildren<Collider>(true);
+        if (colliders == null || colliders.Length == 0)
+            return target;
+
+        Transform preferredTrigger = null;
+        float preferredTriggerDistanceSq = float.MaxValue;
+        Transform preferredCollider = null;
+        float preferredColliderDistanceSq = float.MaxValue;
+        Vector3 playerFeetPoint = characterController != null
+            ? new Vector3(characterController.bounds.center.x, characterController.bounds.min.y, characterController.bounds.center.z)
+            : transform.position;
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider candidate = colliders[i];
+            if (candidate == null || !candidate.enabled || !candidate.gameObject.activeInHierarchy)
+                continue;
+
+            Vector3 closestPoint = GetSafeColliderClosestPoint(candidate, playerFeetPoint);
+            float distanceSq = (closestPoint - playerFeetPoint).sqrMagnitude;
+
+            if (candidate.isTrigger)
+            {
+                if (distanceSq < preferredTriggerDistanceSq)
+                {
+                    preferredTriggerDistanceSq = distanceSq;
+                    preferredTrigger = candidate.transform;
+                }
+
+                continue;
+            }
+
+            if (distanceSq < preferredColliderDistanceSq)
+            {
+                preferredColliderDistanceSq = distanceSq;
+                preferredCollider = candidate.transform;
+            }
+        }
+
+        if (preferredTrigger != null)
+            return preferredTrigger;
+
+        if (preferredCollider != null)
+            return preferredCollider;
+
+        return target;
     }
 
     private static bool IsDroneTarget(Transform target)
