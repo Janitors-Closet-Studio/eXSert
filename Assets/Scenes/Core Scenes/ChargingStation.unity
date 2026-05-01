@@ -15481,6 +15481,10 @@ MonoBehaviour:
   requiredItemID: loadC
   requiredItemDisplayName: Conservatory Master Bypass
   lockedInteractionPrompt: LOCKED
+  lockedNoticeTitle: 
+  lockedNoticeBottomText: 
+  usedNoticeTitle: 
+  usedNoticeBottomText: 
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
@@ -84524,6 +84528,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 968268077}
     - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: DashSpeed
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: ArenaManager
       value: 
       objectReference: {fileID: 29310177}
@@ -84539,6 +84547,14 @@ PrefabInstance:
       propertyPath: ArenaCenterBounds
       value: 
       objectReference: {fileID: 1966718067}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: ChargeRestDuration
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2753735861455747003, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: DashOvershootDistance
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 3308009278746904747, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: m_Name
       value: Boss_Augur
@@ -84547,6 +84563,10 @@ PrefabInstance:
       propertyPath: m_PropertySheet.m_NamedObject.m_Array.Array.data[0].m_Value
       value: 
       objectReference: {fileID: 1226049379}
+    - target: {fileID: 4930849861261429573, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
+      propertyPath: alarmCurrentHealth
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4930849861261429573, guid: 7f130de0e64227240aaeb555b561d10a, type: 3}
       propertyPath: 'droneSpawnPoints.Array.data[0]'
       value: 
