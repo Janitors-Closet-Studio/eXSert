@@ -201,7 +201,10 @@ namespace EnemyBehavior.Boss.Cleanser
             if (clip == null)
                 return;
 
-            audioSource.PlayOneShot(clip, footstepVolume);
+            float sfxVolume = SoundManager.Instance != null && SoundManager.Instance.sfxSource != null
+                ? SoundManager.Instance.sfxSource.volume
+                : 1f;
+            audioSource.PlayOneShot(clip, footstepVolume * sfxVolume);
         }
 
 

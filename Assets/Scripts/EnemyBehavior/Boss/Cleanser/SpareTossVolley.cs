@@ -173,7 +173,11 @@ namespace EnemyBehavior.Boss.Cleanser
                 weaponAudio.rolloffMode = AudioRolloffMode.Linear;
                 weaponAudio.minDistance = 2f;
                 weaponAudio.maxDistance = 35f;
-                weaponAudio.PlayOneShot(impactClip, owner.TossImpactSFXVolume);
+
+                float sfxVolume = SoundManager.Instance != null && SoundManager.Instance.sfxSource != null
+                    ? SoundManager.Instance.sfxSource.volume
+                    : 1f;
+                weaponAudio.PlayOneShot(impactClip, owner.TossImpactSFXVolume * sfxVolume);
             }
 
             onComplete?.Invoke();
