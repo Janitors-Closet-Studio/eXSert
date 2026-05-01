@@ -150,7 +150,16 @@ public class DoorInteractions : UnlockableInteraction
 
     public override void SetInteractionEnabled(bool isEnabled)
     {
+        if (!isEnabled && interactionPromptRoutine != null)
+        {
+            StopCoroutine(interactionPromptRoutine);
+            interactionPromptRoutine = null;
+        }
+
         base.SetInteractionEnabled(isEnabled);
+
+        if (!isEnabled)
+            ClearPromptIfOwned();
     }
 
     protected override void OnTriggerEnter(Collider other)
@@ -281,6 +290,10 @@ public class DoorInteractions : UnlockableInteraction
         if (onlyInteractableOnce && hasInteracted)
             return;
 
+        MasterObjectiveClass resolvedMasterObjective = GetMasterObjectiveIfAvailable();
+        if (resolvedMasterObjective != null)
+            resolvedMasterObjective.CancelCurrentCollectNotice();
+
         if (useCameraTransition && useSpecialTransition)
         {
             StartCoroutine(ExecuteInteractionWithNoticeAfterSpecialTransition());
@@ -308,7 +321,7 @@ public class DoorInteractions : UnlockableInteraction
     private void ShowUnlockNoticeIfNeeded()
     {
         if (needsItem && canUnlock && masterObjective != null)
-            masterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", ResolveUsedNoticeTitle(), ResolveUsedNoticeBottomText(), 0.5f, 6f, priority: 8);
+            masterObjective.CreateAndShowNotice(this, GetContextualNoticeId("used"), ResolveUsedNoticeTitle(), ResolveUsedNoticeBottomText(), 0.5f, 6f, priority: 8);
     }
 
     private IEnumerator ExecuteInteractionWithNoticeAfterSpecialTransition()
