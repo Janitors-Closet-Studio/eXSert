@@ -308,7 +308,7 @@ public class DoorInteractions : UnlockableInteraction
     private void ShowUnlockNoticeIfNeeded()
     {
         if (needsItem && canUnlock && masterObjective != null)
-            masterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", $"Used {requiredItemID}", $"Unlocked {this.interactId} with {requiredItemID}.", 0.5f, 6f, priority: 8);
+            masterObjective.CreateAndShowNotice(this, $"{this.interactId}_used", ResolveUsedNoticeTitle(), ResolveUsedNoticeBottomText(), 0.5f, 6f, priority: 8);
     }
 
     private IEnumerator ExecuteInteractionWithNoticeAfterSpecialTransition()
