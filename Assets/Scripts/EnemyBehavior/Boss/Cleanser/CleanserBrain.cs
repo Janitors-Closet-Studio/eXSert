@@ -6591,6 +6591,7 @@ namespace EnemyBehavior.Boss.Cleanser
         private void PlaySFX(AudioClip clip)
         {
             if (clip == null) return;
+            SyncSFXVolume();
             sfxSource.PlayOneShot(clip);
         }
 
@@ -6602,9 +6603,22 @@ namespace EnemyBehavior.Boss.Cleanser
         {
             if (clip == null) return;
             sfxSource.clip = clip;
-            sfxSource.volume = volume;
+            sfxSource.volume = SoundManager.Instance != null && SoundManager.Instance.sfxSource != null
+                ? SoundManager.Instance.sfxSource.volume * volume
+                : volume;
             sfxSource.loop = true;
             sfxSource.Play();
+        }
+
+        /// <summary>
+        /// Copies the current SFX volume from SoundManager onto the local sfxSource so
+        /// that all 3D Cleanser SFX respect the player's audio settings.
+        /// </summary>
+        private void SyncSFXVolume()
+        {
+            if (sfxSource == null) return;
+            if (SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
+                sfxSource.volume = SoundManager.Instance.sfxSource.volume;
         }
 
         /// <summary>

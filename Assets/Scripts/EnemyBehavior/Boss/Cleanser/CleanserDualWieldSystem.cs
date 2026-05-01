@@ -1237,7 +1237,11 @@ namespace EnemyBehavior.Boss.Cleanser
             if (clip == null) return;
 
             if (SFXSource != null)
+            {
+                if (SoundManager.Instance != null && SoundManager.Instance.sfxSource != null)
+                    SFXSource.volume = SoundManager.Instance.sfxSource.volume;
                 SFXSource.PlayOneShot(clip);
+            }
             else if (SoundManager.Instance != null)
                 SoundManager.Instance.sfxSource.PlayOneShot(clip);
         }
