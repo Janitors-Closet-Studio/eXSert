@@ -202,7 +202,10 @@ namespace EnemyBehavior.Boss.Cleanser
         [Tooltip("SFX played when stockpiled weapons are launched.")]
         public AudioClip TossLaunchSFX;
 
-        [Tooltip("SFX played when each weapon impacts the ground.")]
+        [Tooltip("SFX played when each weapon impacts and lodges in the ground. One clip is chosen at random each time.")]
+        public List<AudioClip> TossImpactSFXClips = new List<AudioClip>();
+
+        [Tooltip("Fallback SFX played when each weapon impacts the ground (used if TossImpactSFXClips is empty).")]
         public AudioClip TossImpactSFX;
 
         [Tooltip("Impact VFX spawned when each weapon lodges in the ground.")]
@@ -443,6 +446,10 @@ namespace EnemyBehavior.Boss.Cleanser
             }
 
             weapon.IsAtRest = false;
+
+            // Ensure trigger colliders are off for the entire pickup flight and hover phase.
+            // SpareTossVolley re-enables them only once a weapon is actually launched.
+            DisableWeaponColliders(weapon);
 
             SetWeaponControlledVfxActive(weapon, true);
             
@@ -787,6 +794,7 @@ namespace EnemyBehavior.Boss.Cleanser
             weapon.StockpileRollSpeed = 0f;
             weapon.StockpileFollowVelocity = Vector3.zero;
             SetWeaponControlledVfxActive(weapon, false);
+            DisableWeaponColliders(weapon);
             weapon.WeaponObject.transform.SetParent(transform);
             weapon.WeaponObject.SetActive(false);
 
@@ -831,7 +839,25 @@ namespace EnemyBehavior.Boss.Cleanser
 
         public void PlaySpareTossImpactSfx()
         {
-            PlaySFX(TossImpactSFX);
+            PlayRandomSFX(TossImpactSFXClips, TossImpactSFX);
+        }
+
+        /// <summary>
+        /// Disables all trigger colliders on a weapon so it cannot deal damage while hovering/in-flight.
+        /// Colliders are only re-enabled by SpareTossVolley when the weapon is actually launched.
+        /// </summary>
+        private static void DisableWeaponColliders(SpareWeapon weapon)
+        {
+            if (weapon == null || weapon.WeaponObject == null)
+                return;
+
+            Collider[] colliders = weapon.WeaponObject.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider col = colliders[i];
+                if (col != null && col.isTrigger)
+                    col.enabled = false;
+            }
         }
 
         public List<Vector3> GetLodgedWeaponPositions()
@@ -1195,6 +1221,29 @@ namespace EnemyBehavior.Boss.Cleanser
             {
                 SoundManager.Instance.sfxSource.PlayOneShot(clip);
             }
+        }
+
+        /// <summary>
+        /// Plays a random clip from <paramref name="clips"/>. Falls back to <paramref name="fallback"/> if the list is empty.
+        /// </summary>
+        private void PlayRandomSFX(List<AudioClip> clips, AudioClip fallback = null)
+        {
+            AudioClip clip = null;
+            if (clips != null && clips.Count > 0)
+            {
+                // Filter out nulls
+                var valid = new System.Collections.Generic.List<AudioClip>(clips.Count);
+                for (int i = 0; i < clips.Count; i++)
+                    if (clips[i] != null) valid.Add(clips[i]);
+
+                if (valid.Count > 0)
+                    clip = valid[Random.Range(0, valid.Count)];
+            }
+
+            if (clip == null)
+                clip = fallback;
+
+            PlaySFX(clip);
         }
 
         private void LateUpdate()
