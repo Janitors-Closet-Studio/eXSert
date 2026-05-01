@@ -36,13 +36,21 @@ public class ObjectiveData
 public class NoticeData
 {
     public InteractionManager interactionToActivate;
+    [Tooltip("Optional source that shows this notice when it becomes active. Supports InteractionManager, ProgressionZone/Encounter, PuzzlePart, and Wave.")]
+    public MonoBehaviour triggerSource;
+    [Tooltip("Optional plain trigger-box source. Assign a BoxCollider trigger here when you want the notice to fire from entering a basic trigger volume without a custom script.")]
+    public BoxCollider triggerZoneSource;
+    [Tooltip("When the trigger source is a PuzzleInteraction, show this notice after that puzzle interaction fully completes instead of when the normal trigger fires.")]
+    public bool triggerOnPuzzleInteractionComplete;
+    [Tooltip("When the trigger source is a Wave, show this notice after the enemy wave completes instead of when the wave starts.")]
+    public bool triggerOnWaveCompletion;
     public bool disableInteraction;
     public InteractionManager interactionToDisable;
     public string noticeID;
     public string noticeText;
     public string bottomText;
-    public float fadeDuration = 0.5f;
-    public float displayDuration = 1.5f;
+    public float fadeDuration = 2f;
+    public float displayDuration = 4f;
     public int priority = 0;
 }
 
@@ -78,12 +86,14 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     {
         CorrectIDsIfIsEntry();
         SubscribeObjectiveTriggers();
+        SubscribeNoticeTriggers();
         
     }
 
     protected override void OnDestroy()
     {
         UnsubscribeObjectiveTriggers();
+        UnsubscribeNoticeTriggers();
         base.OnDestroy();
     }
 
@@ -111,6 +121,32 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     {
         if (!string.IsNullOrWhiteSpace(objectiveID))
             return NormalizeNoticeID(objectiveID);
+
+        if (interaction != null)
+            return NormalizeNoticeID(interaction.interactId);
+
+        if (triggerSource is InteractionManager triggerInteraction)
+            return NormalizeNoticeID(triggerInteraction.interactId);
+
+        return BuildGeneratedObjectiveID(triggerSource);
+    }
+
+    private Component GetNoticeTriggerSource(NoticeData notice)
+    {
+        if (notice == null)
+            return null;
+
+        return notice.triggerSource != null
+            ? notice.triggerSource
+            : notice.triggerZoneSource != null
+                ? notice.triggerZoneSource
+            : notice.interactionToActivate;
+    }
+
+    private static string ResolveNoticeID(string noticeID, InteractionManager interaction, Component triggerSource)
+    {
+        if (!string.IsNullOrWhiteSpace(noticeID))
+            return NormalizeNoticeID(noticeID);
 
         if (interaction != null)
             return NormalizeNoticeID(interaction.interactId);
@@ -220,6 +256,105 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         }
     }
 
+    private void SubscribeNoticeTriggers()
+    {
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            Component triggerSource = GetNoticeTriggerSource(notice);
+            switch (triggerSource)
+            {
+                case BoxCollider triggerZone:
+                    ObjectiveTriggerZoneRelay relay = ObjectiveTriggerZoneRelay.GetOrAdd(triggerZone);
+                    relay.Triggered -= HandleTriggerZoneEntered;
+                    relay.Triggered += HandleTriggerZoneEntered;
+                    break;
+
+                case PuzzlePart puzzlePart:
+                    if (notice.triggerOnPuzzleInteractionComplete)
+                    {
+                        puzzlePart.PuzzleCompleted -= HandlePuzzleCompleted;
+                        puzzlePart.PuzzleCompleted += HandlePuzzleCompleted;
+                    }
+                    break;
+
+                case PuzzleInteraction puzzleInteraction:
+                    if (notice.triggerOnPuzzleInteractionComplete)
+                    {
+                        puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
+                        puzzleInteraction.InteractionCompleted += HandlePuzzleInteractionCompleted;
+                    }
+                    else
+                    {
+                        puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                        puzzleInteraction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    }
+                    break;
+
+                case CheckpointBehavior:
+                    EnsureCheckpointTriggerSubscription();
+                    break;
+
+                case InteractionManager interaction:
+                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    interaction.InteractionEnabledStateChanged += HandleInteractionTriggerStateChanged;
+                    break;
+
+                case ProgressionZone zone:
+                    zone.ZoneEntered -= HandleZoneEntered;
+                    zone.ZoneEntered += HandleZoneEntered;
+                    break;
+
+                case Wave wave:
+                    wave.OnWaveStarted -= HandleWaveStarted;
+                    wave.OnWaveStarted += HandleWaveStarted;
+                    wave.OnWaveComplete -= HandleWaveCompleted;
+                    wave.OnWaveComplete += HandleWaveCompleted;
+                    break;
+            }
+        }
+    }
+
+    private void UnsubscribeNoticeTriggers()
+    {
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            Component triggerSource = GetNoticeTriggerSource(notice);
+            switch (triggerSource)
+            {
+                case BoxCollider triggerZone:
+                    ObjectiveTriggerZoneRelay relay = ObjectiveTriggerZoneRelay.GetOrAdd(triggerZone);
+                    relay.Triggered -= HandleTriggerZoneEntered;
+                    break;
+
+                case PuzzlePart puzzlePart:
+                    puzzlePart.PuzzleCompleted -= HandlePuzzleCompleted;
+                    break;
+
+                case PuzzleInteraction puzzleInteraction:
+                    puzzleInteraction.InteractionCompleted -= HandlePuzzleInteractionCompleted;
+                    puzzleInteraction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    break;
+
+                case CheckpointBehavior:
+                    RemoveCheckpointTriggerSubscription();
+                    break;
+
+                case InteractionManager interaction:
+                    interaction.InteractionEnabledStateChanged -= HandleInteractionTriggerStateChanged;
+                    break;
+
+                case ProgressionZone zone:
+                    zone.ZoneEntered -= HandleZoneEntered;
+                    break;
+
+                case Wave wave:
+                    wave.OnWaveStarted -= HandleWaveStarted;
+                    wave.OnWaveComplete -= HandleWaveCompleted;
+                    break;
+            }
+        }
+    }
+
     private void EnsureCheckpointTriggerSubscription()
     {
         if (subscribedToCheckpointTriggers)
@@ -242,42 +377,52 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
     private void HandleInteractionTriggerStateChanged(InteractionManager interaction, bool isEnabled)
     {
         if (isEnabled)
+        {
             ShowObjectivesForTrigger(interaction);
+            ShowNoticesForTrigger(interaction);
+        }
     }
 
     private void HandleZoneEntered(ProgressionZone zone)
     {
         ShowObjectivesForTrigger(zone);
+        ShowNoticesForTrigger(zone);
     }
 
     private void HandleWaveStarted(Wave wave)
     {
         ShowObjectivesForWave(wave, triggerOnCompletion: false);
+        ShowNoticesForWave(wave, triggerOnCompletion: false);
     }
 
     private void HandleWaveCompleted(Wave wave)
     {
         ShowObjectivesForWave(wave, triggerOnCompletion: true);
+        ShowNoticesForWave(wave, triggerOnCompletion: true);
     }
 
     private void HandlePuzzleInteractionCompleted(PuzzleInteraction interaction)
     {
         ShowObjectivesForPuzzleInteraction(interaction, triggerOnCompletion: true);
+        ShowNoticesForPuzzleInteraction(interaction, triggerOnCompletion: true);
     }
 
     private void HandlePuzzleCompleted(PuzzlePart puzzlePart)
     {
         ShowObjectivesForPuzzlePart(puzzlePart, triggerOnCompletion: true);
+        ShowNoticesForPuzzlePart(puzzlePart, triggerOnCompletion: true);
     }
 
     private void HandleCheckpointTriggered(CheckpointBehavior checkpoint)
     {
         ShowObjectivesForTrigger(checkpoint);
+        ShowNoticesForTrigger(checkpoint);
     }
 
     private void HandleTriggerZoneEntered(BoxCollider triggerZone)
     {
         ShowObjectivesForTrigger(triggerZone);
+        ShowNoticesForTrigger(triggerZone);
     }
 
     private void ShowObjectivesForPuzzleInteraction(PuzzleInteraction interaction, bool triggerOnCompletion)
@@ -380,6 +525,115 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         }
     }
 
+    private void ShowNoticesForPuzzleInteraction(PuzzleInteraction interaction, bool triggerOnCompletion)
+    {
+        if (interaction == null)
+            return;
+
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            if (notice == null || GetNoticeTriggerSource(notice) != interaction)
+                continue;
+
+            if (notice.triggerOnPuzzleInteractionComplete != triggerOnCompletion)
+                continue;
+
+            ShowConfiguredNotice(notice, interaction);
+        }
+    }
+
+    private void ShowNoticesForPuzzlePart(PuzzlePart puzzlePart, bool triggerOnCompletion)
+    {
+        if (puzzlePart == null)
+            return;
+
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            if (notice == null || GetNoticeTriggerSource(notice) != puzzlePart)
+                continue;
+
+            if (notice.triggerOnPuzzleInteractionComplete != triggerOnCompletion)
+                continue;
+
+            ShowConfiguredNotice(notice, puzzlePart);
+        }
+    }
+
+    private void ShowNoticesForWave(Wave wave, bool triggerOnCompletion)
+    {
+        if (wave == null)
+            return;
+
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            if (notice == null || GetNoticeTriggerSource(notice) != wave)
+                continue;
+
+            if (notice.triggerOnWaveCompletion != triggerOnCompletion)
+                continue;
+
+            ShowConfiguredNotice(notice, wave);
+        }
+    }
+
+    private void ShowNoticesForTrigger(Component triggerSource)
+    {
+        if (triggerSource == null)
+            return;
+
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            if (notice == null || GetNoticeTriggerSource(notice) != triggerSource)
+                continue;
+
+            if ((triggerSource is PuzzleInteraction || triggerSource is PuzzlePart) && notice.triggerOnPuzzleInteractionComplete)
+                continue;
+
+            if (triggerSource is Wave && notice.triggerOnWaveCompletion)
+                continue;
+
+            ShowConfiguredNotice(notice, triggerSource);
+        }
+    }
+
+    private void ShowConfiguredNotice(NoticeData notice, Component triggerSource)
+    {
+        if (notice == null)
+            return;
+
+        string effectiveNoticeID = ResolveNoticeID(notice.noticeID, notice.interactionToActivate, triggerSource);
+        if (string.IsNullOrWhiteSpace(effectiveNoticeID))
+        {
+            Debug.LogWarning($"[MasterObjectiveClass] Notice triggered by {triggerSource.name} has no valid notice ID.");
+            return;
+        }
+
+        notice.noticeID = effectiveNoticeID;
+        ApplyNoticeEffects(notice);
+
+        if (noticeManager == null)
+            noticeManager = FindFirstObjectByType<NoticeManager>();
+
+        if (noticeManager == null)
+        {
+            Debug.LogError("[MasterObjectiveClass] NoticeManager is null and could not be found. Cannot show notice.");
+            return;
+        }
+
+        noticeManager.ShowNotice(
+            notice.noticeText,
+            notice.bottomText,
+            ResolveFadeDuration(notice.fadeDuration),
+            ResolveDisplayDuration(notice.displayDuration),
+            notice.priority
+        );
+    }
+
+    public void ShowAttachedNoticesForTrigger(Component triggerSource)
+    {
+        ShowNoticesForTrigger(triggerSource);
+    }
+
     private ObjectiveData FindIdInObjectives(string idToFind)
     {
         string normalizedTargetID = NormalizeNoticeID(idToFind);
@@ -418,6 +672,51 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
         }
         Debug.LogWarning($"Notice with ID {normalizedTargetID} not found in objectiveNotices.");
         return null;
+    }
+
+    private NoticeData TryFindNoticeById(string idToFind)
+    {
+        string normalizedTargetID = NormalizeNoticeID(idToFind);
+        if (string.IsNullOrEmpty(normalizedTargetID))
+            return null;
+
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            if (notice == null)
+                continue;
+
+            if (NormalizeNoticeID(notice.noticeID) == normalizedTargetID)
+                return notice;
+        }
+
+        return null;
+    }
+
+    private NoticeData TryFindNoticeByInteraction(InteractionManager interaction)
+    {
+        if (interaction == null)
+            return null;
+
+        foreach (NoticeData notice in objectiveNotices)
+        {
+            if (notice == null)
+                continue;
+
+            if (notice.interactionToActivate == interaction)
+                return notice;
+        }
+
+        return null;
+    }
+
+    private static float ResolveFadeDuration(float fadeDuration)
+    {
+        return fadeDuration > 0f ? fadeDuration : 2f;
+    }
+
+    private static float ResolveDisplayDuration(float displayDuration)
+    {
+        return displayDuration > 0f ? displayDuration : 4f;
     }
 
     private static string NormalizeNoticeID(string id)
@@ -489,6 +788,10 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             {
                 notice.noticeID = NormalizeNoticeID(notice.interactionToActivate.interactId);
                 Debug.Log($"Corrected notice ID for entry interaction {notice.interactionToActivate.interactId}");
+            }
+            else if (notice != null && string.IsNullOrWhiteSpace(notice.noticeID))
+            {
+                notice.noticeID = ResolveNoticeID(notice.noticeID, notice.interactionToActivate, GetNoticeTriggerSource(notice));
             }
         }
     }
@@ -714,7 +1017,13 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
 
         ApplyNoticeEffects(noticeToShow);
 
-        noticeManager.ShowNotice(noticeToShow.noticeText, noticeToShow.bottomText, noticeToShow.fadeDuration, noticeToShow.displayDuration, noticeToShow.priority);
+        noticeManager.ShowNotice(
+            noticeToShow.noticeText,
+            noticeToShow.bottomText,
+            ResolveFadeDuration(noticeToShow.fadeDuration),
+            ResolveDisplayDuration(noticeToShow.displayDuration),
+            noticeToShow.priority
+        );
     }
 
     /// <summary>
@@ -742,7 +1051,27 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             return;
         }
 
-        NoticeData existingNotice = FindIdInNotices(effectiveNoticeID);
+        NoticeData configuredNotice = TryFindNoticeByInteraction(interaction);
+        if (configuredNotice == null)
+            configuredNotice = TryFindNoticeById(effectiveNoticeID);
+
+        if (configuredNotice != null)
+        {
+            if (string.IsNullOrWhiteSpace(configuredNotice.noticeID))
+                configuredNotice.noticeID = effectiveNoticeID;
+
+            ApplyNoticeEffects(configuredNotice);
+            noticeManager.ShowNotice(
+                configuredNotice.noticeText,
+                configuredNotice.bottomText,
+                ResolveFadeDuration(configuredNotice.fadeDuration),
+                ResolveDisplayDuration(configuredNotice.displayDuration),
+                configuredNotice.priority
+            );
+            return;
+        }
+
+        NoticeData existingNotice = TryFindNoticeById(effectiveNoticeID);
         if (existingNotice != null)
         {
             Debug.Log($"Notice with ID {effectiveNoticeID} already exists, updating and showing.");
@@ -774,7 +1103,7 @@ public class MasterObjectiveClass : SceneSingleton<MasterObjectiveClass>
             ApplyNoticeEffects(newNotice);
         }
 
-        noticeManager.ShowNotice(noticeText, bottomText, fadeDuration, displayDuration, priority);
+        noticeManager.ShowNotice(noticeText, bottomText, ResolveFadeDuration(fadeDuration), ResolveDisplayDuration(displayDuration), priority);
     }
 
     public void HideCollectUI()

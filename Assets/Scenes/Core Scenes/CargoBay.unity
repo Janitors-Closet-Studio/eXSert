@@ -18886,6 +18886,10 @@ MonoBehaviour:
     priority: 0
   objectiveNotices:
   - interactionToActivate: {fileID: 0}
+    triggerSource: {fileID: 0}
+    triggerZoneSource: {fileID: 0}
+    triggerOnPuzzleInteractionComplete: 0
+    triggerOnWaveCompletion: 0
     disableInteraction: 0
     interactionToDisable: {fileID: 0}
     noticeID: 
@@ -59238,6 +59242,10 @@ MonoBehaviour:
   requiredItemID: 
   requiredItemDisplayName: 
   lockedInteractionPrompt: LOCKED
+  lockedNoticeTitle: 
+  lockedNoticeBottomText: 
+  usedNoticeTitle: 
+  usedNoticeBottomText: 
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
@@ -64991,6 +64999,14 @@ PrefabInstance:
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: bottomFlavorText
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: lockedNoticeTitle
+      value: ACCESS DENIED
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
+      propertyPath: lockedNoticeBottomText
+      value: 'Required: Cargo Crane Access Card A'
       objectReference: {fileID: 0}
     - target: {fileID: 5089308843351349082, guid: db1f1b6f141dbcf43a73b90475c352c1, type: 3}
       propertyPath: requiredItemDisplayName
