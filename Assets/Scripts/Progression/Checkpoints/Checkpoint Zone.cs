@@ -18,6 +18,12 @@ namespace Progression.Checkpoints
         [SerializeField]
         private string checkpointName = "Checkpoint";
 
+        [SerializeField]
+        [Tooltip(
+            "Optional display name used in checkpoint diary notices. Leave empty to reuse Checkpoint Name."
+        )]
+        private string checkpointDisplayName = "";
+
         [Header("Spawn Settings")]
         [SerializeField]
         [Tooltip(
@@ -31,6 +37,28 @@ namespace Progression.Checkpoints
         )]
         private DiarySO associatedDiary; // Optional reference to a diary that can be unlocked or marked as read when this checkpoint is triggered.
 
+        [Header("Checkpoint Diary Notice")]
+        [SerializeField]
+        [Tooltip(
+            "Optional custom title shown when this checkpoint unlocks its associated diary. Leave empty to use the diary title. Supports {checkpoint}, {diaryTitle}, and {diaryId}."
+        )]
+        private string associatedDiaryNoticeTitle = "";
+
+        [SerializeField]
+        [Tooltip(
+            "Optional custom description shown when this checkpoint unlocks its associated diary. Leave empty to use the diary description. Supports {checkpoint}, {diaryTitle}, {diaryDescription}, and {diaryId}."
+        )]
+        [TextArea(2, 4)]
+        private string associatedDiaryNoticeDescription = "";
+
+        [SerializeField]
+        [Tooltip("Fade duration for the checkpoint diary notice.")]
+        private float associatedDiaryNoticeFadeDuration = 0.5f;
+
+        [SerializeField]
+        [Tooltip("Display duration for the checkpoint diary notice.")]
+        private float associatedDiaryNoticeDisplayDuration = 3f;
+
         [SerializeField]
         [Tooltip(
             "SceneAsset that owns this checkpoint. Assign explicitly for additive-scene save/load routing."
@@ -43,8 +71,13 @@ namespace Progression.Checkpoints
         )]
         private GameObject enableObjectOnCheckpointLoad;
 
+        [SerializeField]
+        [Tooltip("If enabled, this checkpoint will replay its attached MasterObjective notice when the player loads into this scene at this checkpoint.")]
+        private bool showAttachedNoticeOnSceneLoad;
+
         [SerializeField] private bool isActCheckpoint = false;
         private bool updatedActsForCheckpoint = false; 
+        private bool pendingLoadNoticeReplay;
 
         [Header("Player Refresh")]
         [SerializeField]
@@ -65,6 +98,8 @@ namespace Progression.Checkpoints
 
         public string CheckpointId =>
             string.IsNullOrWhiteSpace(checkpointName) ? gameObject.name : checkpointName;
+        public string CheckpointDisplayName =>
+            string.IsNullOrWhiteSpace(checkpointDisplayName) ? CheckpointId : checkpointDisplayName;
         public SceneAsset CheckpointSceneAsset => ResolveCheckpointSceneAsset();
 
         private static readonly bool ReloadSceneOnRespawn = true;
@@ -80,6 +115,12 @@ namespace Progression.Checkpoints
 
         public Quaternion GetSpawnRotation() =>
             spawnPoint != null ? spawnPoint.rotation : transform.rotation;
+
+        protected override void Start()
+        {
+            base.Start();
+            StartCoroutine(EvaluateInitialCheckpointActivationCoroutine());
+        }
 
         private SceneAsset ResolveCheckpointSceneAsset()
         {
@@ -343,11 +384,25 @@ namespace Progression.Checkpoints
 
         private void TriggerCheckpoint()
         {
-            if (currentCheckpoint == this)
-                return; // Already the current checkpoint, no need to update
+            bool wasAlreadyCurrentCheckpoint = currentCheckpoint == this;
+            bool checkpointPreviouslyRecorded = ActsManager.Instance != null
+                && ActsManager.Instance.foundCheckpointZones.Contains(this.gameObject);
+            bool diaryAlreadyUnlocked = associatedDiary == null || associatedDiary.isFound;
+
+            if (wasAlreadyCurrentCheckpoint && checkpointPreviouslyRecorded && diaryAlreadyUnlocked)
+            {
+                if (pendingLoadNoticeReplay && showAttachedNoticeOnSceneLoad)
+                {
+                    pendingLoadNoticeReplay = false;
+                    StartCoroutine(ShowAttachedNoticeAfterLoadCoroutine());
+                }
+
+                return;
+            }
 
             currentCheckpoint = this;
-            ActsManager.Instance.foundCheckpointZones.Add(this.gameObject);
+            if (ActsManager.Instance != null && !ActsManager.Instance.foundCheckpointZones.Contains(this.gameObject))
+                ActsManager.Instance.foundCheckpointZones.Add(this.gameObject);
 
             Debug.Log($"Checkpoint triggered: {this}");
 
@@ -355,6 +410,7 @@ namespace Progression.Checkpoints
             
             RestorePlayerHealthIfConfigured();
             OnCheckpointTriggered?.Invoke(this);
+            pendingLoadNoticeReplay = false;
 
             // Handle associated diary entry if assigned
             if (associatedDiary != null && !associatedDiary.isFound)
@@ -367,7 +423,9 @@ namespace Progression.Checkpoints
                     EventsManager.Instance.diaryEvents.FoundDiary(associatedDiary.diaryID);
 
                     // Add to unread diaries list for HUD display
-                    DiaryManager.Instance.unreadDiaries.Add(associatedDiary); 
+                    DiaryManager.Instance.unreadDiaries.Add(associatedDiary);
+
+                    ShowAssociatedDiaryNotice();
                 }
                 catch (Exception ex)
                 {
@@ -403,6 +461,107 @@ namespace Progression.Checkpoints
             enableObjectOnCheckpointLoad.SetActive(true);
         }
 
+        private IEnumerator EvaluateInitialCheckpointActivationCoroutine()
+        {
+            yield return null;
+            yield return null;
+
+            if (!zoneEnabled || progressionCollider == null)
+                yield break;
+
+            if (!Player.TryGetPlayerObject(out GameObject playerObject) || playerObject == null)
+                yield break;
+
+            Vector3 playerPosition = playerObject.transform.position;
+            if (!progressionCollider.bounds.Contains(playerPosition))
+                yield break;
+
+            TriggerCheckpoint();
+        }
+
+        private IEnumerator ShowAttachedNoticeAfterLoadCoroutine()
+        {
+            yield return null;
+            yield return null;
+
+            if (!pendingLoadNoticeReplay)
+                yield break;
+
+            pendingLoadNoticeReplay = false;
+            ForceShowAttachedNotice();
+        }
+
+        [ContextMenu("Force Show Attached Notice")]
+        public void ForceShowAttachedNotice()
+        {
+            MasterObjectiveClass masterObjective = MasterObjectiveClass.GetInstance(ResolveCheckpointSceneAsset());
+            if (masterObjective == null)
+            {
+                Debug.LogWarning($"[Checkpoint Zone] No MasterObjectiveClass found for checkpoint '{CheckpointId}'. Cannot force notice replay.");
+                return;
+            }
+
+            masterObjective.ShowAttachedNoticesForTrigger(this);
+        }
+
+        private string ReplaceDiaryNoticeTokens(string template)
+        {
+            if (string.IsNullOrEmpty(template))
+                return string.Empty;
+
+            string diaryTitle = associatedDiary != null ? associatedDiary.diaryTitle : string.Empty;
+            string diaryDescription = associatedDiary != null ? associatedDiary.diaryDescription : string.Empty;
+            string diaryId = associatedDiary != null ? associatedDiary.diaryID : string.Empty;
+
+            return template
+                .Replace("{checkpoint}", CheckpointDisplayName)
+                .Replace("{diaryTitle}", diaryTitle)
+                .Replace("{diaryDescription}", diaryDescription)
+                .Replace("{diaryId}", diaryId);
+        }
+
+        private string ResolveAssociatedDiaryNoticeTitle()
+        {
+            if (!string.IsNullOrWhiteSpace(associatedDiaryNoticeTitle))
+                return ReplaceDiaryNoticeTokens(associatedDiaryNoticeTitle);
+
+            if (associatedDiary != null && !string.IsNullOrWhiteSpace(associatedDiary.diaryTitle))
+                return associatedDiary.diaryTitle;
+
+            return CheckpointDisplayName;
+        }
+
+        private string ResolveAssociatedDiaryNoticeDescription()
+        {
+            if (!string.IsNullOrWhiteSpace(associatedDiaryNoticeDescription))
+                return ReplaceDiaryNoticeTokens(associatedDiaryNoticeDescription);
+
+            if (associatedDiary != null && !string.IsNullOrWhiteSpace(associatedDiary.diaryDescription))
+                return associatedDiary.diaryDescription;
+
+            return string.Empty;
+        }
+
+        private void ShowAssociatedDiaryNotice()
+        {
+            if (associatedDiary == null)
+                return;
+
+            MasterObjectiveClass masterObjective = MasterObjectiveClass.GetInstance(ResolveCheckpointSceneAsset());
+            if (masterObjective == null)
+                return;
+
+            masterObjective.CreateAndShowNotice(
+                null,
+                $"{CheckpointId}_{associatedDiary.diaryID}_checkpoint_diary",
+                ResolveAssociatedDiaryNoticeTitle(),
+                ResolveAssociatedDiaryNoticeDescription(),
+                associatedDiaryNoticeFadeDuration,
+                associatedDiaryNoticeDisplayDuration,
+                priority: 9
+            );
+        }
+
         #region Data Persistence
         public void LoadData(GameData data)
         {
@@ -427,6 +586,10 @@ namespace Progression.Checkpoints
 
             currentCheckpoint = this;
             EnableConfiguredLoadObject();
+            pendingLoadNoticeReplay = showAttachedNoticeOnSceneLoad;
+
+            if (showAttachedNoticeOnSceneLoad)
+                StartCoroutine(ShowAttachedNoticeAfterLoadCoroutine());
         }
 
         public void SaveData(GameData data)
