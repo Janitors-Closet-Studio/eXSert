@@ -1097,12 +1097,8 @@ public class BombCarrierEnemy : BaseEnemy<BombStates, BombTriggers>, IPocketSpaw
             if (binder == null)
                 continue;
 
-            bool wasEnabled = binder.enabled;
-            binder.enabled = false;
-            binder.enabled = wasEnabled;
-
-            if (!wasEnabled)
-                binder.enabled = true;
+            // Ensure enabled so UpdateBinding runs to snapshot the current position.
+            binder.enabled = true;
         }
     }
 
