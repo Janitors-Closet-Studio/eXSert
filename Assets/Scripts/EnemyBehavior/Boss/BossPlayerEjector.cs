@@ -45,6 +45,7 @@ namespace EnemyBehavior.Boss
         private Transform player;
         private PlayerMovement playerMovement;
         private CharacterController playerController;
+        private PlayerAttackManager playerAttackManager;
         private bool isApplyingRepulsion;
         private BossRoombaBrain bossBrain;
         private float lastEjectionTime = -999f;
@@ -76,6 +77,9 @@ namespace EnemyBehavior.Boss
                         player = playerMovement.transform;
                         playerController = playerMovement.GetComponent<CharacterController>()
                             ?? playerMovement.GetComponentInChildren<CharacterController>();
+                        playerAttackManager = playerMovement.GetComponent<PlayerAttackManager>()
+                            ?? playerMovement.GetComponentInParent<PlayerAttackManager>()
+                            ?? playerMovement.GetComponentInChildren<PlayerAttackManager>();
                         return;
                     }
                 }
@@ -93,6 +97,9 @@ namespace EnemyBehavior.Boss
                     player = playerMovement.transform;
                     playerController = playerMovement.GetComponent<CharacterController>()
                         ?? playerMovement.GetComponentInChildren<CharacterController>();
+                    playerAttackManager = playerMovement.GetComponent<PlayerAttackManager>()
+                        ?? playerMovement.GetComponentInParent<PlayerAttackManager>()
+                        ?? playerMovement.GetComponentInChildren<PlayerAttackManager>();
                 }
                 else
                 {
@@ -106,6 +113,18 @@ namespace EnemyBehavior.Boss
             if (player == null)
             {
                 CachePlayerReference();
+                return;
+            }
+
+            // Never push the player while they are actively attacking — this is the root cause of
+            // the player being shoved away when hitting the boss during normal melee.
+            if (playerAttackManager != null && playerAttackManager.IsAttackInProgress)
+            {
+                if (isApplyingRepulsion)
+                {
+                    playerMovement?.ClearExternalVelocity();
+                    isApplyingRepulsion = false;
+                }
                 return;
             }
 
