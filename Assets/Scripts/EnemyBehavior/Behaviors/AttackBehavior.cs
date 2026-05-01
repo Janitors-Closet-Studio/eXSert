@@ -112,12 +112,14 @@ namespace Behaviors
             // the range check fires before the directional attack box lands a hit.
             yield return WaitForSecondsCache.Get(0.5f);
 
+            const float attackExitTolerance = 0.35f;
+
             while (enemy.enemyAI.State.Equals(attackStateValue) && playerTarget != null)
             {
                 float attackRange = (Mathf.Max(enemy.attackBoxSize.x, enemy.attackBoxSize.z) * 0.5f) + enemy.attackBoxDistance;
                 float distance = Vector3.Distance(enemy.transform.position, playerTarget.position);
 
-                if (distance > attackRange)
+                if (distance > attackRange + attackExitTolerance)
                 {
                     enemy.TryFireTriggerByName("OutOfAttackRange");
                     yield break;

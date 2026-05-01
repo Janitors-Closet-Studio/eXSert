@@ -54,6 +54,12 @@ public class ExplosiveTurretEnemy : BaseTurretEnemy
 		PlayAttackAnimOn(boxAnimator);
 	}
 
+		protected override void EnterAttackTrackingPose()
+		{
+			base.EnterAttackTrackingPose();
+			TryPlayAttackPoseOn(boxAnimator);
+		}
+
 	protected override bool ShouldHideTelegraphBeforeShot()
 	{
 		return false;

@@ -225,7 +225,7 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
             {
                 /* SetEnemyColor(attackColor); */
                 isTargetEngaged = true;
-                PlayAttackAnim();
+                EnterAttackTrackingPose();
                 BeginAttackTelegraphCycle(Time.time);
                 StartAttackLoop();
                 SetTelegraphVisible(false);
@@ -384,10 +384,15 @@ public abstract class BaseTurretEnemy : BaseEnemy<EnemyState, EnemyTrigger>, IPr
         return hitAnimationRecoveryDelay;
     }
 
+    protected virtual void EnterAttackTrackingPose()
+    {
+        TryPlayAttackPose();
+    }
+
     protected virtual void RestoreAttackVisualAfterHit()
     {
         HideAttackIndicator();
-        RequestIdlePose(force: true);
+        EnterAttackTrackingPose();
     }
 
     private IEnumerator AttackLoop()
