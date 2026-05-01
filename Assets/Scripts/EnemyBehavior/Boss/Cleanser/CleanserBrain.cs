@@ -956,6 +956,7 @@ namespace EnemyBehavior.Boss.Cleanser
         /// </summary>
         public void PlayFootstep()
         {
+            Debug.Log($"[Footstep] CleanserBrain.PlayFootstep fired. footstepSystem={footstepSystem}");
             footstepSystem?.PlayFootstep();
         }
 
@@ -1138,7 +1139,6 @@ namespace EnemyBehavior.Boss.Cleanser
             animator = animator ?? GetComponentInChildren<Animator>();
             cleanserVfxManager = cleanserVfxManager ?? GetComponent<CleanserVFXManager>() ?? GetComponentInChildren<CleanserVFXManager>(true);
             footstepSystem = footstepSystem ?? GetComponent<CleanserFootstepSystem>() ?? GetComponentInChildren<CleanserFootstepSystem>(true);
-            footstepSystem?.SetWalkSpeedGetter(() => agent != null ? agent.velocity.magnitude : 0f);
             defaultAnimatorSpeed = animator != null ? Mathf.Max(0.01f, animator.speed) : 1f;
 
             SoundManager soundManager = SoundManager.Instance;
