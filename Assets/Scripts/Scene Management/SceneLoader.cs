@@ -482,6 +482,7 @@ public static class SceneLoader
         // This is the safest moment to do it: all scenes are loaded, the player hasn't been spawned yet.
         InputReader.ForceResetInputLocks("LoadIntoGameCoroutine");
         RestoreGameplayUiStateAfterLoad(restoreSavedCheckpoint);
+        CoroutineRunner.Run(ReassertGameplayUiStateAfterLoadCoroutine(restoreSavedCheckpoint));
 
         if (newGame)
             CutsceneManager.PlayCutscene(Cutscene.GetCutscene("Opening Cutscene"));
@@ -521,6 +522,24 @@ public static class SceneLoader
         }
 
         RestorePlayerRuntimeStateAfterLoad(restoreSavedCheckpoint);
+    }
+
+    private static IEnumerator ReassertGameplayUiStateAfterLoadCoroutine(bool restoreSavedCheckpoint)
+    {
+        yield return null;
+
+        RestoreGameplayUiStateAfterLoad(restoreSavedCheckpoint);
+
+        const float settleTimeoutSeconds = 3f;
+        float elapsed = 0f;
+
+        while (LoadingScreenController.IsLoading && elapsed < settleTimeoutSeconds)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        RestoreGameplayUiStateAfterLoad(restoreSavedCheckpoint);
     }
 
     private static void RestorePlayerRuntimeStateAfterLoad(bool restoreSavedCheckpoint)

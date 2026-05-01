@@ -829,6 +829,23 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
     }
 
+    protected bool TryPlayAttackPose(float normalizedTime = 0.99f)
+    {
+        return TryPlayAttackPoseOn(animator, normalizedTime);
+    }
+
+    protected bool TryPlayAttackPoseOn(Animator target, float normalizedTime = 0.99f)
+    {
+        if (target == null || string.IsNullOrEmpty(attackStateName))
+            return false;
+
+        if (!HasAnimatorState(target, attackStateName))
+            return false;
+
+        target.Play(attackStateName, 0, Mathf.Clamp01(normalizedTime));
+        return true;
+    }
+
     protected virtual void PlayHitAnim()
     {
         if (!TrySetTrigger(hitTriggerName))
