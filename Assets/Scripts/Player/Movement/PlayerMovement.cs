@@ -75,6 +75,35 @@ public class PlayerMovement : MonoBehaviour
     public bool IsPlunging => isPlunging;
     public bool IsGuardLockedByPlunge => isPlunging || plungeLandingPending || waitingForPlungeRecoveryUnlock;
 
+    /// <summary>
+    /// Global slide-off surface settings sourced from the active PlayerMovement instance.
+    /// PlayerSlideOffSurface reads this every FixedUpdate so all tuning lives in one Inspector.
+    /// </summary>
+    public struct SlideOffSurfaceConfig
+    {
+        public bool overrideEnabled;
+        public float minVerticalDot;
+        public float looseDotMultiplier;
+        public float enemyPushbackSpeed;
+    }
+
+    public static SlideOffSurfaceConfig GlobalSlideOffConfig
+    {
+        get
+        {
+            if (s_instance == null)
+                return new SlideOffSurfaceConfig { overrideEnabled = false };
+
+            return new SlideOffSurfaceConfig
+            {
+                overrideEnabled    = s_instance.overrideSlideOffSurfaceSettings,
+                minVerticalDot     = s_instance.slideOffSurfaceMinVerticalDot,
+                looseDotMultiplier = s_instance.slideOffSurfaceLooseDotMultiplier,
+                enemyPushbackSpeed = s_instance.slideOffEnemyPushbackSpeed,
+            };
+        }
+    }
+
     [Header("Input")]
     [SerializeField] private InputActionReference _jumpAction;
     [SerializeField] private InputActionReference _dashAction;
@@ -389,7 +418,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField, Tooltip("Continuous outward enemy push speed applied every fixed step while plunge is active.")]
     [Range(0f, 20f)] private float plungeSustainEnemyPushSpeed = 2.5f;
     [SerializeField, Tooltip("Additional horizontal slide speed to force the player off overlapping enemies while plunging.")]
-    [Range(0f, 20f)] private float plungeSustainPlayerSlideSpeed = 7f;
+    [Range(0f, 20f)] private float plungeSustainPlayerSlideSpeed = 3f;
     [SerializeField, Tooltip("When plunging directly above a turret, applies a brief sideways nudge before continuing descent.")]
     private bool enablePlungeTurretImmediateSideNudge = true;
     [SerializeField, Range(0f, 20f), Tooltip("Initial sideways speed applied by the immediate turret plunge nudge.")]
@@ -412,16 +441,24 @@ public class PlayerMovement : MonoBehaviour
     [Range(0.1f, 3f)] private float groundedInputBusyFailsafeSeconds = 0.9f;
 
     [Header("Enemy Top-Surface Slide-Off")]
-    [SerializeField, Tooltip("Horizontal slide speed applied when standing on top of enemies (except Roomba).")]
-    [Range(0f, 25f)] private float enemyTopSlideOffSpeed = 13f;
-    [SerializeField, Tooltip("Extra multiplier applied while plunging to aggressively force player off enemy tops.")]
-    [Range(1f, 5f)] private float enemyTopSlideOffPlungeMultiplier = 3f;
+    [SerializeField, Tooltip("Horizontal slide speed applied when standing on top of enemies (except Roomba). This is the sole knob that controls how fast the player slides off — tune this here rather than on individual enemies.")]
+    [Range(0f, 25f)] private float enemyTopSlideOffSpeed = 4f;
     [SerializeField, Tooltip("Downward probe distance used to detect enemy directly beneath the player.")]
     [Range(0.1f, 3f)] private float enemyTopSlideProbeDistance = 2f;
     [SerializeField, Tooltip("Scales the CharacterController XZ footprint used to detect enemies under the player (1 = exact player width).")]
     [Range(0.5f, 2f)] private float enemyTopSlideFootprintScale = 1.15f;
     [SerializeField, Tooltip("Vertical thickness of the footprint overlap used for enemy-top detection.")]
     [Range(0.05f, 1f)] private float enemyTopSlideFootprintThickness = 0.35f;
+
+    [Header("PlayerSlideOffSurface Global Overrides")]
+    [SerializeField, Tooltip("When enabled, PlayerSlideOffSurface components on all enemies will use the detection and pushback values below. Player slide speed is always controlled by Enemy Top-Surface Slide-Off → Horizontal Slide Speed above.")]
+    private bool overrideSlideOffSurfaceSettings = true;
+    [SerializeField, Range(0f, 1f), Tooltip("Minimum vertical contact-normal dot to consider the player on top of an enemy. 1 = directly above, 0.5 = 45°. Overrides the per-enemy field when the global override is enabled.")]
+    private float slideOffSurfaceMinVerticalDot = 0.5f;
+    [SerializeField, Range(0f, 1f), Tooltip("Secondary (looser) dot threshold multiplier used when the player's feet are clearly above the enemy top. Applied as minVerticalDot × this value. Lower = more permissive.")]
+    private float slideOffSurfaceLooseDotMultiplier = 0.65f;
+    [SerializeField, Range(0f, 20f), Tooltip("How fast enemies are pushed in the opposite direction when the player slides off them. Set to 0 to disable enemy pushback.")]
+    private float slideOffEnemyPushbackSpeed = 3f;
 
     [Header("Boss Faceplate Unstick")]
     [SerializeField, Tooltip("Applies a small outward assist when movement input is held but the player is stuck against the Roomba body/faceplate.")]
@@ -1509,12 +1546,18 @@ public class PlayerMovement : MonoBehaviour
         if (characterController == null || enemyTopSlideOffSpeed <= 0f)
             return Vector3.zero;
 
-        if (!characterController.isGrounded && !IsGroundedNow())
+        // While plunging, ApplyPlungeSustainRepulsion already computes the player slide
+        // direction from nearby enemies. Running both systems stacks the velocities and
+        // launches the player. Let sustain repulsion own the slide during a plunge.
+        if (isPlunging)
+            return Vector3.zero;
+
+        if (!characterController.isGrounded && !IsGroundedNow() && !plungeLandingPending)
             return Vector3.zero;
 
         // Don't slide the player off enemies while they are mid-attack; the slide force
         // interrupts grounded attack animations when the player is standing close to an enemy.
-        if (attackManager != null && attackManager.IsAttackInProgress)
+        if (attackManager != null && attackManager.IsAttackInProgress && !plungeLandingPending)
             return Vector3.zero;
 
         Bounds bounds = characterController.bounds;
@@ -1609,11 +1652,7 @@ public class PlayerMovement : MonoBehaviour
         if (pushDir.sqrMagnitude < EnemyTopSlideMinDistanceSq)
             pushDir = transform.forward;
 
-        float speed = enemyTopSlideOffSpeed;
-        if (isPlunging)
-            speed *= Mathf.Max(1f, enemyTopSlideOffPlungeMultiplier);
-
-        return pushDir.normalized * speed;
+        return pushDir.normalized * enemyTopSlideOffSpeed;
     }
 
     private Vector3 GetBossFaceplateUnstickVelocity()
@@ -2533,6 +2572,9 @@ public class PlayerMovement : MonoBehaviour
         aerialAttackLockTimer = 0f;
         plungeTurretImmediateNudgeTimer = 0f;
         plungeTurretImmediateNudgeVelocity = Vector3.zero;
+        // Clear the recovery-unlock flag so an interrupted plunge never leaves attack input locked.
+        waitingForPlungeRecoveryUnlock = false;
+        plungeRecoveryBusyTimer = 0f;
         StopAerialTargetAssist();
     }
 
@@ -3461,6 +3503,16 @@ public class PlayerMovement : MonoBehaviour
 
         if (!InputReader.inputBusy)
         {
+            waitingForPlungeRecoveryUnlock = false;
+            plungeRecoveryBusyTimer = 0f;
+            return;
+        }
+
+        // If there is no active attack there is nothing to wait for — release immediately.
+        bool hasActiveAttack = attackManager != null && attackManager.IsAttackInProgress;
+        if (!hasActiveAttack)
+        {
+            InputReader.inputBusy = false;
             waitingForPlungeRecoveryUnlock = false;
             plungeRecoveryBusyTimer = 0f;
             return;

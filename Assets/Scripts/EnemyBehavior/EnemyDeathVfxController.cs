@@ -306,6 +306,12 @@ public sealed class EnemyDeathVfxController : MonoBehaviour
 
         ReplayInstanceNow(instance);
 
+        // If this instance is not attached to the enemy, disable binders after one frame
+        // so VFXPropertyBinder.Update() can push the correct position first, then stop
+        // polling the enemy's transforms once they are returned to the pool.
+        if (!entry.AttachToAnchor)
+            EnsureCoroutineRunner().StartCoroutine(DisableVfxPropertyBindersNextFrame(instance));
+
         if (owner != null)
             owner.TrackSpawnedInstance(instance, entry);
     }
@@ -668,12 +674,31 @@ public sealed class EnemyDeathVfxController : MonoBehaviour
             if (binder == null)
                 continue;
 
-            bool wasEnabled = binder.enabled;
+            // Force OnEnable to re-fire by toggling off then on. This is necessary for
+            // binders with EveryFrame=false (e.g. VFXMultiplePositionBinder) whose
+            // UpdateTexture only runs during OnEnable, not every LateUpdate.
             binder.enabled = false;
-            binder.enabled = wasEnabled;
+            binder.enabled = true;
+        }
+    }
 
-            if (!wasEnabled)
-                binder.enabled = true;
+    // Waits one frame so VFXPropertyBinder.Update() can push the correct world position,
+    // then disables all binders to stop them polling the now-pooled enemy transforms.
+    private static IEnumerator DisableVfxPropertyBindersNextFrame(GameObject instance)
+    {
+        yield return null;
+
+        if (instance == null)
+            yield break;
+
+        var binders = instance.GetComponentsInChildren<VFXPropertyBinder>(true);
+        for (int i = 0; i < binders.Length; i++)
+        {
+            VFXPropertyBinder binder = binders[i];
+            if (binder == null)
+                continue;
+
+            binder.enabled = false;
         }
     }
 
