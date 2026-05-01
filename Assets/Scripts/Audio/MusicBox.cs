@@ -35,7 +35,7 @@ public class MusicBox : MonoBehaviour
     [Header("Music Box Settings")]
     [SerializeField] private Vector3 boxSize = Vector3.one;
 
-    [SerializeField] private string sceneName;
+    [SerializeField] public string sceneName;
 
     private BoxCollider boxCollider;
     private Rigidbody rb;
@@ -43,6 +43,7 @@ public class MusicBox : MonoBehaviour
     private Coroutine fadeOutAmbienceRoutine;
     private Coroutine autoActivateRoutine;
     private bool canPlay = false;
+    public bool stopPlayingAmbienceOnExit = false;
 
     private SoundManager cachedSoundManager;
     private void Awake()
@@ -69,6 +70,14 @@ public class MusicBox : MonoBehaviour
         CutsceneManager.CutsceneFinished -= HandleCutsceneFinished;
         CutsceneManager.CutsceneFinished += HandleCutsceneFinished;
         StartAutoActivateProbe();
+    }
+
+    public void StopPlayingAmbience()
+    {
+        if (ambienceSource != null)
+        {
+            stopPlayingAmbienceOnExit = true;
+        }
     }
 
     public void UpdateCachedVolumes()
@@ -262,7 +271,9 @@ public class MusicBox : MonoBehaviour
         currentActiveBox = this;
         StopAudioTransitionCoroutines();
         PlayLevelMusic();
-        PlayAmbience();
+
+        if (!stopPlayingAmbienceOnExit)
+            PlayAmbience();
     }
 
     private void PlayLevelMusic()

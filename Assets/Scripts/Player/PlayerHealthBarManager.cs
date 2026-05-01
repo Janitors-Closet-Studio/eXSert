@@ -94,6 +94,10 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     [SerializeField] private AudioClip[] playerHurtSFX;
     [SerializeField] private AudioClip[] impactSFX;
     [SerializeField] private AudioClip[] playerDeathSFX;
+    [SerializeField, Range(0f, 0.25f), Tooltip("Minimum time between hurt voice SFX plays.")]
+    private float playerHurtSfxCooldownSeconds = 0.08f;
+    [SerializeField, Range(0f, 0.25f), Tooltip("Minimum time between impact SFX plays.")]
+    private float impactSfxCooldownSeconds = 0.05f;
 
     [Header("Lose Health Rumble Settings")]
     [SerializeField] private float _rumbleLowFrequency = 0.5f;
@@ -140,6 +144,8 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
     private int lastKnownSceneHandle = -1;
     private float lastCombatActivityTime;
     private Coroutine healthBarRebindRoutine;
+    private float nextAllowedPlayerHurtSfxTime;
+    private float nextAllowedImpactSfxTime;
 
     private const float HealthBarRebindRetrySeconds = 0.1f;
     private const float HealthBarRebindWindowSeconds = 2f;
@@ -289,7 +295,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
         float previous = currentHealth;
         currentHealth = Mathf.Max(0f, currentHealth - damage);
 
-        if (playerHurtSFX != null && playerHurtSFX.Length > 0)
+        if (playerHurtSFX != null && playerHurtSFX.Length > 0 && CanPlaySfxNow(ref nextAllowedPlayerHurtSfxTime, playerHurtSfxCooldownSeconds))
         {
             int index = UnityEngine.Random.Range(0, playerHurtSFX.Length);
             AudioClip clip = playerHurtSFX[index];
@@ -308,7 +314,7 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             }
         }
 
-        if (impactSFX != null && impactSFX.Length > 0)
+        if (impactSFX != null && impactSFX.Length > 0 && CanPlaySfxNow(ref nextAllowedImpactSfxTime, impactSfxCooldownSeconds))
         {
             int index = UnityEngine.Random.Range(0, impactSFX.Length);
             AudioClip clip = impactSFX[index];
@@ -530,6 +536,16 @@ public class PlayerHealthBarManager : MonoBehaviour, IHealthSystem, IDataPersist
             healthBar.SetHealth(snapshot.current, snapshot.max);
         }
         OnPlayerHealthChanged?.Invoke(snapshot);
+    }
+
+    private bool CanPlaySfxNow(ref float nextAllowedTime, float cooldownSeconds)
+    {
+        float now = Time.unscaledTime;
+        if (now < nextAllowedTime)
+            return false;
+
+        nextAllowedTime = now + Mathf.Max(0f, cooldownSeconds);
+        return true;
     }
 
     private void EnsureHealthBarReference()

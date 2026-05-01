@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Progression.Encounters;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 public class SlowDownElevator : MonoBehaviour
 {
 #pragma warning disable CS0618
@@ -142,6 +143,7 @@ public class SlowDownElevator : MonoBehaviour
         _initialSpeed = _elevatorWalls.elevatorSpeed;
         _elevatorWalls.isMoving = false;
         SetSlowdownSparkVfxActive(true);
+        EnsureAmbienceDoesntRestart(findElevatorMusicBoxInScene());
         
         // Stop ElevatorWalls script from moving the walls immediately
         _elevatorWalls.elevatorSpeed = 0f;
@@ -217,6 +219,7 @@ public class SlowDownElevator : MonoBehaviour
         SoundManager.Instance.puzzleSource.Stop();
         SoundManager.Instance.puzzleSource.clip = elevatorDecelerateSFX;
         SoundManager.Instance.puzzleSource.Play();
+        SoundManager.Instance.ambienceSource.Stop();
 
         while (_decelerationTimer < _actualDecelerationDuration)
         {
@@ -294,6 +297,7 @@ public class SlowDownElevator : MonoBehaviour
         else
             SnapDoorWallToFinalLocalY();
         SetSlowdownSparkVfxActive(false);
+
         
         // Complete when total distance traveled is done
         _isDecelerating = false;
@@ -506,5 +510,32 @@ public class SlowDownElevator : MonoBehaviour
 
             binding.ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
+    }
+
+    private MusicBox findElevatorMusicBoxInScene()
+    {
+        MusicBox[] musicBoxes = FindObjectsOfType<MusicBox>();
+        foreach (MusicBox box in musicBoxes)
+        {
+            if (box.sceneName == "Elevator")
+            {
+                return box;
+            }
+        }
+        Debug.LogWarning("No MusicBox found for the current scene. Elevator ambience will not be stopped properly.");
+        return null;
+    }
+
+    private void EnsureAmbienceDoesntRestart(MusicBox musicBox)
+    {
+        if (musicBox != null)
+        {
+            musicBox.StopPlayingAmbience();
+        }
+        else
+        {
+            Debug.LogWarning("Cannot stop ambience on MusicBox because none was found in the scene.");
+        }
+    
     }
 }

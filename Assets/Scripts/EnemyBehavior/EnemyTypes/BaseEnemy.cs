@@ -166,6 +166,14 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private AudioClip[] hitSFX;
     [SerializeField, Tooltip("Audio clip to play when the enemy dies.")]
     private AudioClip deathSFX;
+    [SerializeField, Range(0f, 0.25f), Tooltip("Minimum time between hit SFX from this enemy.")]
+    private float hitSfxLocalCooldownSeconds = 0.03f;
+    [SerializeField, Range(0f, 0.25f), Tooltip("Minimum time between hit SFX globally across all enemies.")]
+    private float hitSfxGlobalCooldownSeconds = 0.06f;
+    [SerializeField, Range(0f, 0.25f), Tooltip("Minimum time between death SFX from this enemy.")]
+    private float deathSfxLocalCooldownSeconds = 0.05f;
+    [SerializeField, Range(0f, 0.25f), Tooltip("Minimum time between death SFX globally across all enemies.")]
+    private float deathSfxGlobalCooldownSeconds = 0.08f;
     
     [Header("Movement SFX")]
     [SerializeField, Tooltip("Audio clip to loop while the enemy is moving.")]
@@ -187,6 +195,10 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
     private bool wasMovingForSFX;
     private Coroutine movementSFXFadeCoroutine;
     private bool hasLoggedMissingHitSfxSource;
+    private float nextAllowedLocalHitSfxTime;
+    private static float nextAllowedGlobalHitSfxTime;
+    private float nextAllowedLocalDeathSfxTime;
+    private static float nextAllowedGlobalDeathSfxTime;
 
     [Header("Rumble on Hit Settings")]
     [SerializeField, Tooltip("Duration in seconds for the rumble effect when the enemy is hit.")]
@@ -829,6 +841,23 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         }
     }
 
+    protected bool TryPlayAttackPose(float normalizedTime = 0.99f)
+    {
+        return TryPlayAttackPoseOn(animator, normalizedTime);
+    }
+
+    protected bool TryPlayAttackPoseOn(Animator target, float normalizedTime = 0.99f)
+    {
+        if (target == null || string.IsNullOrEmpty(attackStateName))
+            return false;
+
+        if (!HasAnimatorState(target, attackStateName))
+            return false;
+
+        target.Play(attackStateName, 0, Mathf.Clamp01(normalizedTime));
+        return true;
+    }
+
     protected virtual void PlayHitAnim()
     {
         if (!TrySetTrigger(hitTriggerName))
@@ -1305,6 +1334,9 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         if (hitSFX == null || hitSFX.Length == 0)
             return;
 
+        if (!CanPlayHitSfxNow())
+            return;
+
         int index = Random.Range(0, hitSFX.Length);
         AudioClip clip = hitSFX[index];
         if (clip == null)
@@ -1327,9 +1359,27 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
         source.PlayOneShot(clip);
     }
 
+    private bool CanPlayHitSfxNow()
+    {
+        float now = Time.unscaledTime;
+
+        if (now < nextAllowedLocalHitSfxTime)
+            return false;
+
+        if (now < nextAllowedGlobalHitSfxTime)
+            return false;
+
+        nextAllowedLocalHitSfxTime = now + Mathf.Max(0f, hitSfxLocalCooldownSeconds);
+        nextAllowedGlobalHitSfxTime = now + Mathf.Max(0f, hitSfxGlobalCooldownSeconds);
+        return true;
+    }
+
     private void PlayDeathSFX()
     {
         if (deathSFX == null)
+            return;
+
+        if (!CanPlayDeathSfxNow())
             return;
 
         AudioSource source = ResolveHitSfxSource();
@@ -1337,6 +1387,21 @@ public abstract class BaseEnemy<TState, TTrigger> : BaseEnemyCore, IQueuedAttack
             return;
 
         source.PlayOneShot(deathSFX);
+    }
+
+    private bool CanPlayDeathSfxNow()
+    {
+        float now = Time.unscaledTime;
+
+        if (now < nextAllowedLocalDeathSfxTime)
+            return false;
+
+        if (now < nextAllowedGlobalDeathSfxTime)
+            return false;
+
+        nextAllowedLocalDeathSfxTime = now + Mathf.Max(0f, deathSfxLocalCooldownSeconds);
+        nextAllowedGlobalDeathSfxTime = now + Mathf.Max(0f, deathSfxGlobalCooldownSeconds);
+        return true;
     }
 
     private AudioSource ResolveHitSfxSource()
