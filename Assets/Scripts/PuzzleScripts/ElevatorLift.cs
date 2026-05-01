@@ -16,6 +16,19 @@ public class LockedElevatorFloorData
     public TextMeshProUGUI buttonText;
     public string keyItemID;
     public string keyDisplayName;
+    [Header("Notice Settings")]
+    [Tooltip("Optional display name used in notices for this floor. Falls back to Floor Name when empty.")]
+    public string floorNoticeName;
+    [Tooltip("Optional custom locked notice title. Supports {floor} and {item}.")]
+    public string lockedNoticeTitle;
+    [TextArea(2, 4)]
+    [Tooltip("Optional custom locked notice description. Supports {floor} and {item}.")]
+    public string lockedNoticeDescription;
+    [Tooltip("Optional custom unlocked notice title shown when the player can use the required key for this floor. Supports {floor} and {item}.")]
+    public string unlockedNoticeTitle;
+    [TextArea(2, 4)]
+    [Tooltip("Optional custom unlocked notice description. Supports {floor} and {item}.")]
+    public string unlockedNoticeDescription;
 }
 
 [RequireComponent(typeof(BoxCollider))]
@@ -683,11 +696,59 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
         return lockedFloors[floorIndex].isLocked;
     }
 
-    private void NoticeLockedMessage(LockedElevatorFloorData floorData)
+    private static string GetFloorNoticeName(LockedElevatorFloorData floorData)
+    {
+        if (floorData == null)
+            return "this floor";
+
+        if (!string.IsNullOrWhiteSpace(floorData.floorNoticeName))
+            return floorData.floorNoticeName;
+
+        if (!string.IsNullOrWhiteSpace(floorData.floorName))
+            return floorData.floorName;
+
+        return "this floor";
+    }
+
+    private static string GetFloorKeyNoticeName(LockedElevatorFloorData floorData)
+    {
+        if (floorData == null)
+            return "required key";
+
+        if (!string.IsNullOrWhiteSpace(floorData.keyDisplayName))
+            return floorData.keyDisplayName;
+
+        if (!string.IsNullOrWhiteSpace(floorData.keyItemID))
+            return floorData.keyItemID;
+
+        return "required key";
+    }
+
+    private static string ReplaceFloorNoticeTokens(string template, LockedElevatorFloorData floorData)
+    {
+        return template
+            .Replace("{floor}", GetFloorNoticeName(floorData))
+            .Replace("{item}", GetFloorKeyNoticeName(floorData));
+    }
+
+    private void ShowFloorNotice(string noticeId, string title, string description, int priority = 10)
     {
         MasterObjectiveClass masterObjective = FindObjectOfType<MasterObjectiveClass>();
         if (masterObjective != null)
-            masterObjective.CreateAndShowNotice(null, "floor_locked", "Floor Locked", $"You need {floorData.keyDisplayName} to access this floor.", priority: 10);
+            masterObjective.CreateAndShowNotice(null, noticeId, title, description, priority: priority);
+    }
+
+    private void NoticeLockedMessage(LockedElevatorFloorData floorData)
+    {
+        string noticeTitle = string.IsNullOrWhiteSpace(floorData.lockedNoticeTitle)
+            ? "Floor Locked"
+            : ReplaceFloorNoticeTokens(floorData.lockedNoticeTitle, floorData);
+
+        string noticeDescription = string.IsNullOrWhiteSpace(floorData.lockedNoticeDescription)
+            ? $"You need {GetFloorKeyNoticeName(floorData)} to access {GetFloorNoticeName(floorData)}."
+            : ReplaceFloorNoticeTokens(floorData.lockedNoticeDescription, floorData);
+
+        ShowFloorNotice($"floor_locked_{GetFloorNoticeName(floorData)}", noticeTitle, noticeDescription, priority: 10);
 
         string objectiveMessage = !string.IsNullOrEmpty(floorData.keyDisplayName)
             ? $"Find {floorData.keyDisplayName}"
@@ -695,6 +756,22 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
 
         ObjectiveManager.AddSubObjective(floorData.keyDisplayName, objectiveMessage);
 
+    }
+
+    private void NoticeUnlockedMessage(LockedElevatorFloorData floorData)
+    {
+        if (floorData == null || string.IsNullOrWhiteSpace(floorData.keyItemID))
+            return;
+
+        string noticeTitle = string.IsNullOrWhiteSpace(floorData.unlockedNoticeTitle)
+            ? $"Used {GetFloorKeyNoticeName(floorData)}"
+            : ReplaceFloorNoticeTokens(floorData.unlockedNoticeTitle, floorData);
+
+        string noticeDescription = string.IsNullOrWhiteSpace(floorData.unlockedNoticeDescription)
+            ? $"Access granted to {GetFloorNoticeName(floorData)} with {GetFloorKeyNoticeName(floorData)}."
+            : ReplaceFloorNoticeTokens(floorData.unlockedNoticeDescription, floorData);
+
+        ShowFloorNotice($"floor_unlocked_{GetFloorNoticeName(floorData)}", noticeTitle, noticeDescription, priority: 8);
     }
 
     private void MoveToFirstFloor(InputAction.CallbackContext context)
@@ -708,6 +785,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             NoticeLockedMessage(lockedFloors[0]);
             return;
         }
+
+        NoticeUnlockedMessage(lockedFloors[0]);
 
         StartCoroutine(MoveLift(0, carryPlayerWithLift: true));
     }
@@ -724,6 +803,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             return;
         }
 
+        NoticeUnlockedMessage(lockedFloors[1]);
+
         StartCoroutine(MoveLift(1, carryPlayerWithLift: true));
     }
 
@@ -738,6 +819,8 @@ public class ElevatorLift : PuzzlePart, IConsoleSelectable
             NoticeLockedMessage(lockedFloors[2]);
             return;
         }
+
+        NoticeUnlockedMessage(lockedFloors[2]);
 
         StartCoroutine(MoveLift(2, carryPlayerWithLift: true));
     }
