@@ -27,6 +27,7 @@ using UnityEngine.InputSystem;
 using Utilities.Combat;
 using Utilities.Combat.Attacks;
 using EnemyBehavior.Boss;
+using EnemyBehavior.Boss.Cleanser;
 using UI.Loading;
 #pragma warning disable CS0414
 
@@ -2873,6 +2874,15 @@ public class PlayerMovement : MonoBehaviour
         BaseEnemyCore enemy = target.GetComponentInParent<BaseEnemyCore>();
         if (enemy == null)
             return target;
+
+        CleanserBrain cleanser = enemy.GetComponent<CleanserBrain>()
+            ?? enemy.GetComponentInParent<CleanserBrain>()
+            ?? enemy.GetComponentInChildren<CleanserBrain>();
+        Transform cleanserHoverAssistTarget = cleanser != null
+            ? cleanser.GetActiveFloatingAerialAssistTarget()
+            : null;
+        if (cleanserHoverAssistTarget != null)
+            return cleanserHoverAssistTarget;
 
         Collider[] colliders = enemy.GetComponentsInChildren<Collider>(true);
         if (colliders == null || colliders.Length == 0)

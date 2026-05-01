@@ -5252,6 +5252,21 @@ namespace EnemyBehavior.Boss.Cleanser
             assistCollider.enabled = active;
         }
 
+        public Transform GetActiveFloatingAerialAssistTarget()
+        {
+            if (!isExecutingUltimate || !isInUltimateHoverPhase)
+                return null;
+
+            Collider assistCollider = floatingAerialAssistCollider != null
+                ? floatingAerialAssistCollider
+                : runtimeFloatingAerialAssistCollider;
+
+            if (assistCollider == null || !assistCollider.enabled || !assistCollider.gameObject.activeInHierarchy)
+                return null;
+
+            return assistCollider.transform;
+        }
+
         public void OnAerialHitReceived()
         {
             if (!isExecutingUltimate || !isInUltimateHoverPhase)
