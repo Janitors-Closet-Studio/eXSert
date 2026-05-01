@@ -40,6 +40,12 @@ public class WritingTextUI : MonoBehaviour
     public static TextWriterSingle AddWriter_Static(TextMeshProUGUI textComponent, string textToWrite, float timePerCharacter, bool invisibleCharacters, bool removeWriterBeforeAdd = true)
     {
         if (DebugLogging) Debug.Log($"[WritingTextUI] AddWriter_Static called. textComponent: {textComponent}, textToWrite: '{textToWrite}', timePerCharacter: {timePerCharacter}, invisibleCharacters: {invisibleCharacters}, removeWriterBeforeAdd: {removeWriterBeforeAdd}");
+        if (instance == null)
+        {
+            Debug.LogWarning("[WritingTextUI] AddWriter_Static called before WritingTextUI was initialized.");
+            return null;
+        }
+
         if (removeWriterBeforeAdd)
             instance.RemoveWriter(textComponent);
 
@@ -62,11 +68,20 @@ public class WritingTextUI : MonoBehaviour
 
     public static void RemoveWriter_Static(TextMeshProUGUI text)
     {
+        if (instance == null)
+        {
+            Debug.LogWarning("[WritingTextUI] RemoveWriter_Static called before WritingTextUI was initialized.");
+            return;
+        }
+
         instance.RemoveWriter(text);
     }
 
     private void RemoveWriter(TextMeshProUGUI text)
     {
+        if (textWriterSingles == null || text == null)
+            return;
+
         for (int i = 0; i < textWriterSingles.Count; i++)
         {
             if (textWriterSingles[i].GetText() == text)
