@@ -200,7 +200,7 @@ VFXRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2445080737337819881}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -382,7 +382,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7025297468091847141
 Transform:
   m_ObjectHideFlags: 0
@@ -435,6 +435,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemInteractions
   _showHitbox: 1
+  debugLogging: 0
   blockPromptWhenAttackingOrDashing: 1
   interactable: 1
   _interactAnimation: {fileID: 0}
@@ -442,14 +443,15 @@ MonoBehaviour:
   _interactId: 
   _interactionSFX: {fileID: 8300000, guid: 5311eee9c9986724c91de6aa7dde1649, type: 3}
   _interactionPrompt: Press to Pick Up
-  _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
-  _rumbleLowFrequency: 0.1
-  _rumbleHighFrequency: 0.1
-  _rumbleDuration: 0.1
   displayName: 
   uiDisplayDuration: 4
   uiFadeDuration: 2
   bottomFlavorText: 
+  _interactInputAction: {fileID: 732862687902746896, guid: 2b1b6753ddb602a428e3f74f6a31bd6b, type: 3}
+  _rumbleLowFrequency: 0.1
+  _rumbleHighFrequency: 0.1
+  _rumbleDuration: 0.1
+  doNotLoadFromSave: 0
   usePuzzleCameraOnInteraction: 0
   puzzleCinemachineCamera: {fileID: 0}
   puzzleCameraDurationSeconds: 2

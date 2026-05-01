@@ -45880,7 +45880,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: displayName
-      value: DATAFILE ENTRY #001
+      value: ARCHIVE_001 ACQUIRED
+      objectReference: {fileID: 0}
+    - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
+      propertyPath: bottomFlavorText
+      value: Open Nav Menu to read
       objectReference: {fileID: 0}
     - target: {fileID: 7622018774058524696, guid: b32d6bcbed7470d489a051fd98c37fc2, type: 3}
       propertyPath: _interactionPrompt
@@ -50647,7 +50651,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: displayName
-      value: Elevator Keycard
+      value: ACCESS CARD ACQUIRED
+      objectReference: {fileID: 0}
+    - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
+      propertyPath: bottomFlavorText
+      value: Elevator Access Card
       objectReference: {fileID: 0}
     - target: {fileID: 6235325285207261058, guid: 45e6cb7d9c60fe04ca7edd0bdd323ec9, type: 3}
       propertyPath: _interactionPrompt
@@ -70732,23 +70740,39 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: displayName
-      value: Elevator Door
+      value: Bay Door
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: interactOnce
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
+      propertyPath: usedNoticeTitle
+      value: OVERRIDE SUCCESSFUL
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: bottomFlavorText
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
+      propertyPath: lockedNoticeTitle
+      value: ACCESS DENIED
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: onlyInteractableOnce
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
+      propertyPath: usedNoticeBottomText
+      value: Bay Door Opening
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
+      propertyPath: lockedNoticeBottomText
+      value: 'Required: [Elevator Access Card]'
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: requiredItemDisplayName
-      value: Elevator Keycard
+      value: Elevator Access Card
       objectReference: {fileID: 0}
     - target: {fileID: 5980805901309650393, guid: 53ff97ac579757c4ab06e0bcc1f8f65e, type: 3}
       propertyPath: 'doorHandlers.Array.data[0]'
@@ -74538,9 +74562,13 @@ PrefabInstance:
     m_TransformParent: {fileID: 1754329946}
     m_Modifications:
     - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectiveNotices.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
       propertyPath: objectiveNotices.Array.data[0].interactionToActivate
       value: 
-      objectReference: {fileID: 1288089984}
+      objectReference: {fileID: 0}
     - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
