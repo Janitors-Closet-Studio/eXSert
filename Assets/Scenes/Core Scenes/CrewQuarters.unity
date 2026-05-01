@@ -1372,7 +1372,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Survive the surprise attack.
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &12966225
 PrefabInstance:
@@ -30653,7 +30653,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Survive the surpise attack!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &177486001
 PrefabInstance:
@@ -35109,7 +35109,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Get the green keycard and check out the computer!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1 &203416291
 GameObject:
@@ -45276,7 +45276,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat all enemies in this wave!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!4 &247650667 stripped
 Transform:
@@ -49605,7 +49605,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: You've been noticed! More Enemies incoming!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &271642055
 PrefabInstance:
@@ -50313,6 +50313,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8219194316306368787, guid: 408feccde03244d4aa628920bb0770f4, type: 3}
   m_PrefabInstance: {fileID: 277374735}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &277374737 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5036990525669058420, guid: 408feccde03244d4aa628920bb0770f4, type: 3}
+  m_PrefabInstance: {fileID: 277374735}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57bcea94c08a27e4683e9a39f8d0ea34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemInteractions
 --- !u!1 &279281151 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6857875990009598239, guid: e8510490559c7c5449a4a15a148e0f95, type: 3}
@@ -51298,7 +51309,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Fight off the sawrm and leave the room!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &286081678
 PrefabInstance:
@@ -53056,7 +53067,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat the enemies and Advance your way through.
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &296223018
 PrefabInstance:
@@ -80313,6 +80324,10 @@ MonoBehaviour:
   requiredItemID: cq.greenkeycard
   requiredItemDisplayName: Green Keycard
   lockedInteractionPrompt: LOCKED
+  lockedNoticeTitle: 
+  lockedNoticeBottomText: 
+  usedNoticeTitle: 
+  usedNoticeBottomText: 
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
@@ -101341,7 +101356,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Clear out the area!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &512274454
 PrefabInstance:
@@ -104826,7 +104841,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat all enemies in this wave!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &536678919
 PrefabInstance:
@@ -133460,7 +133475,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Survive the bombs!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1 &678259248 stripped
 GameObject:
@@ -192747,7 +192762,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Take out the Trash!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &979083053
 PrefabInstance:
@@ -207769,6 +207784,10 @@ MonoBehaviour:
   requiredItemID: cq.redkeycard
   requiredItemDisplayName: Red Keycard
   lockedInteractionPrompt: LOCKED
+  lockedNoticeTitle: 
+  lockedNoticeBottomText: 
+  usedNoticeTitle: 
+  usedNoticeBottomText: 
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
@@ -213965,7 +213984,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Take out the boxing duo!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &1130652698
 PrefabInstance:
@@ -227225,7 +227244,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Woops! Someone was on here...
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &1208455299
 PrefabInstance:
@@ -254911,7 +254930,207 @@ PrefabInstance:
     m_TransformParent: {fileID: 1877858648}
     m_Modifications:
     - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.size
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
       propertyPath: objectiveNotices.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[0].objectiveID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[1].objectiveID
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[2].objectiveID
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[3].objectiveID
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[4].objectiveID
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[5].objectiveID
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[6].objectiveID
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[7].objectiveID
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[8].objectiveID
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[9].objectiveID
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[10].objectiveID
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[11].objectiveID
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[0].objectiveText
+      value: Is this... the inside of an old Naval ship?
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[0].triggerSource
+      value: 
+      objectReference: {fileID: 1102880756}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[1].objectiveText
+      value: Out of the way, junkers!
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[1].triggerSource
+      value: 
+      objectReference: {fileID: 294742816}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[2].objectiveText
+      value: This old chow hall is trashed.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[2].triggerSource
+      value: 
+      objectReference: {fileID: 511599861}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[3].objectiveText
+      value: If this is an old crew quarters, there's a lot more to explore.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[3].triggerSource
+      value: 
+      objectReference: {fileID: 511599861}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[4].objectiveText
+      value: Green keycard huh? With any luck, this goes to the green console.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[4].triggerSource
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[5].objectiveText
+      value: I'd better go see what this opened up.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[6].objectiveText
+      value: I've seen a console this color somewhere.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[7].objectiveText
+      value: Great! I wonder what else has opened.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[8].objectiveText
+      value: Okay, looking for red now.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[9].objectiveText
+      value: One more console, one more keycard.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[10].objectiveText
+      value: Three for three. Back to the console room.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[11].objectiveText
+      value: Alright, let's see if that opened up the exit.
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[4].interactionToActivate
+      value: 
+      objectReference: {fileID: 1661491531}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[5].interactionToActivate
+      value: 
+      objectReference: {fileID: 396973095}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[6].interactionToActivate
+      value: 
+      objectReference: {fileID: 1641547130}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[7].interactionToActivate
+      value: 
+      objectReference: {fileID: 1943799426}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[8].interactionToActivate
+      value: 
+      objectReference: {fileID: 1514029296}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[9].interactionToActivate
+      value: 
+      objectReference: {fileID: 1075314180}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[10].interactionToActivate
+      value: 
+      objectReference: {fileID: 277374737}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[11].interactionToActivate
+      value: 
+      objectReference: {fileID: 2044429865}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[3].triggerOnWaveCompletion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[4].triggerOnWaveCompletion
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[1].triggerOnPuzzleInteractionComplete
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[2].triggerOnPuzzleInteractionComplete
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[4].triggerOnPuzzleInteractionComplete
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[5].triggerOnPuzzleInteractionComplete
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[6].triggerOnPuzzleInteractionComplete
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[7].triggerOnPuzzleInteractionComplete
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[8].triggerOnPuzzleInteractionComplete
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[9].triggerOnPuzzleInteractionComplete
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[10].triggerOnPuzzleInteractionComplete
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3030420007533430126, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
+      propertyPath: objectives.Array.data[11].triggerOnPuzzleInteractionComplete
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3894463736875353020, guid: 6fb40dc1ca724f8488957b4a6657170a, type: 3}
@@ -268070,7 +268289,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Take out the Sawm in this room!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &1391585840
 PrefabInstance:
@@ -269671,7 +269890,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Get the blue keycard!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &1394050425
 PrefabInstance:
@@ -293267,6 +293486,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4079761977985245013, guid: 3e4a7347c8242af438016dc7b9a97c0a, type: 3}
   m_PrefabInstance: {fileID: 1514029294}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1514029296 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1110335751090762034, guid: 3e4a7347c8242af438016dc7b9a97c0a, type: 3}
+  m_PrefabInstance: {fileID: 1514029294}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57bcea94c08a27e4683e9a39f8d0ea34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemInteractions
 --- !u!43 &1514099819
 Mesh:
   m_ObjectHideFlags: 0
@@ -320692,7 +320922,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat all enemies in this wave!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1 &1625751348
 GameObject:
@@ -323307,6 +323537,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2200543515437409024, guid: e55b00d1958aeb3459dbcae45105adbc, type: 3}
   m_PrefabInstance: {fileID: 1641547128}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1641547130 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2990226564898442599, guid: e55b00d1958aeb3459dbcae45105adbc, type: 3}
+  m_PrefabInstance: {fileID: 1641547128}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57bcea94c08a27e4683e9a39f8d0ea34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemInteractions
 --- !u!1001 &1641918565
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -325121,6 +325362,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8210678164645506279, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
   m_PrefabInstance: {fileID: 1661491529}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1661491531 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5045366206028743296, guid: 48b0fc9909c9d9d44984ee7bde8d046e, type: 3}
+  m_PrefabInstance: {fileID: 1661491529}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57bcea94c08a27e4683e9a39f8d0ea34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemInteractions
 --- !u!1 &1661637864
 GameObject:
   m_ObjectHideFlags: 0
@@ -325166,7 +325418,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Defeat all enemies in this wave!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &1661673415
 PrefabInstance:
@@ -350662,7 +350914,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Take out the lone Boxer!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!4 &1807429187 stripped
 Transform:
@@ -380426,6 +380678,10 @@ MonoBehaviour:
   requiredItemID: cq.orangekeycard
   requiredItemDisplayName: Orange Keycard
   lockedInteractionPrompt: LOCKED
+  lockedNoticeTitle: 
+  lockedNoticeBottomText: 
+  usedNoticeTitle: 
+  usedNoticeBottomText: 
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
@@ -385151,7 +385407,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f18c81f40094635429946beef111a6d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Progression.Encounters.Wave
-  WaveObjectiveText: Get the orange keycard!
+  WaveObjectiveText: 
   TimeBeforeNextWaveStarts: 0
 --- !u!1001 &1967031449
 PrefabInstance:
@@ -401741,6 +401997,10 @@ MonoBehaviour:
   requiredItemID: cq.bluekeycard
   requiredItemDisplayName: Blue Keycard
   lockedInteractionPrompt: LOCKED
+  lockedNoticeTitle: 
+  lockedNoticeBottomText: 
+  usedNoticeTitle: 
+  usedNoticeBottomText: 
   interactOnce: 1
   errorSFXClip: {fileID: 8300000, guid: 450a080ad3d152b44817e05e79d96651, type: 3}
   onInteractionExecuted:
