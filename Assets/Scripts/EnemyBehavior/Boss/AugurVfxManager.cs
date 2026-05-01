@@ -68,6 +68,8 @@ namespace EnemyBehavior.Boss
         [Header("Static Charge VFX")]
         [SerializeField, Tooltip("Anchor for the static charge telegraph (falls back to dashVfxTargetLocation).")]
         private Transform staticChargeVfxTargetLocation;
+        [SerializeField, Tooltip("Anchor used to spawn the static charge ring on the boss. Falls back to staticChargeVfxTargetLocation, then dashRingVfxTargetLocation, then dashVfxTargetLocation.")]
+        private Transform staticChargeRingVfxTargetLocation;
         [SerializeField, Tooltip("Telegraph prefab shown before a static charge. Falls back to dashIndicatorVfxPrefab if null.")]
         private GameObject staticChargeTelegraphVfxPrefab;
         [SerializeField, Tooltip("Applied to the computed charge distance before sizing the static charge telegraph. Use to compensate for authored prefab length.")]
@@ -80,18 +82,12 @@ namespace EnemyBehavior.Boss
         private float staticChargeRingStartDelay = 0f;
         [SerializeField, Tooltip("Audio clip played alongside the static charge telegraph.")]
         private AudioClip staticChargeTelegraphAudioClip;
-        [SerializeField, Tooltip("Secondary VFX prefab (e.g. speed lines) shown when a static charge launches. Positioned/sized the same way as the telegraph, but independently delayed. Falls back to nothing if null.")]
-        private GameObject staticChargeSpeedLinesPrefab;
-        [SerializeField, Tooltip("Applied to the computed charge distance before sizing the speed lines VFX.")]
-        private float staticChargeSpeedLinesLengthOffset = -10f;
-        [SerializeField, Min(0f), Tooltip("Seconds to wait after ShowStaticChargeTelegraph is called before the speed lines VFX spawns. Position, rotation, and size are snapshotted at call time so the VFX always appears at the charge launch location even if the delay pushes it past the end of the windup.")]
-        private float staticChargeSpeedLinesStartDelay = 0f;
-        [SerializeField, Min(0f), Tooltip("How long the speed lines VFX persists after it spawns.")]
-        private float staticChargeSpeedLinesDuration = 1f;
 
         [Header("Targeted Charge VFX")]
         [SerializeField, Tooltip("Anchor for the targeted charge telegraph (falls back to dashVfxTargetLocation).")]
         private Transform targetedChargeVfxTargetLocation;
+        [SerializeField, Tooltip("Anchor used to spawn the targeted charge ring on the boss. Falls back to targetedChargeVfxTargetLocation, then dashRingVfxTargetLocation, then dashVfxTargetLocation.")]
+        private Transform targetedChargeRingVfxTargetLocation;
         [SerializeField, Tooltip("Telegraph prefab shown before a targeted charge. Falls back to dashIndicatorVfxPrefab if null.")]
         private GameObject targetedChargeTelegraphVfxPrefab;
         [SerializeField, Tooltip("Applied to the computed charge distance before sizing the targeted charge telegraph.")]
@@ -104,14 +100,6 @@ namespace EnemyBehavior.Boss
         private float targetedChargeRingStartDelay = 0f;
         [SerializeField, Tooltip("Audio clip played alongside the targeted charge telegraph.")]
         private AudioClip targetedChargeTelegraphAudioClip;
-        [SerializeField, Tooltip("Secondary VFX prefab (e.g. speed lines) shown when a targeted charge launches. Positioned/sized the same way as the telegraph, but independently delayed. Falls back to nothing if null.")]
-        private GameObject targetedChargeSpeedLinesPrefab;
-        [SerializeField, Tooltip("Applied to the computed charge distance before sizing the speed lines VFX.")]
-        private float targetedChargeSpeedLinesLengthOffset = -10f;
-        [SerializeField, Min(0f), Tooltip("Seconds to wait after ShowTargetedChargeTelegraph is called before the speed lines VFX spawns. Position, rotation, and size are snapshotted at call time so the VFX always appears at the charge launch location even if the delay pushes it past the end of the windup.")]
-        private float targetedChargeSpeedLinesStartDelay = 0f;
-        [SerializeField, Min(0f), Tooltip("How long the speed lines VFX persists after it spawns.")]
-        private float targetedChargeSpeedLinesDuration = 1f;
 
         [Header("Panel Break")]
         [SerializeField, Tooltip("Optional electricity prefab spawned when a side panel breaks.")]
@@ -161,14 +149,8 @@ namespace EnemyBehavior.Boss
         private ParticleSystem[] activeTargetedChargeRingParticles = Array.Empty<ParticleSystem>();
         private Coroutine staticChargeTelegraphRoutine;
         private Coroutine staticChargeRingRoutine;
-        private Coroutine staticChargeSpeedLinesRoutine;
         private Coroutine targetedChargeTelegraphRoutine;
         private Coroutine targetedChargeRingRoutine;
-        private Coroutine targetedChargeSpeedLinesRoutine;
-        private GameObject activeStaticChargeSpeedLinesInstance;
-        private ParticleSystem[] activeStaticChargeSpeedLinesParticles = Array.Empty<ParticleSystem>();
-        private GameObject activeTargetedChargeSpeedLinesInstance;
-        private ParticleSystem[] activeTargetedChargeSpeedLinesParticles = Array.Empty<ParticleSystem>();
         private MaterialPropertyBlock alarmFlashPropertyBlock;
         private int alarmFlashEmissionPropertyId;
         private Color alarmFlashOriginalEmissionColor = Color.black;
@@ -472,9 +454,10 @@ namespace EnemyBehavior.Boss
             GameObject prefab = staticChargeRingVfxPrefab != null ? staticChargeRingVfxPrefab : dashRingVfxPrefab;
             if (prefab == null) yield break;
 
-            Transform anchor = staticChargeVfxTargetLocation != null ? staticChargeVfxTargetLocation
+            Transform anchor = staticChargeRingVfxTargetLocation != null ? staticChargeRingVfxTargetLocation
+                : (staticChargeVfxTargetLocation != null ? staticChargeVfxTargetLocation
                 : (dashRingVfxTargetLocation != null ? dashRingVfxTargetLocation
-                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform));
+                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform)));
             float lifetime = Mathf.Max(5f, chargeDuration);
 
             activeStaticChargeRingInstance = Instantiate(prefab, anchor.position, anchor.rotation);
@@ -500,63 +483,6 @@ namespace EnemyBehavior.Boss
             Destroy(activeStaticChargeRingInstance, Mathf.Max(0f, dashRingDestroyDelay));
             activeStaticChargeRingInstance = null;
             activeStaticChargeRingParticles = Array.Empty<ParticleSystem>();
-        }
-
-        /// <summary>
-        /// Shows the static charge speed lines VFX. Position, rotation, and size are snapshotted
-        /// immediately from the anchor so the VFX always spawns at the correct launch location
-        /// regardless of how long the start delay is.
-        /// </summary>
-        public void ShowStaticChargeSpeedLines(Vector3 chargeDestination)
-        {
-            if (deathTriggered || staticChargeSpeedLinesPrefab == null)
-                return;
-
-            HideStaticChargeSpeedLines();
-
-            // Snapshot everything now, before any delay, so the VFX lands correctly
-            // even if the delay outlasts the windup and the boss is already moving.
-            Transform anchor = staticChargeVfxTargetLocation != null ? staticChargeVfxTargetLocation
-                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform);
-            Vector3 spawnPos = anchor.position;
-            Quaternion spawnRot = GetDashIndicatorRotation(anchor, chargeDestination);
-            float dist = Mathf.Max(0.01f, GetFlatDistance(spawnPos, chargeDestination) + staticChargeSpeedLinesLengthOffset);
-            float duration = Mathf.Max(0.01f, staticChargeSpeedLinesDuration);
-
-            staticChargeSpeedLinesRoutine = StartCoroutine(SpawnStaticChargeSpeedLines(spawnPos, spawnRot, dist, duration));
-        }
-
-        private IEnumerator SpawnStaticChargeSpeedLines(Vector3 spawnPos, Quaternion spawnRot, float dist, float duration)
-        {
-            if (staticChargeSpeedLinesStartDelay > 0f)
-                yield return new WaitForSeconds(staticChargeSpeedLinesStartDelay);
-
-            if (deathTriggered || staticChargeSpeedLinesPrefab == null) yield break;
-
-            activeStaticChargeSpeedLinesInstance = Instantiate(staticChargeSpeedLinesPrefab, spawnPos, spawnRot);
-            activeStaticChargeSpeedLinesParticles = activeStaticChargeSpeedLinesInstance.GetComponentsInChildren<ParticleSystem>(true);
-            ConfigureDashIndicator(activeStaticChargeSpeedLinesParticles, dist, duration);
-            RestartObject(activeStaticChargeSpeedLinesInstance);
-
-            yield return new WaitForSeconds(duration);
-            HideStaticChargeSpeedLines();
-        }
-
-        public void HideStaticChargeSpeedLines()
-        {
-            if (staticChargeSpeedLinesRoutine != null)
-            {
-                StopCoroutine(staticChargeSpeedLinesRoutine);
-                staticChargeSpeedLinesRoutine = null;
-            }
-
-            if (activeStaticChargeSpeedLinesInstance == null)
-                return;
-
-            StopEffects(activeStaticChargeSpeedLinesInstance);
-            Destroy(activeStaticChargeSpeedLinesInstance, Mathf.Max(0f, dashIndicatorDestroyDelay));
-            activeStaticChargeSpeedLinesInstance = null;
-            activeStaticChargeSpeedLinesParticles = Array.Empty<ParticleSystem>();
         }
 
         // ─── Targeted Charge VFX ─────────────────────────────────────────────
@@ -635,9 +561,10 @@ namespace EnemyBehavior.Boss
             GameObject prefab = targetedChargeRingVfxPrefab != null ? targetedChargeRingVfxPrefab : dashRingVfxPrefab;
             if (prefab == null) yield break;
 
-            Transform anchor = targetedChargeVfxTargetLocation != null ? targetedChargeVfxTargetLocation
+            Transform anchor = targetedChargeRingVfxTargetLocation != null ? targetedChargeRingVfxTargetLocation
+                : (targetedChargeVfxTargetLocation != null ? targetedChargeVfxTargetLocation
                 : (dashRingVfxTargetLocation != null ? dashRingVfxTargetLocation
-                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform));
+                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform)));
             float lifetime = Mathf.Max(5f, chargeDuration);
 
             activeTargetedChargeRingInstance = Instantiate(prefab, anchor.position, anchor.rotation);
@@ -663,63 +590,6 @@ namespace EnemyBehavior.Boss
             Destroy(activeTargetedChargeRingInstance, Mathf.Max(0f, dashRingDestroyDelay));
             activeTargetedChargeRingInstance = null;
             activeTargetedChargeRingParticles = Array.Empty<ParticleSystem>();
-        }
-
-        /// <summary>
-        /// Shows the targeted charge speed lines VFX. Position, rotation, and size are snapshotted
-        /// immediately from the anchor so the VFX always spawns at the correct launch location
-        /// regardless of how long the start delay is.
-        /// </summary>
-        public void ShowTargetedChargeSpeedLines(Vector3 chargeDestination)
-        {
-            if (deathTriggered || targetedChargeSpeedLinesPrefab == null)
-                return;
-
-            HideTargetedChargeSpeedLines();
-
-            // Snapshot everything now, before any delay, so the VFX lands correctly
-            // even if the delay outlasts the windup and the boss is already moving.
-            Transform anchor = targetedChargeVfxTargetLocation != null ? targetedChargeVfxTargetLocation
-                : (dashVfxTargetLocation != null ? dashVfxTargetLocation : transform);
-            Vector3 spawnPos = anchor.position;
-            Quaternion spawnRot = GetDashIndicatorRotation(anchor, chargeDestination);
-            float dist = Mathf.Max(0.01f, GetFlatDistance(spawnPos, chargeDestination) + targetedChargeSpeedLinesLengthOffset);
-            float duration = Mathf.Max(0.01f, targetedChargeSpeedLinesDuration);
-
-            targetedChargeSpeedLinesRoutine = StartCoroutine(SpawnTargetedChargeSpeedLines(spawnPos, spawnRot, dist, duration));
-        }
-
-        private IEnumerator SpawnTargetedChargeSpeedLines(Vector3 spawnPos, Quaternion spawnRot, float dist, float duration)
-        {
-            if (targetedChargeSpeedLinesStartDelay > 0f)
-                yield return new WaitForSeconds(targetedChargeSpeedLinesStartDelay);
-
-            if (deathTriggered || targetedChargeSpeedLinesPrefab == null) yield break;
-
-            activeTargetedChargeSpeedLinesInstance = Instantiate(targetedChargeSpeedLinesPrefab, spawnPos, spawnRot);
-            activeTargetedChargeSpeedLinesParticles = activeTargetedChargeSpeedLinesInstance.GetComponentsInChildren<ParticleSystem>(true);
-            ConfigureDashIndicator(activeTargetedChargeSpeedLinesParticles, dist, duration);
-            RestartObject(activeTargetedChargeSpeedLinesInstance);
-
-            yield return new WaitForSeconds(duration);
-            HideTargetedChargeSpeedLines();
-        }
-
-        public void HideTargetedChargeSpeedLines()
-        {
-            if (targetedChargeSpeedLinesRoutine != null)
-            {
-                StopCoroutine(targetedChargeSpeedLinesRoutine);
-                targetedChargeSpeedLinesRoutine = null;
-            }
-
-            if (activeTargetedChargeSpeedLinesInstance == null)
-                return;
-
-            StopEffects(activeTargetedChargeSpeedLinesInstance);
-            Destroy(activeTargetedChargeSpeedLinesInstance, Mathf.Max(0f, dashIndicatorDestroyDelay));
-            activeTargetedChargeSpeedLinesInstance = null;
-            activeTargetedChargeSpeedLinesParticles = Array.Empty<ParticleSystem>();
         }
 
 
@@ -809,10 +679,8 @@ namespace EnemyBehavior.Boss
             HideDashRing();
             HideStaticChargeTelegraph();
             HideStaticChargeRing();
-            HideStaticChargeSpeedLines();
             HideTargetedChargeTelegraph();
             HideTargetedChargeRing();
-            HideTargetedChargeSpeedLines();
             StopAlarmFlash();
             StopExhaustImmediately();
 
@@ -963,10 +831,8 @@ namespace EnemyBehavior.Boss
             HideDashRing();
             HideStaticChargeTelegraph();
             HideStaticChargeRing();
-            HideStaticChargeSpeedLines();
             HideTargetedChargeTelegraph();
             HideTargetedChargeRing();
-            HideTargetedChargeSpeedLines();
             StopAlarmFlash();
             RestoreAlarmLightsRotation();
             dashExhaustActive = false;
