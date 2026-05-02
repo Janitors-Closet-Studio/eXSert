@@ -156,6 +156,7 @@ MonoBehaviour:
   showHitBox: 1
   boxSize: {x: 160, y: 77.4, z: 144.8}
   sceneName: Conservatory
+  stopPlayingAmbienceOnExit: 0
 --- !u!54 &371254899
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -232,7 +233,7 @@ GameObject:
   - component: {fileID: 468087566}
   - component: {fileID: 468087565}
   m_Layer: 0
-  m_Name: EngineRoomMusicBox
+  m_Name: EngineCoreMusicBox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -255,7 +256,8 @@ MonoBehaviour:
   loopMusic: 1
   showHitBox: 1
   boxSize: {x: 89.7, y: 100, z: 112.8}
-  sceneName: EngineRoom
+  sceneName: EngineCore
+  stopPlayingAmbienceOnExit: 0
 --- !u!54 &468087566
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -356,6 +358,7 @@ MonoBehaviour:
   showHitBox: 1
   boxSize: {x: 45.2, y: 19, z: 55}
   sceneName: ChargingStation
+  stopPlayingAmbienceOnExit: 0
 --- !u!54 &477178644
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -456,6 +459,7 @@ MonoBehaviour:
   showHitBox: 1
   boxSize: {x: 64, y: 11, z: 83}
   sceneName: CrewQuarters
+  stopPlayingAmbienceOnExit: 0
 --- !u!54 &636272909
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -556,6 +560,7 @@ MonoBehaviour:
   showHitBox: 1
   boxSize: {x: 55.5, y: 25, z: 101}
   sceneName: CargoBay
+  stopPlayingAmbienceOnExit: 0
 --- !u!54 &1051849572
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -656,6 +661,7 @@ MonoBehaviour:
   showHitBox: 1
   boxSize: {x: 75, y: 65, z: 170}
   sceneName: Hangar
+  stopPlayingAmbienceOnExit: 0
 --- !u!54 &1527422791
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -756,6 +762,7 @@ MonoBehaviour:
   showHitBox: 1
   boxSize: {x: 22, y: 50, z: 22}
   sceneName: Elevator
+  stopPlayingAmbienceOnExit: 0
 --- !u!54 &2102330573
 Rigidbody:
   m_ObjectHideFlags: 0
