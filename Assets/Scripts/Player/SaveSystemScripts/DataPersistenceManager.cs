@@ -46,28 +46,8 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     {
         base.Awake();
 
-        //Defines the save file — editor saves are isolated to a subdirectory so they never bleed into builds
-#if UNITY_EDITOR
-        string savePath = System.IO.Path.Combine(Application.persistentDataPath, "EditorSaves");
-#else
-        string savePath = Application.persistentDataPath;
-
-        // On the very first build launch after the editor/build path separation fix,
-        // delete any save data previously written by the editor at the root path.
-        string migrationSentinel = System.IO.Path.Combine(Application.persistentDataPath, ".saves_migrated");
-        if (!System.IO.File.Exists(migrationSentinel))
-        {
-            // Delete all profile subdirectories (old editor saves) at the root path
-            foreach (string dir in System.IO.Directory.GetDirectories(Application.persistentDataPath))
-            {
-                try { System.IO.Directory.Delete(dir, true); }
-                catch (System.Exception e) { Debug.LogWarning("[DataPersistenceManager] Could not delete old save directory: " + dir + "\n" + e); }
-            }
-            // Write the sentinel so this only runs once
-            System.IO.File.WriteAllText(migrationSentinel, System.DateTime.Now.ToString());
-        }
-#endif
-        fileDataHandler = new FileDataHandler(savePath, fileName);
+         //Defines the save file
+        fileDataHandler = new FileDataHandler(Application.persistentDataPath, fileName);
 
         selectedProfileId = fileDataHandler.GetMostRecentUpdatedProfile();
 

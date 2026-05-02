@@ -129,9 +129,6 @@ public class FileDataHandler
     {
         Dictionary<string, GameData> profileDictionary = new Dictionary<string, GameData>();
 
-        if (!Directory.Exists(dataDirPath))
-            return profileDictionary;
-
         IEnumerable<DirectoryInfo> dirInfos = new DirectoryInfo(dataDirPath).EnumerateDirectories();
         foreach (DirectoryInfo dirInfo in dirInfos)
         {
