@@ -19,6 +19,8 @@ using Progression.Checkpoints;
 public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
 {
+    private const string DefaultFileName = "save.game";
+
     [Header("Debugging")]
     [SerializeField] private bool initializeDataIfNull = false;
 
@@ -42,20 +44,33 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
     private static SceneAsset lastSavedScene;
 
+    private static void EnsureFileDataHandler()
+    {
+        if (fileDataHandler == null)
+        {
+            string resolvedFileName = DefaultFileName;
+            if (Instance != null && !string.IsNullOrWhiteSpace(Instance.fileName))
+                resolvedFileName = Instance.fileName.Trim();
+
+            fileDataHandler = new FileDataHandler(Application.persistentDataPath, resolvedFileName);
+        }
+
+        if (string.IsNullOrWhiteSpace(selectedProfileId) && fileDataHandler != null)
+        {
+            selectedProfileId = fileDataHandler.GetMostRecentUpdatedProfile();
+        }
+
+        if (Instance != null && Instance.overrideSelectedProfileId)
+        {
+            selectedProfileId = Instance.testSelectedProfile;
+        }
+    }
+
     protected override void Awake()
     {
         base.Awake();
 
-         //Defines the save file
-        fileDataHandler = new FileDataHandler(Application.persistentDataPath, fileName);
-
-        selectedProfileId = fileDataHandler.GetMostRecentUpdatedProfile();
-
-        //If the editor is using a test profile, it will warn them so they are aware
-        if (overrideSelectedProfileId)
-        {
-            selectedProfileId = testSelectedProfile;
-        }
+        EnsureFileDataHandler();
     }
 
     private void OnEnable()
@@ -111,6 +126,7 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
     public static void ChangeSelectedProfileId(string newProfileId)
     { 
+        EnsureFileDataHandler();
         selectedProfileId = newProfileId;
         LoadGame();
     }
@@ -118,39 +134,46 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     //When selecting a new game, new game data is created
     public static void NewGame()
     {
+        EnsureFileDataHandler();
+
         if (InternalPlayerInventory.Instance != null)
             InternalPlayerInventory.Instance.ResetCollectedItems();
-
-        // Delete the existing save for the currently selected profile (clean reset)
-        if (fileDataHandler != null && !string.IsNullOrEmpty(selectedProfileId))
-        {
-            fileDataHandler.DeleteProfile(selectedProfileId);
-        }
 
         // Create fresh data with defaults
         gameData = new GameData();
 
         // Immediately persist the new defaults so the next scene load reads them
-        if (!Instance.disableDataPersistence)
+        if (Instance == null || Instance.disableDataPersistence || fileDataHandler == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(selectedProfileId))
         {
-            // Initialize lastSavedScene for the new profile
-            gameData.lastSavedScene = SceneManager.GetActiveScene().name;
-            lastSavedScene = gameData.lastSavedScene;
-            fileDataHandler.Save(gameData, selectedProfileId);
+            Debug.LogError("[DataPersistenceManager] Cannot start a new game because no save slot is selected.");
+            return;
         }
+
+        // Initialize lastSavedScene for the new profile
+        gameData.lastSavedScene = SceneManager.GetActiveScene().name;
+        lastSavedScene = gameData.lastSavedScene;
+        fileDataHandler.Save(gameData, selectedProfileId);
     }
 
     public static void LoadGame()
     {
-        if (Instance.disableDataPersistence) return;
+        if (Instance != null && Instance.disableDataPersistence) return;
+
+        EnsureFileDataHandler();
 
         if (InternalPlayerInventory.Instance != null)
             InternalPlayerInventory.Instance.RemoveTransientKeycardItems();
 
-        //Loads the game data if it exists
-        gameData = fileDataHandler.Load(selectedProfileId);
+        if (string.IsNullOrWhiteSpace(selectedProfileId) && fileDataHandler != null)
+            selectedProfileId = fileDataHandler.GetMostRecentUpdatedProfile();
 
-        if(gameData == null && Instance.initializeDataIfNull) NewGame();
+        //Loads the game data if it exists
+        gameData = fileDataHandler != null ? fileDataHandler.Load(selectedProfileId) : null;
+
+        if (gameData == null && Instance != null && Instance.initializeDataIfNull) NewGame();
 
         //If it doesnt, it will call the NewGame function
         if (gameData == null) return;
@@ -169,8 +192,11 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
 
     public static void SaveGame()
     {
-        if (Instance.disableDataPersistence) return;
+        if (Instance != null && Instance.disableDataPersistence) return;
+
+        EnsureFileDataHandler();
         if (gameData == null) return;
+        if (fileDataHandler == null || string.IsNullOrWhiteSpace(selectedProfileId)) return;
 
         if (gameData.collectedInteractables != null)
             InternalPlayerInventory.RemoveTransientKeycardEntries(gameData.collectedInteractables);
@@ -220,7 +246,11 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
         gameData.lastUpdated = System.DateTime.Now.ToBinary();
         lastSavedScene = scene;
 
-        if (Instance == null || Instance.disableDataPersistence || fileDataHandler == null)
+        if (Instance == null || Instance.disableDataPersistence)
+            return;
+
+        EnsureFileDataHandler();
+        if (fileDataHandler == null)
             return;
 
         if (string.IsNullOrWhiteSpace(selectedProfileId))
@@ -245,7 +275,10 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     /// </summary>
     public static void DeleteProfile(string profileId)
     {
-        if (Instance.disableDataPersistence || fileDataHandler == null || string.IsNullOrEmpty(profileId)) return;
+        if (Instance != null && Instance.disableDataPersistence) return;
+
+        EnsureFileDataHandler();
+        if (fileDataHandler == null || string.IsNullOrEmpty(profileId)) return;
 
         fileDataHandler.DeleteProfile(profileId);
 
@@ -269,5 +302,27 @@ public class DataPersistenceManager : Singleton<DataPersistenceManager>
     //Returns true or false if there is game data
     public static bool HasGameData() => gameData != null;
 
-    public static Dictionary<string, GameData> GetAllProfilesGameData() => fileDataHandler.LoadAllProfiles();
+    public static bool HasAnySavedProfiles()
+    {
+        if (Instance != null && Instance.disableDataPersistence)
+            return false;
+
+        EnsureFileDataHandler();
+        if (fileDataHandler == null)
+            return false;
+
+        foreach (KeyValuePair<string, GameData> pair in fileDataHandler.LoadAllProfiles())
+        {
+            if (pair.Value != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    public static Dictionary<string, GameData> GetAllProfilesGameData()
+    {
+        EnsureFileDataHandler();
+        return fileDataHandler != null ? fileDataHandler.LoadAllProfiles() : new Dictionary<string, GameData>();
+    }
 }

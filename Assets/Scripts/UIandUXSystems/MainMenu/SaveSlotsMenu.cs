@@ -124,7 +124,7 @@ public class SaveSlotsMenu : MonoBehaviour
             return false;
 
         string selectedProfileId = currentSaveSlotSelected.GetProfileId();
-        if (string.IsNullOrWhiteSpace(selectedProfileId) || DataPersistenceManager.Instance == null)
+        if (string.IsNullOrWhiteSpace(selectedProfileId))
             return false;
 
         Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
@@ -252,9 +252,7 @@ public class SaveSlotsMenu : MonoBehaviour
             return;
         }
 
-        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.Instance != null
-            ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
-            : new Dictionary<string, GameData>();
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
 
         if (!profilesGameData.TryGetValue(profileId, out GameData data) || data == null)
         {
@@ -411,23 +409,12 @@ public class SaveSlotsMenu : MonoBehaviour
 
     public void TurnOffLoadButtonIfNoData()
     {
-        int loadableSlots = 0;
-        if (DataPersistenceManager.Instance != null)
-        {
-            Dictionary<string, GameData> profiles = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
-            foreach (var kvp in profiles)
-            {
-                if (kvp.Value != null)
-                {
-                    loadableSlots++;
-                }
-            }
-        }
+        bool hasLoadableProfiles = DataPersistenceManager.HasAnySavedProfiles();
 
-        Debug.Log($"[TurnOffLoadButtonIfNoData] Called. Loadable slots: {loadableSlots}. loadButton assigned: {loadButton != null}");
+        Debug.Log($"[TurnOffLoadButtonIfNoData] Called. Has loadable profiles: {hasLoadableProfiles}. loadButton assigned: {loadButton != null}");
         if (loadButton != null)
         {
-            loadButton.interactable = loadableSlots > 0;
+            loadButton.interactable = hasLoadableProfiles;
             Debug.Log($"[TurnOffLoadButtonIfNoData] loadButton.interactable set to {loadButton.interactable}");
         }
     }
@@ -584,9 +571,7 @@ public class SaveSlotsMenu : MonoBehaviour
 
     private void EnsureTheCorrectSaveSlotText()
     {
-        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.Instance != null
-            ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
-            : new Dictionary<string, GameData>();
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
 
         string activeProfileId = DataPersistenceManager.GetSelectedProfileId();
         bool hasInMemoryProfileData = DataPersistenceManager.HasGameData();
@@ -622,9 +607,7 @@ public class SaveSlotsMenu : MonoBehaviour
 
         this.isLoadingGame = isLoadingGame;
 
-        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.Instance != null
-            ? (DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>())
-            : new Dictionary<string, GameData>();
+        Dictionary<string, GameData> profilesGameData = DataPersistenceManager.GetAllProfilesGameData() ?? new Dictionary<string, GameData>();
 
         // Validate slot profile ids (common merge issue: ids cleared)
         if (saveSlots == null || saveSlots.Length == 0)

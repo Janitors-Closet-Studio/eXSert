@@ -30,6 +30,7 @@ public class DoorTriggerZone : MonoBehaviour
 
     [Header("Events")]
     [SerializeField] private UnityEvent onEnteredTrigger;
+    [SerializeField] private bool triggerOnce = false;
 
     // cached start/end positions (local space to avoid parent movement jumps)
     private Vector3 _topClosedLocal, _bottomClosedLocal;
@@ -37,6 +38,7 @@ public class DoorTriggerZone : MonoBehaviour
 
     private Coroutine _motion;
     private int _overlapCount = 0;   // supports multiple colliders entering (player + weapon, etc.)
+    private bool _eventFired = false;
 
     private void Reset()
     {
@@ -64,7 +66,11 @@ public class DoorTriggerZone : MonoBehaviour
     {
         if (!other.CompareTag(playerTag)) return;
 
-        onEnteredTrigger?.Invoke();
+        if (!triggerOnce || !_eventFired)
+        {
+            onEnteredTrigger?.Invoke();
+            _eventFired = true;
+        }
 
         if (disableTriggerZone != null && IsInsideDisableZone(other))
         {

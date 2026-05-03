@@ -19,11 +19,16 @@ public class MainMenu : MonoBehaviour
     
     [SerializeField] private InputActionReference backButtonInputAction;
 
+    private void RefreshLoadButtonState()
+    {
+        if (loadGame != null)
+            loadGame.interactable = DataPersistenceManager.HasAnySavedProfiles();
+    }
+
     private void Start()
     {
         isInMainMenu = true;
-        // Disable load game button if no save data exists
-        if (!DataPersistenceManager.HasGameData()) loadGame.interactable = false;
+        RefreshLoadButtonState();
 
         if (loadGame != null) loadGame.onClick.AddListener(OnLoadGameClicked);
         if (newGameButton != null) newGameButton.onClick.AddListener(OnNewGameClicked);
@@ -37,6 +42,7 @@ public class MainMenu : MonoBehaviour
 
     protected void OnEnable()
     {
+        RefreshLoadButtonState();
 
         if (backButtonInputAction != null && backButtonInputAction.action != null)
         {
@@ -87,6 +93,7 @@ public class MainMenu : MonoBehaviour
 
     public void ActivateMenu()
     {
+        RefreshLoadButtonState();
         this.gameObject.SetActive(true);
     }
 

@@ -13,91 +13,256 @@ using System.IO;
 
 public class FileDataHandler
 {
+    private const string EditorSaveFolderName = "EditorSaves";
+    private const string BuildSaveFolderName = "BuildSaves";
+
     //These two variables make up the file path
     private string dataDirPath = "";
 
     private string dataFileName = "";
 
+    private string scopedDataDirPath = "";
+
     //Defines the two above variables
     public FileDataHandler(string dataDirPath, string dataFileName)
     {
         this.dataDirPath = dataDirPath;
-        this.dataFileName = dataFileName;
+        this.dataFileName = string.IsNullOrWhiteSpace(dataFileName) ? "save.game" : dataFileName.Trim();
+        this.scopedDataDirPath = ResolveScopedDataDirPath();
+    }
+
+    private string ResolveScopedDataDirPath()
+    {
+        string scopeFolder = Application.isEditor ? EditorSaveFolderName : BuildSaveFolderName;
+        return Path.Combine(dataDirPath, scopeFolder);
+    }
+
+    private string GetCanonicalProfileFilePath(string profileId)
+    {
+        return Path.Combine(scopedDataDirPath, profileId, dataFileName);
+    }
+
+    private string GetScopedLegacyProfileFilePath(string profileId)
+    {
+        return Path.Combine(scopedDataDirPath, profileId);
+    }
+
+    private string GetRootNestedProfileFilePath(string profileId)
+    {
+        return Path.Combine(dataDirPath, profileId, dataFileName);
+    }
+
+    private string GetRootLegacyProfileFilePath(string profileId)
+    {
+        return Path.Combine(dataDirPath, profileId);
+    }
+
+    private IEnumerable<string> GetCandidateProfileFilePaths(string profileId)
+    {
+        if (string.IsNullOrWhiteSpace(profileId))
+            yield break;
+
+        HashSet<string> yieldedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string[] candidatePaths =
+        {
+            GetCanonicalProfileFilePath(profileId),
+            GetScopedLegacyProfileFilePath(profileId),
+            GetRootNestedProfileFilePath(profileId),
+            GetRootLegacyProfileFilePath(profileId)
+        };
+
+        foreach (string candidatePath in candidatePaths)
+        {
+            if (yieldedPaths.Add(candidatePath))
+                yield return candidatePath;
+        }
+    }
+
+    private string ResolveWritableProfileFilePath(string profileId)
+    {
+        string scopedLegacyPath = GetScopedLegacyProfileFilePath(profileId);
+        if (File.Exists(scopedLegacyPath))
+            return scopedLegacyPath;
+
+        string canonicalPath = GetCanonicalProfileFilePath(profileId);
+        if (File.Exists(canonicalPath))
+            return canonicalPath;
+
+        return canonicalPath;
+    }
+
+    private static bool IsLegacyProfileFileName(string fileName)
+    {
+        return !string.IsNullOrWhiteSpace(fileName)
+            && !fileName.StartsWith(".", StringComparison.Ordinal)
+            && string.IsNullOrEmpty(Path.GetExtension(fileName));
+    }
+
+    private IEnumerable<string> EnumerateScopedNestedProfileIds()
+    {
+        if (!Directory.Exists(scopedDataDirPath))
+            yield break;
+
+        foreach (string directoryPath in Directory.EnumerateDirectories(scopedDataDirPath))
+        {
+            string profileId = Path.GetFileName(directoryPath);
+            if (File.Exists(Path.Combine(directoryPath, dataFileName)))
+                yield return profileId;
+        }
+    }
+
+    private IEnumerable<string> EnumerateScopedLegacyProfileIds()
+    {
+        if (!Directory.Exists(scopedDataDirPath))
+            yield break;
+
+        foreach (string filePath in Directory.EnumerateFiles(scopedDataDirPath))
+        {
+            string fileName = Path.GetFileName(filePath);
+            if (IsLegacyProfileFileName(fileName))
+                yield return fileName;
+        }
+    }
+
+    private IEnumerable<string> EnumerateRootNestedProfileIds()
+    {
+        if (!Directory.Exists(dataDirPath))
+            yield break;
+
+        foreach (string directoryPath in Directory.EnumerateDirectories(dataDirPath))
+        {
+            string profileId = Path.GetFileName(directoryPath);
+            if (string.Equals(profileId, EditorSaveFolderName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(profileId, BuildSaveFolderName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(profileId, "Unity", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (File.Exists(Path.Combine(directoryPath, dataFileName)))
+                yield return profileId;
+        }
+    }
+
+    private IEnumerable<string> EnumerateRootLegacyProfileIds()
+    {
+        if (!Directory.Exists(dataDirPath))
+            yield break;
+
+        foreach (string filePath in Directory.EnumerateFiles(dataDirPath))
+        {
+            string fileName = Path.GetFileName(filePath);
+            if (IsLegacyProfileFileName(fileName))
+                yield return fileName;
+        }
+    }
+
+    private IEnumerable<string> EnumerateKnownProfileIds()
+    {
+        HashSet<string> seenProfileIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        IEnumerable<string>[] profileIdSources =
+        {
+            EnumerateScopedNestedProfileIds(),
+            EnumerateScopedLegacyProfileIds(),
+            EnumerateRootNestedProfileIds(),
+            EnumerateRootLegacyProfileIds()
+        };
+
+        foreach (IEnumerable<string> profileIdSource in profileIdSources)
+        {
+            foreach (string profileId in profileIdSource)
+            {
+                if (seenProfileIds.Add(profileId))
+                    yield return profileId;
+            }
+        }
+    }
+
+    private static GameData TryReadGameData(string fullPath)
+    {
+        try
+        {
+            string dataToLoad = "";
+
+            using (FileStream stream = new FileStream(fullPath, FileMode.Open))
+            {
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    dataToLoad = reader.ReadToEnd();
+                }
+            }
+
+            return JsonUtility.FromJson<GameData>(dataToLoad);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("Error occured when trying to load date to file: " + fullPath + "\n" + e);
+            return null;
+        }
     }
 
     public void DeleteProfile(string profileId)
     {
         if (string.IsNullOrEmpty(profileId)) return;
 
-        string fullPath = Path.Combine(dataDirPath, profileId, dataFileName);
-        try
+        foreach (string fullPath in GetCandidateProfileFilePaths(profileId))
         {
-            if (File.Exists(fullPath))
+            try
             {
+                if (!File.Exists(fullPath))
+                    continue;
+
                 File.Delete(fullPath);
+
+                string canonicalPath = GetCanonicalProfileFilePath(profileId);
+                if (string.Equals(fullPath, canonicalPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    string profileDirectory = Path.GetDirectoryName(canonicalPath);
+                    if (Directory.Exists(profileDirectory)
+                        && !Directory.EnumerateFileSystemEntries(profileDirectory).GetEnumerator().MoveNext())
+                    {
+                        Directory.Delete(profileDirectory);
+                    }
+                }
             }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError("Error occured when trying to delete save file: " + fullPath + "\n" + e);
+            catch (Exception e)
+            {
+                Debug.LogError("Error occured when trying to delete save file: " + fullPath + "\n" + e);
+            }
         }
     }
 
     //This function properly loads the saved data
     public GameData Load(string profileId)
     {
-        if(profileId == null)
+        if (string.IsNullOrWhiteSpace(profileId))
         {
             return null;
         }
 
-        //Combines the two path variables into one
-        string fullPath = Path.Combine(dataDirPath, profileId, dataFileName);
-
-        GameData loadedData = null;
-
-        //If the file above can be located, then this will execute
-        if (File.Exists(fullPath))
+        foreach (string fullPath in GetCandidateProfileFilePaths(profileId))
         {
-            try
-            {
-                string dataToLoad = "";
+            if (!File.Exists(fullPath))
+                continue;
 
-                //Here the file is located, opened, and defined to the variable stream
-                using (FileStream stream = new FileStream(fullPath, FileMode.Open))
-                {
-                    //The file/variable is being read and assigned to the variable reader
-                    using (StreamReader reader = new StreamReader(stream))
-                    {
-                        //the data that is read is being assigned to dataToLoad
-                        dataToLoad = reader.ReadToEnd();
-                    }
-                }
-                //The read data is serialiazed with JsonUtility and assigned to loadedData
-                loadedData = JsonUtility.FromJson<GameData>(dataToLoad);
-
-            }
-            //If the file has any errors with being open, this error is returned
-            catch (Exception e)
-            {
-                Debug.LogError("Error occured when trying to load date to file: " + fullPath + "\n" + e);
-            }
-
+            GameData loadedData = TryReadGameData(fullPath);
+            if (loadedData != null)
+                return loadedData;
         }
 
-        return loadedData;
+        return null;
     }
 
     public void Save(GameData data, string profileId)
     {
         //If there is no profileId, the save will not be loaded
-        if (profileId == null)
+        if (string.IsNullOrWhiteSpace(profileId))
         {
             return;
         }
 
-        //Combines the two path variables into one
-        string fullPath = Path.Combine(dataDirPath, profileId, dataFileName);
+        string fullPath = ResolveWritableProfileFilePath(profileId);
 
         try
         {
@@ -127,26 +292,15 @@ public class FileDataHandler
     //Gathers each profile that already exists and is responsible with loaded the data into the main menu
     public Dictionary<string, GameData> LoadAllProfiles()
     {
-        Dictionary<string, GameData> profileDictionary = new Dictionary<string, GameData>();
+        Dictionary<string, GameData> profileDictionary = new Dictionary<string, GameData>(StringComparer.OrdinalIgnoreCase);
 
-        IEnumerable<DirectoryInfo> dirInfos = new DirectoryInfo(dataDirPath).EnumerateDirectories();
-        foreach (DirectoryInfo dirInfo in dirInfos)
+        foreach (string profileId in EnumerateKnownProfileIds())
         {
-            string profileId = dirInfo.Name;
-
-            string fullPath = Path.Combine(dataDirPath, profileId, dataFileName);
-
-            //If the file gather doesn't exists, it will move onto the next file
-            if (!File.Exists(fullPath))
-            {
-                continue;
-            }
-
             //Assigns local var profileData to data connected with a profileId
             GameData profileData = Load(profileId);
 
             //If the profile data exists, it will be added to the dictionary above
-            if (profileData != null)
+            if (profileData != null && !profileDictionary.ContainsKey(profileId))
             {
                 profileDictionary.Add(profileId, profileData);
             }
