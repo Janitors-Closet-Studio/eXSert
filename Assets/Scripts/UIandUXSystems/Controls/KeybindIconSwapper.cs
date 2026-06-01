@@ -32,6 +32,10 @@ public class KeybindIconSwapper : MonoBehaviour
     [SerializeField] private KeybindAction action;
     [SerializeField] private DeviceMode deviceMode = DeviceMode.Auto;
 
+    [Header("Path Overrides")]
+    [SerializeField] private string keyboardMouseControlPathOverride = string.Empty;
+    [SerializeField] private string gamepadControlPathOverride = string.Empty;
+
     [Header("Crane Move")]
     [SerializeField] private bool useCraneMoveIcon = false;
     [SerializeField] private CraneDirection craneDirection = CraneDirection.Forward;
@@ -164,6 +168,23 @@ public class KeybindIconSwapper : MonoBehaviour
         if (deviceMode == DeviceMode.Auto)
             useGamepad = sharedIconSet.IsGamepadScheme(GetCurrentScheme());
 
+        string controlPathOverride = useGamepad ? gamepadControlPathOverride : keyboardMouseControlPathOverride;
+        if (!string.IsNullOrWhiteSpace(controlPathOverride))
+        {
+            if (sharedIconSet.TryGetIconForControlPath(controlPathOverride, useGamepad, out Sprite overrideIcon))
+            {
+                targetImage.sprite = overrideIcon;
+                targetImage.enabled = true;
+                lastBindingPath = controlPathOverride;
+            }
+            else if (hideWhenMissing)
+            {
+                targetImage.enabled = false;
+            }
+
+            return;
+        }
+
         if (useCraneMoveIcon)
         {
             string partName = GetCranePartName(craneDirection);
@@ -184,6 +205,7 @@ public class KeybindIconSwapper : MonoBehaviour
         {
             targetImage.sprite = icon;
             targetImage.enabled = true;
+            lastBindingPath = string.Empty;
         }
         else if (hideWhenMissing)
         {

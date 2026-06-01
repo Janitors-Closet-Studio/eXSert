@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 public class DiaryScrollingList : MonoBehaviour
 {
     public GameObject selectedButton;
@@ -23,7 +24,16 @@ public class DiaryScrollingList : MonoBehaviour
     [Header("Rect Transforms")]
     [SerializeField] private RectTransform scrollRectTransform;
     [SerializeField] internal RectTransform contentRectTransform;
+    [SerializeField] private float scrollPadding = 8f;
+
+    private ScrollRect scrollRect;
+    private RectTransform viewportRectTransform;
     private Dictionary<string, DiaryButton> idToButtonMap = new Dictionary<string, DiaryButton>(); //Dict to hold id of buttons
+
+    private void Awake()
+    {
+        CacheScrollReferences();
+    }
 
     void Update()
     {
@@ -51,6 +61,7 @@ public class DiaryScrollingList : MonoBehaviour
             {
                 Debug.Log($"Button for diary {diary.info.diaryID} already exists");
                 diaryButton = idToButtonMap[diary.info.diaryID];
+                ConfigureDiaryButton(diaryButton, diary, selectAction, isRead);
             }
             return diaryButton;
         }
@@ -69,7 +80,15 @@ public class DiaryScrollingList : MonoBehaviour
             contentParent.transform).GetComponent<DiaryButton>();
 
         diaryButton.gameObject.name = diaries.info.diaryID + "_button"; //assigns name in inspector
+        ConfigureDiaryButton(diaryButton, diaries, selectAction, isRead);
 
+        idToButtonMap[diaries.info.diaryID] = diaryButton;
+
+        return diaryButton;
+    }
+
+    private void ConfigureDiaryButton(DiaryButton diaryButton, Diaries diaries, UnityAction selectAction, bool isRead)
+    {
         RectTransform buttonRectTranform = diaryButton.GetComponent<RectTransform>();
 
         diaryButton.InitializeButton(diaries.info.diaryTitle, () =>
@@ -77,10 +96,6 @@ public class DiaryScrollingList : MonoBehaviour
             selectAction();
             UpdateScrolling(buttonRectTranform);
         }, isRead);
-
-        idToButtonMap[diaries.info.diaryID] = diaryButton;
-
-        return diaryButton;
     }
 
     public void ClearDiaryButtons()
@@ -96,26 +111,79 @@ public class DiaryScrollingList : MonoBehaviour
     //So whenever you scroll down the menu will dynamically shift the scroll list
     private void UpdateScrolling(RectTransform buttonRectTransform)
     {
-        float buttonYMin = Mathf.Abs(buttonRectTransform.anchoredPosition.y);
-        float buttonYMax = buttonYMin + buttonRectTransform.rect.height;
-
-        float contentYMin = contentRectTransform.anchoredPosition.y;
-        float contentYMax = contentYMin + scrollRectTransform.rect.height;
-
-        //If the player is off screen then it will extend to show "hidden" logs
-        if (buttonYMax > contentYMax)
+        CacheScrollReferences();
+        if (buttonRectTransform == null || contentRectTransform == null || viewportRectTransform == null)
         {
-            contentRectTransform.anchoredPosition = new Vector2(
-                contentRectTransform.anchoredPosition.x,
-                buttonYMax - scrollRectTransform.rect.height
-            );
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRectTransform);
+
+        float hiddenLength = contentRectTransform.rect.height - viewportRectTransform.rect.height;
+        if (hiddenLength <= 0f)
+        {
+            if (scrollRect != null)
+            {
+                scrollRect.verticalNormalizedPosition = 1f;
+            }
+            else
+            {
+                contentRectTransform.anchoredPosition = new Vector2(contentRectTransform.anchoredPosition.x, 0f);
+            }
+
+            return;
+        }
+
+        Bounds buttonBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewportRectTransform, buttonRectTransform);
+        Rect viewportRect = viewportRectTransform.rect;
+        float targetY = contentRectTransform.anchoredPosition.y;
+
+        if (buttonBounds.max.y > viewportRect.yMax - scrollPadding)
+        {
+            targetY -= buttonBounds.max.y - (viewportRect.yMax - scrollPadding);
+        }
+        else if (buttonBounds.min.y < viewportRect.yMin + scrollPadding)
+        {
+            targetY += (viewportRect.yMin + scrollPadding) - buttonBounds.min.y;
         }
         else
         {
-            contentRectTransform.anchoredPosition = new Vector2(
-                contentRectTransform.anchoredPosition.x,
-                buttonYMin
-            );
+            return;
+        }
+
+        targetY = Mathf.Clamp(targetY, 0f, hiddenLength);
+
+        if (scrollRect != null)
+        {
+            scrollRect.verticalNormalizedPosition = 1f - Mathf.Clamp01(targetY / hiddenLength);
+        }
+        else
+        {
+            contentRectTransform.anchoredPosition = new Vector2(contentRectTransform.anchoredPosition.x, targetY);
+        }
+    }
+
+    private void CacheScrollReferences()
+    {
+        if (scrollRectTransform == null)
+        {
+            scrollRectTransform = transform as RectTransform;
+        }
+
+        if (scrollRect == null)
+        {
+            scrollRect = GetComponent<ScrollRect>();
+        }
+
+        if (contentRectTransform == null && scrollRect != null)
+        {
+            contentRectTransform = scrollRect.content;
+        }
+
+        if (scrollRect != null)
+        {
+            viewportRectTransform = scrollRect.viewport != null ? scrollRect.viewport : scrollRectTransform;
         }
     }
 }

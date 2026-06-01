@@ -78,7 +78,10 @@ public class MenuEventSystemHandler : MonoBehaviour
             Debug.LogWarning($"Navigate Input Action Reference is not set in the inspector. Keyboard/Controller Input won't navigate menu \"{name}\" properly");
 
         else
+        {
             _navigateReference.action.performed += OnNavigate;
+            SyncUiMoveAction();
+        }
 
 
         // reset all the scales of all the UI Selectables
@@ -287,5 +290,25 @@ public class MenuEventSystemHandler : MonoBehaviour
         {
             EventSystem.current.SetSelectedGameObject(_lastSelected.gameObject);
         }
+    }
+
+    private void SyncUiMoveAction()
+    {
+        if (_navigateReference == null || _navigateReference.action == null)
+            return;
+
+        InputAction navigateAction = _navigateReference.action;
+        if (navigateAction.actionMap == null || navigateAction.actionMap.name != "UI" || navigateAction.name != "Navigation")
+            return;
+
+        InputSystemUIInputModule inputModule = EventSystem.current != null
+            ? EventSystem.current.currentInputModule as InputSystemUIInputModule
+            : null;
+
+        if (inputModule == null)
+            inputModule = FindFirstObjectByType<InputSystemUIInputModule>();
+
+        if (inputModule != null && inputModule.move != _navigateReference)
+            inputModule.move = _navigateReference;
     }
 }

@@ -8378,10 +8378,13 @@ MonoBehaviour:
   locomotionFailsafeMinHorizontalSpeed: 0.05
   groundedInputBusyFailsafeSeconds: 0.9
   enemyTopSlideOffSpeed: 9
-  enemyTopSlideOffPlungeMultiplier: 3
   enemyTopSlideProbeDistance: 2.5
   enemyTopSlideFootprintScale: 1.15
   enemyTopSlideFootprintThickness: 0.35
+  overrideSlideOffSurfaceSettings: 1
+  slideOffSurfaceMinVerticalDot: 0.5
+  slideOffSurfaceLooseDotMultiplier: 0.65
+  slideOffEnemyPushbackSpeed: 3
   enableBossFaceplateUnstick: 1
   bossFaceplateUnstickSpeed: 7
   bossFaceplateUnstickProbeRadius: 0.45
@@ -8454,6 +8457,8 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  playerHurtSfxCooldownSeconds: 0.08
+  impactSfxCooldownSeconds: 0.05
   _rumbleLowFrequency: 0.5
   _rumbleHighFrequency: 0.5
   _rumbleDuration: 0.5

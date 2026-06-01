@@ -8,6 +8,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 public class LogScrollingList : MonoBehaviour
 {
@@ -22,7 +23,17 @@ public class LogScrollingList : MonoBehaviour
     [Header("Rect Transforms")]
     [SerializeField] private RectTransform scrollRectTransform;
     [SerializeField] internal RectTransform contentRectTransform;
+    [SerializeField] private float scrollPadding = 8f;
+
+    private ScrollRect scrollRect;
+    private RectTransform viewportRectTransform;
     private Dictionary<string, LogButton> idToButtonMap = new Dictionary<string, LogButton>(); //Dict to hold id of buttons
+
+    private void Awake()
+    {
+        CacheScrollReferences();
+    }
+
     //If the button for a log doesn't already exist, this function will make it
     public LogButton CreateButtonIfNotExists(Logs log, UnityAction selectAction, bool isRead)
     {
@@ -40,6 +51,7 @@ public class LogScrollingList : MonoBehaviour
             {
                 Debug.Log($"Button for log {log.info.logID} already exists");
                 logButton = idToButtonMap[log.info.logID];
+                ConfigureLogButton(logButton, log, selectAction, isRead);
             }
             return logButton;
         }
@@ -58,7 +70,15 @@ public class LogScrollingList : MonoBehaviour
             contentParent.transform).GetComponent<LogButton>();
 
         logButton.gameObject.name = log.info.logID + "_button"; //assigns name in inspector
+        ConfigureLogButton(logButton, log, selectAction, isRead);
 
+        idToButtonMap[log.info.logID] = logButton;
+
+        return logButton;
+    }
+
+    private void ConfigureLogButton(LogButton logButton, Logs log, UnityAction selectAction, bool isRead)
+    {
         RectTransform buttonRectTranform = logButton.GetComponent<RectTransform>();
 
         logButton.InitializeButton(log.info.logName, () =>
@@ -66,10 +86,6 @@ public class LogScrollingList : MonoBehaviour
             selectAction();
             UpdateScrolling(buttonRectTranform);
         }, isRead);
-
-        idToButtonMap[log.info.logID] = logButton;
-
-        return logButton;
     }
 
     public void ClearLogButtons()
@@ -85,26 +101,79 @@ public class LogScrollingList : MonoBehaviour
     //So whenever you scroll down the menu will dynamically shift the scroll list
     private void UpdateScrolling(RectTransform buttonRectTransform)
     {
-        float buttonYMin = Mathf.Abs(buttonRectTransform.anchoredPosition.y);
-        float buttonYMax = buttonYMin + buttonRectTransform.rect.height;
-
-        float contentYMin = contentRectTransform.anchoredPosition.y;
-        float contentYMax = contentYMin + scrollRectTransform.rect.height;
-
-        //If the player is off screen then it will extend to show "hidden" logs
-        if (buttonYMax > contentYMax)
+        CacheScrollReferences();
+        if (buttonRectTransform == null || contentRectTransform == null || viewportRectTransform == null)
         {
-            contentRectTransform.anchoredPosition = new Vector2(
-                contentRectTransform.anchoredPosition.x,
-                buttonYMax - scrollRectTransform.rect.height
-            );
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRectTransform);
+
+        float hiddenLength = contentRectTransform.rect.height - viewportRectTransform.rect.height;
+        if (hiddenLength <= 0f)
+        {
+            if (scrollRect != null)
+            {
+                scrollRect.verticalNormalizedPosition = 1f;
+            }
+            else
+            {
+                contentRectTransform.anchoredPosition = new Vector2(contentRectTransform.anchoredPosition.x, 0f);
+            }
+
+            return;
+        }
+
+        Bounds buttonBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewportRectTransform, buttonRectTransform);
+        Rect viewportRect = viewportRectTransform.rect;
+        float targetY = contentRectTransform.anchoredPosition.y;
+
+        if (buttonBounds.max.y > viewportRect.yMax - scrollPadding)
+        {
+            targetY -= buttonBounds.max.y - (viewportRect.yMax - scrollPadding);
+        }
+        else if (buttonBounds.min.y < viewportRect.yMin + scrollPadding)
+        {
+            targetY += (viewportRect.yMin + scrollPadding) - buttonBounds.min.y;
         }
         else
         {
-            contentRectTransform.anchoredPosition = new Vector2(
-                contentRectTransform.anchoredPosition.x,
-                buttonYMin
-            );
+            return;
+        }
+
+        targetY = Mathf.Clamp(targetY, 0f, hiddenLength);
+
+        if (scrollRect != null)
+        {
+            scrollRect.verticalNormalizedPosition = 1f - Mathf.Clamp01(targetY / hiddenLength);
+        }
+        else
+        {
+            contentRectTransform.anchoredPosition = new Vector2(contentRectTransform.anchoredPosition.x, targetY);
+        }
+    }
+
+    private void CacheScrollReferences()
+    {
+        if (scrollRectTransform == null)
+        {
+            scrollRectTransform = transform as RectTransform;
+        }
+
+        if (scrollRect == null)
+        {
+            scrollRect = GetComponent<ScrollRect>();
+        }
+
+        if (contentRectTransform == null && scrollRect != null)
+        {
+            contentRectTransform = scrollRect.content;
+        }
+
+        if (scrollRect != null)
+        {
+            viewportRectTransform = scrollRect.viewport != null ? scrollRect.viewport : scrollRectTransform;
         }
     }
 }

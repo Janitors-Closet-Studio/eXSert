@@ -73,6 +73,12 @@ public class KeybindIconSet : ScriptableObject
     public string KeyboardMouseSchemeName => keyboardMouseSchemeName;
     public string GamepadSchemeName => gamepadSchemeName;
 
+    public bool TryGetIconForControlPath(string controlPath, bool useGamepad, out Sprite icon)
+    {
+        icon = GetIconForControlPath(controlPath, useGamepad);
+        return icon != null;
+    }
+
     
     public bool TryGetIcon(KeybindAction actionId, bool useGamepad, out Sprite icon, out string controlPath)
     {

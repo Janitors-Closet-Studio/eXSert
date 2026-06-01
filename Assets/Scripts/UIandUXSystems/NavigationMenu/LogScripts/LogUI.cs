@@ -8,6 +8,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using Unity.VisualScripting;
+using UnityEngine.InputSystem;
 public class LogUI : MonoBehaviour
 {
     [Header("Components")]
@@ -18,6 +19,15 @@ public class LogUI : MonoBehaviour
     [SerializeField] private TMP_Text logLocation;
     [SerializeField] private TMP_Text logId_Date;
     [SerializeField] private Image logImage;
+
+    [Header("Controller Scrolling")]
+    [SerializeField] private float controllerScrollSpeed = 2f;
+    [SerializeField] private float controllerScrollDeadzone = 0.35f;
+
+    private const string IndividualLogMenuTag = "IndividualLogMenu";
+
+    private ScrollRect detailScrollRect;
+    private bool resetDetailScrollPending;
 
     //LogStateChange beong subscribed and unsubscribed
     private void OnEnable()
@@ -43,10 +53,16 @@ public class LogUI : MonoBehaviour
             EventsManager.Instance.logEvents.onLogStateChange -= LogStateChange;
     }
 
+    private void Update()
+    {
+        ResetDetailScrollIfNeeded();
+        HandleControllerScroll();
+    }
+
     //Creates the button with the info from SetLogInfo
     private void LogStateChange(Logs log)
     {
-        LogButton logButton = scrollingList.CreateButtonIfNotExists(log, () =>
+        scrollingList.CreateButtonIfNotExists(log, () =>
         {
             SetLogInfo(log);
            
@@ -61,7 +77,8 @@ public class LogUI : MonoBehaviour
         logDescription.GetComponent<TMP_Text>().text = log.info.logDescription;
         logLocation.text = log.info.locationFound;
         logId_Date.text = log.info.logID;
-        log.info.MarkAsFound(); // Mark log as read when selected
+        bool wasUnread = !log.info.isRead;
+        log.info.MarkAsRead();
 
         if(LogManager.Instance.unreadLogs.Contains(log.info))
         {
@@ -74,6 +91,63 @@ public class LogUI : MonoBehaviour
             logImage.sprite = log.info.logImage.sprite;
         else
             logImage.sprite = null;
+
+        resetDetailScrollPending = true;
+        ResetDetailScrollIfNeeded();
+
+        if (wasUnread && EventsManager.Instance != null && EventsManager.Instance.logEvents != null)
+            EventsManager.Instance.logEvents.LogStateChange(log);
+    }
+
+    private void HandleControllerScroll()
+    {
+        ScrollRect activeScrollRect = GetDetailScrollRect();
+        if (activeScrollRect == null || !activeScrollRect.gameObject.activeInHierarchy || !activeScrollRect.vertical)
+            return;
+
+        RectTransform contentRect = activeScrollRect.content;
+        RectTransform viewportRect = activeScrollRect.viewport;
+        if (contentRect == null || viewportRect == null || contentRect.rect.height <= viewportRect.rect.height)
+            return;
+
+        Gamepad gamepad = Gamepad.current;
+        if (gamepad == null)
+            return;
+
+        float scrollInput = gamepad.rightStick.ReadValue().y;
+        if (Mathf.Abs(scrollInput) < controllerScrollDeadzone)
+            return;
+
+        float nextPosition = activeScrollRect.verticalNormalizedPosition + (scrollInput * controllerScrollSpeed * Time.unscaledDeltaTime);
+        activeScrollRect.verticalNormalizedPosition = Mathf.Clamp01(nextPosition);
+    }
+
+    private void ResetDetailScrollIfNeeded()
+    {
+        if (!resetDetailScrollPending)
+            return;
+
+        ScrollRect activeScrollRect = GetDetailScrollRect();
+        if (activeScrollRect == null || !activeScrollRect.gameObject.activeInHierarchy)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        activeScrollRect.StopMovement();
+        activeScrollRect.verticalNormalizedPosition = 1f;
+        resetDetailScrollPending = false;
+    }
+
+    private ScrollRect GetDetailScrollRect()
+    {
+        if (detailScrollRect != null)
+            return detailScrollRect;
+
+        GameObject detailMenuObject = GameObject.FindGameObjectWithTag(IndividualLogMenuTag);
+        if (detailMenuObject == null)
+            return null;
+
+        detailScrollRect = detailMenuObject.GetComponentInChildren<ScrollRect>(true);
+        return detailScrollRect;
     }
 
 }

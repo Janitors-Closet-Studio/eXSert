@@ -41,7 +41,7 @@ public class LogManager : Singleton<LogManager>
     public void ResetAllLogs(){
         foreach (Logs log in logMap.Values)
         {
-            log.info.isFound = false;
+            log.info.ApplySavedState(false, false);
         }
     }
 
@@ -166,25 +166,21 @@ public class LogManager : Singleton<LogManager>
                 string serializedData = PlayerPrefs.GetString(logInfo.logID);
                 LogData logData = JsonUtility.FromJson<LogData>(serializedData);
                 log = new Logs(logInfo);
-                
-                // If inspector value is true, keep it; otherwise use saved data
-                if (inspectorValueIsTrue)
-                {
-                    log.info.isFound = true;
-                }
-                else
-                {
-                    log.info.isFound = logData.isFound;
-                }
+
+                bool isFound = inspectorValueIsTrue || logData.isFound;
+                bool isRead = logInfo.isRead || logData.isRead;
+                log.info.ApplySavedState(isFound, isRead);
             }
             else
             {
                 log = new Logs(logInfo);
+                log.info.ApplySavedState(logInfo.isFound, logInfo.isRead);
             }
         }
         catch (System.Exception)
         {
             log = new Logs(logInfo);
+            log.info.ApplySavedState(logInfo.isFound, logInfo.isRead);
         }
         
         return log;

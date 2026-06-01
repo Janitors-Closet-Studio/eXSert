@@ -54,8 +54,21 @@ public class NavigationLogSO : ScriptableObject
     public void MarkAsFound()
     {
         isFound = true;
-        LogRead?.Invoke();
         Debug.Log($"Log {logID} marked as found.");
+    }
+
+    public void MarkAsRead()
+    {
+        isFound = true;
+        isRead = true;
+        LogRead?.Invoke();
+        Debug.Log($"Log {logID} marked as read.");
+    }
+
+    public void ApplySavedState(bool found, bool read)
+    {
+        isFound = found;
+        isRead = read;
     }
 
 }

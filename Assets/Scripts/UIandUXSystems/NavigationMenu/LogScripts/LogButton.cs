@@ -14,6 +14,7 @@ public class LogButton : MonoBehaviour, ISelectHandler
 {
     private TMP_Text buttonText;
     private UnityAction onSelectAction;
+    private UnityAction onClickAction;
     public Button button { get; private set; }
     private MenuEventSystemHandler logUI;
     [SerializeField] private Image unreadIndicator;
@@ -46,28 +47,40 @@ public class LogButton : MonoBehaviour, ISelectHandler
         if (this.buttonText != null)
             this.buttonText.text = logName;
 
-        
-        if(!isRead && unreadIndicator != null)
-            unreadIndicator.gameObject.SetActive(true);
-        else
-            unreadIndicator.gameObject.SetActive(false);
+        SetUnreadState(isRead);
     
 
         this.onSelectAction = selectAction;
         
-        // Add onClick listener so action triggers on click, not just select
-        if (this.button != null && selectAction != null)
+        if (this.button != null)
         {
-            this.button.onClick.AddListener(() =>
+            if (onClickAction != null)
             {
-                // Ensure EventSystem selection updates for mouse clicks
-                var es = UnityEngine.EventSystems.EventSystem.current;
-                if (es != null)
-                    es.SetSelectedGameObject(this.gameObject);
+                this.button.onClick.RemoveListener(onClickAction);
+                onClickAction = null;
+            }
 
-                selectAction();
-            });
+            // Add onClick listener so action triggers on click, not just select.
+            if (selectAction != null)
+            {
+                onClickAction = () =>
+                {
+                    var es = EventSystem.current;
+                    if (es != null)
+                        es.SetSelectedGameObject(this.gameObject);
+
+                    selectAction();
+                };
+
+                this.button.onClick.AddListener(onClickAction);
+            }
         }
+    }
+
+    public void SetUnreadState(bool isRead)
+    {
+        if (unreadIndicator != null)
+            unreadIndicator.gameObject.SetActive(!isRead);
     }
 
     public void OnSelect(BaseEventData eventData)
@@ -87,7 +100,7 @@ public class LogButton : MonoBehaviour, ISelectHandler
             if(individualLogMenuObject != null)
             {
                 Transform child = individualLogMenuObject.transform.GetChild(0);
-                unreadIndicator.gameObject.SetActive(false);
+                SetUnreadState(true);
                 menuToManage.AddToMenuList(child.gameObject);
             }   
         }

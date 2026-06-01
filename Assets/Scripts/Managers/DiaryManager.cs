@@ -38,6 +38,7 @@ public class DiaryManager : Singleton<DiaryManager>
         foreach (Diaries diary in diaryMap.Values)
         {
             diary.info.isFound = false;
+            diary.info.isRead = false;
         }
     }
 
@@ -122,17 +123,20 @@ public class DiaryManager : Singleton<DiaryManager>
                 DiaryData diaryData = JsonUtility.FromJson<DiaryData>(serializedData);
                 diary = new Diaries(diaryInfo);
                 diary.info.isFound = diaryData.isFound;
+                diary.info.isRead = diaryData.isRead;
             }
             else
             {
                 diary = new Diaries(diaryInfo);
                 diary.info.isFound = false; // Always start as not found if no saved data
+                diary.info.isRead = false;
             }
         }
         catch (System.Exception)
         {
             diary = new Diaries(diaryInfo);
             diary.info.isFound = false;
+            diary.info.isRead = false;
         }
         return diary;
     }
